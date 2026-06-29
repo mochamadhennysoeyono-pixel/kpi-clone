@@ -19,7 +19,7 @@ const firebaseConfig: FirebaseOptions = {
 // Initialize Firebase for the client
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db = getFirestore(app, "performance"); // <-- DIARAHKAN KE DATABASE 'PERFORMANCE'
 const storage = getStorage(app);
 
 // We export functions and the app instance instead of an initialized messaging object

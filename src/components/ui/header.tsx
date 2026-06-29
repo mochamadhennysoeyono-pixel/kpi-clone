@@ -85,7 +85,7 @@ export default function Header() {
   
   return (
     <header className={cn(
-        "flex h-[65px] items-center justify-between gap-4 border-b px-4 sm:px-6 sticky top-0 z-30",
+        "flex h-[65px] items-center justify-between gap-4 border-b px-4 sm:px-6 sticky top-0 z-50",
         "bg-background/80 backdrop-blur-lg",
         "no-print"
     )}>

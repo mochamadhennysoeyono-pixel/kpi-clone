@@ -120,20 +120,22 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
 
   if (isMobile) {
     return (
-      <div className="bg-background min-h-screen flex flex-col overflow-x-hidden">
+      <div className="bg-background h-screen flex flex-col overflow-hidden">
         <AppSidebar />
         <Header />
-        <main className={cn(
-            "flex-1 flex flex-col w-full min-w-0 overflow-x-hidden",
+        <ScrollArea className="flex-1">
+          <main className={cn(
+            "w-full",
             !hideBottomNav && "pb-24"
-        )}>
-          <div className={cn(
-              "flex-1 flex flex-col w-full min-w-0",
-              !hideBottomNav && "p-3 sm:p-6" // Slightly reduced padding for mobile
           )}>
-            {contentToRender}
-          </div>
-        </main>
+            <div className={cn(
+              "w-full",
+              !hideBottomNav && "p-3 sm:p-6"
+            )}>
+              {contentToRender}
+            </div>
+          </main>
+        </ScrollArea>
         <PageAssistant />
         <BottomNav />
       </div>

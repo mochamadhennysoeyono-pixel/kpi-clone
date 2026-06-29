@@ -21,10 +21,10 @@ import {
   getAuth,
   reauthenticateWithCredential
 } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase/client';
+import { auth, db } from '@/lib/firebase/client'; // db is already the 'performance' database
 import type { Employee, UserRole, Company } from '@/types';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc, collection, query, where, getDocs, writeBatch, updateDoc, DocumentData, UpdateData, setDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, writeBatch, updateDoc, DocumentData, UpdateData, setDoc, serverTimestamp, addDoc, DocumentSnapshot, QuerySnapshot } from 'firebase/firestore';
 import { sendTemplatedEmail, sendPasswordResetEmailWithSmtp, notifyAdminNewRegistration, sendWelcomeWhatsApp } from '@/lib/services/notification-service';
 import { addDays, format, parse } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -90,44 +90,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const userDocRef = doc(db, 'employees', user.uid);
-        let userDoc = await getDoc(userDocRef);
-        
-        if (!userDoc.exists()) {
-            const userIdentifier = user.email?.toLowerCase() || user.phoneNumber;
-            if (userIdentifier) {
-                const identifierField = user.email ? "email" : "phone";
-                const q = query(collection(db, "employees"), where(identifierField, "==", userIdentifier));
-                const querySnapshot = await getDocs(q);
-                if (!querySnapshot.empty) {
-                    userDoc = querySnapshot.docs[0];
-                    await updateDoc(userDoc.ref, { authUid: user.uid });
+        // 1. Check 'superadmins' collection in the performance DB
+        const superadminDocRef = doc(db, 'superadmins', user.uid);
+        const superadminDoc = await getDoc(superadminDocRef);
+
+        if (superadminDoc.exists()) {
+            const userProfile = { ...superadminDoc.data(), id: superadminDoc.id } as Employee;
+            userProfile.role = 'superadmin';
+            setCurrentUser(userProfile);
+            setUserRole('superadmin'); 
+            setFirebaseUser(user);
+        } else {
+            // 2. If not a superadmin, check 'employees' collection (also in performance DB)
+            let userDoc: DocumentSnapshot | null = null;
+            const employeeDocRef = doc(db, 'employees', user.uid);
+            const employeeDoc = await getDoc(employeeDocRef);
+
+            if (employeeDoc.exists()) {
+                userDoc = employeeDoc;
+            } else {
+                const userIdentifier = user.email?.toLowerCase() || user.phoneNumber;
+                if (userIdentifier) {
+                    const identifierField = user.email ? "email" : "phone";
+                    const q = query(collection(db, "employees"), where(identifierField, "==", userIdentifier));
+                    const querySnapshot = await getDocs(q);
+                    if (!querySnapshot.empty) {
+                        userDoc = querySnapshot.docs[0];
+                        if (!userDoc.data().authUid) {
+                            await updateDoc(userDoc.ref, { authUid: user.uid });
+                        }
+                    }
                 }
             }
-        }
-        
-        if (userDoc.exists()) {
-          const userProfile = { ...userDoc.data(), id: userDoc.id } as Employee;
-          
-          if (userProfile.status === 'Menunggu Persetujuan') {
-              router.replace(`/activate?name=${encodeURIComponent(userProfile.name)}&company=${encodeURIComponent(userProfile.company)}&email=${encodeURIComponent(userProfile.email)}`);
-              setIsLoading(false);
-              return;
-          }
-
-          if (userProfile.loginStatus === 'Invited') {
-              await updateDoc(userDoc.ref, { loginStatus: 'Active' });
-              userProfile.loginStatus = 'Active';
-          }
-
-          setCurrentUser(userProfile);
-          setUserRole(userProfile.role);
-          setFirebaseUser(user);
-        } else {
-            await signOut(auth);
-            setCurrentUser(null);
-            setFirebaseUser(null);
-            setUserRole(null);
+            
+            if (userDoc && userDoc.exists()) {
+              const userProfile = { ...userDoc.data(), id: userDoc.id } as Employee;
+              
+              if (userProfile.status === 'Menunggu Persetujuan') {
+                  router.replace(`/activate?name=${encodeURIComponent(userProfile.name)}&company=${encodeURIComponent(userProfile.company)}&email=${encodeURIComponent(userProfile.email)}`);
+                  setIsLoading(false);
+                  return;
+              }
+    
+              if (userProfile.loginStatus === 'Invited') {
+                  await updateDoc(userDoc.ref, { loginStatus: 'Active' });
+                  userProfile.loginStatus = 'Active';
+              }
+    
+              setCurrentUser(userProfile);
+              setUserRole(userProfile.role);
+              setFirebaseUser(user);
+            } else {
+                // 3. If user is not in superadmins or employees, sign out.
+                await signOut(auth);
+                setCurrentUser(null);
+                setFirebaseUser(null);
+                setUserRole(null);
+            }
         }
       } else {
         setCurrentUser(null);
@@ -161,16 +180,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const user = result.user;
       if (!user.email) throw new Error('Email tidak ditemukan.');
   
-      const q = query(collection(db, 'employees'), where('email', '==', user.email.toLowerCase()));
-      const snapshot = await getDocs(q);
-  
-      if (snapshot.empty) {
+      const email = user.email.toLowerCase();
+      let userDocSnap: DocumentSnapshot | null = null;
+
+      // Check superadmins collection
+      const superadminQuery = query(collection(db, 'superadmins'), where('email', '==', email));
+      const superadminSnapshot = await getDocs(superadminQuery);
+
+      if (!superadminSnapshot.empty) {
+          userDocSnap = superadminSnapshot.docs[0];
+      } else {
+          // Check employees collection
+          const employeeQuery = query(collection(db, 'employees'), where('email', '==', email));
+          const employeeSnapshot = await getDocs(employeeQuery);
+          if (!employeeSnapshot.empty) {
+              userDocSnap = employeeSnapshot.docs[0];
+          }
+      }
+
+      if (!userDocSnap) {
         await signOut(auth);
         setIsLoading(false);
         return { success: false, error: 'Akun Anda belum terdaftar di sistem.' };
       }
   
-      await updateDoc(snapshot.docs[0].ref, { authUid: user.uid, loginStatus: 'Active' });
+      await updateDoc(userDocSnap.ref, { authUid: user.uid, loginStatus: 'Active' });
       return { success: true };
     } catch (e: any) {
       console.error("Error during Google login:", e);
@@ -273,9 +307,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         await batch.commit();
         
-        // --- NOTIFIKASI DENGAN TRY-CATCH INDIVIDU ---
-        // Kita gunakan try-catch terpisah agar kegagalan Email tidak membatalkan WA, dan sebaliknya.
-        
         try {
             await sendTemplatedEmail(data.email, 'registration', {
                 nama_pengguna: data.name,
@@ -330,17 +361,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const email = employeeData.email.toLowerCase().trim();
       const tempPassword = Math.random().toString(36).slice(-10);
-  
-      const existingUserQuery = query(collection(db, 'employees'), where('email', '==', email));
-      const existingUserSnap = await getDocs(existingUserQuery);
-      if (!existingUserSnap.empty) {
-          return { success: false, error: 'Email sudah terdaftar.' };
+      // Check both collections for existing user
+      const superadminQuery = query(collection(db, 'superadmins'), where('email', '==', email));
+      const superadminSnap = await getDocs(superadminQuery);
+      if (!superadminSnap.empty) {
+          return { success: false, error: 'Email sudah terdaftar sebagai Super Admin.' };
+      }
+      const employeeQuery = query(collection(db, 'employees'), where('email', '==', email));
+      const employeeSnap = await getDocs(employeeQuery);
+      if (!employeeSnap.empty) {
+          return { success: false, error: 'Email sudah terdaftar sebagai Karyawan.' };
       }
       
       const userCredential = await createUserWithEmailAndPassword(tempAuth, email, tempPassword);
       const newUser = userCredential.user;
   
-      await setDoc(doc(db, 'employees', newUser.uid), {
+      const collectionToUse = employeeData.role === 'superadmin' ? 'superadmins' : 'employees';
+
+      await setDoc(doc(db, collectionToUse, newUser.uid), {
         ...employeeData,
         email,
         authUid: newUser.uid,
@@ -355,7 +393,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: true, message: `Berhasil menambahkan ${employeeData.name}.` };
     } catch (error: any) {
       console.error("Error in addUserAsAdmin:", error);
-      console.error(error);
       return { success: false, error: error.message };
     } finally {
       await signOut(tempAuth).catch(() => {});
@@ -369,8 +406,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isSilent) setIsLoading(true);
     
     try {
-        const userSnap = await getDocs(query(collection(db, 'employees'), where('email', '==', cleanEmail)));
-        if (userSnap.empty) {
+        let userSnap: QuerySnapshot | null = null;
+        // Check superadmins collection
+        const superadminQuery = query(collection(db, 'superadmins'), where('email', '==', cleanEmail));
+        const superadminSnapshot = await getDocs(superadminQuery);
+
+        if (!superadminSnapshot.empty) {
+            userSnap = superadminSnapshot;
+        } else {
+            // Check employees collection
+            const employeeQuery = query(collection(db, 'employees'), where('email', '==', cleanEmail));
+            const employeeSnapshot = await getDocs(employeeQuery);
+            if (!employeeSnapshot.empty) {
+                userSnap = employeeSnapshot;
+            }
+        }
+
+        if (!userSnap || userSnap.empty) {
             return { success: false, error: 'Email tidak terdaftar.' };
         }
         
@@ -390,7 +442,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     } catch(e: any) {
         console.error("Password reset error:", e);
-        console.error(e);
         return { success: false, error: e.message };
     } finally {
         if (!isSilent) setIsLoading(false);
@@ -400,8 +451,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUserProfile = async (userId: string, data: UpdateData<DocumentData>): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      const userDocRef = doc(db, 'employees', userId);
+      // Determine collection based on the current user's role
+      const collectionName = userRole === 'superadmin' ? 'superadmins' : 'employees';
+      const userDocRef = doc(db, collectionName, userId);
+      
       await updateDoc(userDocRef, data);
+      
+      setCurrentUser(prevUser => prevUser ? { ...prevUser, ...data } as Employee : null);
+
       return { success: true };
     } catch (e: any) {
       console.error("Error updating user profile:", e);

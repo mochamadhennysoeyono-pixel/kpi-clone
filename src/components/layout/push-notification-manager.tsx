@@ -2,39 +2,57 @@
 "use client";
 
 import { useEffect, useCallback, useState, useRef } from 'react';
-import { getToken, onMessage, db, app, isSupported, getMessaging } from '@/lib/firebase/client';
+import { getToken, onMessage, isSupported, getMessaging } from '@/lib/firebase/client';
+import { db, app } from '@/lib/firebase/client';
 import { useAuth } from '@/contexts/auth-context';
-import { doc, updateDoc, arrayUnion, collection, query, where, onSnapshot, limit } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { BellRing, X } from 'lucide-react';
 import { Button } from '../ui/button';
 
 export function PushNotificationManager() {
-    const { currentUser } = useAuth();
+    const { currentUser, userRole } = useAuth(); // MOD: Get userRole
     const { toast } = useToast();
     const [showBanner, setShowBanner] = useState(false);
-    const lastProcessedId = useRef<string | null>(null);
-    const mountTime = useRef<number>(Date.now());
+    const [isSubscribing, setIsSubscribing] = useState(false);
+    const tokenRef = useRef<string | null>(null);
 
     const saveTokenToFirestore = useCallback(async (token: string) => {
-        if (!currentUser) return;
+        if (!currentUser || !userRole) return;
         try {
-            const userRef = doc(db, 'employees', currentUser.id);
+            // MOD: Determine collection based on role
+            const collectionName = userRole === 'superadmin' ? 'superadmins' : 'employees';
+            const userRef = doc(db, collectionName, currentUser.id);
             await updateDoc(userRef, {
                 fcmTokens: arrayUnion(token)
             });
-            console.log('FCM Token sync successful');
+            tokenRef.current = token;
+            console.log(`FCM Token sync successful for role: ${userRole}`);
         } catch (error) {
             console.error('Error saving token:', error);
         }
-    }, [currentUser]);
+    }, [currentUser, userRole]); // MOD: Add userRole to dependencies
+
+    const removeTokenFromFirestore = useCallback(async (token: string) => {
+        if (!currentUser || !userRole) return;
+        try {
+            const collectionName = userRole === 'superadmin' ? 'superadmins' : 'employees';
+            const userRef = doc(db, collectionName, currentUser.id);
+            await updateDoc(userRef, {
+                fcmTokens: arrayRemove(token)
+            });
+            console.log('FCM Token removed successfully');
+        } catch (error) {
+            console.error('Error removing token:', error);
+        }
+    }, [currentUser, userRole]);
 
     const requestPermission = useCallback(async () => {
         if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !currentUser) return;
 
+        setIsSubscribing(true);
         try {
-            // CRITICAL FIX: Check if messaging is supported before doing anything
             const supported = await isSupported();
             if (!supported) {
                 console.warn("Firebase Messaging is not supported in this browser environment.");
@@ -50,118 +68,72 @@ export function PushNotificationManager() {
                     scope: '/'
                 });
 
-                // Initialize messaging only after confirming support
                 const messaging = getMessaging(app);
                 const token = await getToken(messaging, {
-                    vapidKey: 'BGN3KFCKXtuseRgW87Dw6-0ey-65C5ul4mKuVowt-umGIpo7X8ogRdFebxbOz716PtXDd7CGQ1ejvWIdAewI6R4',
+                    // MOD: Update VAPID key
+                    vapidKey: 'BO5Xao6GcfOtdzIXHWR7c4x1PWAsfyzOPXezy6dN-MbZGAY1B4stPLq6XFmUilTiOHxdSDiuP11dVdyqHlyjUmc',
                     serviceWorkerRegistration: registration
                 });
 
                 if (token) {
                     await saveTokenToFirestore(token);
-                    toast({
-                        title: "Notifikasi Aktif!",
-                        description: "Anda akan menerima update penting secara real-time.",
-                    });
+                } else {
+                    console.warn('No registration token available. Request permission to generate one.');
                 }
-            } else if (permission === 'denied') {
-                setShowBanner(false);
+            } else {
+                console.log('Unable to get permission to notify.');
             }
         } catch (error) {
-            console.error('An error occurred while retrieving token:', error);
+            console.error('An error occurred while requesting permission: ', error);
+        } finally {
+            setIsSubscribing(false);
         }
-    }, [currentUser, saveTokenToFirestore, toast]);
+    }, [currentUser, saveTokenToFirestore]);
 
-    // AUTO-BRIDGE: Listen to Firestore notifications and trigger System UI automatically
     useEffect(() => {
-        if (!currentUser || !('serviceWorker' in navigator)) return;
-
-        const q = query(
-            collection(db, "notifications"),
-            where("recipientId", "==", currentUser.id),
-            limit(10)
-        );
-
-        const unsubscribe = onSnapshot(q, async (snapshot) => {
-            if (snapshot.empty) return;
-
-            // Sort by timestamp descending in JS to avoid complex index requirements
-            const docs = snapshot.docs
-                .map(d => ({ id: d.id, ...d.data() } as any))
-                .sort((a, b) => {
-                    const tA = a.timestamp?.toMillis?.() || 0;
-                    const tB = b.timestamp?.toMillis?.() || 0;
-                    return tB - tA;
-                });
-
-            const latestNotif = docs[0];
-            
-            // Only trigger if it's unread and truly new (created after this component mounted)
-            if (!latestNotif.isRead) {
-                const notifTime = latestNotif.timestamp?.toMillis?.() || Date.now();
-                
-                if (latestNotif.id !== lastProcessedId.current && notifTime > mountTime.current) {
-                    lastProcessedId.current = latestNotif.id;
-                    
-                    try {
-                        const registration = await navigator.serviceWorker.ready;
-                        if ('showNotification' in registration) {
-                            registration.showNotification(`KIPIAI: ${latestNotif.category || 'Update Baru'}`, {
-                                body: latestNotif.message,
-                                icon: 'https://cdn.scalev.id/business_files/yVvqA_tsSzvt5_Yf2lNStxvP/1757745293765-k%20(8).webp',
-                                badge: 'https://cdn.scalev.id/business_files/yVvqA_tsSzvt5_Yf2lNStxvP/1757745293765-k%20(8).webp',
-                                tag: latestNotif.id,
-                                data: {
-                                    url: latestNotif.link || '/action-center'
-                                },
-                                vibrate: [200, 100, 200]
-                            });
-                        }
-                    } catch (e) {
-                        console.error("System notification trigger failed:", e);
-                    }
-                }
-            }
-        });
-
-        return () => unsubscribe();
+        if (
+            typeof window !== 'undefined' &&
+            'Notification' in window && 
+            window.Notification.permission === 'default' &&
+            currentUser
+        ) {
+            setShowBanner(true);
+        }
     }, [currentUser]);
 
     useEffect(() => {
-        const checkSupportAndShowBanner = async () => {
-            if (currentUser && typeof window !== 'undefined' && 'Notification' in window) {
-                const supported = await isSupported();
-                if (!supported) return;
-
-                if (Notification.permission === 'default') {
-                    const timer = setTimeout(() => setShowBanner(true), 3000);
-                    return () => clearTimeout(timer);
-                } else if (Notification.permission === 'granted') {
-                    requestPermission();
-                }
+        const cleanup = async () => {
+            if (tokenRef.current) {
+                await removeTokenFromFirestore(tokenRef.current);
+                tokenRef.current = null;
             }
         };
         
-        checkSupportAndShowBanner();
-    }, [currentUser, requestPermission]);
+        window.addEventListener('beforeunload', cleanup);
+
+        return () => {
+            window.removeEventListener('beforeunload', cleanup);
+            cleanup(); // Also cleanup on component unmount
+        };
+    }, [removeTokenFromFirestore]);
 
     if (!showBanner) return null;
 
     return (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md animate-fade-in no-print">
-            <Alert className="bg-primary text-primary-foreground border-none shadow-2xl relative overflow-hidden ring-4 ring-background">
-                <button onClick={() => setShowBanner(false)} className="absolute top-2 right-2 p-1 hover:bg-white/10 rounded-full"><X size={14} /></button>
-                <div className="flex items-start gap-4 pr-6">
-                    <div className="p-2 bg-white/20 rounded-full animate-bounce mt-1"><BellRing size={20} /></div>
-                    <div className="space-y-3">
-                        <div className="space-y-1">
-                            <AlertTitle className="font-bold">Aktifkan Notifikasi?</AlertTitle>
-                            <AlertDescription className="text-xs opacity-90 leading-tight">
-                                Agar Anda tidak ketinggalan update KPI, tugas tim, dan pesan penting secara real-time di bar notifikasi perangkat Anda.
-                            </AlertDescription>
-                        </div>
-                        <Button size="sm" variant="secondary" className="font-bold text-xs h-8 px-4 shadow-sm" onClick={requestPermission}>Izinkan Sekarang</Button>
-                    </div>
+        <div className="fixed bottom-4 right-4 z-50">
+            <Alert className="max-w-md">
+                <BellRing className="h-4 w-4" />
+                <AlertTitle>Aktifkan Notifikasi</AlertTitle>
+                <AlertDescription className="mt-2">
+                    Dapatkan pembaruan penting dan pengingat langsung di perangkat Anda. Izinkan notifikasi untuk pengalaman terbaik.
+                </AlertDescription>
+                <div className="mt-4 flex justify-end gap-4">
+                    <Button variant="outline" size="sm" onClick={() => setShowBanner(false)}>
+                        Nanti Saja
+                    </Button>
+                    <Button size="sm" onClick={requestPermission} disabled={isSubscribing}>
+                        {isSubscribing ? 'Memproses...' : 'Aktifkan'}
+                    </Button>
                 </div>
             </Alert>
         </div>

@@ -12,7 +12,6 @@ import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
 import { getNavItems, iconMap } from '@/lib/nav-items';
 import type { UserRole, Company, SubscriptionPlan, Employee, OKR } from "@/types";
-import { useTheme } from "next-themes";
 import {
   Collapsible,
   CollapsibleContent,
@@ -30,7 +29,6 @@ function MotionNav() {
   const pathname = usePathname();
   const { currentUser, userRole, logout } = useAuth();
   const { employees, companies, subscriptionPlans, okrs } = useMasterData();
-  const { theme } = useTheme();
   const isMobile = useIsMobile();
   
   const userCompany = React.useMemo(() => {
@@ -51,10 +49,6 @@ function MotionNav() {
   }, [currentUser, employees]);
   
   const navItems = getNavItems(userRole, hasSubordinates, userCompany, userSubscriptionPlan, !!isMobile, currentUser, okrs);
-
-  const logoUrl = theme === 'dark' 
-    ? "https://cdn.scalev.id/uploads/1761479088/xFJINSeSDNexO-6P4yJiUw/1761479088448-k-(22).webp"
-    : "https://cdn.scalev.id/uploads/1761479058/gCopUyafm3sdQ-bUDtHQaw/1761479058364-k-(21).webp";
     
   return (
      <motion.nav
@@ -83,8 +77,8 @@ function MotionNav() {
                       className="flex items-center justify-between w-full"
                     >
                       <Image 
-                        src={logoUrl} 
-                        alt="KIPIAI Logo" 
+                        src="/logo.png" 
+                        alt="Logo"
                         width={150} 
                         height={40}
                       />
@@ -98,8 +92,8 @@ function MotionNav() {
                       transition={{ duration: 0.15 }}
                     >
                        <Image 
-                        src="https://cdn.scalev.id/uploads/1761284339/sQst5F-x9mctqns4Na0M2Q/1761284338682-k-(14).webp"
-                        alt="KIPIAI Icon" 
+                        src="/favicon.png"
+                        alt="Icon"
                         width={40} 
                         height={40}
                       />

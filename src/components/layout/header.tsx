@@ -74,20 +74,18 @@ export default function Header() {
   const handleLogout = () => {
     logout();
   };
-
-  const logoUrl = "https://cdn.scalev.id/uploads/1761479058/gCopUyafm3sdQ-bUDtHQaw/1761479058364-k-(21).webp";
   
   return (
     <header className={cn(
-        "flex h-[65px] items-center justify-between gap-4 border-b px-4 sm:px-6 sticky top-0 z-30",
+        "flex h-[65px] items-center justify-between gap-4 border-b px-4 sm:px-6 sticky top-0 z-50",
         "bg-background/80 backdrop-blur-lg",
         "no-print"
     )}>
         <div className="flex items-center gap-3">
           {isMobile ? (
             <Image 
-                src={logoUrl} 
-                alt="KIPIAI Logo"
+                src="/logo.png" 
+                alt="Logo"
                 width={120}
                 height={32}
             />

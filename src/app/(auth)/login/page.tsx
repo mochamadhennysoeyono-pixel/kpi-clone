@@ -26,7 +26,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 export default function LoginPage() {
   const { currentUser, isLoading, userRole } = useAuth();
   const router = useRouter();
-  const { theme } = useTheme();
   const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
   const isMobile = useIsMobile();
 
@@ -73,7 +72,7 @@ export default function LoginPage() {
            </div>
           <div className="flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background">
               <RefreshCw className="h-4 w-4 animate-spin-slow" />
-              <span>Performa Dalam Genggaman</span>
+              <span>HRIS Enterprise Solution</span>
           </div>
         </div>
       </div>
@@ -108,18 +107,13 @@ export default function LoginPage() {
     );
   }
 
-  const logoUrl = theme === 'dark' 
-    ? "https://cdn.scalev.id/uploads/1761479088/xFJINSeSDNexO-6P4yJiUw/1761479088448-k-(22).webp"
-    : "https://cdn.scalev.id/uploads/1761479058/gCopUyafm3sdQ-bUDtHQaw/1761479058364-k-(21).webp";
-
-
   return (
     <div className="flex items-center justify-center min-h-screen bg-background/50">
       <Card className="mx-auto max-w-sm w-full shadow-2xl rounded-2xl">
         <CardHeader className="space-y-4 p-6">
           <div className="flex items-center justify-center">
             <Image
-              src={logoUrl}
+              src="/logo.png" // MOD: Use static logo
               alt="Logo"
               width={240}
               height={64}
@@ -130,10 +124,10 @@ export default function LoginPage() {
 
         <CardContent className="p-6 pt-0">
             <div className="text-center mb-6 mt-4">
-                <p className="text-xl font-bold">Selamat datang!</p>
+                <p className="text-xl font-bold">Selamat datang di Perfom</p>
                 <p className="text-sm text-muted-foreground">
                     {loginMethod === "email"
-                    ? "Silakan masuk dengan email atau akun Google Anda."
+                    ? "Masuk ke Perfom, HRIS Enterprise Solution Anda."
                     : "Masukkan nomor handphone untuk menerima kode verifikasi."}
                 </p>
             </div>

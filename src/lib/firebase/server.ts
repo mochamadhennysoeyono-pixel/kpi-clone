@@ -1,13 +1,14 @@
 
 // src/lib/firebase/server.ts
 import * as admin from 'firebase-admin';
+import { Firestore } from '@google-cloud/firestore';
 
 /**
  * @fileOverview Inisialisasi Firebase Admin SDK (Sisi Server).
  * Disinkronkan dengan variabel lingkungan FIREBASE_ dari Dashboard App Hosting.
  */
 
-const projectId = process.env.FIREBASE_PROJECT_ID || process.env.PROJECT_ID || "kpi-dev-vjyoo";
+const projectId = process.env.FIREBASE_PROJECT_ID || process.env.PROJECT_ID || "studio-2326395113-859ef";
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || process.env.CLIENT_EMAIL;
 let privateKey = process.env.FIREBASE_PRIVATE_KEY || process.env.PRIVATE_KEY;
 
@@ -45,6 +46,12 @@ if (!admin.apps.length) {
   }
 }
 
-export const db = admin.firestore();
+// Inisialisasi Firestore dengan ID database spesifik
+const db = new Firestore({
+  projectId: projectId,
+  databaseId: 'performance', // <-- MENGGUNAKAN DATABASE 'PERFORMANCE'
+});
+
 export const auth = admin.auth();
 export const adminApp = admin;
+export { db }; // Ekspor instance Firestore yang sudah dikonfigurasi
