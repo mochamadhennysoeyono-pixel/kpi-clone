@@ -1,176 +1,114 @@
 // src/app/(auth)/login/page.tsx
 "use client";
 
-import { useEffect, useState, FormEvent, Fragment } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-} from "@/components/ui/card";
-import { Phone, Mail, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { RefreshCw, TrendingUp, ClipboardCheck, ArrowUpRight, Users, FileClock } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
-import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
-import Link from "next/link";
 import EmailLoginForm from "@/components/auth/EmailLoginForm";
-import PhoneLoginForm from "@/components/auth/PhoneLoginForm";
-import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
-import { useIsMobile } from "@/hooks/use-mobile";
+import RegisterForm from "@/components/auth/RegisterForm";
 
+// --- Mockup Component for the right side (FINAL VERSION) ---
+const DashboardMockup = () => {
+  const svgPattern = `data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg stroke='%23d1d5db' stroke-width='1'%3E%3Cpath d='M40 0v80M0 40h80'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E`;
+
+  return (
+    <div 
+      className="hidden lg:flex w-3/5 items-center justify-center bg-[#F8F9FA] p-12 relative overflow-hidden"
+      style={{ 
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23e2e8f0' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+      }}
+    >
+      <div className="w-full max-w-sm bg-[#0F172A] text-white rounded-2xl shadow-2xl p-6 space-y-6 z-10 transform transition-transform duration-500 hover:scale-105">
+        <p className="font-bold text-lg">Dashboard HRIS</p>
+        <div className="flex justify-between items-center"><p className="text-sm text-slate-400">Analitik Performa</p><p className="text-2xl font-bold flex items-center gap-2">8.5/10 <ArrowUpRight className="w-5 h-5 text-emerald-400" /></p></div>
+        <div className="flex justify-between items-center"><p className="text-sm text-slate-400">Tingkat Kehadiran</p><p className="text-2xl font-bold">98%</p></div>
+        <div className="flex justify-between items-center"><p className="text-sm text-slate-400">Kontrak Segera Berakhir</p><p className="text-2xl font-bold">3</p></div>
+      </div>
+      <div className="absolute top-24 right-12 bg-white/70 backdrop-blur-md p-4 rounded-xl border border-white/50 shadow-lg z-20 flex items-center gap-3 w-60 transform transition-transform duration-500 hover:scale-110 animate-fade-in-down"><TrendingUp className="w-7 h-7 text-[#2563EB]" /><div><p className="text-sm text-slate-600">Skor Kinerja</p><p className="text-xl font-bold text-[#0F172A]">92</p></div></div>
+      <div className="absolute bottom-24 left-12 bg-white/70 backdrop-blur-md p-4 rounded-xl border border-white/50 shadow-lg z-20 flex items-center gap-3 w-60 transform transition-transform duration-500 hover:scale-110 animate-fade-in-up"><ClipboardCheck className="w-7 h-7 text-[#2563EB]" /><div><p className="text-sm text-slate-600">Persetujuan</p><p className="text-xl font-bold text-[#0F172A]">4</p></div></div>
+    </div>
+  );
+};
 
 // --- Main Page ---
 export default function LoginPage() {
   const { currentUser, isLoading, userRole } = useAuth();
   const router = useRouter();
-  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
-  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState("login");
 
-  // Redirect setelah login
   useEffect(() => {
-    // Pastikan status login dan deteksi mobile sudah siap
-    if (!isLoading && currentUser && isMobile !== undefined) {
-      if (isMobile) {
-        // Tampilan Mobile
-        if (userRole === "superadmin") {
-          router.replace("/dashboard");
-        } else if (userRole === "manajemen") {
-          router.replace("/reports");
-        } else {
-          router.replace("/action-center"); // Default mobile home untuk user/atasan
-        }
-      } else {
-        // Tampilan Desktop
-        if (userRole === "superadmin") {
-          router.replace("/dashboard");
-        } else if (userRole === "manajemen") {
-          router.replace("/reports");
-        } else {
-          router.replace("/action-center"); // Default desktop home
-        }
-      }
+    if (!isLoading && currentUser) {
+      const targetPath = userRole === "manajemen" ? "/reports" : "/action-center";
+      router.replace(targetPath);
     }
-  }, [isLoading, currentUser, router, userRole, isMobile]);
+  }, [isLoading, currentUser, router, userRole]);
 
-  const LoadingScreen = () => (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-           {/* GIF Container with cropping */}
-           <div className="w-48 h-48 overflow-hidden rounded-full flex items-center justify-center">
-             <Image 
-                src="https://cdn.scalev.id/uploads/1761922925/t47Pkl_wNcAaWuCOexzPdQ/Video-Robot-Lari-dan-Melambai-unscreen.gif"
-                alt="Loading..."
-                width={341} // Original GIF width (16:9 ratio for 192 height)
-                height={192} // Let the height dictate the scale
-                priority
-                unoptimized
-                className="w-auto h-full max-w-none"
-            />
-           </div>
-          <div className="flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background">
-              <RefreshCw className="h-4 w-4 animate-spin-slow" />
-              <span>HRIS Enterprise Solution</span>
-          </div>
+  if (isLoading || (!isLoading && currentUser)) {
+    const message = currentUser ? "Berhasil masuk, mengarahkan..." : "Memuat Sesi...";
+     return (
+        <div className="flex h-screen items-center justify-center bg-white">
+            <div className="flex flex-col items-center gap-4">
+                <Image src="/logo.png" alt="Perfom Logo" width={120} height={32} />
+                <div className="flex items-center gap-2 font-medium text-slate-500">
+                    <RefreshCw className="h-4 w-4 animate-spin-slow" />
+                    <span>{message}</span>
+                </div>
+            </div>
         </div>
-      </div>
-  );
-  
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
-  if (currentUser) {
-    return (
-       <div className="flex h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-           {/* GIF Container with cropping */}
-           <div className="w-48 h-48 overflow-hidden rounded-full flex items-center justify-center">
-             <Image 
-                src="https://cdn.scalev.id/uploads/1761922925/t47Pkl_wNcAaWuCOexzPdQ/Video-Robot-Lari-dan-Melambai-unscreen.gif"
-                alt="Loading..."
-                width={341} // Original GIF width (16:9 ratio for 192 height)
-                height={192} // Let the height dictate the scale
-                priority
-                unoptimized
-                className="w-auto h-full max-w-none"
-            />
-           </div>
-          <div className="flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background">
-              <RefreshCw className="h-4 w-4 animate-spin-slow" />
-              <span>Berhasil masuk, mengarahkan...</span>
-          </div>
-        </div>
-      </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background/50">
-      <Card className="mx-auto max-w-sm w-full shadow-2xl rounded-2xl">
-        <CardHeader className="space-y-4 p-6">
-          <div className="flex items-center justify-center">
-            <Image
-              src="/logo.png" // MOD: Use static logo
-              alt="Logo"
-              width={240}
-              height={64}
-              priority
-            />
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-6 pt-0">
-            <div className="text-center mb-6 mt-4">
-                <p className="text-xl font-bold">Selamat datang di Perfom</p>
-                <p className="text-sm text-muted-foreground">
-                    {loginMethod === "email"
-                    ? "Masuk ke Perfom, HRIS Enterprise Solution Anda."
-                    : "Masukkan nomor handphone untuk menerima kode verifikasi."}
-                </p>
+    <div className="min-h-screen w-full bg-[#F0F2F5] flex items-center justify-center p-4 lg:p-8">
+      <div className="w-full max-w-6xl flex bg-white rounded-2xl shadow-2xl overflow-hidden">
+        {/* Left Side: Form */}
+        <div className="w-full lg:w-2/5 p-8 md:p-12 flex flex-col justify-center">
+          <div className="w-full">
+            
+            <div className="mb-8 flex justify-center">
+              <Image src="/logo.png" alt="Perfom Logo" width={180} height={48} />
+            </div>
+            
+            <div className="flex justify-center gap-1 mb-8 bg-slate-200/60 p-1 rounded-full">
+                <Button
+                    onClick={() => setActiveTab('login')}
+                    variant="ghost"
+                    className={cn(
+                        "w-full rounded-full text-sm font-semibold transition-all duration-300 h-9",
+                        activeTab === 'login' 
+                            ? "bg-[#0F172A] text-white shadow-md"
+                            : "bg-transparent text-slate-500 hover:bg-slate-300/50"
+                    )}
+                >
+                    Masuk Akun
+                </Button>
+                <Button
+                    onClick={() => setActiveTab('register')}
+                    variant="ghost"
+                    className={cn(
+                        "w-full rounded-full text-sm font-semibold transition-all duration-300 h-9",
+                        activeTab === 'register' 
+                            ? "bg-[#2563EB] text-white shadow-md"
+                            : "bg-transparent text-slate-500 hover:bg-slate-300/50"
+                    )}
+                >
+                    Daftar Perusahaan
+                </Button>
             </div>
 
-          {loginMethod === "email" ? (
-            <Fragment>
-              <EmailLoginForm />
-
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Atau lanjutkan dengan
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <GoogleLoginButton />
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setLoginMethod("phone")}
-                >
-                  <Phone className="mr-2 h-4 w-4" /> Masuk dengan No. Handphone
-                </Button>
-              </div>
-            </Fragment>
-          ) : (
-            <PhoneLoginForm onBackToEmail={() => setLoginMethod("email")} />
-          )}
-
-          <Separator className="my-6" />
-          <div className="mt-4 text-center text-sm">
-            Perusahaan atau leader baru?{" "}
-            <Link href="/register" className="underline font-semibold">
-              Daftar di sini
-            </Link>
+            <div className="animate-fade-in-up">
+                {activeTab === 'login' ? <EmailLoginForm /> : <RegisterForm />}
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Right Side: Mockup */}
+        <DashboardMockup />
+      </div>
     </div>
   );
 }
