@@ -1,0 +1,524 @@
+
+// src/components/master-data/employees/employee-form-sheet.tsx
+"use client";
+
+import { useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+  SheetClose,
+} from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import type { Employee, LoginStatus, Company } from '@/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useMasterData } from '@/contexts/master-data-context';
+import { useAuth } from '@/contexts/auth-context';
+
+const employeeSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Nama harus diisi"),
+  email: z.string().email("Format email tidak valid"),
+  phone: z.string().optional(),
+  company: z.string().optional(),
+  position: z.string().optional(),
+  department: z.string().optional(),
+  level: z.enum(['Staff', 'Supervisor', 'Manager', 'Direktur']).optional(),
+  reportsTo: z.string().optional().nullable(),
+  joinDate: z.string().optional(),
+  status: z.enum(['Aktif', 'Tidak Aktif']),
+  role: z.enum(['superadmin', 'manajemen', 'user']),
+});
+
+type EmployeeFormValues = z.infer<typeof employeeSchema>;
+
+interface EmployeeFormSheetProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  employee?: Employee;
+  onSave: (id: string, data: Omit<Employee, 'id' | 'loginStatus' | 'password'>) => void;
+  onAdd: (data: Omit<Employee, 'id' | 'loginStatus'>) => void;
+  quotaInfo: { 
+    userLimitReached: boolean; 
+    managementLimitReached: boolean; 
+    message: string;
+    limits: { user: number; mgmt: number };
+    currentUsage: { user: number; mgmt: number };
+  } | null;
+}
+
+export function EmployeeFormSheet({ 
+  isOpen, 
+  onOpenChange, 
+  employee, 
+  onSave,
+  onAdd,
+  quotaInfo,
+}: EmployeeFormSheetProps) {
+  const { companies, departments, positions, employees } = useMasterData();
+  const { currentUser, userRole } = useAuth();
+  
+  const form = useForm<EmployeeFormValues>({
+    resolver: zodResolver(employeeSchema),
+    defaultValues: {
+      id: '',
+      name: '',
+      email: '',
+      phone: '',
+      company: '',
+      position: '',
+      department: '',
+      level: 'Staff',
+      reportsTo: '',
+      joinDate: '',
+      status: 'Aktif',
+      role: 'user',
+    },
+  });
+
+  const companyForForm = form.watch('company');
+  const departmentForForm = form.watch('department');
+  const levelForForm = form.watch('level');
+  const roleForForm = form.watch('role');
+  
+  const isSuperadminForm = roleForForm === 'superadmin';
+
+  const userCompany = useMemo(() => {
+    return companies.find(c => c.name === currentUser?.company);
+  }, [companies, currentUser]);
+  
+  const isHoldingAdmin = useMemo(() => userRole === 'manajemen' && !!userCompany?.isHolding, [userRole, userCompany]);
+
+  const manageableCompanies = useMemo(() => {
+    if (userRole === 'superadmin') {
+      return companies.filter(c => c.status === 'Aktif');
+    }
+    if (!userCompany) return [];
+    
+    if (userCompany.isHolding) {
+      const getChildCompanies = (parentId: string): Company[] => {
+        const children = companies.filter(c => c.parentId === parentId);
+        return [...children, ...children.flatMap(c => getChildCompanies(c.id))];
+      };
+      return [userCompany, ...getChildCompanies(userCompany.id)].filter(c => c.status === 'Aktif');
+    }
+    return [userCompany].filter(c => c.status === 'Aktif');
+  }, [userRole, companies, userCompany]);
+  
+  const canChangeCompany = useMemo(() => {
+    if (userRole === 'superadmin') return true;
+    if (userRole === 'manajemen' && isHoldingAdmin) return true;
+    return false;
+  }, [userRole, isHoldingAdmin]);
+
+
+  const canEditRole = useMemo(() => {
+    if (userRole === 'superadmin') return true;
+    if (userRole === 'manajemen') return true;
+    return false;
+  }, [userRole]);
+
+
+  const departmentOptions = useMemo(() => {
+    if (!companyForForm) return [];
+    return departments.filter(d => d.company === companyForForm);
+  }, [departments, companyForForm]);
+
+  const positionOptions = useMemo(() => {
+    if (!departmentForForm) return [];
+    return positions.filter(p => p.company === companyForForm && p.department === departmentForForm);
+  }, [positions, companyForForm, departmentForForm]);
+
+  const supervisorOptions = useMemo(() => {
+    if (!companyForForm) return [];
+    
+    let superiorLevels: Array<Employee['level']> = [];
+    if (levelForForm === 'Staff') {
+        superiorLevels = ['Supervisor', 'Manager', 'Direktur'];
+    } else if (levelForForm === 'Supervisor') {
+        superiorLevels = ['Manager', 'Direktur'];
+    } else if (levelForForm === 'Manager') {
+        superiorLevels = ['Direktur'];
+    }
+    
+    if (superiorLevels.length === 0) return [];
+
+    return employees.filter(e => {
+        const isSameCompany = e.company === companyForForm;
+        const isSuperior = superiorLevels.includes(e.level);
+        const isActive = e.status === 'Aktif';
+        const isNotSelf = e.id !== employee?.id;
+
+        if (levelForForm === 'Manager') {
+            return isSameCompany && isSuperior && isActive && isNotSelf;
+        } else {
+            const isSameDepartment = e.department === departmentForForm;
+            return isSameCompany && isSameDepartment && isSuperior && isActive && isNotSelf;
+        }
+    });
+  }, [employees, companyForForm, departmentForForm, levelForForm, employee]);
+  
+  useEffect(() => {
+    const defaultCompany = (userRole !== 'superadmin' && currentUser) ? currentUser?.company || '' : '';
+    const isAddingFromAdminPage = !employee && typeof window !== 'undefined' && window.location.pathname.includes('admin-management');
+
+    if (isOpen) {
+      if (employee) {
+        form.reset({
+          ...employee,
+          phone: employee.phone || '',
+        });
+      } else {
+        form.reset({
+          id: undefined,
+          name: '',
+          email: '',
+          phone: '',
+          company: isAddingFromAdminPage ? 'Internal' : defaultCompany,
+          position: isAddingFromAdminPage ? 'Superadmin' : '',
+          department: isAddingFromAdminPage ? 'System' : '',
+          level: isAddingFromAdminPage ? 'Direktur' : 'Staff',
+          reportsTo: '',
+          joinDate: new Date().toISOString().split('T')[0],
+          status: 'Aktif',
+          role: isAddingFromAdminPage ? 'superadmin' : 'user',
+        });
+      }
+    }
+  }, [employee, form, isOpen, userRole, currentUser]);
+
+  const handleCompanyChange = (companyName: string) => {
+    form.setValue('company', companyName);
+    form.setValue('department', '');
+    form.setValue('position', '');
+    form.setValue('reportsTo', '');
+  }
+  
+  const handleDepartmentChange = (departmentName: string) => {
+    form.setValue('department', departmentName);
+    form.setValue('position', '');
+    form.setValue('reportsTo', '');
+  }
+
+
+  const onSubmit = (data: EmployeeFormValues) => {
+    const dataToSave = { 
+        ...data,
+        reportsTo: data.reportsTo || '',
+    } as Omit<Employee, 'id' | 'loginStatus'> & { id?: string };
+    
+    if (data.id) {
+      onSave(data.id, dataToSave);
+    } else {
+       delete (dataToSave as Partial<EmployeeFormValues>).id;
+       onAdd(dataToSave);
+    }
+    onOpenChange(false);
+  };
+  
+  const isEditingExistingUser = !!employee;
+  const isUneditable = employee?.role === 'superadmin' && employee?.id !== currentUser?.id;
+  const isCompanyDropdownDisabled = !canChangeCompany;
+
+  // Quota enforcement logic inside the form
+  const isRoleUserDisabled = !isEditingExistingUser && quotaInfo?.userLimitReached;
+  const isRoleMgmtDisabled = !isEditingExistingUser && quotaInfo?.managementLimitReached && employee?.role !== 'manajemen';
+
+  return (
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent className="sm:max-w-lg w-full flex flex-col h-full">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+            <SheetHeader>
+              <SheetTitle>{employee ? 'Ubah Data Pengguna' : (isSuperadminForm ? 'Tambah Superadmin Baru' : 'Tambah Pengguna Baru')}</SheetTitle>
+              <SheetDescription>
+                {employee ? 'Perbarui detail pengguna di bawah ini.' : 'Isi formulir di bawah ini untuk menambahkan pengguna baru.'}
+              </SheetDescription>
+            </SheetHeader>
+            <ScrollArea className="flex-1 py-4 px-1 -mx-1">
+              <div className="space-y-4 px-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nama Lengkap</FormLabel>
+                      <FormControl>
+                        <Input placeholder="cth., Budi Santoso" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="email" 
+                              placeholder="cth., budi@contoh.com" 
+                              {...field} 
+                              disabled={!!employee}
+                              className={!!employee ? "bg-muted/50 cursor-not-allowed" : ""}
+                            />
+                          </FormControl>
+                          {!!employee && (
+                            <FormDescription className="text-xs">
+                              Email tidak dapat diubah.
+                            </FormDescription>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nomor Telepon</FormLabel>
+                          <FormControl>
+                            <Input placeholder="cth., 08123456789" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </div>
+                
+                {!isSuperadminForm && (
+                <>
+                 <FormField
+                  control={form.control}
+                  name="company"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Perusahaan</FormLabel>
+                       <Select 
+                          onValueChange={handleCompanyChange} 
+                          value={field.value} 
+                          disabled={isCompanyDropdownDisabled && !!employee}
+                       >
+                          <FormControl>
+                            <SelectTrigger className={(isCompanyDropdownDisabled && !!employee) ? "bg-muted/50 cursor-not-allowed" : ""}>
+                              <SelectValue placeholder="Pilih perusahaan" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {manageableCompanies.map(c => (
+                                <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="department"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Departemen</FormLabel>
+                          <Select 
+                            onValueChange={(value) => handleDepartmentChange(value)}
+                            value={field.value}
+                            disabled={!companyForForm}
+                          >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Pilih departemen" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {departmentOptions.map(d => (
+                                    <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="position"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Jabatan</FormLabel>
+                           <Select 
+                              onValueChange={field.onChange} 
+                              value={field.value}
+                              disabled={!departmentForForm}
+                           >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Pilih jabatan" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {positionOptions.map(p => (
+                                    <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="level"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Level Jabatan</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih level jabatan" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Staff">Staff</SelectItem>
+                          <SelectItem value="Supervisor">Supervisor</SelectItem>
+                          <SelectItem value="Manager">Manager</SelectItem>
+                          <SelectItem value="Direktur">Direktur</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {(levelForForm === 'Staff' || levelForForm === 'Supervisor' || levelForForm === 'Manager') && (
+                     <FormField
+                        control={form.control}
+                        name="reportsTo"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Melapor Kepada (Atasan)</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={supervisorOptions.length === 0}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={supervisorOptions.length > 0 ? "Pilih atasan" : "Tidak ada atasan tersedia"} />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {supervisorOptions.map(sup => (
+                                        <SelectItem key={sup.id} value={sup.id}>{sup.name} ({sup.level})</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
+                 <FormField
+                  control={form.control}
+                  name="joinDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tanggal Bergabung</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                </>
+                )}
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status Akun</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Aktif">Aktif</SelectItem>
+                              <SelectItem value="Tidak Aktif">Tidak Aktif</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                      <FormItem>
+                        <FormLabel>Peran</FormLabel>
+                        {(isUneditable) ? (
+                           <FormControl>
+                              <Input value={(employee?.role === 'superadmin' ? 'Super Admin' : employee?.role === 'manajemen' ? 'Manajemen' : 'User')} disabled />
+                           </FormControl>
+                        ) : (
+                           <FormField
+                            control={form.control}
+                            name="role"
+                            render={({ field }) => (
+                              <Select onValueChange={field.onChange} value={field.value} disabled={!canEditRole}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Pilih peran" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="user" disabled={isRoleUserDisabled}>
+                                      Staff {isRoleUserDisabled && '(Kuota Penuh)'}
+                                  </SelectItem>
+                                  <SelectItem value="manajemen" disabled={isRoleMgmtDisabled}>
+                                      Manajemen {isRoleMgmtDisabled && '(Kuota Penuh)'}
+                                  </SelectItem>
+                                  {userRole === 'superadmin' && <SelectItem value="superadmin">Super Admin</SelectItem>}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                        )}
+                         <FormMessage />
+                      </FormItem>
+                    
+                </div>
+              </div>
+            </ScrollArea>
+            <SheetFooter className="mt-auto pt-6">
+              <SheetClose asChild>
+                <Button type="button" variant="outline">
+                  Batal
+                </Button>
+              </SheetClose>
+              <Button type="submit" disabled={isUneditable}>Simpan</Button>
+            </SheetFooter>
+          </form>
+        </Form>
+      </SheetContent>
+    </Sheet>
+  );
+}

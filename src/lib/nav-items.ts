@@ -1,0 +1,381 @@
+// src/lib/nav-items.ts
+
+import React from 'react';
+import type { UserRole, Company, SubscriptionPlan, Employee, OKR } from "@/types";
+import { 
+    GraduationCap, 
+    BookUser, 
+    AreaChart, 
+    FileQuestion, 
+    Library, 
+    Files, 
+    FileText, 
+    LayoutGrid, 
+    Target, 
+    Wand2, 
+    Calendar, 
+    User, 
+    Users2, 
+    Workflow, 
+    BrainCircuit, 
+    KeyRound, 
+    ListChecks, 
+    Image as ImageIcon, 
+    FilePieChart, 
+    Settings2,
+    Home,
+    Building,
+    Network,
+    Briefcase,
+    Users,
+    GitFork,
+    Database,
+    FolderKanban,
+    BookCopy,
+    ClipboardPen,
+    Settings,
+    FilePlus2,
+    UserCog,
+    GitMerge,
+    ShieldCheck,
+    ClipboardCheck,
+    Crown,
+    LayoutDashboard,
+    SlidersHorizontal,
+    ShoppingCart,
+    BookOpenCheck,
+    History
+} from 'lucide-react';
+
+export const iconMap: { [key: string]: React.ElementType } = {
+    '/dashboard': LayoutDashboard,
+    '/my-performance': UserCog,
+    '/okr': Target,
+    '/okr/progress': ListChecks,
+    '/okr/reports': AreaChart,
+    '/reports': FilePieChart,
+    '/cycle-reports': AreaChart,
+    '/appraisal-dashboard': AreaChart,
+    '/master-data/company': Building,
+    '/master-data/departments': Network,
+    '/master-data/positions': Briefcase,
+    '/master-data/employees': Users,
+    '/master-data/hierarchy': GitFork,
+    '/master-data/kpi-categories': FolderKanban,
+    '/master-data/kbo-categories': BookCopy,
+    '/master-data/kbo-competencies': BrainCircuit,
+    '/master-data/kpi-data': Database,
+    '/master-data/company-objectives': Target,
+    '/media-library': ImageIcon,
+    '/ai/knowledge-base': BrainCircuit,
+    'tools': Wand2,
+    '/kpi-wizard': Wand2,
+    '/appraisal-settings': ClipboardPen,
+    '/kbo-appraisal': AreaChart,
+    '/setup-kpi': Settings,
+    '/input-achievement': FilePlus2,
+    'manajemen-sistem': SlidersHorizontal,
+    'manajemen-fitur': KeyRound,
+    'analisis-laporan': FilePieChart,
+    'pusat-data': Database,
+    'manajemen-kpi': ClipboardCheck,
+    'manajemen-kbo': ClipboardPen,
+    'pusat-holding': GitMerge,
+    'okr-management': Target,
+    'manajemen-pembelajaran': GraduationCap,
+    'lms-portal': GraduationCap,
+    'lms-user': BookUser,
+    '/lms/admin/dashboard': GraduationCap,
+    '/lms/admin/courses': BookOpenCheck,
+    '/lms/admin/programs': Workflow,
+    '/lms/admin/global-catalog': Library,
+    '/lms/admin/quizzes': FileQuestion,
+    '/lms/admin/reports': AreaChart,
+    '/lms/user/my-learnings': BookUser,
+    '/admin-management': ShieldCheck,
+    '/activation-management': ClipboardCheck,
+    '/subscription-management': Crown,
+    '/subscription-logs': History,
+    '/beranda': Home,
+    '/action-center': Home,
+    '/subscription-status': Crown,
+    '/subscription-plans': ShoppingCart,
+    '/collab-space': LayoutGrid,
+    '/collab-space/management': Settings2,
+    '/collab-space/reports': FilePieChart,
+    '/document-management/templates': FileText,
+    '/document-management/contracts': Files,
+    'manajemen-dokumen': Files,
+    '/holding-dashboard': AreaChart,
+    '/holding-kpi-setup': Settings,
+    '/holding-group-management': Users,
+    '/holding-management': GitMerge,
+    default: FolderKanban,
+};
+
+export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCompany: Company | null | undefined, subscriptionPlan: SubscriptionPlan | null | undefined, isMobile: boolean, currentUser?: Employee | null, okrs?: OKR[]) {
+    if (!userRole) return [];
+
+    const isOkrParticipant = (currentUser && okrs) ? okrs.some(okr =>
+        okr.status === 'Active' && (
+            okr.ownerId === currentUser.id ||
+            okr.keyResults.some(kr =>
+                (kr.ownershipModel === 'single_owner' && (kr.ownerId || okr.ownerId) === currentUser.id) ||
+                (kr.ownershipModel === 'delegated' && (kr.milestones?.some(m => m.ownerId === currentUser.id) || kr.checklist?.some(c => c.ownerId === currentUser.id))) ||
+                (kr.ownershipModel === 'split_ownership' && kr.contributors?.some(c => c.ownerId === currentUser.id))
+            )
+        )
+    ) : false;
+
+    // --- Strict Capability Checks from Subscription Plan ---
+    const capabilities = {
+      isSuperAdmin: userRole === 'superadmin',
+      isCompanyAdmin: userRole === 'manajemen',
+      isDeptHead: hasSubordinates,
+      isRegularUser: userRole === 'user' && !hasSubordinates,
+      isManager: userRole === 'manajemen' || hasSubordinates,
+      
+      // Feature Flags from Plan
+      isHolding: userCompany?.isHolding === true && (subscriptionPlan?.features?.allowHolding !== false),
+      canBecomeHolding: subscriptionPlan?.features?.allowHolding === true,
+      
+      canAccessKpi: (subscriptionPlan?.features?.allowKpi !== false) || userRole === 'superadmin',
+      canAccessKbo: (subscriptionPlan?.features?.allowKbo !== false) || userRole === 'superadmin',
+      canAccessOkr: (subscriptionPlan?.features?.allowOkr === true) || userRole === 'superadmin',
+      canAccessLms: (subscriptionPlan?.features?.allowLms === true) || userRole === 'superadmin',
+      canAccessCollabSpace: (subscriptionPlan?.features?.allowCollabSpace === true) || userRole === 'superadmin',
+      canAccessAi: (subscriptionPlan?.features?.allowAiFeatures === true) || userRole === 'superadmin',
+      canAccessDocs: (subscriptionPlan?.features?.allowDocumentManagement === true) || userRole === 'superadmin',
+      canAccessReports: (subscriptionPlan?.features?.allowReporting !== false) || userRole === 'superadmin',
+      
+      hasAiKpiWizard: !!userCompany?.features?.hasAiKpiWizard && ((subscriptionPlan?.features?.allowAiFeatures === true) || userRole === 'superadmin'),
+      isOkrParticipant: isOkrParticipant && (subscriptionPlan?.features?.allowOkr === true),
+    };
+    
+    const allNavItems = [
+        // --- 1. BERANDA ---
+        { href: '/action-center', label: 'Beranda', show: !capabilities.isSuperAdmin && !capabilities.isCompanyAdmin, iconName: '/action-center' },
+        
+        // --- 2. SUPERADMIN CORE ---
+        { href: '/dashboard', label: 'Dashboard Admin', show: capabilities.isSuperAdmin, iconName: '/dashboard' },
+        {
+            label: 'Manajemen Sistem',
+            iconName: 'manajemen-sistem',
+            show: capabilities.isSuperAdmin,
+            subItems: [
+                { href: '/admin-management', label: 'Manajemen Admin', show: true, iconName: '/admin-management' },
+                { href: '/activation-management', label: 'Aktivasi Perusahaan', show: true, iconName: '/activation-management' },
+                { href: '/subscription-management', label: 'Manajemen Langganan', show: true, iconName: '/subscription-management' },
+                { href: '/subscription-logs', label: 'Pusat Log Langganan', show: true, iconName: '/subscription-logs' },
+                { href: '/group-management', label: 'Manajemen Holding', show: true, iconName: '/group-management' },
+                { href: '/feature-management', label: 'Manajemen Fitur', show: true, iconName: 'manajemen-fitur' },
+            ]
+        },
+
+        // --- 3. PUSAT DATA ---
+        { 
+            label: 'Pusat Data', 
+            iconName: 'pusat-data', 
+            show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin || capabilities.isDeptHead,
+            subItems: [
+                { href: '/master-data/company', label: 'Data Perusahaan', show: capabilities.isSuperAdmin, iconName: '/master-data/company' },
+                { href: '/master-data/company-objectives', label: 'Objective Perusahaan', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/master-data/company-objectives' },
+                { href: '/master-data/departments', label: 'Departemen', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/master-data/departments' },
+                { href: '/master-data/positions', label: 'Jabatan', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/master-data/positions' },
+                { href: '/master-data/employees', label: 'Data Karyawan', show: true, iconName: '/master-data/employees' },
+                { href: '/master-data/hierarchy', label: 'Struktur Organisasi', show: true, iconName: '/master-data/hierarchy' }, 
+                { href: '/media-library', label: 'Media Library', show: true, iconName: '/media-library' },
+            ] 
+        },
+
+        // --- 4. HOLDING ---
+        { 
+            label: 'Pusat Holding', 
+            iconName: 'pusat-holding', 
+            show: (capabilities.isCompanyAdmin && capabilities.isHolding) || capabilities.isSuperAdmin,
+            subItems: [
+                { href: '/holding-dashboard', label: 'Dasbor Agregat', show: true, iconName: '/holding-dashboard' },
+                { href: '/holding-kpi-setup', label: 'Pengaturan KPI Induk', show: true, iconName: '/holding-kpi-setup' },
+                { href: '/holding-group-management', label: 'Manajemen Grup', show: true, iconName: '/holding-group-management' },
+            ] 
+        },
+        { href: '/holding-management', label: 'Aktivasi Holding', show: capabilities.isCompanyAdmin && !capabilities.isHolding && capabilities.canBecomeHolding, iconName: '/holding-management' },
+
+        // --- 5. COLLABSPACE ---
+        { 
+            label: 'CollabSpace', 
+            iconName: '/collab-space', 
+            show: capabilities.canAccessCollabSpace,
+            subItems: [
+                { href: '/collab-space', label: 'Ruangan Saya', show: true, iconName: '/collab-space' },
+                { href: '/collab-space/management', label: 'Manajemen Ruangan', show: capabilities.isCompanyAdmin || capabilities.isSuperAdmin, iconName: '/collab-space/management' },
+                { href: '/collab-space/reports', label: 'Laporan Tugas', show: capabilities.isManager || capabilities.isSuperAdmin, iconName: '/collab-space/reports' },
+            ]
+        },
+
+        // --- 6. ANALISIS & LAPORAN ---
+        {
+            label: 'Analisis & Laporan',
+            iconName: 'analisis-laporan',
+            show: capabilities.canAccessReports && (capabilities.isDeptHead || capabilities.isCompanyAdmin || capabilities.isSuperAdmin),
+            subItems: [
+                 { href: '/reports', label: 'Laporan Kinerja Tim', show: capabilities.canAccessKpi, iconName: '/reports' },
+                 { href: '/cycle-reports', label: 'Laporan Siklus', show: capabilities.canAccessKpi, iconName: '/cycle-reports' },
+                 { href: '/appraisal-dashboard', label: 'Dasbor Appraisal', show: true, iconName: '/appraisal-dashboard' },
+                 { href: '/kbo-appraisal', label: 'Laporan Penilaian KBO', show: capabilities.canAccessKbo, iconName: '/kbo-appraisal' },
+            ]
+        },
+
+        // --- 7. MANAJEMEN KPI ---
+        {
+            label: 'Manajemen KPI',
+            iconName: 'manajemen-kpi',
+            show: capabilities.canAccessKpi,
+            subItems: [
+                { href: '/my-performance', label: 'Performa Saya', show: !capabilities.isSuperAdmin && !capabilities.isCompanyAdmin, iconName: '/my-performance' },
+                { href: '/input-achievement', label: 'Input Pencapaian', show: !capabilities.isSuperAdmin, iconName: '/input-achievement' },
+                { href: '/master-data/kpi-categories', label: 'Kategori KPI', show: capabilities.isCompanyAdmin || capabilities.isSuperAdmin, iconName: '/master-data/kpi-categories' },
+                { href: '/setup-kpi', label: 'Pengaturan KPI', show: capabilities.isCompanyAdmin || capabilities.isSuperAdmin, iconName: '/setup-kpi' },
+                { href: '/master-data/kpi-data', label: 'Data Pencapaian', show: capabilities.isCompanyAdmin || capabilities.isSuperAdmin, iconName: '/master-data/kpi-data' },
+            ]
+        },
+
+        // --- 8. MANAJEMEN KBO ---
+        {
+            label: 'Manajemen KBO',
+            iconName: 'manajemen-kbo',
+            show: capabilities.canAccessKbo && (capabilities.isCompanyAdmin || capabilities.isSuperAdmin),
+            subItems: [
+                { href: '/master-data/kbo-categories', label: 'Kategori KBO', show: true, iconName: '/master-data/kbo-categories' },
+                { href: '/master-data/kbo-competencies', label: 'Pustaka Kompetensi', show: true, iconName: '/master-data/kbo-competencies' },
+                { href: '/appraisal-settings', label: 'Pengaturan Appraisal', show: true, iconName: '/appraisal-settings' },
+            ]
+        },
+
+        // --- 9. OKR ---
+        {
+            label: 'OKR (Objectives)',
+            iconName: 'okr-management',
+            show: capabilities.canAccessOkr,
+            subItems: [
+                 { href: '/okr', label: 'Workspace OKR', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/okr' },
+                 { href: '/okr/reports', label: 'Laporan OKR', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/okr/reports' },
+                 { href: '/okr/progress', label: 'Progres Project', show: !capabilities.isSuperAdmin && !capabilities.isCompanyAdmin && capabilities.isOkrParticipant, iconName: '/okr/progress' },
+            ]
+        },
+
+        // --- 10. PEMBELAJARAN (LMS) ---
+        { 
+            label: 'LMS Portal', 
+            iconName: 'lms-user', 
+            show: !capabilities.isCompanyAdmin && !capabilities.isSuperAdmin && capabilities.canAccessLms,
+            subItems: [
+                { href: '/lms/user/my-learnings', label: 'Kursus Saya', show: true, iconName: '/lms/user/my-learnings' },
+            ]
+        },
+        { 
+            label: 'Manajemen Pembelajaran', 
+            iconName: 'manajemen-pembelajaran', 
+            show: capabilities.canAccessLms && (capabilities.isSuperAdmin || capabilities.isCompanyAdmin),
+            subItems: [
+                { href: '/lms/admin/dashboard', label: 'Dasbor Admin', show: true, iconName: '/lms/admin/dashboard' },
+                { href: '/lms/admin/courses', label: 'Manajemen Kursus', show: true, iconName: '/lms/admin/courses' },
+                { href: '/lms/admin/programs', label: 'Program Pembelajaran', show: capabilities.isSuperAdmin, iconName: '/lms/admin/programs' },
+                { href: '/lms/admin/global-catalog', label: 'Katalog Global', show: true, iconName: '/lms/admin/global-catalog' },
+                { href: '/lms/admin/quizzes', label: 'Bank Soal', show: true, iconName: '/lms/admin/quizzes' },
+                { href: '/lms/admin/reports', label: 'Laporan Belajar', show: true, iconName: '/lms/admin/reports' },
+            ]
+        },
+
+        // --- 11. DOKUMEN ---
+        {
+            label: 'Manajemen Dokumen',
+            iconName: 'manajemen-dokumen',
+            show: capabilities.canAccessDocs,
+            subItems: [
+                { href: '/document-management/templates', label: 'Template Dokumen', show: true, iconName: '/document-management/templates' },
+                { href: '/document-management/contracts', label: 'Kontrak Kerja', show: true, iconName: '/document-management/contracts' },
+            ]
+        },
+
+        // --- 12. TOOLS AI ---
+        {
+            label: 'Tools AI',
+            iconName: 'tools',
+            show: capabilities.canAccessAi && (capabilities.isSuperAdmin || capabilities.hasAiKpiWizard),
+            subItems: [
+                { href: '/kpi-wizard', label: 'AI KPI Wizard', show: true, iconName: '/kpi-wizard' },
+                { href: '/ai/knowledge-base', label: 'Knowledge Base', show: capabilities.isSuperAdmin, iconName: '/ai/knowledge-base' },
+            ]
+        },
+        
+        { href: '/subscription-status', label: 'Status Paket', show: capabilities.isCompanyAdmin, iconName: '/subscription-status' },
+    ];
+
+    const visibleItems = allNavItems
+        .filter(item => item.show)
+        .map(item => {
+            if (item.subItems) {
+                const visibleSubItems = item.subItems.filter(sub => sub.show);
+                if (visibleSubItems.length === 0) return null;
+                return { ...item, subItems: visibleSubItems };
+            }
+            return item;
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
+
+    if (isMobile) {
+        return visibleItems;
+    }
+    
+    const roleForSorting = hasSubordinates ? 'department-head' : userRole;
+    const sortOrder: { [key: string]: string[] } = {
+      superadmin: [
+        '/dashboard', 
+        'Manajemen Sistem', 
+        'Pusat Data', 
+        'Pusat Holding',
+        'CollabSpace',
+        'OKR (Objectives)',
+        'Analisis & Laporan', 
+        'Manajemen KPI', 
+        'Manajemen KBO', 
+        'Manajemen Pembelajaran', 
+        'Manajemen Dokumen', 
+        'Tools AI'
+      ],
+      manajemen: [
+        'Pusat Data', 
+        'Pusat Holding', 
+        '/holding-management', 
+        'CollabSpace', 
+        'Analisis & Laporan', 
+        'Manajemen KPI', 
+        'Manajemen KBO', 
+        'OKR (Objectives)', 
+        'Manajemen Pembelajaran', 
+        'Manajemen Dokumen',
+        '/subscription-status'
+      ],
+      "department-head": [
+        '/action-center', 'Pusat Data', 'CollabSpace', 'Analisis & Laporan', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal'
+      ],
+      user: [
+        '/action-center', 'CollabSpace', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal'
+      ]
+    };
+    
+    const currentSortOrder = sortOrder[roleForSorting as keyof typeof sortOrder] || sortOrder.user;
+
+    return [...visibleItems].sort((a,b) => {
+       const aKey = a.href || a.label;
+       const bKey = b.href || b.label;
+       const indexA = currentSortOrder.indexOf(aKey);
+       const indexB = currentSortOrder.indexOf(bKey);
+       
+       const finalIndexA = indexA === -1 ? 999 : indexA;
+       const finalIndexB = indexB === -1 ? 999 : indexB;
+       
+       return finalIndexA - finalIndexB;
+   });
+}

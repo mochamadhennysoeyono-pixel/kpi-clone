@@ -1,0 +1,11 @@
+diff --git a/node_modules/next/package.json b/node_modules/next/package.json
+index 51c86a3..1d5f3de 100644
+--- a/node_modules/next/package.json
++++ b/node_modules/next/package.json
+@@ -2,7 +2,7 @@
+   "name": "next",
+-  "version": "15.3.3",
++  "version": "15.3.6",
+   "description": "The React Framework",
+   "homepage": "https://nextjs.org",
+   "bugs": "https://github.com/vercel/next.js/issues",

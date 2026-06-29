@@ -1,0 +1,89 @@
+
+rules_version = '2';
+
+// --- ARSITEKTUR ENFORCEMENT LAYER ---
+// Aturan Firestore ini adalah LAPISAN KE-4 (DATA ACCESS LAYER) dan lapisan pengaman terakhir.
+// Aturan ini bekerja dalam arsitektur 4 lapis:
+// 1. AUTHENTICATION (Firebase Auth): Memvalidasi identitas & peran via Custom Claims.
+// 2. REQUEST GATEWAY (Cloud Function): Pintu masuk tunggal untuk semua aksi mutasi (create, update, delete).
+// 3. ENFORCEMENT ENGINE (Core Logic di Function): Menjalankan validasi berurutan:
+//    a. Resolve Module State (berdasarkan Kalender)
+//    b. Hard Lock Check (absolut, tidak bisa di-override)
+//    c. Role Permission Check
+//    d. Scope Validation
+// 4. FIRESTORE RULES (Lapisan ini): Memberikan pengaman akhir, terutama untuk aturan read dan memastikan write hanya dari backend.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // --- FUNGSI BANTU (HELPERS) ---
+    function getUserData() {
+      return get(/databases/$(database)/documents/employees/$(request.auth.uid)).data;
+    }
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperadmin() {
+      return isSignedIn() && getUserData().role == 'superadmin';
+    }
+
+    function isManajemen() {
+      return isSignedIn() && getUserData().role == 'manajemen';
+    }
+    
+    function isMemberOf(companyName) {
+      return isSignedIn() && getUserData().company == companyName;
+    }
+    
+    function isOwnRecord(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // --- ATURAN GLOBAL (GLOBAL RULES) ---
+    
+    // Superadmin dapat melakukan operasi tulis apa pun.
+    match /{path=**} {
+        allow write: if isSuperadmin();
+    }
+    
+    // --- ATURAN BACA SPESIFIK (SPECIFIC READ RULES) ---
+
+    // REGISTRASI & AKTIVASI (UNAUTHENTICATED)
+    match /companies/{companyId} {
+        allow create: if !isSignedIn();
+        allow read: if isSignedIn(); // Semua user terautentikasi bisa baca data perusahaan
+    }
+    
+    match /employees/{employeeId} {
+      allow list: if !isSignedIn(); // Cek email saat daftar
+      allow create: if !isSignedIn(); // Buat user saat daftar
+
+      // Aturan BACA untuk data karyawan
+      allow read: if isSuperadmin() || (isSignedIn() && isMemberOf(resource.data.company));
+      
+      // Aturan UPDATE hanya untuk user sendiri atau superadmin.
+      allow update: if isOwnRecord(employeeId) || isSuperadmin();
+      
+      // Aturan DELETE hanya untuk superadmin
+      allow delete: if isSuperadmin();
+    }
+    
+    // IZINKAN SEMUA PENGGUNA TERAUTENTIKASI UNTUK MEMBACA DATA DALAM PERUSAHAAN MEREKA
+    match /{collection}/{docId}
+      where collection in ['departments', 'positions', 'kpiCategories', 'kboCategories', 'kboSetups', 'kpiSetups', 'appraisalSetups', 'documentTemplates', 'notificationTemplates', 'kpiData', 'okrs', 'targetOverrides', 'kboAssessments', 'appraisalTasks', 'subscriptionPlans', 'lmsCourses', 'lmsQuizzes', 'knowledgeBase'] {
+      allow read: if isSignedIn();
+    }
+
+    // Aturan baca untuk progres LMS, hanya user sendiri atau admin
+    match /lmsEnrollments/{enrollmentId} {
+        allow read: if isOwnRecord(resource.data.employeeId) || isSuperadmin() || (isManajemen() && isMemberOf(get(/databases/$(database)/documents/employees/$(resource.data.employeeId)).data.company));
+    }
+    
+    // Aturan baca untuk memo, hanya pengirim dan penerima
+    match /memos/{memoId} {
+        allow read: if isSignedIn() && (resource.data.senderId == request.auth.uid || resource.data.recipientId == request.auth.uid);
+    }
+  }
+}

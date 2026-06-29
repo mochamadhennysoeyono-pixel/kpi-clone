@@ -1,0 +1,25 @@
+
+{
+  "name": "KIPIAI.ID Performance Manager",
+  "short_name": "KIPIAI",
+  "description": "Manajemen KPI dan Performa Karyawan Berbasis AI",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3F51B5",
+  "icons": [
+    {
+      "src": "https://cdn.scalev.id/business_files/yVvqA_tsSzvt5_Yf2lNStxvP/1757745293765-k%20(8).webp",
+      "sizes": "192x192",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn.scalev.id/business_files/yVvqA_tsSzvt5_Yf2lNStxvP/1757745293765-k%20(8).webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "maskable"
+    }
+  ],
+  "gcm_sender_id": "103953800507"
+}

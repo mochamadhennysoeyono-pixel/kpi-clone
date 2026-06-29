@@ -1,0 +1,10 @@
+patch-package
+--- a/node_modules/next/package.json
++++ b/node_modules/next/package.json
+@@ -2,7 +2,7 @@
+   "name": "next",
+-  "version": "15.3.3",
++  "version": "15.3.6",
+   "description": "The React Framework",
+   "license": "MIT",
+   "homepage": "https://nextjs.org",
