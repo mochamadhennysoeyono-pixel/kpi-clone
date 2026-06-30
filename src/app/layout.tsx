@@ -1,14 +1,15 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
-import { Inter } from "next/font/google"; // MOD: Import Inter
+import { Plus_Jakarta_Sans } from "next/font/google"; // MOD: Import only Plus Jakarta Sans
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { PushNotificationManager } from "@/components/layout/push-notification-manager";
+import { cn } from "@/lib/utils";
 
-// MOD: Configure Inter font
-const inter = Inter({
+// MOD: Configure Plus Jakarta Sans as the single main font
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
 });
@@ -29,8 +30,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      {/* MOD: Apply the Inter font class to the body */}
-      <body className={inter.className}>
+      {/* MOD: Apply the single font variable */}
+      <body className={cn("font-sans", jakarta.variable)}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

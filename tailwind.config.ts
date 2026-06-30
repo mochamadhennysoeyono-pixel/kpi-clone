@@ -18,8 +18,7 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-jost)", ...fontFamily.sans],
-        headline: ["var(--font-jost)", ...fontFamily.sans],
+        sans: ["var(--font-sans)", ...fontFamily.sans],
       },
       colors: {
         border: "hsl(var(--border))",

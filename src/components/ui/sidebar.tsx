@@ -110,6 +110,9 @@ function MotionNav() {
                     const isGroupActive = item.subItems ? item.subItems.some(sub => pathname.startsWith(sub.href)) : false;
                     const isActive = item.href ? pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)) : isGroupActive;
 
+                    // --- REFACTORED: Use consistent dark style for active items --- //
+                    const activeClasses = "bg-slate-900 text-white hover:bg-slate-800";
+                    const inactiveClasses = "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700";
 
                     if (item.subItems && item.subItems.length > 0) {
                         return (
@@ -118,9 +121,8 @@ function MotionNav() {
                                     <CollapsibleTrigger asChild>
                                         <button
                                             className={cn(
-                                                "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm w-full text-left",
-                                                "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700",
-                                                isGroupActive && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                                                "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm w-full text-left transition-colors duration-200",
+                                                isGroupActive ? activeClasses : inactiveClasses
                                             )}
                                         >
                                             <div className="flex h-8 w-8 items-center justify-center rounded-md">{<Icon />}</div>
@@ -148,8 +150,8 @@ function MotionNav() {
                                                   return (
                                                       <li key={subItem.href}>
                                                           <Link href={subItem.href} className={cn(
-                                                              "block pl-5 pr-3 py-1.5 text-sm rounded-r-md border-l-2",
-                                                              isSubActive ? "text-primary border-primary font-semibold" : "text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-800 dark:hover:text-slate-200"
+                                                              "block pl-5 pr-3 py-1.5 text-sm rounded-r-md border-l-2 transition-colors duration-200",
+                                                              isSubActive ? "text-slate-900 border-slate-900 font-semibold" : "text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-800 dark:hover:text-slate-200"
                                                           )}>
                                                               {subItem.label}
                                                           </Link>
@@ -170,9 +172,8 @@ function MotionNav() {
                             <Link
                                 href={item.href || '#'}
                                 className={cn(
-                                    `group flex items-center gap-3 rounded-xl px-3 py-2 text-sm`,
-                                    `text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700`,
-                                    isActive && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                                    `group flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors duration-200`,
+                                    isActive ? activeClasses : inactiveClasses
                                 )}
                             >
                                 <div className="flex h-8 w-8 items-center justify-center rounded-md">
@@ -228,7 +229,6 @@ function MotionNav() {
   )
 }
 
-
 export function AppSidebar() {
   const { isOpen, toggleSidebar } = useSidebar();
   const isMobile = useIsMobile();
@@ -275,5 +275,3 @@ export function SidebarTrigger() {
     </Button>
   );
 }
-
-    

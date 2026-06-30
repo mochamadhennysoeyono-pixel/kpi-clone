@@ -4,37 +4,84 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { RefreshCw, TrendingUp, ClipboardCheck, ArrowUpRight, Users, FileClock } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import Image from "next/image";
-import EmailLoginForm from "@/components/auth/EmailLoginForm";
-import RegisterForm from "@/components/auth/RegisterForm";
 
-// --- Mockup Component for the right side (FINAL VERSION) ---
-const DashboardMockup = () => {
-  const svgPattern = `data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg stroke='%23d1d5db' stroke-width='1'%3E%3Cpath d='M40 0v80M0 40h80'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E`;
+// =================================================================
+// INJECTING LINEAR.APP DNA (TYPOGRAPHY, SPACING, SHAPES)
+// =================================================================
 
+
+// --- Right Side Visual Panel (Calibrated to Linear's display typography) ---
+const BrandingVisual = () => {
   return (
     <div 
-      className="hidden lg:flex w-3/5 items-center justify-center bg-[#F8F9FA] p-12 relative overflow-hidden"
-      style={{ 
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23e2e8f0' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-      }}
+      className="hidden lg:flex w-1/2 items-center justify-center bg-slate-900 p-12 relative overflow-hidden"
     >
-      <div className="w-full max-w-sm bg-[#0F172A] text-white rounded-2xl shadow-2xl p-6 space-y-6 z-10 transform transition-transform duration-500 hover:scale-105">
-        <p className="font-bold text-lg">Dashboard HRIS</p>
-        <div className="flex justify-between items-center"><p className="text-sm text-slate-400">Analitik Performa</p><p className="text-2xl font-bold flex items-center gap-2">8.5/10 <ArrowUpRight className="w-5 h-5 text-emerald-400" /></p></div>
-        <div className="flex justify-between items-center"><p className="text-sm text-slate-400">Tingkat Kehadiran</p><p className="text-2xl font-bold">98%</p></div>
-        <div className="flex justify-between items-center"><p className="text-sm text-slate-400">Kontrak Segera Berakhir</p><p className="text-2xl font-bold">3</p></div>
+      <div className="z-10 text-center flex flex-col items-center">
+        {/* Based on {typography.display-lg} - 56px, 600w, -1.8px tracking */}
+        <h1 className="text-5xl font-semibold text-white tracking-tight">
+          Unlock Your Team's Potential.
+        </h1>
+        {/* Based on {typography.subhead} - 20px, 400w */}
+        <p className="mt-4 text-lg text-slate-300 max-w-[45ch]">
+          The all-in-one HRIS platform designed to elevate performance and build a culture of excellence.
+        </p>
       </div>
-      <div className="absolute top-24 right-12 bg-white/70 backdrop-blur-md p-4 rounded-xl border border-white/50 shadow-lg z-20 flex items-center gap-3 w-60 transform transition-transform duration-500 hover:scale-110 animate-fade-in-down"><TrendingUp className="w-7 h-7 text-[#2563EB]" /><div><p className="text-sm text-slate-600">Skor Kinerja</p><p className="text-xl font-bold text-[#0F172A]">92</p></div></div>
-      <div className="absolute bottom-24 left-12 bg-white/70 backdrop-blur-md p-4 rounded-xl border border-white/50 shadow-lg z-20 flex items-center gap-3 w-60 transform transition-transform duration-500 hover:scale-110 animate-fade-in-up"><ClipboardCheck className="w-7 h-7 text-[#2563EB]" /><div><p className="text-sm text-slate-600">Persetujuan</p><p className="text-xl font-bold text-[#0F172A]">4</p></div></div>
+       {/* Subtle background glow */}
+       <div className="absolute -bottom-48 -right-48 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+       <div className="absolute -top-48 -left-48 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
     </div>
   );
 };
 
-// --- Main Page ---
+// --- Form Implementations (Calibrated to Linear's specs) ---
+const EmailLoginForm = () => {
+  return (
+    <form className="space-y-4">
+      <div className="grid w-full items-center gap-1.5">
+        <Label htmlFor="email">Email Address</Label>
+        <Input type="email" id="email" placeholder="nama@perusahaan.com" />
+      </div>
+      <div className="grid w-full items-center gap-1.5">
+        <Label htmlFor="password">Password</Label>
+        <Input type="password" id="password" placeholder="••••••••" />
+      </div>
+      <Button type="submit" className="w-full font-semibold h-10">Masuk</Button>
+    </form>
+  );
+};
+
+const RegisterForm = () => {
+  return (
+    <form className="space-y-4">
+        <div className="grid w-full items-center gap-1.5">
+          <Label htmlFor="fullname">Nama Lengkap</Label>
+          <Input type="text" id="fullname" placeholder="John Doe" />
+        </div>
+        <div className="grid w-full items-center gap-1.5">
+          <Label htmlFor="company">Nama Perusahaan</Label>
+          <Input type="text" id="company" placeholder="PT Sejahtera Abadi" />
+        </div>
+        <div className="grid w-full items-center gap-1.5">
+          <Label htmlFor="reg-email">Email Perusahaan</Label>
+          <Input type="email" id="reg-email" placeholder="admin@perusahaan.com" />
+        </div>
+        <div className="grid w-full items-center gap-1.5">
+          <Label htmlFor="reg-password">Password</Label>
+          <Input type="password" id="reg-password" placeholder="Buat password yang kuat" />
+        </div>
+      <Button type="submit" className="w-full font-semibold h-10">Daftar & Buat Akun</Button>
+    </form>
+  );
+};
+
+
+// --- Main Page (Calibrated Layout) ---
 export default function LoginPage() {
   const { currentUser, isLoading, userRole } = useAuth();
   const router = useRouter();
@@ -42,20 +89,19 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isLoading && currentUser) {
-      const targetPath = userRole === "manajemen" ? "/reports" : "/action-center";
+      const targetPath = userRole === "superadmin" ? "/dashboard" : "/reports";
       router.replace(targetPath);
     }
   }, [isLoading, currentUser, router, userRole]);
 
   if (isLoading || (!isLoading && currentUser)) {
-    const message = currentUser ? "Berhasil masuk, mengarahkan..." : "Memuat Sesi...";
      return (
-        <div className="flex h-screen items-center justify-center bg-white">
-            <div className="flex flex-col items-center gap-4">
-                <Image src="/logo.png" alt="Perfom Logo" width={120} height={32} />
+        <div className="flex min-h-screen items-center justify-center bg-white">
+            <div className="flex flex-col items-center gap-4 text-center">
+                <Image src="/logo.png" alt="Perfom Logo" width={120} height={32} unoptimized />
                 <div className="flex items-center gap-2 font-medium text-slate-500">
                     <RefreshCw className="h-4 w-4 animate-spin-slow" />
-                    <span>{message}</span>
+                    <span>{currentUser ? "Berhasil masuk, mengarahkan..." : "Memuat Sesi..."}</span>
                 </div>
             </div>
         </div>
@@ -63,52 +109,62 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#F0F2F5] flex items-center justify-center p-4 lg:p-8">
-      <div className="w-full max-w-6xl flex bg-white rounded-2xl shadow-2xl overflow-hidden">
-        {/* Left Side: Form */}
-        <div className="w-full lg:w-2/5 p-8 md:p-12 flex flex-col justify-center">
-          <div className="w-full">
-            
-            <div className="mb-8 flex justify-center">
-              <Image src="/logo.png" alt="Perfom Logo" width={180} height={48} />
-            </div>
-            
-            <div className="flex justify-center gap-1 mb-8 bg-slate-200/60 p-1 rounded-full">
-                <Button
-                    onClick={() => setActiveTab('login')}
-                    variant="ghost"
-                    className={cn(
-                        "w-full rounded-full text-sm font-semibold transition-all duration-300 h-9",
-                        activeTab === 'login' 
-                            ? "bg-[#0F172A] text-white shadow-md"
-                            : "bg-transparent text-slate-500 hover:bg-slate-300/50"
-                    )}
-                >
-                    Masuk Akun
-                </Button>
-                <Button
-                    onClick={() => setActiveTab('register')}
-                    variant="ghost"
-                    className={cn(
-                        "w-full rounded-full text-sm font-semibold transition-all duration-300 h-9",
-                        activeTab === 'register' 
-                            ? "bg-[#2563EB] text-white shadow-md"
-                            : "bg-transparent text-slate-500 hover:bg-slate-300/50"
-                    )}
-                >
-                    Daftar Perusahaan
-                </Button>
-            </div>
+    <div className="min-h-screen w-full bg-white flex">
+      {/* Left Side: Form (Calibrated) */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 md:p-12">
+        <div className="w-full max-w-sm">
+          
+          <div className="mb-6">
+            <Image src="/logo.png" alt="Perfom Logo" width={140} height={38} unoptimized />
+          </div>
+          
+          {/* Based on {typography.headline} - 28px, 600w, -0.6px tracking */}
+          <h2 className="text-2xl font-semibold tracking-tight text-slate-900 mb-2">
+            {activeTab === 'login' ? 'Selamat Datang Kembali' : 'Buat Akun Perusahaan'}
+          </h2>
+          {/* Based on {typography.body} - 16px, 400w */}
+          <p className="text-slate-600 mb-6">
+            {activeTab === 'login' 
+              ? 'Masuk untuk melanjutkan ke dasbor Anda.' 
+              : 'Mulai perjalanan Anda untuk optimasi SDM.'}
+          </p>
+          
+          {/* Based on {components.pricing-tab-default/selected} */}
+          <div className="grid grid-cols-2 gap-2 mb-6 bg-slate-100 p-1 rounded-full">
+              <Button
+                  onClick={() => setActiveTab('login')}
+                  variant="ghost"
+                  className={cn(
+                      "w-full rounded-full text-sm font-semibold h-9",
+                      activeTab === 'login' 
+                          ? "bg-white text-slate-900 shadow-sm"
+                          : "bg-transparent text-slate-600 hover:text-slate-900"
+                  )}
+              >
+                  Masuk
+              </Button>
+              <Button
+                  onClick={() => setActiveTab('register')}
+                  variant="ghost"
+                  className={cn(
+                    "w-full rounded-full text-sm font-semibold h-9",
+                    activeTab === 'register' 
+                        ? "bg-white text-slate-900 shadow-sm"
+                        : "bg-transparent text-slate-600 hover:text-slate-900"
+                )}
+              >
+                  Daftar
+              </Button>
+          </div>
 
-            <div className="animate-fade-in-up">
-                {activeTab === 'login' ? <EmailLoginForm /> : <RegisterForm />}
-            </div>
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {activeTab === 'login' ? <EmailLoginForm /> : <RegisterForm />}
           </div>
         </div>
-
-        {/* Right Side: Mockup */}
-        <DashboardMockup />
       </div>
+
+      {/* Right Side: Branding Visual */}
+      <BrandingVisual />
     </div>
   );
 }
