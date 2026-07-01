@@ -1,4 +1,3 @@
-
 // src/lib/firebase/server.ts
 import * as admin from 'firebase-admin';
 import { Firestore } from '@google-cloud/firestore';
@@ -8,7 +7,7 @@ import { Firestore } from '@google-cloud/firestore';
  * Disinkronkan dengan variabel lingkungan FIREBASE_ dari Dashboard App Hosting.
  */
 
-const projectId = process.env.FIREBASE_PROJECT_ID || process.env.PROJECT_ID || "studio-2326395113-859ef";
+const projectId = process.env.FIREBASE_PROJECT_ID || process.env.PROJECT_ID || "kpi-dev-vjyoo";
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || process.env.CLIENT_EMAIL;
 let privateKey = process.env.FIREBASE_PRIVATE_KEY || process.env.PRIVATE_KEY;
 
