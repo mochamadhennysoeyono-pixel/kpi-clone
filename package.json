@@ -61,6 +61,7 @@
     "firebase": "^10.12.3",
     "firebase-admin": "^12.1.0",
     "framer-motion": "^11.2.12",
+    "geist": "^1.7.2",
     "genkit": "^1.14.1",
     "lucide-react": "^0.478.0",
     "midtrans-client": "^1.4.2",

@@ -6,22 +6,23 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%; /* New: #0F172A */
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%; /* New: #0F172A */
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%; /* New: #0F172A */
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 222 83% 58%; /* New: #2563EB */
-    --primary-foreground: 0 0% 98%; /* White text on blue */
+    /* MOD: Changed primary color for light theme to the new dark blue */
+    --primary: 222 47% 11%; /* #0f172a */
+    --primary-foreground: 0 0% 98%; /* Kept white text for contrast */
 
-    --secondary: 160 84% 39%; /* New: #10B981 */
-    --secondary-foreground: 0 0% 98%; /* White text on green */
+    --secondary: 160 84% 39%; 
+    --secondary-foreground: 0 0% 98%;
 
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215 9% 47%; /* New: #6B7280 */
+    --muted-foreground: 215 9% 47%;
 
     --accent: 210 40% 96.1%;
     --accent-foreground: 210 40% 9.8%;
@@ -31,29 +32,32 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222 83% 58%; /* New: #2563EB */
+    
+    /* MOD: Changed ring color to match the new primary color */
+    --ring: 222 47% 11%;
 
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222 47% 11%; /* New: #0F172A */
+    --background: 222 47% 11%; /* This is already #0f172a */
     --foreground: 0 0% 98%;
 
-    --card: 222 47% 14%; /* Slightly lighter than background */
+    --card: 222 47% 14%;
     --card-foreground: 0 0% 98%;
 
     --popover: 222 47% 11%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 222 83% 58%; /* New: #2563EB */
+    /* MOD: Kept the vibrant blue for dark theme primary to ensure visibility */
+    --primary: 222 83% 58%; /* #2563EB - This provides necessary contrast */
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 160 84% 39%; /* New: #10B981 */
+    --secondary: 160 84% 39%;
     --secondary-foreground: 0 0% 98%;
 
     --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 9% 57%; /* New: #6B7280 adjusted for dark */
+    --muted-foreground: 215 9% 57%;
 
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 0 0% 98%;
@@ -63,7 +67,7 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 222 83% 58%; /* New: #2563EB */
+    --ring: 222 83% 58%; /* Ring in dark mode should match the vibrant primary */
   }
 }
 
@@ -72,6 +76,6 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground;
   }
 }

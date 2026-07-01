@@ -1,18 +1,11 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google"; // MOD: Import only Plus Jakarta Sans
+import { GeistSans } from "geist/font/sans"; // MOD: Import Geist Sans
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { PushNotificationManager } from "@/components/layout/push-notification-manager";
-import { cn } from "@/lib/utils";
-
-// MOD: Configure Plus Jakarta Sans as the single main font
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
 
 export const metadata: Metadata = {
   title: "Perfom - Sistem HRIS Terintegrasi",
@@ -29,9 +22,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      {/* MOD: Apply the single font variable */}
-      <body className={cn("font-sans", jakarta.variable)}>
+    // MOD: Apply the Geist Sans variable to the <html> tag as recommended.
+    <html lang="en" className={GeistSans.variable} suppressHydrationWarning>
+      {/* MOD: The `font-sans` class on the body will now correctly inherit the --font-geist-sans var from <html> */}
+      <body className="font-sans">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

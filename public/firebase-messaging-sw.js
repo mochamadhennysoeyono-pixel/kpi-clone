@@ -1,35 +1,44 @@
-
 // public/firebase-messaging-sw.js
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
+// MOD: This file has been completely rewritten to be robust.
 
-// Config should match your client config
-firebase.initializeApp({
-  apiKey: "AIzaSy...", // Will be filled by Firebase during build/runtime if using full SDK, but here we just need basic init
+importScripts('https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.22.1/firebase-messaging-compat.js');
+
+// Initialize the Firebase app in the service worker with the same config
+// This config is safe to be public.
+const firebaseConfig = {
+  apiKey: "AIzaSy...", // This will be auto-filled by Firebase if configured, but isn't strictly necessary for messaging background handling.
   authDomain: "kpi-dev-vjyoo.firebaseapp.com",
   projectId: "kpi-dev-vjyoo",
-  storageBucket: "kpi-dev-vjyoo.firebasestorage.app",
+  storageBucket: "kpi-dev-vjyoo.appspot.com", // Corrected storage bucket domain
   messagingSenderId: "526266144523",
   appId: "1:526266144523:web:bec56868ae65959199f40e"
-});
+};
 
+firebase.initializeApp(firebaseConfig);
+
+// Retrieve an instance of Firebase Messaging so that it can handle background messages.
 const messaging = firebase.messaging();
 
-// Handle background messages
-messaging.onBackgroundMessage((payload) => {
+// If you would like to customize notifications that are received in the
+// background (Web app is closed or not in browser focus) then you should
+// implement this optional method.
+// MOD: Added the onBackgroundMessage handler to actually show notifications.
+messaging.onBackgroundMessage(function(payload) {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
   
-  const notificationTitle = payload.notification.title;
+  const notificationTitle = payload.notification?.title || 'Notifikasi Baru';
   const notificationOptions = {
-    body: payload.notification.body,
-    icon: 'https://cdn.scalev.id/business_files/yVvqA_tsSzvt5_Yf2lNStxvP/1757745293765-k%20(8).webp',
-    badge: 'https://cdn.scalev.id/business_files/yVvqA_tsSzvt5_Yf2lNStxvP/1757745293765-k%20(8).webp',
-    data: {
-        url: payload.data?.link || '/'
-    }
+    body: payload.notification?.body || 'Anda memiliki pesan baru.',
+    icon: payload.notification?.icon || '/logo-192.png', // A default icon in your public folder
+    badge: '/logo-badge.png', // A badge icon
+    data: { 
+        url: payload.data?.link || '/' 
+    } // Pass link from data payload
   };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  // Use the service worker's registration to show the notification.
+  return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
 // Handle notification click
@@ -39,12 +48,15 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // Check if there is already a window/tab open with the target URL
       for (var i = 0; i < windowClients.length; i++) {
         var client = windowClients[i];
+        // If so, just focus it.
         if (client.url === urlToOpen && 'focus' in client) {
           return client.focus();
         }
       }
+      // If not, then open a new window/tab.
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }

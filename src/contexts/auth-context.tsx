@@ -90,7 +90,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // 1. Check 'superadmins' collection in the performance DB
         const superadminDocRef = doc(db, 'superadmins', user.uid);
         const superadminDoc = await getDoc(superadminDocRef);
 
@@ -101,7 +100,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUserRole('superadmin'); 
             setFirebaseUser(user);
         } else {
-            // 2. If not a superadmin, check 'employees' collection (also in performance DB)
             let userDoc: DocumentSnapshot | null = null;
             const employeeDocRef = doc(db, 'employees', user.uid);
             const employeeDoc = await getDoc(employeeDocRef);
@@ -141,8 +139,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setUserRole(userProfile.role);
               setFirebaseUser(user);
             } else {
-                // 3. If user is not in superadmins or employees, sign out.
-                await signOut(auth);
+                // MOD: Removed the aggressive signOut logic that caused the login loop.
+                // The login functions are now responsible for validating user existence.
+                console.warn(`[Auth] User ${user.uid} (${user.email}) authenticated with Firebase but has no profile in Firestore.`);
                 setCurrentUser(null);
                 setFirebaseUser(null);
                 setUserRole(null);
@@ -160,15 +159,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [router]);
 
+  // MOD: Rewrote the entire loginWithEmail function to be robust and prevent loops.
   const loginWithEmail = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email.toLowerCase().trim(), pass);
-      return { success: true };
+      const userCredential = await signInWithEmailAndPassword(auth, email.toLowerCase().trim(), pass);
+      const user = userCredential.user;
+
+      const superadminDocRef = doc(db, 'superadmins', user.uid);
+      const superadminDoc = await getDoc(superadminDocRef);
+      if (superadminDoc.exists()) {
+        return { success: true };
+      }
+
+      const employeeDocRef = doc(db, 'employees', user.uid);
+      const employeeDoc = await getDoc(employeeDocRef);
+      if (employeeDoc.exists()) {
+        return { success: true };
+      }
+      
+      await signOut(auth);
+      setIsLoading(false);
+      return { success: false, error: 'Profil pengguna tidak ditemukan di sistem. Hubungi administrator.' };
+
     } catch (e: any) {
       console.error("Login error:", e);
       setIsLoading(false);
-      return { success: false, error: 'Email atau kata sandi salah.' };
+      let errorMessage = 'Email atau kata sandi salah.';
+      if (e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+        errorMessage = 'Kombinasi email dan kata sandi tidak cocok.';
+      } else if (e.code === 'auth/too-many-requests') {
+        errorMessage = 'Akses ke akun ini telah dinonaktifkan sementara karena terlalu banyak percobaan login yang gagal.';
+      }
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -183,14 +206,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const email = user.email.toLowerCase();
       let userDocSnap: DocumentSnapshot | null = null;
 
-      // Check superadmins collection
       const superadminQuery = query(collection(db, 'superadmins'), where('email', '==', email));
       const superadminSnapshot = await getDocs(superadminQuery);
 
       if (!superadminSnapshot.empty) {
           userDocSnap = superadminSnapshot.docs[0];
       } else {
-          // Check employees collection
           const employeeQuery = query(collection(db, 'employees'), where('email', '==', email));
           const employeeSnapshot = await getDocs(employeeQuery);
           if (!employeeSnapshot.empty) {
@@ -361,7 +382,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const email = employeeData.email.toLowerCase().trim();
       const tempPassword = Math.random().toString(36).slice(-10);
-      // Check both collections for existing user
+
       const superadminQuery = query(collection(db, 'superadmins'), where('email', '==', email));
       const superadminSnap = await getDocs(superadminQuery);
       if (!superadminSnap.empty) {
@@ -407,14 +428,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     try {
         let userSnap: QuerySnapshot | null = null;
-        // Check superadmins collection
+
         const superadminQuery = query(collection(db, 'superadmins'), where('email', '==', cleanEmail));
         const superadminSnapshot = await getDocs(superadminQuery);
 
         if (!superadminSnapshot.empty) {
             userSnap = superadminSnapshot;
         } else {
-            // Check employees collection
             const employeeQuery = query(collection(db, 'employees'), where('email', '==', cleanEmail));
             const employeeSnapshot = await getDocs(employeeQuery);
             if (!employeeSnapshot.empty) {
@@ -451,7 +471,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUserProfile = async (userId: string, data: UpdateData<DocumentData>): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      // Determine collection based on the current user's role
       const collectionName = userRole === 'superadmin' ? 'superadmins' : 'employees';
       const userDocRef = doc(db, collectionName, userId);
       

@@ -18,7 +18,7 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans)", ...fontFamily.sans],
+        sans: ["var(--font-geist-sans)", ...fontFamily.sans],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -78,30 +78,16 @@ const config: Config = {
       },
       keyframes: {
         'accordion-down': {
-          from: {
-            height: '0',
-          },
-          to: {
-            height: 'var(--radix-accordion-content-height)',
-          },
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
         },
         'accordion-up': {
-          from: {
-            height: 'var(--radix-accordion-content-height)',
-          },
-          to: {
-            height: '0',
-          },
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
         },
         'fade-in': {
-          from: { 
-            opacity: '0',
-            transform: 'translateY(10px)',
-          },
-          to: { 
-            opacity: '1',
-            transform: 'translateY(0)',
-          }
+          from: { opacity: '0', transform: 'translateY(10px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
         },
         'bounce': {
           '0%, 100%': {
@@ -113,6 +99,11 @@ const config: Config = {
             animationTimingFunction: 'cubic-bezier(0,0,0.2,1)',
           },
         },
+        // MOD: Add keyframes for the concentric ring rotation
+        'concentric-ring-rotation': {
+          from: { transform: 'rotate(0deg)' },
+          to: { transform: 'rotate(360deg)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -120,6 +111,8 @@ const config: Config = {
         'fade-in': 'fade-in 0.5s ease-in-out forwards',
         'bounce': 'bounce 1s infinite',
         'spin-slow': 'spin 3s linear infinite',
+        // MOD: Add animation utility class for the concentric ring
+        'concentric-ring': 'concentric-ring-rotation var(--duration, 1s) linear infinite',
       },
     },
   },
