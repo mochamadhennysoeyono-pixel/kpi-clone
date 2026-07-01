@@ -43,6 +43,7 @@ import {
   Loader2,
   Building,
   Filter,
+  Trash2,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { CompanyAdmin, Company } from "@/types";
@@ -308,7 +309,7 @@ export default function CompanyAdminManagementPage() {
                                 </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                <DropdownMenuLabel className="text-[10px] uppercase opacity-60">Opsi Admin</DropdownMenuLabel>
+                                <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Opsi Admin</DropdownMenuLabel>
                                 <DropdownMenuItem onClick={() => handleEditAdmin(admin)}>
                                     Ubah Profil
                                 </DropdownMenuItem>
