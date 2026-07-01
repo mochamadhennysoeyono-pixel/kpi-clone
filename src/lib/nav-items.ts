@@ -160,7 +160,8 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             iconName: 'manajemen-sistem',
             show: capabilities.isSuperAdmin,
             subItems: [
-                { href: '/admin-management', label: 'Manajemen Admin', show: true, iconName: '/admin-management' },
+                { href: '/admin-management', label: 'Manajemen Admin Super', show: true, iconName: '/admin-management' },
+                { href: '/company-admin-management', label: 'Manajemen Admin Klien', show: true, iconName: '/company-admin-management' },
                 { href: '/activation-management', label: 'Aktivasi Perusahaan', show: true, iconName: '/activation-management' },
                 { href: '/subscription-management', label: 'Manajemen Langganan', show: true, iconName: '/subscription-management' },
                 { href: '/subscription-logs', label: 'Pusat Log Langganan', show: true, iconName: '/subscription-logs' },
