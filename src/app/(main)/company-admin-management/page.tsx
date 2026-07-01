@@ -44,6 +44,7 @@ import {
   Building,
   Filter,
 } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { CompanyAdmin, Company } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useMasterData } from "@/contexts/master-data-context";
