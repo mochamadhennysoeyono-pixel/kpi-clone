@@ -3,17 +3,20 @@
 
 import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, initializeFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getMessaging, getToken, onMessage, isSupported } from "firebase/messaging";
 
+/**
+ * Konfigurasi Firebase Resmi untuk Project: studio-2326395113-859ef
+ */
 const firebaseConfig: FirebaseOptions = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: "studio-2326395113-859ef", // Locked to systemprf
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AIzaSyDoMxUbYranRraDBXQAGAGtBkhD5vSWGa4",
+  authDomain: "studio-2326395113-859ef.firebaseapp.com",
+  projectId: "studio-2326395113-859ef",
+  storageBucket: "studio-2326395113-859ef.firebasestorage.app",
+  messagingSenderId: "621995680672",
+  appId: "1:621995680672:web:111bdaf43b37db7a94bac5",
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
@@ -22,7 +25,7 @@ const auth = getAuth(app);
 /**
  * PENTING: Memaksa koneksi ke database 'performance'.
  * Menggunakan initializeFirestore dengan experimentalForceLongPolling 
- * untuk mengatasi masalah "Could not reach Cloud Firestore backend" di lingkungan terbatas.
+ * untuk mengatasi masalah koneksi di lingkungan terbatas.
  */
 const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
