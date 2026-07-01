@@ -1,4 +1,3 @@
-
 // src/lib/services/notification-service.ts
 'use server';
 
@@ -9,7 +8,6 @@ const FieldValue = adminApp.firestore.FieldValue;
 
 /**
  * Mengirim email mentah melalui koleksi 'mail' di database 'performance'.
- * Extension "Trigger Email" akan mendeteksi dokumen baru di sini.
  */
 export async function sendEmail(
   to: string[],
@@ -17,12 +15,9 @@ export async function sendEmail(
   html: string
 ): Promise<void> {
   try {
-    console.log(`[SMTP_ATTEMPT] Queueing email to: ${to.join(', ')} in 'performance' DB`);
-    
-    // Alamat pengirim: Gunakan email sederhana tanpa tag nama jika SMTP ketat
+    console.log(`[SMTP_ATTEMPT] Queueing email to: ${to.join(', ')}`);
     const fromAddress = process.env.SMTP_FROM_EMAIL || "noreply@kipiai.id";
 
-    // Menulis langsung ke koleksi 'mail' di database 'performance'
     const docRef = await db.collection('mail').add({
       to,
       from: fromAddress, 
@@ -33,15 +28,15 @@ export async function sendEmail(
       timestamp: FieldValue.serverTimestamp()
     });
 
-    console.log(`[SMTP_SUCCESS] Mail queued with ID: ${docRef.id} in 'performance' DB.`);
+    console.log(`[SMTP_SUCCESS] Mail queued with ID: ${docRef.id}`);
   } catch (error: any) {
-    console.error("[SMTP_ERROR] Failed to queue email in 'performance' DB:", error.message);
+    console.error("[SMTP_ERROR] Failed to queue email:", error.message);
     throw new Error(`Gagal mengantrekan email: ${error.message}`);
   }
 }
 
 /**
- * Mengambil template dari Firestore (database performance) dan mengirim via SMTP.
+ * Mengambil template dari Firestore dan mengirim via SMTP.
  */
 export async function sendTemplatedEmail(
     to: string,
@@ -49,16 +44,20 @@ export async function sendTemplatedEmail(
     context: Record<string, string>
 ): Promise<void> {
     try {
-        console.log(`[TEMPLATE_QUERY] Fetching template for category: ${category} from 'performance' DB`);
+        console.log(`[TEMPLATE_QUERY] Searching for category: "${category}"...`);
         
-        // Template dicari di database performance
+        // Coba cari dengan kueri eksak
         const snap = await db.collection('emailTemplates')
             .where('category', '==', category)
             .limit(1)
             .get();
         
         if (snap.empty) {
-            console.error(`[TEMPLATE_ERROR] Template category "${category}" not found in emailTemplates collection.`);
+            // DEBUG: Jika tidak ketemu, list semua yang ada buat liat ada typo atau nggak
+            const allTemplates = await db.collection('emailTemplates').get();
+            const available = allTemplates.docs.map(d => d.data().category);
+            console.error(`[TEMPLATE_NOT_FOUND] Category "${category}" missing. Available categories in DB:`, available);
+            
             throw new Error(`Template Email dengan kategori "${category}" tidak ditemukan.`);
         }
 
@@ -66,10 +65,6 @@ export async function sendTemplatedEmail(
         let html = templateData.htmlContent || "";
         let subject = templateData.subject || "";
 
-        if (!html) throw new Error(`Konten HTML pada template "${category}" kosong.`);
-
-        // Replace placeholders: mencari format {{key}}
-        console.log(`[TEMPLATE_PARSE] Injecting context into template for: ${to}`);
         for (const [key, value] of Object.entries(context)) {
             const regex = new RegExp(`{{${key}}}`, 'g');
             const safeValue = value || '';
@@ -91,7 +86,6 @@ export async function sendPasswordResetEmailWithSmtp(email: string, userName: st
     try {
         console.log(`[AUTH_SERVICE] Generating reset link for: ${email}`);
         
-        // FIX: Gunakan Project ID yang benar agar domain masuk dalam allowlist Firebase Auth
         const projectId = "studio-2326395113-859ef";
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `https://${projectId}.firebaseapp.com`;
         
@@ -100,11 +94,8 @@ export async function sendPasswordResetEmailWithSmtp(email: string, userName: st
             handleCodeInApp: true 
         };
 
-        // Generate link resmi dari Firebase Auth Admin
         const resetLink = await auth.generatePasswordResetLink(email, actionCodeSettings);
         
-        console.log(`[AUTH_SERVICE] Reset link generated successfully.`);
-
         await sendTemplatedEmail(email, 'password_reset', {
             nama_pengguna: userName,
             link: resetLink
@@ -113,14 +104,10 @@ export async function sendPasswordResetEmailWithSmtp(email: string, userName: st
         return { success: true };
     } catch (error: any) {
         console.error("[AUTH_SERVICE_ERROR] Failed for email:", email, "Error:", error.message);
-        
         let friendlyError = error.message;
         if (error.code === 'auth/user-not-found') {
             friendlyError = "Email ini belum terdaftar di sistem otentikasi login.";
-        } else if (error.code === 'auth/unauthorized-continue-uri') {
-            friendlyError = "Domain tidak diizinkan. Harap hubungi administrator untuk mendaftarkan domain aplikasi di Firebase Console.";
         }
-        
         return { success: false, error: friendlyError };
     }
 }
@@ -130,20 +117,10 @@ export async function sendPasswordResetEmailWithSmtp(email: string, userName: st
  */
 export async function sendWhatsApp(target: string, message: string): Promise<{ success: boolean; error?: string }> {
     const token = process.env.FONNTE_TOKEN;
-    
-    if (!token) {
-        console.error("[FONNTE_CRITICAL_ERROR] FONNTE_TOKEN tidak ditemukan.");
-        return { success: false, error: "Sistem WhatsApp belum terkonfigurasi di server." };
-    }
+    if (!token) return { success: false, error: "Sistem WhatsApp belum terkonfigurasi." };
 
     let cleanTarget = target.replace(/\D/g, '');
-    if (cleanTarget.startsWith('0')) {
-        cleanTarget = '62' + cleanTarget.substring(1);
-    }
-
-    if (cleanTarget.length < 10) {
-        return { success: false, error: "Format nomor telepon tidak valid." };
-    }
+    if (cleanTarget.startsWith('0')) cleanTarget = '62' + cleanTarget.substring(1);
 
     try {
         const params = new URLSearchParams();
@@ -158,19 +135,14 @@ export async function sendWhatsApp(target: string, message: string): Promise<{ s
         });
 
         const result = await response.json();
-        
-        if (result.status || result.detail === 'success') {
-            return { success: true };
-        } else {
-            return { success: false, error: result.reason || 'Gagal mengirim WA' };
-        }
+        return (result.status || result.detail === 'success') ? { success: true } : { success: false, error: result.reason };
     } catch (error: any) {
         return { success: false, error: "Gangguan jaringan WhatsApp." };
     }
 }
 
 /**
- * Mengambil template WhatsApp dan mengirimnya dengan konteks data.
+ * Mengambil template WhatsApp dan mengirimnya.
  */
 export async function sendTemplatedWhatsApp(to: string, category: CommunicationCategory, context: Record<string, string>): Promise<void> {
     try {
