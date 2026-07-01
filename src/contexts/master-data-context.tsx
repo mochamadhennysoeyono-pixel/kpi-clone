@@ -149,42 +149,6 @@ const mapSnapshot = <T extends FsDocumentData>(snapshot: any): T[] => {
     return snapshot.docs.map((d: any) => ({ ...d.data(), id: d.id })) as T[];
 }
 
-const normalizeName = (name?: string | null): string => {
-  if (!name) return '';
-  return name.replace(/\./g, '').trim().toLowerCase();
-};
-
-function sanitizeUndefined(obj: any): any {
-    if (obj === null || obj === undefined) {
-        return undefined;
-    }
-
-    if (Array.isArray(obj)) {
-        return obj
-            .map(v => sanitizeUndefined(v))
-            .filter(v => v !== undefined);
-    }
-
-    if (typeof obj === 'object' && !(obj instanceof Date) && typeof obj.toDate !== 'function') {
-        const newObj: { [key: string]: any } = {};
-        for (const key in obj) {
-            if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                const value = obj[key];
-                if (value !== undefined) {
-                    const sanitizedValue = sanitizeUndefined(value);
-                    if (sanitizedValue !== undefined) {
-                        newObj[key] = sanitizedValue;
-                    }
-                }
-            }
-        }
-        return newObj;
-    }
-
-    return obj;
-}
-
-
 export function MasterDataProvider({ children }: { children: ReactNode }) {
   const { currentUser, userRole, isLoading: isAuthLoading } = useAuth();
   const [data, setData] = useState<{
@@ -219,10 +183,9 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     collabTasks: CollabTask[];
     collabMessages: CollabMessage[];
     subscriptionLogs: SubscriptionLog[];
-    apiConfig: null;
   }>({
     companies: [], departments: [], positions: [], employees: [], companyAdmins: [], companyObjectives: [],
-    kpiCategories: [], kboCategories: [], kboSetups: [], kpiSetups: [], appraisalSetups: [], documentTemplates: [], emailTemplates: [], whatsappTemplates: [], notificationTemplates: [], kpiData: [], okrs: [], targetOverrides: [], kboAssessments: [], appraisalTasks: [], subscriptionPlans: [], courses: [], quizzes: [], learningPrograms: [], enrollments: [], aiTools: [], mediaFiles: [], collabSpaces: [], collabTasks: [], collabMessages: [], subscriptionLogs: [], apiConfig: null,
+    kpiCategories: [], kboCategories: [], kboSetups: [], kpiSetups: [], appraisalSetups: [], documentTemplates: [], emailTemplates: [], whatsappTemplates: [], notificationTemplates: [], kpiData: [], okrs: [], targetOverrides: [], kboAssessments: [], appraisalTasks: [], subscriptionPlans: [], courses: [], quizzes: [], learningPrograms: [], enrollments: [], aiTools: [], mediaFiles: [], collabSpaces: [], collabTasks: [], collabMessages: [], subscriptionLogs: [],
   });
   const [isLoading, setIsLoading] = useState(true);
   const hasFetchedRef = useRef(false);
@@ -247,7 +210,6 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
             companyNamesToQuery = allCompanies.map(c => c.name);
         } else {
             companyNamesToQuery = [currentUser.company];
-            // Add child companies if holding
             const userComp = allCompanies.find(c => c.name === currentUser.company);
             if (userComp?.isHolding) {
                 const getChildNames = (parentId: string): string[] => {
@@ -298,7 +260,6 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
             collabTasks: mapSnapshot<CollabTask>(collabTasksSnap),
             collabMessages: [],
             subscriptionLogs: mapSnapshot<SubscriptionLog>(subscriptionLogsSnap),
-            apiConfig: null,
         });
 
         hasFetchedRef.current = true;
@@ -307,7 +268,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
       } finally {
         setIsLoading(false);
       }
-    }, [isAuthLoading, currentUser, userRole, companies, toast]);
+    }, [isAuthLoading, currentUser, userRole, toast]);
 
   useEffect(() => {
     fetchData();
@@ -434,10 +395,10 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     updateKpiData: (id, d) => updateDocAndUpdateState<KpiData>('kpiData', id, d, 'kpiData'),
     deleteKpiData: (ids) => deleteDocsAndUpdateState('kpiData', ids, 'kpiData'),
     
-    addOkr,
-    updateOkr,
+    addOkr: (d) => addDocAndUpdateState<OKR>('okrs', d, 'okrs'),
+    updateOkr: (id, d) => updateDocAndUpdateState<OKR>('okrs', id, d, 'okrs'),
     updateOkrStatus: async () => {},
-    deleteOkr,
+    deleteOkr: (id) => deleteDocsAndUpdateState('okrs', [id], 'okrs'),
     
     addSubscriptionPlan: (d) => addDocAndUpdateState<SubscriptionPlan>('subscriptionPlans', d, 'subscriptionPlans'),
     updateSubscriptionPlan: (id, d) => updateDocAndUpdateState<SubscriptionPlan>('subscriptionPlans', id, d, 'subscriptionPlans'),
