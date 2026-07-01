@@ -1,15 +1,13 @@
-
 // src/lib/services/notification-service.ts
 'use server';
 
-import { db, mailDb, auth, adminApp } from "@/lib/firebase/server";
+import { db, auth, adminApp } from "@/lib/firebase/server";
 import type { CommunicationCategory, EmailTemplate, WhatsappTemplate } from "@/types";
 
 const FieldValue = adminApp.firestore.FieldValue;
 
 /**
- * Mengirim email mentah melalui koleksi 'mail' di database DEFAULT.
- * Extension 'Trigger Email' biasanya terpasang di database default.
+ * Mengirim email mentah melalui koleksi 'mail' di database 'performance'.
  */
 export async function sendEmail(
   to: string[],
@@ -17,9 +15,9 @@ export async function sendEmail(
   html: string
 ): Promise<void> {
   try {
-    console.log(`[SMTP_ATTEMPT] Queueing email to: ${to.join(', ')}`);
-    // PENTING: Gunakan mailDb (database default) untuk Trigger Email Extension
-    await mailDb.collection('mail').add({
+    console.log(`[SMTP_ATTEMPT] Queueing email to: ${to.join(', ')} in 'performance' DB`);
+    // Menulis langsung ke database 'performance'
+    await db.collection('mail').add({
       to,
       message: {
         subject,
@@ -27,7 +25,7 @@ export async function sendEmail(
       },
       timestamp: FieldValue.serverTimestamp()
     });
-    console.log(`[SMTP_SUCCESS] Document added to 'mail' collection on default DB.`);
+    console.log(`[SMTP_SUCCESS] Document added to 'mail' collection on 'performance' DB.`);
   } catch (error: any) {
     console.error("[SMTP_ERROR] Failed to write to 'mail' collection:", error.message);
     throw new Error(`Gagal mengantrekan email: ${error.message}`);
@@ -43,15 +41,15 @@ export async function sendTemplatedEmail(
     context: Record<string, string>
 ): Promise<void> {
     try {
-        console.log(`[TEMPLATE_QUERY] Fetching template for category: ${category}`);
-        // Template dicari di database performance (db)
+        console.log(`[TEMPLATE_QUERY] Fetching template for category: ${category} from 'performance' DB`);
+        // Template dicari di database performance
         const snap = await db.collection('emailTemplates')
             .where('category', '==', category)
             .limit(1)
             .get();
         
         if (snap.empty) {
-            throw new Error(`Template Email dengan kategori "${category}" tidak ditemukan di database performance.`);
+            throw new Error(`Template Email dengan kategori "${category}" tidak ditemukan.`);
         }
 
         const templateData = snap.docs[0].data();

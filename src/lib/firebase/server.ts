@@ -1,4 +1,3 @@
-
 // src/lib/firebase/server.ts
 import * as admin from 'firebase-admin';
 
@@ -38,13 +37,8 @@ export const adminApp = admin;
 
 /** 
  * db: Mengarah ke database 'performance' (Utama Aplikasi)
+ * Semua data termasuk koleksi 'mail' sekarang berada di sini.
  */
 export const db = app.firestore('performance');
-
-/**
- * mailDb: Mengarah ke database '(default)' 
- * Khusus untuk integrasi Extension (seperti Trigger Email)
- */
-export const mailDb = app.firestore(); 
 
 export { app };
