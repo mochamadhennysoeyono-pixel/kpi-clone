@@ -10,8 +10,11 @@ import { Firestore } from '@google-cloud/firestore';
 
 const projectId = "studio-2326395113-859ef";
 
-// Logika inisialisasi tunggal (Singleton) yang lebih aman untuk Next.js
-if (!admin.apps.length) {
+function getApp() {
+  if (admin.apps.length > 0) {
+    return admin.apps[0]!;
+  }
+
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   let privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
@@ -21,23 +24,25 @@ if (!admin.apps.length) {
 
   try {
     if (clientEmail && privateKey) {
-      admin.initializeApp({
+      return admin.initializeApp({
         credential: admin.credential.cert({
           projectId,
           clientEmail,
           privateKey,
         }),
       });
-      console.log("[FIREBASE_ADMIN] Initialized with Service Account.");
     } else {
       // Fallback ke Application Default Credentials (ADC) atau Studio Auth
-      admin.initializeApp({ projectId });
-      console.log("[FIREBASE_ADMIN] Initialized with Project ID fallback.");
+      return admin.initializeApp({ projectId });
     }
   } catch (error: any) {
-    console.error("[FIREBASE_ADMIN_ERROR] Initialization failed:", error.message);
+    console.error("[FIREBASE_ADMIN_ERROR] Initialization failed, returning existing app if any:", error.message);
+    return admin.app();
   }
 }
+
+// Inisialisasi instance aplikasi tunggal
+const app = getApp();
 
 /**
  * PENTING: Memaksa koneksi Admin SDK ke database 'performance'.
@@ -49,7 +54,7 @@ const db = new Firestore({
   ignoreUndefinedProperties: true,
 });
 
-// Export services secara langsung dari modul admin
-export const auth = admin.auth();
+// Export services secara langsung dari instance aplikasi yang sudah pasti ada
+export const auth = app.auth();
 export const adminApp = admin;
 export { db };
