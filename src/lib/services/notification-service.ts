@@ -4,8 +4,6 @@
 import { db, auth, adminApp } from "@/lib/firebase/server";
 import type { CommunicationCategory } from "@/types";
 
-const FieldValue = adminApp.firestore.FieldValue;
-
 /**
  * Mengirim email mentah melalui koleksi 'mail' di database 'performance'.
  */
@@ -18,6 +16,7 @@ export async function sendEmail(
     console.log(`[SMTP_ATTEMPT] Queueing email to: ${to.join(', ')}`);
     const fromAddress = process.env.SMTP_FROM_EMAIL || "noreply@kipiai.id";
 
+    // Menambahkan dokumen ke koleksi 'mail' di database 'performance'
     const docRef = await db.collection('mail').add({
       to,
       from: fromAddress, 
@@ -25,10 +24,10 @@ export async function sendEmail(
         subject,
         html,
       },
-      timestamp: FieldValue.serverTimestamp()
+      timestamp: adminApp.firestore.FieldValue.serverTimestamp()
     });
 
-    console.log(`[SMTP_SUCCESS] Mail queued in database 'performance' with ID: ${docRef.id}`);
+    console.log(`[SMTP_SUCCESS] Mail queued with ID: ${docRef.id}`);
   } catch (error: any) {
     console.error("[SMTP_ERROR] Failed to queue email:", error.message);
     throw new Error(`Gagal mengantrekan email: ${error.message}`);
@@ -37,7 +36,6 @@ export async function sendEmail(
 
 /**
  * Mengambil template dari Firestore dan mengirim via SMTP.
- * Pencarian diperkuat dengan fallback field dan logging detail.
  */
 export async function sendTemplatedEmail(
     to: string,
@@ -45,48 +43,38 @@ export async function sendTemplatedEmail(
     context: Record<string, string>
 ): Promise<void> {
     try {
-        console.log(`[TEMPLATE_QUERY] Searching for email template: "${category}"...`);
-        
+        console.log(`[TEMPLATE_FETCH] Searching for category: "${category}"`);
         const templatesRef = db.collection('emailTemplates');
         
-        // 1. Coba kueri field 'category'
-        let snap = await templatesRef.where('category', '==', category).limit(1).get();
-        
-        // 2. Fallback: Coba kueri field 'name' (beberapa implementasi pake name untuk slug)
-        if (snap.empty) {
-            console.log(`[TEMPLATE_QUERY] Category not found, trying fallback field 'name'...`);
-            snap = await templatesRef.where('name', '==', category).limit(1).get();
-        }
+        let templateData: any = null;
 
-        // 3. Fallback: Coba ambil berdasarkan ID dokumen langsung
-        if (snap.empty) {
-            console.log(`[TEMPLATE_QUERY] Category/Name not found, trying document ID...`);
-            const docById = await templatesRef.doc(category).get();
-            if (docById.exists) {
-                // Buat dummy snap if doc found by ID
-                const data = docById.data();
-                await sendEmail([to], replacePlaceholders(data?.subject || "", context), replacePlaceholders(data?.htmlContent || "", context));
-                return;
+        // 1. Coba cari berdasarkan ID Dokumen langsung (Paling akurat jika ID == Category)
+        const docById = await templatesRef.doc(category).get();
+        if (docById.exists) {
+            console.log(`[TEMPLATE_FOUND] Found template by ID: "${category}"`);
+            templateData = docById.data();
+        } 
+        
+        // 2. Jika tidak ketemu, cari berdasarkan field 'category'
+        if (!templateData) {
+            const snap = await templatesRef.where('category', '==', category).limit(1).get();
+            if (!snap.empty) {
+                console.log(`[TEMPLATE_FOUND] Found template by field "category": "${category}"`);
+                templateData = snap.docs[0].data();
             }
         }
-        
-        if (snap.empty) {
-            console.error(`[TEMPLATE_NOT_FOUND] FATAL: Template "${category}" not found by Category, Name, or ID.`);
+
+        // 3. Fallback terakhir: Ambil semua ID untuk debugging jika gagal
+        if (!templateData) {
+            const allDocs = await templatesRef.get();
+            const existingIds = allDocs.docs.map(d => d.id).join(', ');
+            const existingCategories = allDocs.docs.map(d => d.data().category).filter(Boolean).join(', ');
             
-            // DEBUG: List semua data di koleksi untuk diagnosa terminal
-            const allTemplates = await templatesRef.get();
-            console.log(`--- DEBUG: LISTING ALL TEMPLATES IN 'emailTemplates' (DB: performance) ---`);
-            console.log(`Total Documents: ${allTemplates.size}`);
-            allTemplates.forEach(d => {
-                const data = d.data();
-                console.log(`- ID: ${d.id} | Category: "${data.category}" | Name: "${data.name}"`);
-            });
-            console.log(`-----------------------------------------------------------------------`);
+            console.error(`[TEMPLATE_NOT_FOUND] Category: "${category}". IDs found: [${existingIds}]. Categories found: [${existingCategories}]`);
             
-            throw new Error(`Template Email dengan kategori "${category}" tidak ditemukan di database 'performance'.`);
+            throw new Error(`Template "${category}" tidak ditemukan. Tersedia ID: [${existingIds}]`);
         }
 
-        const templateData = snap.docs[0].data();
         let html = templateData.htmlContent || "";
         let subject = templateData.subject || "";
 
@@ -118,10 +106,10 @@ function replacePlaceholders(text: string, context: Record<string, string>): str
  */
 export async function sendPasswordResetEmailWithSmtp(email: string, userName: string): Promise<{ success: boolean; error?: string }> {
     try {
-        console.log(`[AUTH_SERVICE] Generating reset link for: ${email}`);
+        console.log(`[AUTH_SERVICE] Reset link request for: ${email}`);
         
         const projectId = "studio-2326395113-859ef";
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `https://${projectId}.firebaseapp.com`;
+        const baseUrl = `https://${projectId}.firebaseapp.com`;
         
         const actionCodeSettings = { 
             url: `${baseUrl}/login`,
@@ -137,7 +125,7 @@ export async function sendPasswordResetEmailWithSmtp(email: string, userName: st
 
         return { success: true };
     } catch (error: any) {
-        console.error("[AUTH_SERVICE_ERROR] Failed for email:", email, "Error:", error.message);
+        console.error("[AUTH_SERVICE_ERROR] Email:", email, "Error:", error.message);
         let friendlyError = error.message;
         if (error.code === 'auth/user-not-found') {
             friendlyError = "Email ini belum terdaftar di sistem otentikasi login.";

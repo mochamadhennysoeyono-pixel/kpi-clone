@@ -1,10 +1,11 @@
 // src/lib/firebase/server.ts
 import * as admin from 'firebase-admin';
+import { getFirestore } from 'firebase-admin/firestore';
 
 /**
  * @fileOverview Inisialisasi Firebase Admin SDK (Sisi Server) menggunakan Service Account.
- * Terkunci ke Project: studio-2326395113-859ef (systemprf)
- * Terkunci ke Database: performance
+ * Terkunci ke Project: studio-2326395113-859ef
+ * Database: performance
  */
 
 const projectId = "studio-2326395113-859ef";
@@ -24,19 +25,16 @@ function getApp() {
       }),
     });
   } catch (error: any) {
-    console.error("[FIREBASE_ADMIN_ERROR] Critical failed:", error.message);
+    console.error("[FIREBASE_ADMIN_ERROR]", error.message);
     return admin.app();
   }
 }
 
 const app = getApp();
 
-export const auth = app.auth();
+export const auth = admin.auth(app);
 export const adminApp = admin;
-
-/** 
- * db: Dipaksa mengarah ke database 'performance'
- */
-export const db = app.firestore('performance');
+// Menggunakan getFirestore secara eksplisit untuk database bernama
+export const db = getFirestore(app, 'performance');
 
 export { app };
