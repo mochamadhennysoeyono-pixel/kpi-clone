@@ -91,11 +91,16 @@ export async function sendPasswordResetEmailWithSmtp(email: string, userName: st
     try {
         console.log(`[AUTH_SERVICE] Generating reset link for: ${email}`);
         
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `https://systemprf.firebaseapp.com`;
-        const actionCodeSettings = { url: `${baseUrl}/login` };
+        // FIX: Gunakan Project ID yang benar agar domain masuk dalam allowlist Firebase Auth
+        const projectId = "studio-2326395113-859ef";
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `https://${projectId}.firebaseapp.com`;
+        
+        const actionCodeSettings = { 
+            url: `${baseUrl}/login`,
+            handleCodeInApp: true 
+        };
 
         // Generate link resmi dari Firebase Auth Admin
-        // Fungsi ini akan throw error jika email tidak terdaftar di Firebase Auth
         const resetLink = await auth.generatePasswordResetLink(email, actionCodeSettings);
         
         console.log(`[AUTH_SERVICE] Reset link generated successfully.`);
@@ -112,6 +117,8 @@ export async function sendPasswordResetEmailWithSmtp(email: string, userName: st
         let friendlyError = error.message;
         if (error.code === 'auth/user-not-found') {
             friendlyError = "Email ini belum terdaftar di sistem otentikasi login.";
+        } else if (error.code === 'auth/unauthorized-continue-uri') {
+            friendlyError = "Domain tidak diizinkan. Harap hubungi administrator untuk mendaftarkan domain aplikasi di Firebase Console.";
         }
         
         return { success: false, error: friendlyError };
