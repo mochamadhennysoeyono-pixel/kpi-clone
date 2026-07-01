@@ -1,3 +1,4 @@
+
 // src/app/(main)/company-admin-management/page.tsx
 "use client";
 
@@ -186,14 +187,21 @@ export default function CompanyAdminManagementPage() {
     }
   };
 
-  const handleSendInvitation = async (email: string) => {
+  const handleSendInvitation = async (email: string, name: string) => {
     setIsSendingInvitation(email);
-    const result = await sendPasswordReset(email);
+    const result = await sendPasswordReset(email, name);
     setIsSendingInvitation(null);
     if (result.success) {
-      toast({ title: "Email Terkirim" });
+      toast({
+        title: "Email Terkirim",
+        description: `Link pembaruan kata sandi untuk ${name} telah berhasil dikirim.`,
+      });
     } else {
-      toast({ variant: "destructive", title: "Gagal", description: result.error });
+      toast({
+        variant: "destructive",
+        title: "Gagal Mengirim",
+        description: result.error || "Terjadi kesalahan yang tidak diketahui.",
+      });
     }
   };
 
@@ -313,7 +321,7 @@ export default function CompanyAdminManagementPage() {
                                 <DropdownMenuItem onClick={() => handleEditAdmin(admin)}>
                                     Ubah Profil
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleSendInvitation(admin.email)}>
+                                <DropdownMenuItem onClick={() => handleSendInvitation(admin.email, admin.name)}>
                                     <Send className="mr-2 size-3.5" /> Kirim Reset Sandi
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
@@ -343,7 +351,7 @@ export default function CompanyAdminManagementPage() {
         onOpenChange={setSheetOpen}
         employee={selectedAdmin}
         onAdd={handleAddAction}
-        onSave={() => {}} // Handle edit separately if needed
+        onSave={() => {}} 
         quotaInfo={null}
       />
 

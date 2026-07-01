@@ -1,3 +1,4 @@
+
 // src/contexts/auth-context.tsx
 "use client";
 
@@ -64,7 +65,7 @@ interface AuthContextType {
   activateEmployeeAccount: (data: EmployeeActivationData) => Promise<{ success: boolean; error?: string; message?: string }>;
   addUserAsAdmin: (employeeData: Omit<Employee, 'id' | 'loginStatus'>, sendInvitationEmail?: boolean, silent?: boolean) => Promise<{ success: boolean; error?: string; message?: string }>;
   addCompanyAdmin: (adminData: Omit<CompanyAdmin, 'id' | 'authUid' | 'loginStatus' | 'createdAt'>, sendInvitationEmail?: boolean) => Promise<{ success: boolean; error?: string; message?: string }>;
-  sendPasswordReset: (email: string, isSilent?: boolean) => Promise<{ success: boolean; error?: string }>;
+  sendPasswordReset: (email: string, userName?: string, isSilent?: boolean) => Promise<{ success: boolean; error?: string }>;
   updateUserProfile: (userId: string, data: UpdateData<DocumentData>) => Promise<{ success: boolean; error?: string }>;
   updateUserPassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -257,13 +258,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         await batch.commit();
 
-        // Async Background Notifications
         notifyAdminNewRegistration(data).catch(console.error);
         sendWelcomeWhatsApp(data).catch(console.error);
-        
-        // Auto-logout after registration to force formal login if needed, 
-        // or keep logged in. Here we keep them logged in for better UX.
-        // await signOut(auth);
         
         return { success: true, message: "Pendaftaran berhasil! Akun Manajemen Anda sudah siap." };
     } catch (e: any) {
@@ -278,12 +274,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const addUserAsAdmin = async (employeeData: Omit<Employee, 'id' | 'loginStatus'>, sendInvitationEmail = false, silent = false) => {
-    return { success: false, error: "Fungsi ini dipindahkan." };
+    if (!silent) setIsLoading(true);
+    const tempApp = initializeApp(auth.app.options, `temp-emp-${Date.now()}`);
+    const tempAuth = getAuth(tempApp);
+    
+    try {
+      const email = employeeData.email.toLowerCase().trim();
+      const tempPassword = Math.random().toString(36).slice(-10);
+
+      const userCredential = await createUserWithEmailAndPassword(tempAuth, email, tempPassword);
+      const newUser = userCredential.user;
+  
+      await setDoc(doc(db, "employees", newUser.uid), {
+        ...employeeData,
+        email,
+        authUid: newUser.uid,
+        loginStatus: sendInvitationEmail ? 'Invited' : 'No Login',
+      });
+
+      if (sendInvitationEmail) {
+        await sleep(1000); 
+        await sendPasswordReset(email, employeeData.name, true); 
+      }
+      
+      return { success: true, message: `Berhasil menambahkan karyawan ${employeeData.name}.` };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    } finally {
+      await signOut(tempAuth).catch(() => {});
+      await deleteApp(tempApp).catch(() => {});
+      if (!silent) setIsLoading(false);
+    }
   };
 
   const addCompanyAdmin = async (adminData: Omit<CompanyAdmin, 'id' | 'authUid' | 'loginStatus' | 'createdAt'>, sendInvitationEmail = false) => {
     setIsLoading(true);
-    const tempApp = initializeApp(auth.app.options, `temp-${Date.now()}`);
+    const tempApp = initializeApp(auth.app.options, `temp-adm-${Date.now()}`);
     const tempAuth = getAuth(tempApp);
     
     try {
@@ -303,7 +329,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (sendInvitationEmail) {
         await sleep(1000); 
-        await sendPasswordReset(email, true); 
+        await sendPasswordReset(email, adminData.name, true); 
       }
       
       return { success: true, message: `Berhasil menambahkan admin ${adminData.name}.` };
@@ -316,14 +342,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const sendPasswordReset = async (email: string, isSilent = false) => {
+  const sendPasswordReset = async (email: string, userName: string = "Pengguna", isSilent = false) => {
     const cleanEmail = email.toLowerCase().trim();
     if (!isSilent) setIsLoading(true);
     
     try {
-        await sendPasswordResetEmailWithSmtp(cleanEmail, "Pengguna");
+        console.log(`[AUTH_CONTEXT] Requesting reset for: ${cleanEmail} (${userName})`);
+        const result = await sendPasswordResetEmailWithSmtp(cleanEmail, userName);
+        if (!result.success) throw new Error(result.error);
         return { success: true };
     } catch(e: any) {
+        console.error(`[AUTH_CONTEXT_ERROR]`, e.message);
         return { success: false, error: e.message };
     } finally {
         if (!isSilent) setIsLoading(false);

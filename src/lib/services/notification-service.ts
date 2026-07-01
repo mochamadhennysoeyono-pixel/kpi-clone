@@ -1,3 +1,4 @@
+
 // src/lib/services/notification-service.ts
 'use server';
 
@@ -18,13 +19,13 @@ export async function sendEmail(
   try {
     console.log(`[SMTP_ATTEMPT] Queueing email to: ${to.join(', ')} in 'performance' DB`);
     
-    // Alamat pengirim default jika tidak ditentukan di config Extension
-    const fromAddress = process.env.SMTP_FROM_EMAIL || "Perfom Team <noreply@kipiai.id>";
+    // Alamat pengirim: Gunakan email sederhana tanpa tag nama jika SMTP ketat
+    const fromAddress = process.env.SMTP_FROM_EMAIL || "noreply@kipiai.id";
 
     // Menulis langsung ke koleksi 'mail' di database 'performance'
     const docRef = await db.collection('mail').add({
       to,
-      from: fromAddress, // Menambahkan field from agar Extension tidak bingung
+      from: fromAddress, 
       message: {
         subject,
         html,
@@ -68,7 +69,7 @@ export async function sendTemplatedEmail(
         if (!html) throw new Error(`Konten HTML pada template "${category}" kosong.`);
 
         // Replace placeholders: mencari format {{key}}
-        console.log(`[TEMPLATE_PARSE] Injecting context into template...`);
+        console.log(`[TEMPLATE_PARSE] Injecting context into template for: ${to}`);
         for (const [key, value] of Object.entries(context)) {
             const regex = new RegExp(`{{${key}}}`, 'g');
             const safeValue = value || '';
@@ -94,6 +95,7 @@ export async function sendPasswordResetEmailWithSmtp(email: string, userName: st
         const actionCodeSettings = { url: `${baseUrl}/login` };
 
         // Generate link resmi dari Firebase Auth Admin
+        // Fungsi ini akan throw error jika email tidak terdaftar di Firebase Auth
         const resetLink = await auth.generatePasswordResetLink(email, actionCodeSettings);
         
         console.log(`[AUTH_SERVICE] Reset link generated successfully.`);
@@ -105,8 +107,14 @@ export async function sendPasswordResetEmailWithSmtp(email: string, userName: st
 
         return { success: true };
     } catch (error: any) {
-        console.error("[AUTH_SERVICE_ERROR]", error.message);
-        return { success: false, error: error.message };
+        console.error("[AUTH_SERVICE_ERROR] Failed for email:", email, "Error:", error.message);
+        
+        let friendlyError = error.message;
+        if (error.code === 'auth/user-not-found') {
+            friendlyError = "Email ini belum terdaftar di sistem otentikasi login.";
+        }
+        
+        return { success: false, error: friendlyError };
     }
 }
 
