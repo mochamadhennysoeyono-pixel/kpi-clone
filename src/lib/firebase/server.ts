@@ -34,10 +34,14 @@ if (!admin.apps.length) {
   }
 }
 
-// PENTING: Memaksa koneksi Admin SDK ke database 'performance'
+/**
+ * PENTING: Memaksa koneksi Admin SDK ke database 'performance'.
+ * ignoreUndefinedProperties ditambahkan untuk kestabilan penulisan data.
+ */
 const db = new Firestore({
   projectId: projectId,
   databaseId: 'performance', 
+  ignoreUndefinedProperties: true,
 });
 
 export const auth = admin.auth();

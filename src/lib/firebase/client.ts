@@ -3,9 +3,9 @@
 
 import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { getMessaging, getToken, onMessage, isSupported, getMessaging as getFCM } from "firebase/messaging";
+import { getMessaging, getToken, onMessage, isSupported } from "firebase/messaging";
 
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -19,9 +19,15 @@ const firebaseConfig: FirebaseOptions = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 
-// PENTING: Memaksa koneksi ke database 'performance'
-const db = getFirestore(app, "performance"); 
+/**
+ * PENTING: Memaksa koneksi ke database 'performance'.
+ * Menggunakan initializeFirestore dengan experimentalForceLongPolling 
+ * untuk mengatasi masalah "Could not reach Cloud Firestore backend" di lingkungan terbatas.
+ */
+const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+}, "performance");
 
 const storage = getStorage(app);
 
-export { app, auth, db, storage, getToken, onMessage, isSupported, getFCM as getMessaging };
+export { app, auth, db, storage, getToken, onMessage, isSupported, getMessaging };
