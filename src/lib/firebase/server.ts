@@ -10,7 +10,7 @@ import { Firestore } from '@google-cloud/firestore';
 
 const projectId = "studio-2326395113-859ef";
 
-function getApp() {
+function initializeAdmin() {
   if (admin.apps.length > 0) {
     return admin.apps[0]!;
   }
@@ -36,13 +36,17 @@ function getApp() {
       return admin.initializeApp({ projectId });
     }
   } catch (error: any) {
-    console.error("[FIREBASE_ADMIN_ERROR] Initialization failed, returning existing app if any:", error.message);
-    return admin.app();
+    // Jika karena suatu hal (HMR) aplikasi sudah ada walau apps.length 0
+    if (/already exists/.test(error.message)) {
+      return admin.app();
+    }
+    console.error("[FIREBASE_ADMIN_ERROR] Critical failure:", error.message);
+    throw error;
   }
 }
 
 // Inisialisasi instance aplikasi tunggal
-const app = getApp();
+const app = initializeAdmin();
 
 /**
  * PENTING: Memaksa koneksi Admin SDK ke database 'performance'.
@@ -57,4 +61,4 @@ const db = new Firestore({
 // Export services secara langsung dari instance aplikasi yang sudah pasti ada
 export const auth = app.auth();
 export const adminApp = admin;
-export { db };
+export { db, app };
