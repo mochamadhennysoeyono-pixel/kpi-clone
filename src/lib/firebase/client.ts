@@ -5,23 +5,20 @@ import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/a
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { getMessaging, getToken, onMessage, isSupported } from "firebase/messaging";
+import { getMessaging, getToken, onMessage, isSupported, getMessaging as getFCM } from "firebase/messaging";
 
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  projectId: "studio-2326395113-859ef", // Hardcoded to systemprf
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase for the client
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
-const db = getFirestore(app, "performance"); // <-- DIARAHKAN KE DATABASE 'PERFORMANCE'
+const db = getFirestore(app, "performance"); // Locked to 'performance' database
 const storage = getStorage(app);
 
-// We export functions and the app instance instead of an initialized messaging object
-// to prevent "unsupported browser" errors during the initial module load.
-export { app, auth, db, storage, getToken, onMessage, isSupported, getMessaging };
+export { app, auth, db, storage, getToken, onMessage, isSupported, getFCM as getMessaging };
