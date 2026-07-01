@@ -28,7 +28,7 @@ export async function sendEmail(
       timestamp: FieldValue.serverTimestamp()
     });
 
-    console.log(`[SMTP_SUCCESS] Mail queued with ID: ${docRef.id}`);
+    console.log(`[SMTP_SUCCESS] Mail queued in database 'performance' with ID: ${docRef.id}`);
   } catch (error: any) {
     console.error("[SMTP_ERROR] Failed to queue email:", error.message);
     throw new Error(`Gagal mengantrekan email: ${error.message}`);
@@ -37,6 +37,7 @@ export async function sendEmail(
 
 /**
  * Mengambil template dari Firestore dan mengirim via SMTP.
+ * Pencarian diperkuat dengan fallback field dan logging detail.
  */
 export async function sendTemplatedEmail(
     to: string,
@@ -44,39 +45,72 @@ export async function sendTemplatedEmail(
     context: Record<string, string>
 ): Promise<void> {
     try {
-        console.log(`[TEMPLATE_QUERY] Searching for category: "${category}"...`);
+        console.log(`[TEMPLATE_QUERY] Searching for email template: "${category}"...`);
         
-        // Coba cari dengan kueri eksak
-        const snap = await db.collection('emailTemplates')
-            .where('category', '==', category)
-            .limit(1)
-            .get();
+        const templatesRef = db.collection('emailTemplates');
+        
+        // 1. Coba kueri field 'category'
+        let snap = await templatesRef.where('category', '==', category).limit(1).get();
+        
+        // 2. Fallback: Coba kueri field 'name' (beberapa implementasi pake name untuk slug)
+        if (snap.empty) {
+            console.log(`[TEMPLATE_QUERY] Category not found, trying fallback field 'name'...`);
+            snap = await templatesRef.where('name', '==', category).limit(1).get();
+        }
+
+        // 3. Fallback: Coba ambil berdasarkan ID dokumen langsung
+        if (snap.empty) {
+            console.log(`[TEMPLATE_QUERY] Category/Name not found, trying document ID...`);
+            const docById = await templatesRef.doc(category).get();
+            if (docById.exists) {
+                // Buat dummy snap if doc found by ID
+                const data = docById.data();
+                await sendEmail([to], replacePlaceholders(data?.subject || "", context), replacePlaceholders(data?.htmlContent || "", context));
+                return;
+            }
+        }
         
         if (snap.empty) {
-            // DEBUG: Jika tidak ketemu, list semua yang ada buat liat ada typo atau nggak
-            const allTemplates = await db.collection('emailTemplates').get();
-            const available = allTemplates.docs.map(d => d.data().category);
-            console.error(`[TEMPLATE_NOT_FOUND] Category "${category}" missing. Available categories in DB:`, available);
+            console.error(`[TEMPLATE_NOT_FOUND] FATAL: Template "${category}" not found by Category, Name, or ID.`);
             
-            throw new Error(`Template Email dengan kategori "${category}" tidak ditemukan.`);
+            // DEBUG: List semua data di koleksi untuk diagnosa terminal
+            const allTemplates = await templatesRef.get();
+            console.log(`--- DEBUG: LISTING ALL TEMPLATES IN 'emailTemplates' (DB: performance) ---`);
+            console.log(`Total Documents: ${allTemplates.size}`);
+            allTemplates.forEach(d => {
+                const data = d.data();
+                console.log(`- ID: ${d.id} | Category: "${data.category}" | Name: "${data.name}"`);
+            });
+            console.log(`-----------------------------------------------------------------------`);
+            
+            throw new Error(`Template Email dengan kategori "${category}" tidak ditemukan di database 'performance'.`);
         }
 
         const templateData = snap.docs[0].data();
         let html = templateData.htmlContent || "";
         let subject = templateData.subject || "";
 
-        for (const [key, value] of Object.entries(context)) {
-            const regex = new RegExp(`{{${key}}}`, 'g');
-            const safeValue = value || '';
-            html = html.replace(regex, safeValue);
-            subject = subject.replace(regex, safeValue);
-        }
+        html = replacePlaceholders(html, context);
+        subject = replacePlaceholders(subject, context);
 
         await sendEmail([to], subject, html);
     } catch (error: any) {
         console.error("[TEMPLATED_EMAIL_ERROR]", error.message);
         throw error;
     }
+}
+
+/**
+ * Helper internal untuk mengganti {{placeholder}} dengan nilai context
+ */
+function replacePlaceholders(text: string, context: Record<string, string>): string {
+    let result = text;
+    for (const [key, value] of Object.entries(context)) {
+        const regex = new RegExp(`{{${key}}}`, 'g');
+        const safeValue = value || '';
+        result = result.replace(regex, safeValue);
+    }
+    return result;
 }
 
 /**
@@ -156,10 +190,7 @@ export async function sendTemplatedWhatsApp(to: string, category: CommunicationC
         const templateData = snap.docs[0].data();
         let message = templateData.message || "";
 
-        for (const [key, value] of Object.entries(context)) {
-            const regex = new RegExp(`{{${key}}}`, 'g');
-            message = message.replace(regex, value || '');
-        }
+        message = replacePlaceholders(message, context);
 
         await sendWhatsApp(to, message);
     } catch (error: any) {
