@@ -16,10 +16,13 @@ if (privateKey) {
     privateKey = privateKey.trim().replace(/\\n/g, '\n');
 }
 
-if (!admin.apps.length) {
+// Inisialisasi App secara aman
+let app: admin.app.App;
+
+if (admin.apps.length === 0) {
   try {
     if (clientEmail && privateKey) {
-      admin.initializeApp({
+      app = admin.initializeApp({
         credential: admin.credential.cert({
           projectId,
           clientEmail,
@@ -27,11 +30,17 @@ if (!admin.apps.length) {
         }),
       });
     } else {
-      admin.initializeApp({ projectId });
+      // Fallback ke Application Default Credentials (ADC) atau Studio Auth
+      app = admin.initializeApp({ projectId });
     }
+    console.log("[FIREBASE_ADMIN] Initialized new app instance.");
   } catch (error: any) {
     console.error("[FIREBASE_ADMIN_ERROR] Initialization failed:", error.message);
+    // Jika gagal, ambil instance default yang mungkin sudah ada (walau apps.length tadi 0)
+    app = admin.app();
   }
+} else {
+  app = admin.app();
 }
 
 /**
@@ -44,6 +53,7 @@ const db = new Firestore({
   ignoreUndefinedProperties: true,
 });
 
-export const auth = admin.auth();
+// Export services dari instance yang sudah diverifikasi
+export const auth = app.auth();
 export const adminApp = admin;
 export { db };
