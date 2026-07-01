@@ -18,6 +18,12 @@ service cloud.firestore {
   
     // --- FUNGSI BANTU (HELPERS) ---
     function getUserData() {
+      let isStaff = exists(/databases/$(database)/documents/employees/$(request.auth.uid));
+      let isAdmin = exists(/databases/$(database)/documents/companyAdmins/$(request.auth.uid));
+      let isSuper = exists(/databases/$(database)/documents/superadmins/$(request.auth.uid));
+      
+      if (isSuper) return get(/databases/$(database)/documents/superadmins/$(request.auth.uid)).data;
+      if (isAdmin) return get(/databases/$(database)/documents/companyAdmins/$(request.auth.uid)).data;
       return get(/databases/$(database)/documents/employees/$(request.auth.uid)).data;
     }
     
@@ -68,6 +74,10 @@ service cloud.firestore {
       
       // Aturan DELETE hanya untuk superadmin
       allow delete: if isSuperadmin();
+    }
+    
+    match /companyAdmins/{adminId} {
+      allow read: if isSuperadmin() || (isSignedIn() && isMemberOf(resource.data.company));
     }
     
     // IZINKAN SEMUA PENGGUNA TERAUTENTIKASI UNTUK MEMBACA DATA DALAM PERUSAHAAN MEREKA

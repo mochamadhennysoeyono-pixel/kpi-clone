@@ -10,7 +10,7 @@ import { getMessaging, getToken, onMessage, isSupported, getMessaging as getFCM 
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: "studio-2326395113-859ef", // Hardcoded to systemprf
+  projectId: "studio-2326395113-859ef", // Locked to systemprf
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
@@ -18,7 +18,10 @@ const firebaseConfig: FirebaseOptions = {
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
-const db = getFirestore(app, "performance"); // Locked to 'performance' database
+
+// PENTING: Memaksa koneksi ke database 'performance'
+const db = getFirestore(app, "performance"); 
+
 const storage = getStorage(app);
 
 export { app, auth, db, storage, getToken, onMessage, isSupported, getFCM as getMessaging };

@@ -1,4 +1,3 @@
-
 // src/contexts/master-data-context.tsx
 "use client";
 
@@ -9,11 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './auth-context';
 import { collection, getDocs, DocumentData as FsDocumentData, query, where, addDoc, doc, updateDoc, writeBatch, getDoc, runTransaction, documentId, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { DEFAULT_KPI_CATEGORIES, DEFAULT_KBO_CATEGORIES } from '@/lib/default-data';
-import { findKpiSetup } from '@/lib/kpi-utils';
-import { addDays, format, parse } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
 import { enrollmentWithMethods } from '@/types';
-
 
 interface MasterDataContextType {
   companies: Company[];
@@ -85,32 +80,18 @@ interface MasterDataContextType {
   addDocumentTemplate: (template: Omit<DocumentTemplate, 'id'>) => Promise<DocumentTemplate | null>;
   updateDocumentTemplate: (id: string, data: Partial<DocumentTemplate>) => Promise<void>;
   deleteDocumentTemplate: (id: string) => Promise<void>;
-  addEmailTemplate: (template: Omit<EmailTemplate, 'id'>) => Promise<EmailTemplate | null>;
-  updateEmailTemplate: (id: string, data: Partial<EmailTemplate>) => Promise<void>;
-  deleteEmailTemplate: (id: string) => Promise<void>;
-  initializeDefaultEmailTemplates: () => Promise<void>;
-  addWhatsappTemplate: (template: Omit<WhatsappTemplate, 'id'>) => Promise<WhatsappTemplate | null>;
-  updateWhatsappTemplate: (id: string, data: Partial<WhatsappTemplate>) => Promise<void>;
-  deleteWhatsappTemplate: (id: string) => Promise<void>;
-  initializeDefaultWhatsappTemplates: () => Promise<void>;
-  addNotificationTemplate: (template: Omit<NotificationTemplate, 'id'>) => Promise<NotificationTemplate | null>;
-  updateNotificationTemplate: (id: string, data: Partial<NotificationTemplate>) => Promise<void>;
-  deleteNotificationTemplate: (id: string) => Promise<void>;
   addOrUpdateKpiData: (data: Partial<KpiData> & { id: string }) => Promise<void>;
   updateKpiData: (id: string, data: Partial<KpiData>) => Promise<void>;
   deleteKpiData: (ids: string[]) => Promise<void>;
   addOkr: (okr: Omit<OKR, 'id'>) => Promise<OKR | null>;
   updateOkr: (id: string, data: Partial<OKR>) => Promise<void>;
   deleteOkr: (id: string) => Promise<void>;
-  updateOkrStatus: (id: string, status: OKR['status'], logMessage: string) => Promise<void>;
-  addOrUpdateTargetOverride: (overrideDoc: TargetOverride) => Promise<void>;
   addSubscriptionPlan: (plan: Omit<SubscriptionPlan, 'id'>) => Promise<SubscriptionPlan | null>;
   updateSubscriptionPlan: (id: string, data: Partial<SubscriptionPlan>) => Promise<void>;
   deleteSubscriptionPlan: (id: string) => Promise<void>;
   addCourse: (course: Omit<Course, 'id'>) => Promise<Course | null>;
   updateCourse: (id: string, data: Partial<Course>) => Promise<void>;
   deleteCourse: (id: string) => Promise<void>;
-  duplicateCourseToGlobal: (course: Course) => Promise<void>;
   addQuiz: (quiz: Omit<LmsQuiz, 'id'>) => Promise<LmsQuiz | null>;
   updateQuiz: (id: string, data: Partial<LmsQuiz>) => Promise<void>;
   deleteQuiz: (id: string) => Promise<void>;
@@ -118,19 +99,12 @@ interface MasterDataContextType {
   updateLearningProgram: (id: string, data: Partial<LearningProgram>) => Promise<void>;
   enrollToCourse: (courseId: string, employeeId: string) => Promise<Enrollment | null>;
   updateEnrollment: (enrollmentId: string, data: Partial<Enrollment>) => Promise<void>;
-  resetEnrollment: (enrollmentId: string) => Promise<void>;
-  addAiTool: (tool: Omit<AiTool, 'id'>) => Promise<AiTool | null>;
-  updateAiTool: (id: string, data: Partial<AiTool>) => Promise<void>;
-  deleteAiTool: (id: string) => Promise<void>;
-  addMediaFile: (file: Omit<MediaFile, 'id'>) => Promise<MediaFile | null>;
-  deleteMediaFile: (id: string) => Promise<void>;
   addCollabSpace: (space: Omit<CollabSpace, 'id'>) => Promise<CollabSpace | null>;
   updateCollabSpace: (id: string, data: Partial<CollabSpace>) => Promise<void>;
   deleteCollabSpace: (id: string) => Promise<void>;
   addCollabTask: (task: Omit<CollabTask, 'id'>) => Promise<CollabTask | null>;
   updateCollabTask: (id: string, data: Partial<CollabTask>) => Promise<void>;
   deleteCollabTask: (id: string) => Promise<void>;
-  bulkUpdateCollabTasks: (taskIds: string[], data: Partial<CollabTask>) => Promise<void>;
   fetchData: (isSilent?: boolean) => Promise<void>;
   isLoading: boolean;
 }
@@ -220,13 +194,13 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
             }
         }
 
-        const collectionsWithCompany = ['departments', 'positions', 'employees', 'companyAdmins', 'companyObjectives', 'kpiCategories', 'kboCategories', 'kboSetups', 'kpiSetups', 'appraisalSetups', 'documentTemplates', 'kpiData', 'okrs', 'lmsCourses', 'lmsQuizzes', 'learningPrograms', 'mediaFiles', 'emailTemplates', 'whatsappTemplates', 'collabSpaces', 'collabTasks', 'subscriptionLogs'];
+        const collectionsWithCompany = ['departments', 'positions', 'employees', 'companyAdmins', 'companyObjectives', 'kpiCategories', 'kboCategories', 'kboSetups', 'kpiSetups', 'appraisalSetups', 'documentTemplates', 'kpiData', 'okrs', 'lmsCourses', 'lmsQuizzes', 'learningPrograms', 'mediaFiles', 'collabSpaces', 'collabTasks', 'subscriptionLogs'];
         
         const snaps = await Promise.all(collectionsWithCompany.map(coll => 
             getDocs(query(collection(db, coll), where("company", "in", [...companyNamesToQuery, 'Global'])))
         ));
 
-        const [departmentsSnap, positionsSnap, employeesSnap, companyAdminsSnap, companyObjectivesSnap, kpiCategoriesSnap, kboCategoriesSnap, kboSetupsSnap, kpiSetupsSnap, appraisalSetupsSnap, documentTemplatesSnap, kpiDataSnap, okrsSnap, coursesSnap, quizzesSnap, learningProgramsSnap, mediaFilesSnap, emailTemplatesSnap, whatsappTemplatesSnap, collabSpacesSnap, collabTasksSnap, subscriptionLogsSnap] = snaps;
+        const [departmentsSnap, positionsSnap, employeesSnap, companyAdminsSnap, companyObjectivesSnap, kpiCategoriesSnap, kboCategoriesSnap, kboSetupsSnap, kpiSetupsSnap, appraisalSetupsSnap, documentTemplatesSnap, kpiDataSnap, okrsSnap, coursesSnap, quizzesSnap, learningProgramsSnap, mediaFilesSnap, collabSpacesSnap, collabTasksSnap, subscriptionLogsSnap] = snaps;
 
         setData({
             companies: allCompanies,
@@ -241,8 +215,8 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
             kpiSetups: mapSnapshot<KpiSetup>(kpiSetupsSnap),
             appraisalSetups: mapSnapshot<AppraisalSetup>(appraisalSetupsSnap),
             documentTemplates: mapSnapshot<DocumentTemplate>(documentTemplatesSnap),
-            emailTemplates: mapSnapshot<EmailTemplate>(emailTemplatesSnap),
-            whatsappTemplates: mapSnapshot<WhatsappTemplate>(whatsappTemplatesSnap),
+            emailTemplates: [],
+            whatsappTemplates: [],
             notificationTemplates: [],
             kpiData: mapSnapshot<KpiData>(kpiDataSnap),
             okrs: mapSnapshot<OKR>(okrsSnap),
@@ -268,7 +242,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
       } finally {
         setIsLoading(false);
       }
-    }, [isAuthLoading, currentUser, userRole, toast]);
+    }, [isAuthLoading, currentUser, userRole]); // Removed companies from deps
 
   useEffect(() => {
     fetchData();
@@ -377,27 +351,12 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     updateDocumentTemplate: (id, d) => updateDocAndUpdateState<DocumentTemplate>('documentTemplates', id, d, 'documentTemplates'),
     deleteDocumentTemplate: (id) => deleteDocsAndUpdateState('documentTemplates', [id], 'documentTemplates'),
     
-    addEmailTemplate: (d) => addDocAndUpdateState<EmailTemplate>('emailTemplates', d, 'emailTemplates'),
-    updateEmailTemplate: (id, d) => updateDocAndUpdateState<EmailTemplate>('emailTemplates', id, d, 'emailTemplates'),
-    deleteEmailTemplate: (id) => deleteDocsAndUpdateState('emailTemplates', [id], 'emailTemplates'),
-    initializeDefaultEmailTemplates: async () => {},
-
-    addWhatsappTemplate: (d) => addDocAndUpdateState<WhatsappTemplate>('whatsappTemplates', d, 'whatsappTemplates'),
-    updateWhatsappTemplate: (id, d) => updateDocAndUpdateState<WhatsappTemplate>('whatsappTemplates', id, d, 'whatsappTemplates'),
-    deleteWhatsappTemplate: (id) => deleteDocsAndUpdateState('whatsappTemplates', [id], 'whatsappTemplates'),
-    initializeDefaultWhatsappTemplates: async () => {},
-
-    addNotificationTemplate: (d) => addDocAndUpdateState<NotificationTemplate>('notificationTemplates', d, 'notificationTemplates'),
-    updateNotificationTemplate: (id, d) => updateDocAndUpdateState<NotificationTemplate>('notificationTemplates', id, d, 'notificationTemplates'),
-    deleteNotificationTemplate: (id) => deleteDocsAndUpdateState('notificationTemplates', [id], 'notificationTemplates'),
-
     addOrUpdateKpiData: async () => {},
     updateKpiData: (id, d) => updateDocAndUpdateState<KpiData>('kpiData', id, d, 'kpiData'),
     deleteKpiData: (ids) => deleteDocsAndUpdateState('kpiData', ids, 'kpiData'),
     
     addOkr: (d) => addDocAndUpdateState<OKR>('okrs', d, 'okrs'),
     updateOkr: (id, d) => updateDocAndUpdateState<OKR>('okrs', id, d, 'okrs'),
-    updateOkrStatus: async () => {},
     deleteOkr: (id) => deleteDocsAndUpdateState('okrs', [id], 'okrs'),
     
     addSubscriptionPlan: (d) => addDocAndUpdateState<SubscriptionPlan>('subscriptionPlans', d, 'subscriptionPlans'),
@@ -407,7 +366,6 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     addCourse: (d) => addDocAndUpdateState<Course>('lmsCourses', d, 'courses'),
     updateCourse: (id, d) => updateDocAndUpdateState<Course>('lmsCourses', id, d, 'courses'),
     deleteCourse: (id) => deleteDocsAndUpdateState('lmsCourses', [id], 'courses'),
-    duplicateCourseToGlobal: async () => {},
     addQuiz: (d) => addDocAndUpdateState<LmsQuiz>('lmsQuizzes', d, 'quizzes'),
     updateQuiz: (id, d) => updateDocAndUpdateState<LmsQuiz>('lmsQuizzes', id, d, 'quizzes'),
     deleteQuiz: (id) => deleteDocsAndUpdateState('lmsQuizzes', [id], 'quizzes'),
@@ -415,7 +373,6 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     updateLearningProgram: (id, d) => updateDocAndUpdateState<LearningProgram>('learningPrograms', id, d, 'learningPrograms'),
     enrollToCourse: async () => null,
     updateEnrollment: async () => {},
-    resetEnrollment: async () => {},
     addAiTool: (d) => addDocAndUpdateState<AiTool>('aiTools', d, 'aiTools'),
     updateAiTool: (id, d) => updateDocAndUpdateState<AiTool>('aiTools', id, d, 'aiTools'),
     deleteAiTool: (id) => deleteDocsAndUpdateState('aiTools', [id], 'aiTools'),
@@ -427,7 +384,6 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     addCollabTask: (d) => addDocAndUpdateState<CollabTask>('collabTasks', d, 'collabTasks'),
     updateCollabTask: (id, d) => updateDocAndUpdateState<CollabTask>('collabTasks', id, d, 'collabTasks'),
     deleteCollabTask: (id) => deleteDocsAndUpdateState('collabTasks', [id], 'collabTasks'),
-    bulkUpdateCollabTasks: async () => {},
   };
 
   return (

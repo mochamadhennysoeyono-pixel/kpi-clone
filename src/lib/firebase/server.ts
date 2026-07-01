@@ -5,6 +5,7 @@ import { Firestore } from '@google-cloud/firestore';
 /**
  * @fileOverview Inisialisasi Firebase Admin SDK (Sisi Server).
  * Terkunci ke Project: studio-2326395113-859ef (systemprf)
+ * Terkunci ke Database: performance
  */
 
 const projectId = "studio-2326395113-859ef";
@@ -33,7 +34,7 @@ if (!admin.apps.length) {
   }
 }
 
-// Inisialisasi Firestore dengan ID database 'performance'
+// PENTING: Memaksa koneksi Admin SDK ke database 'performance'
 const db = new Firestore({
   projectId: projectId,
   databaseId: 'performance', 
