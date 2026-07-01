@@ -2,12 +2,13 @@
 'use server';
 
 import { db, auth, adminApp } from "@/lib/firebase/server";
-import type { CommunicationCategory, EmailTemplate, WhatsappTemplate } from "@/types";
+import type { CommunicationCategory } from "@/types";
 
 const FieldValue = adminApp.firestore.FieldValue;
 
 /**
  * Mengirim email mentah melalui koleksi 'mail' di database 'performance'.
+ * Extension "Trigger Email" akan mendeteksi dokumen baru di sini.
  */
 export async function sendEmail(
   to: string[],
@@ -16,18 +17,24 @@ export async function sendEmail(
 ): Promise<void> {
   try {
     console.log(`[SMTP_ATTEMPT] Queueing email to: ${to.join(', ')} in 'performance' DB`);
-    // Menulis langsung ke database 'performance'
-    await db.collection('mail').add({
+    
+    // Alamat pengirim default jika tidak ditentukan di config Extension
+    const fromAddress = process.env.SMTP_FROM_EMAIL || "Perfom Team <noreply@kipiai.id>";
+
+    // Menulis langsung ke koleksi 'mail' di database 'performance'
+    const docRef = await db.collection('mail').add({
       to,
+      from: fromAddress, // Menambahkan field from agar Extension tidak bingung
       message: {
         subject,
         html,
       },
       timestamp: FieldValue.serverTimestamp()
     });
-    console.log(`[SMTP_SUCCESS] Document added to 'mail' collection on 'performance' DB.`);
+
+    console.log(`[SMTP_SUCCESS] Mail queued with ID: ${docRef.id} in 'performance' DB.`);
   } catch (error: any) {
-    console.error("[SMTP_ERROR] Failed to write to 'mail' collection:", error.message);
+    console.error("[SMTP_ERROR] Failed to queue email in 'performance' DB:", error.message);
     throw new Error(`Gagal mengantrekan email: ${error.message}`);
   }
 }
@@ -42,6 +49,7 @@ export async function sendTemplatedEmail(
 ): Promise<void> {
     try {
         console.log(`[TEMPLATE_QUERY] Fetching template for category: ${category} from 'performance' DB`);
+        
         // Template dicari di database performance
         const snap = await db.collection('emailTemplates')
             .where('category', '==', category)
@@ -49,6 +57,7 @@ export async function sendTemplatedEmail(
             .get();
         
         if (snap.empty) {
+            console.error(`[TEMPLATE_ERROR] Template category "${category}" not found in emailTemplates collection.`);
             throw new Error(`Template Email dengan kategori "${category}" tidak ditemukan.`);
         }
 
@@ -58,11 +67,13 @@ export async function sendTemplatedEmail(
 
         if (!html) throw new Error(`Konten HTML pada template "${category}" kosong.`);
 
-        // Replace placeholders
+        // Replace placeholders: mencari format {{key}}
+        console.log(`[TEMPLATE_PARSE] Injecting context into template...`);
         for (const [key, value] of Object.entries(context)) {
             const regex = new RegExp(`{{${key}}}`, 'g');
-            html = html.replace(regex, value || '');
-            subject = subject.replace(regex, value || '');
+            const safeValue = value || '';
+            html = html.replace(regex, safeValue);
+            subject = subject.replace(regex, safeValue);
         }
 
         await sendEmail([to], subject, html);
@@ -79,13 +90,13 @@ export async function sendPasswordResetEmailWithSmtp(email: string, userName: st
     try {
         console.log(`[AUTH_SERVICE] Generating reset link for: ${email}`);
         
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `https://app.kipiai.id`;
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `https://systemprf.firebaseapp.com`;
         const actionCodeSettings = { url: `${baseUrl}/login` };
 
-        // Generate link resmi dari Firebase Auth
+        // Generate link resmi dari Firebase Auth Admin
         const resetLink = await auth.generatePasswordResetLink(email, actionCodeSettings);
         
-        console.log(`[AUTH_SERVICE] Link generated, sending email...`);
+        console.log(`[AUTH_SERVICE] Reset link generated successfully.`);
 
         await sendTemplatedEmail(email, 'password_reset', {
             nama_pengguna: userName,
