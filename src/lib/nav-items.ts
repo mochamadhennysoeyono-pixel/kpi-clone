@@ -1,3 +1,4 @@
+
 // src/lib/nav-items.ts
 
 import React from 'react';
@@ -93,6 +94,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/lms/admin/reports': AreaChart,
     '/lms/user/my-learnings': BookUser,
     '/admin-management': ShieldCheck,
+    '/company-admin-management': ShieldCheck,
     '/activation-management': ClipboardCheck,
     '/subscription-management': Crown,
     '/subscription-logs': History,
@@ -127,7 +129,6 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
         )
     ) : false;
 
-    // --- Strict Capability Checks from Subscription Plan ---
     const capabilities = {
       isSuperAdmin: userRole === 'superadmin',
       isCompanyAdmin: userRole === 'manajemen',
@@ -135,7 +136,6 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
       isRegularUser: userRole === 'user' && !hasSubordinates,
       isManager: userRole === 'manajemen' || hasSubordinates,
       
-      // Feature Flags from Plan
       isHolding: userCompany?.isHolding === true && (subscriptionPlan?.features?.allowHolding !== false),
       canBecomeHolding: subscriptionPlan?.features?.allowHolding === true,
       
@@ -153,10 +153,7 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
     };
     
     const allNavItems = [
-        // --- 1. BERANDA ---
         { href: '/action-center', label: 'Beranda', show: !capabilities.isSuperAdmin && !capabilities.isCompanyAdmin, iconName: '/action-center' },
-        
-        // --- 2. SUPERADMIN CORE ---
         { href: '/dashboard', label: 'Dashboard Admin', show: capabilities.isSuperAdmin, iconName: '/dashboard' },
         {
             label: 'Manajemen Sistem',
@@ -172,7 +169,6 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             ]
         },
 
-        // --- 3. PUSAT DATA ---
         { 
             label: 'Pusat Data', 
             iconName: 'pusat-data', 
@@ -188,7 +184,6 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             ] 
         },
 
-        // --- 4. HOLDING ---
         { 
             label: 'Pusat Holding', 
             iconName: 'pusat-holding', 
@@ -201,7 +196,6 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
         },
         { href: '/holding-management', label: 'Aktivasi Holding', show: capabilities.isCompanyAdmin && !capabilities.isHolding && capabilities.canBecomeHolding, iconName: '/holding-management' },
 
-        // --- 5. COLLABSPACE ---
         { 
             label: 'CollabSpace', 
             iconName: '/collab-space', 
@@ -213,7 +207,6 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             ]
         },
 
-        // --- 6. ANALISIS & LAPORAN ---
         {
             label: 'Analisis & Laporan',
             iconName: 'analisis-laporan',
@@ -226,7 +219,6 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             ]
         },
 
-        // --- 7. MANAJEMEN KPI ---
         {
             label: 'Manajemen KPI',
             iconName: 'manajemen-kpi',
@@ -240,7 +232,6 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             ]
         },
 
-        // --- 8. MANAJEMEN KBO ---
         {
             label: 'Manajemen KBO',
             iconName: 'manajemen-kbo',
@@ -252,7 +243,6 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             ]
         },
 
-        // --- 9. OKR ---
         {
             label: 'OKR (Objectives)',
             iconName: 'okr-management',
@@ -264,7 +254,6 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             ]
         },
 
-        // --- 10. PEMBELAJARAN (LMS) ---
         { 
             label: 'LMS Portal', 
             iconName: 'lms-user', 
@@ -287,7 +276,6 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             ]
         },
 
-        // --- 11. DOKUMEN ---
         {
             label: 'Manajemen Dokumen',
             iconName: 'manajemen-dokumen',
@@ -298,7 +286,6 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             ]
         },
 
-        // --- 12. TOOLS AI ---
         {
             label: 'Tools AI',
             iconName: 'tools',
@@ -310,6 +297,7 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
         },
         
         { href: '/subscription-status', label: 'Status Paket', show: capabilities.isCompanyAdmin, iconName: '/subscription-status' },
+        { href: '/company-admin-management', label: 'Manajemen Admin', show: capabilities.isCompanyAdmin, iconName: '/company-admin-management' },
     ];
 
     const visibleItems = allNavItems
@@ -355,7 +343,8 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
         'OKR (Objectives)', 
         'Manajemen Pembelajaran', 
         'Manajemen Dokumen',
-        '/subscription-status'
+        '/subscription-status',
+        '/company-admin-management'
       ],
       "department-head": [
         '/action-center', 'Pusat Data', 'CollabSpace', 'Analisis & Laporan', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal'

@@ -13,13 +13,13 @@ export type EmployeeLike = {
   level?: Employee['level'] | null;
 };
 
+// Akun Karyawan Operasional (Staff, Supervisor, Dept Head)
 export type Employee = {
   id: string; 
   authUid?: string; 
   name: string;
   email: string;
   phone?: string; 
-  password?: string; 
   company: string; 
   position: string;
   department: string;
@@ -27,10 +27,23 @@ export type Employee = {
   reportsTo?: string; 
   joinDate: string;
   status: 'Aktif' | 'Tidak Aktif' | 'Menunggu Persetujuan';
-  role: 'superadmin' | 'manajemen' | 'user';
+  role: 'user'; // Murni User Operasional
   loginStatus: LoginStatus;
-  isHolding?: boolean; 
   fcmTokens?: string[]; 
+};
+
+// Akun Admin Perusahaan (Manajemen)
+export type CompanyAdmin = {
+  id: string;
+  authUid: string;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  role: 'manajemen';
+  status: 'Aktif' | 'Tidak Aktif';
+  loginStatus: LoginStatus;
+  createdAt: any;
 };
 
 // --- Subscription History Logs ---
@@ -46,7 +59,7 @@ export type SubscriptionLog = {
   amount: number;
   startDate: any;
   endDate: any;
-  performedBy: string; // Nama User atau 'System'
+  performedBy: string; 
   timestamp: any;
 };
 

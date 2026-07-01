@@ -1,3 +1,4 @@
+
 // src/app/(main)/main-layout-content.tsx
 "use client";
 
@@ -10,17 +11,15 @@ import { PageAssistant } from '@/components/layout/page-assistant';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { AppSidebar } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
-// MOD: Image and RefreshCw are no longer needed for loading state
 import { AlertCircle } from 'lucide-react'; 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePageContext } from '@/contexts/page-context';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-// MOD: Import the new loading component
 import { ConcentricRing } from '@/components/ui/concentric-ring';
 
 export default function MainLayoutContent({ children }: { children: React.ReactNode }) {
-  const { currentUser, isLoading: isAuthLoading } = useAuth();
+  const { currentUser, isLoading: isAuthLoading, userRole } = useAuth();
   const { companies, isLoading: isMasterDataLoading } = useMasterData();
   const { hideBottomNav } = usePageContext();
   const router = useRouter();
@@ -35,7 +34,6 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
   
   const totalIsLoading = isAuthLoading || isMasterDataLoading;
 
-  // MOD: The entire loading state has been replaced with the ConcentricRing component.
   if (totalIsLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -57,23 +55,20 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
   let isSubscriptionLocked = false;
   let contentToRender = children;
 
-  if (currentUser.role !== 'superadmin') {
+  if (userRole !== 'superadmin') {
       userCompany = companies.find((c) => c.name === currentUser.company || c.id === currentUser.company);
-      let lockReasonType = 'trial';
-
+      
       if (userCompany) {
           if (userCompany.subscriptionExpiryDate) {
               const expiryDate = new Date(userCompany.subscriptionExpiryDate);
               expiryDate.setHours(23, 59, 59, 999);
               if (expiryDate < new Date()) {
                   isSubscriptionLocked = true;
-                  lockReasonType = userCompany.subscriptionPlanId === 'default-trial' ? 'trial' : 'expired';
               }
           }
           
           if (!isSubscriptionLocked && userCompany.status === 'Tidak Aktif') {
               isSubscriptionLocked = true;
-              lockReasonType = 'expired';
           }
       }
 
@@ -88,15 +83,14 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
                   </h1>
                   <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                       Masa berlaku trial atau langganan perusahaan "{userCompany?.name}" telah berakhir. Seluruh fitur manajemen performa dinonaktifkan sementara.
-                      {currentUser.role === 'karyawan' && " Silakan hubungi manajemen atau administrator perusahaan Anda."}
                   </p>
                   <div className="flex gap-4 justify-center">
-                      {(currentUser.role === 'manajemen' || currentUser.role === 'admin') && (
+                      {(userRole === 'manajemen') && (
                           <Button onClick={() => router.push('/subscription-plans')}>
                             Upgrade / Ganti Paket
                           </Button>
                       )}
-                      <Button variant={currentUser.role === 'karyawan' ? "default" : "outline"} onClick={() => router.push('/subscription-status')}>
+                      <Button variant={userRole === 'user' ? "default" : "outline"} onClick={() => router.push('/subscription-status')}>
                         Status Paket
                       </Button>
                   </div>
