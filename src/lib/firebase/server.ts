@@ -9,38 +9,34 @@ import { Firestore } from '@google-cloud/firestore';
  */
 
 const projectId = "studio-2326395113-859ef";
-const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-let privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-if (privateKey) {
+// Logika inisialisasi tunggal (Singleton) yang lebih aman untuk Next.js
+if (!admin.apps.length) {
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+  if (privateKey) {
     privateKey = privateKey.trim().replace(/\\n/g, '\n');
-}
+  }
 
-// Inisialisasi App secara aman
-let app: admin.app.App;
-
-if (admin.apps.length === 0) {
   try {
     if (clientEmail && privateKey) {
-      app = admin.initializeApp({
+      admin.initializeApp({
         credential: admin.credential.cert({
           projectId,
           clientEmail,
           privateKey,
         }),
       });
+      console.log("[FIREBASE_ADMIN] Initialized with Service Account.");
     } else {
       // Fallback ke Application Default Credentials (ADC) atau Studio Auth
-      app = admin.initializeApp({ projectId });
+      admin.initializeApp({ projectId });
+      console.log("[FIREBASE_ADMIN] Initialized with Project ID fallback.");
     }
-    console.log("[FIREBASE_ADMIN] Initialized new app instance.");
   } catch (error: any) {
     console.error("[FIREBASE_ADMIN_ERROR] Initialization failed:", error.message);
-    // Jika gagal, ambil instance default yang mungkin sudah ada (walau apps.length tadi 0)
-    app = admin.app();
   }
-} else {
-  app = admin.app();
 }
 
 /**
@@ -53,7 +49,7 @@ const db = new Firestore({
   ignoreUndefinedProperties: true,
 });
 
-// Export services dari instance yang sudah diverifikasi
-export const auth = app.auth();
+// Export services secara langsung dari modul admin
+export const auth = admin.auth();
 export const adminApp = admin;
 export { db };
