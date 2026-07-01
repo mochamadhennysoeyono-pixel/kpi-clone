@@ -1,4 +1,3 @@
-// src/app/(auth)/login/page.tsx
 "use client";
 
 import { useEffect, useState, FormEvent } from "react";
@@ -7,15 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { RefreshCw, AlertTriangle } from "lucide-react";
+import { RefreshCw, AlertTriangle, Phone, CheckCircle2, Building, User, Mail, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import Image from "next/image";
 import { toast } from "@/hooks/use-toast";
-
-// =================================================================
-// LOGIN PAGE - NOW FULLY FUNCTIONAL
-// =================================================================
-
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // --- Right Side Visual Panel ---
 const BrandingVisual = () => {
@@ -37,7 +32,7 @@ const BrandingVisual = () => {
   );
 };
 
-// --- Form Implementations (FULLY WIRED) ---
+// --- Form Implementations ---
 
 const EmailLoginForm = () => {
   const { loginWithEmail } = useAuth();
@@ -89,25 +84,26 @@ const EmailLoginForm = () => {
           disabled={isLoading}
         />
       </div>
-      <Button type="submit" className="w-full font-semibold h-10" disabled={isLoading}>
-        {isLoading ? <RefreshCw className="h-4 w-4 animate-spin-slow" /> : 'Masuk'}
+      <Button type="submit" className="w-full font-semibold h-11 bg-slate-900 text-white hover:bg-slate-800" disabled={isLoading}>
+        {isLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Masuk ke Akun'}
       </Button>
     </form>
   );
 };
 
-const RegisterForm = () => {
+const RegisterForm = ({ onToggle }: { onToggle: (tab: string) => void }) => {
     const { registerCompanyAccount } = useAuth();
     const [formData, setFormData] = useState({
         companyName: '',
         adminName: '',
         email: '',
-        whatsapp: '',
+        whatsapp: '62',
         password: '',
         confirmPassword: '',
     });
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -135,39 +131,67 @@ const RegisterForm = () => {
         if (result.success) {
              toast({
                 title: "Pendaftaran Berhasil!",
-                description: result.message || "Akun Anda telah dibuat. Silakan login untuk melanjutkan.",
-                variant: "success",
+                description: result.message || "Akun Manajemen Anda telah dibuat.",
             });
-             // Optionally, switch to login tab
+            setIsSuccess(true);
         } else {
             setError(result.error || 'Terjadi kesalahan saat pendaftaran.');
         }
     };
 
+  if (isSuccess) {
+    return (
+        <div className="text-center p-4 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+             <div className="flex justify-center">
+                <div className="bg-green-100 p-4 rounded-full">
+                    <CheckCircle2 className="h-12 w-12 text-green-600" />
+                </div>
+            </div>
+            <div className="space-y-2">
+                <h3 className="text-2xl font-bold text-foreground">Registrasi Berhasil!</h3>
+                <p className="text-sm text-muted-foreground">
+                    Akun manajemen untuk <strong>{formData.companyName}</strong> telah diaktifkan dengan paket <strong>TRIAL 14 Hari</strong>.
+                </p>
+            </div>
+            <Alert className="bg-blue-50 border-blue-200">
+                <ShieldCheck className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-xs text-blue-800">
+                    Silakan gunakan tab <strong>Masuk</strong> untuk memulai pengaturan dashboard perusahaan Anda.
+                </AlertDescription>
+            </Alert>
+            <Button onClick={() => onToggle('login')} className="w-full h-11 font-bold bg-slate-900 text-white">
+                Beralih ke Halaman Masuk
+            </Button>
+        </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-sm text-red-700 p-3 rounded-lg flex items-center gap-2">
+        <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <span>{error}</span>
-        </div>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
       <div className="grid w-full items-center gap-1.5">
         <Label htmlFor="companyName">Nama Perusahaan</Label>
         <Input type="text" id="companyName" placeholder="cth., PT Maju Mundur" value={formData.companyName} onChange={handleChange} required disabled={isLoading} />
       </div>
       <div className="grid w-full items-center gap-1.5">
-        <Label htmlFor="adminName">Nama Lengkap Anda (Admin Utama)</Label>
+        <Label htmlFor="adminName">Nama Lengkap Admin</Label>
         <Input type="text" id="adminName" placeholder="cth., Budi Santoso" value={formData.adminName} onChange={handleChange} required disabled={isLoading} />
       </div>
       <div className="grid w-full items-center gap-1.5">
-        <Label htmlFor="email">Email (Untuk Login)</Label>
-        <Input type="email" id="email" placeholder="admin@kpi.com" value={formData.email} onChange={handleChange} required disabled={isLoading} />
+        <Label htmlFor="email">Email Bisnis</Label>
+        <Input type="email" id="email" placeholder="admin@perusahaan.com" value={formData.email} onChange={handleChange} required disabled={isLoading} />
       </div>
       <div className="grid w-full items-center gap-1.5">
-        <Label htmlFor="whatsapp">Nomor WhatsApp (Aktif)</Label>
-        <Input type="tel" id="whatsapp" placeholder="62812..." value={formData.whatsapp} onChange={handleChange} required disabled={isLoading} />
-        <p className="text-xs text-slate-500 mt-1">Gunakan format internasional tanpa tanda + (cth: 62812...)</p>
+        <Label htmlFor="whatsapp">Nomor WhatsApp</Label>
+        <div className="relative">
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input type="tel" id="whatsapp" placeholder="62812..." value={formData.whatsapp} onChange={handleChange} required disabled={isLoading} className="pl-10" />
+        </div>
       </div>
       <div className="grid w-full items-center gap-1.5">
         <Label htmlFor="password">Kata Sandi</Label>
@@ -177,8 +201,8 @@ const RegisterForm = () => {
         <Label htmlFor="confirmPassword">Konfirmasi Kata Sandi</Label>
         <Input type="password" id="confirmPassword" placeholder="••••••••" value={formData.confirmPassword} onChange={handleChange} required disabled={isLoading}/>
       </div>
-      <Button type="submit" className="w-full font-semibold h-10" disabled={isLoading}>
-        {isLoading ? <RefreshCw className="h-4 w-4 animate-spin-slow" /> : 'Daftar & Aktifkan Sekarang'}
+      <Button type="submit" className="w-full font-bold h-11 bg-primary text-primary-foreground shadow-lg hover:bg-primary/90" disabled={isLoading}>
+        {isLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Daftar & Aktifkan Perusahaan'}
       </Button>
     </form>
   );
@@ -193,7 +217,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isAuthLoading && currentUser) {
-      const targetPath = userRole === "superadmin" ? "/dashboard" : "/beranda"; // MOD: Changed /reports to /beranda for non-superadmin
+      const targetPath = userRole === "superadmin" ? "/dashboard" : "/beranda";
       router.replace(targetPath);
     }
   }, [isAuthLoading, currentUser, router, userRole]);
@@ -204,7 +228,7 @@ export default function LoginPage() {
             <div className="flex flex-col items-center gap-4 text-center">
                 <Image src="/logo.png" alt="Perfom Logo" width={120} height={32} unoptimized />
                 <div className="flex items-center gap-2 font-medium text-slate-500">
-                    <RefreshCw className="h-4 w-4 animate-spin-slow" />
+                    <RefreshCw className="h-4 w-4 animate-spin" />
                     <span>{currentUser ? "Berhasil masuk, mengarahkan..." : "Memuat Sesi..."}</span>
                 </div>
             </div>
@@ -223,43 +247,43 @@ export default function LoginPage() {
           </div>
           
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900 mb-2">
-            {activeTab === 'login' ? 'Selamat Datang Kembali' : 'Buat Akun Perusahaan'}
+            {activeTab === 'login' ? 'Selamat Datang Kembali' : 'Pendaftaran Perusahaan'}
           </h2>
-          <p className="text-slate-600 mb-6">
+          <p className="text-slate-600 mb-6 text-sm">
             {activeTab === 'login' 
-              ? 'Masuk untuk melanjutkan ke dasbor Anda.' 
-              : 'Mulai perjalanan Anda untuk optimasi SDM.'}
+              ? 'Masuk untuk mengelola performa tim Anda.' 
+              : 'Daftarkan perusahaan Anda untuk mulai membangun budaya unggul.'}
           </p>
           
-          <div className="grid grid-cols-2 gap-2 mb-6 bg-slate-100 p-1 rounded-full">
+          <div className="grid grid-cols-2 gap-2 mb-8 bg-slate-100 p-1 rounded-full border border-slate-200">
               <Button
                   onClick={() => setActiveTab('login')}
                   variant="ghost"
                   className={cn(
-                      "w-full rounded-full text-sm font-semibold h-9",
+                      "w-full rounded-full text-xs font-bold h-9 transition-all",
                       activeTab === 'login' 
                           ? "bg-white text-slate-900 shadow-sm"
-                          : "bg-transparent text-slate-600 hover:text-slate-900"
+                          : "bg-transparent text-slate-500 hover:text-slate-900"
                   )}
               >
-                  Masuk
+                  Masuk Akun
               </Button>
               <Button
                   onClick={() => setActiveTab('register')}
                   variant="ghost"
                   className={cn(
-                    "w-full rounded-full text-sm font-semibold h-9",
+                    "w-full rounded-full text-xs font-bold h-9 transition-all",
                     activeTab === 'register' 
                         ? "bg-white text-slate-900 shadow-sm"
-                        : "bg-transparent text-slate-600 hover:text-slate-900"
+                        : "bg-transparent text-slate-500 hover:text-slate-900"
                 )}
               >
-                  Daftar
+                  Daftar Baru
               </Button>
           </div>
 
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {activeTab === 'login' ? <EmailLoginForm /> : <RegisterForm />}
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {activeTab === 'login' ? <EmailLoginForm /> : <RegisterForm onToggle={setActiveTab} />}
           </div>
         </div>
       </div>

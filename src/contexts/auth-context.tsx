@@ -1,4 +1,3 @@
-
 // src/contexts/auth-context.tsx
 "use client";
 
@@ -25,11 +24,9 @@ import {
 import { auth, db } from '@/lib/firebase/client'; 
 import type { Employee, CompanyAdmin, UserRole, Company } from '@/types';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc, collection, query, where, getDocs, writeBatch, updateDoc, DocumentData, UpdateData, setDoc, serverTimestamp, addDoc, DocumentSnapshot, QuerySnapshot } from 'firebase/firestore';
-import { sendTemplatedEmail, sendPasswordResetEmailWithSmtp, notifyAdminNewRegistration, sendWelcomeWhatsApp } from '@/lib/services/notification-service';
-import { addDays, format, parse } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
-import { toast } from '@/hooks/use-toast';
+import { doc, getDoc, collection, query, where, getDocs, writeBatch, updateDoc, DocumentData, UpdateData, setDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { sendPasswordResetEmailWithSmtp, notifyAdminNewRegistration, sendWelcomeWhatsApp } from '@/lib/services/notification-service';
+import { addDays } from 'date-fns';
 
 declare global {
   interface Window {
@@ -53,14 +50,14 @@ export type EmployeeActivationData = {
 };
 
 interface AuthContextType {
-  currentUser: any | null; // Can be SuperAdmin, CompanyAdmin, or Employee
+  currentUser: any | null; 
   firebaseUser: User | null;
   userRole: UserRole;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
   isLoggingOut: boolean;
   loginWithEmail: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
-  loginWithGoogle: ( ) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   loginWithPhone: (phoneNumber: string, appVerifier: RecaptchaVerifier) => Promise<{ success: boolean; error?: string }>;
   verifyOtp: (otp: string) => Promise<{ success: boolean; error?: string }>;
   registerCompanyAccount: (data: CompanyRegistrationData) => Promise<{ success: boolean; error?: string; message?: string }>;
@@ -92,7 +89,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // 1. Check SuperAdmin
         const superadminDocRef = doc(db, 'superadmins', user.uid);
         const superadminDoc = await getDoc(superadminDocRef);
 
@@ -103,7 +99,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUserRole('superadmin'); 
             setFirebaseUser(user);
         } else {
-            // 2. Check CompanyAdmin (Management)
             const companyAdminDocRef = doc(db, 'companyAdmins', user.uid);
             const companyAdminDoc = await getDoc(companyAdminDocRef);
 
@@ -113,7 +108,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUserRole('manajemen');
                 setFirebaseUser(user);
             } else {
-                // 3. Check Employee (Staff)
                 const employeeDocRef = doc(db, 'employees', user.uid);
                 const employeeDoc = await getDoc(employeeDocRef);
 
@@ -145,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithEmail = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email.toLowerCase().trim(), pass);
+      await signInWithEmailAndPassword(auth, email.toLowerCase().trim(), pass);
       return { success: true };
     } catch (e: any) {
       console.error("Login error:", e);
@@ -167,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loginWithPhone = async (phoneNumber: string, appVerifier: RecaptchaVerifier): Promise<{ success: boolean; error?: string }> => {
+  const loginWithPhone = async (phoneNumber: string, appVerifier: RecaptchaVerifier) => {
     setIsLoading(true);
     try {
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
@@ -180,7 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const verifyOtp = async (otp: string): Promise<{ success: boolean; error?: string }> => {
+  const verifyOtp = async (otp: string) => {
     setIsLoading(true);
     try {
         if (window.confirmationResult) {
@@ -226,9 +220,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             subscriptionExpiryDate: expiry.toISOString(),
             customUserLimit: 5,
             customManagementUserLimit: 2,
+            features: {
+                hasAiKpiWizard: true,
+                hasPageAssistant: true,
+                hasFeedbackCoach: true,
+                hasKpiSuggestion: true,
+                hasScenarioPlanner: true
+            }
         });
 
-        // Save Admin to companyAdmins, NOT employees
         const adminRef = doc(db, "companyAdmins", newUser.uid);
         batch.set(adminRef, {
             name: data.name,
@@ -251,13 +251,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             amount: 0,
             startDate: now.toISOString(),
             endDate: expiry.toISOString(),
-            performedBy: 'System',
+            performedBy: 'Self Registration',
             timestamp: serverTimestamp(),
         });
         
         await batch.commit();
+
+        // Async Background Notifications
+        notifyAdminNewRegistration(data).catch(console.error);
+        sendWelcomeWhatsApp(data).catch(console.error);
         
-        await signOut(auth);
+        // Auto-logout after registration to force formal login if needed, 
+        // or keep logged in. Here we keep them logged in for better UX.
+        // await signOut(auth);
         
         return { success: true, message: "Pendaftaran berhasil! Akun Manajemen Anda sudah siap." };
     } catch (e: any) {
@@ -267,16 +273,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const activateEmployeeAccount = async (data: EmployeeActivationData): Promise<{ success: boolean; error?: string; message?: string }> => {
+  const activateEmployeeAccount = async (data: EmployeeActivationData) => {
     return { success: true, message: "Akun siap diaktivasi." };
   };
 
-  const addUserAsAdmin = async (employeeData: Omit<Employee, 'id' | 'loginStatus'>, sendInvitationEmail = false, silent = false): Promise<{ success: boolean; error?: string; message?: string }> => {
-    // This is for SuperAdmin creating other SuperAdmins
+  const addUserAsAdmin = async (employeeData: Omit<Employee, 'id' | 'loginStatus'>, sendInvitationEmail = false, silent = false) => {
     return { success: false, error: "Fungsi ini dipindahkan." };
   };
 
-  const addCompanyAdmin = async (adminData: Omit<CompanyAdmin, 'id' | 'authUid' | 'loginStatus' | 'createdAt'>, sendInvitationEmail = false): Promise<{ success: boolean; error?: string; message?: string }> => {
+  const addCompanyAdmin = async (adminData: Omit<CompanyAdmin, 'id' | 'authUid' | 'loginStatus' | 'createdAt'>, sendInvitationEmail = false) => {
     setIsLoading(true);
     const tempApp = initializeApp(auth.app.options, `temp-${Date.now()}`);
     const tempAuth = getAuth(tempApp);
@@ -311,12 +316,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const sendPasswordReset = async (email: string, isSilent = false): Promise<{ success: boolean; error?: string }> => {
+  const sendPasswordReset = async (email: string, isSilent = false) => {
     const cleanEmail = email.toLowerCase().trim();
     if (!isSilent) setIsLoading(true);
     
     try {
-        const result = await sendPasswordResetEmailWithSmtp(cleanEmail, "Pengguna");
+        await sendPasswordResetEmailWithSmtp(cleanEmail, "Pengguna");
         return { success: true };
     } catch(e: any) {
         return { success: false, error: e.message };
@@ -325,16 +330,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateUserProfile = async (userId: string, data: UpdateData<DocumentData>): Promise<{ success: boolean; error?: string }> => {
+  const updateUserProfile = async (userId: string, data: UpdateData<DocumentData>) => {
     setIsLoading(true);
     try {
-      // Determine collection
       let col = 'employees';
       if (userRole === 'superadmin') col = 'superadmins';
       else if (userRole === 'manajemen') col = 'companyAdmins';
 
       await updateDoc(doc(db, col, userId), data);
-      setCurrentUser(prev => prev ? { ...prev, ...data } : null);
+      setCurrentUser((prev: any) => prev ? { ...prev, ...data } : null);
       return { success: true };
     } catch (e: any) {
       return { success: false, error: e.message };
@@ -343,7 +347,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateUserPassword = async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
+  const updateUserPassword = async (currentPassword: string, newPassword: string) => {
     if (!firebaseUser?.email) return { success: false, error: "User tidak ditemukan." };
     setIsLoading(true);
     try {
