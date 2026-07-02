@@ -66,9 +66,9 @@ export function ModuleHeader() {
     }, [userRole, hasSubordinates, userCompany, userSubscriptionPlan, currentUser, okrs]);
 
     const moduleNav = useMemo(() => {
-        return navItems.filter(item => {
-            const anyItem = item as any;
-            if (anyItem.moduleId === activeModule) return true;
+        if (!activeModule) return [];
+        return navItems.filter((item: any) => {
+            if (item.moduleId === activeModule) return true;
             if (item.subItems && item.subItems.some((sub: any) => sub.moduleId === activeModule)) return true;
             return false;
         });
@@ -106,7 +106,7 @@ export function ModuleHeader() {
 
                 <div className="flex-1 overflow-x-auto no-scrollbar mx-4">
                     <nav className="flex items-center gap-1 min-w-max">
-                        {moduleNav.map(item => {
+                        {moduleNav.map((item: any) => {
                             if (item.subItems) {
                                 return (
                                     <DropdownMenu key={item.label}>
@@ -169,7 +169,7 @@ export function ModuleHeader() {
                                 <DropdownMenuContent align="start" className="w-64 rounded-xl shadow-xl border-none p-2">
                                     <DropdownMenuLabel className="text-[10px] font-black uppercase text-muted-foreground mb-1">Master Data Perusahaan</DropdownMenuLabel>
                                     <DropdownMenuGroup>
-                                        {pondasiNav.subItems?.map((sub: any) => {
+                                        {(pondasiNav.subItems || []).map((sub: any) => {
                                             const SubIcon = iconMap[sub.iconName || sub.href || 'default'] || Database;
                                             const isActive = pathname.startsWith(sub.href);
                                             return (
@@ -195,12 +195,12 @@ export function ModuleHeader() {
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-10 gap-3 px-2 rounded-xl hover:bg-muted shrink-0">
                             <div className="hidden sm:flex flex-col items-end">
-                                <span className="text-xs font-black uppercase tracking-tight">{currentUser?.name.split(' ')[0]}</span>
+                                <span className="text-xs font-black uppercase tracking-tight">{currentUser?.name?.split(' ')[0]}</span>
                                 <span className="text-[9px] font-bold text-muted-foreground uppercase opacity-60 leading-none">{userRole}</span>
                             </div>
                             <Avatar className="size-8 border shadow-sm">
                                 <AvatarFallback className="text-[10px] font-black bg-primary text-white">
-                                    {currentUser?.name.substring(0, 2).toUpperCase()}
+                                    {currentUser?.name?.substring(0, 2).toUpperCase()}
                                 </AvatarFallback>
                             </Avatar>
                         </Button>

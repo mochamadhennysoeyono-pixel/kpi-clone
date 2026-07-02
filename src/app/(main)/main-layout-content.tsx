@@ -35,13 +35,11 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
   
   const totalIsLoading = isAuthLoading || isMasterDataLoading;
 
-  // --- Layout Scoping Logic ---
   const isSuperAdmin = userRole === 'superadmin';
   const isPortal = pathname === '/portal';
   const isDocEditor = pathname.startsWith('/document-management/templates/');
   const activeModule = getActiveModuleFromPath(pathname);
   
-  // Rule: Hide sidebar for non-superadmins when in a module or portal
   const hideSidebar = isPortal || isDocEditor || (!isSuperAdmin && !!activeModule);
   const showModuleHeader = !isSuperAdmin && !!activeModule && !isDocEditor;
 
@@ -64,7 +62,6 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
 
   let contentToRender = children;
 
-  // Subscription check (Only for non-superadmins)
   if (!isSuperAdmin && !isPortal && activeModule) {
       const company = companies.find(c => c.name === currentUser.company);
       const subscription = company?.moduleSubscriptions?.[activeModule];
