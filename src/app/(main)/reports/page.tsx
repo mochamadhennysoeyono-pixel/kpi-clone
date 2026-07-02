@@ -1,4 +1,3 @@
-
 // src/app/(main)/reports/page.tsx
 "use client";
 
@@ -39,7 +38,6 @@ import {
   ShieldCheck,
   ShieldAlert,
   UserCog,
-  Wand2,
   X,
   Maximize2,
   Minimize2,
@@ -55,17 +53,12 @@ import { cn } from "@/lib/utils";
 import { format, parse, isBefore, addMonths, subMonths, startOfMonth, isValid } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import Link from "next/link";
-import { ScenarioPlannerDialog } from "@/components/reports/scenario-planner-dialog";
 import { usePageContext } from "@/contexts/page-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { DonutChart } from "@/components/reports/donut-chart";
 import { useIsMobile } from "@/hooks/use-mobile";
-
-// =================================================================
-// CONTEXT: APP DASHBOARD - Denser UI Components
-// =================================================================
 
 const PageHeader = ({ title, description }) => (
     <div className="mb-5">
@@ -85,9 +78,6 @@ const StatBlock = ({ title, value, description, icon: Icon, iconColor }) => (
     </div>
 );
 
-// =================================================================
-// 1. VIEW UNTUK LAPORAN TIM (DENSE UI)
-// =================================================================
 function TeamReportView() {
     const { currentUser, userRole } = useAuth();
     const { kpiData, companies, employees, updateKpiData, departments, positions } = useMasterData();
@@ -95,22 +85,18 @@ function TeamReportView() {
     const isMobile = useIsMobile();
     const router = useRouter();
     
-    // States
     const [mode, setMode] = useState<'single' | 'trend'>('single');
     const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
     const [selectedDepartment, setSelectedDepartment] = useState("all");
     const [selectedPosition, setSelectedPosition] = useState("all");
     const [selectedKpiDataForDetail, setSelectedKpiDataForDetail] = useState<KpiData | null>(null);
-    const [isScenarioPlannerOpen, setIsScenarioPlannerOpen] = useState(false);
     const [singlePeriod, setSinglePeriod] = useState<string | null>(null);
     const [trendStartPeriod, setTrendStartPeriod] = useState<string | null>(null);
     const [trendEndPeriod, setTrendEndPeriod] = useState<string | null>(null);
 
-    // Business logic hooks... (No changes)
     const userCompany = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
     const isHoldingAdmin = useMemo(() => userRole === 'manajemen' && !!userCompany?.isHolding, [userRole, userCompany]);
     const isManager = useMemo(() => (userRole === 'manajemen' || userRole === 'user') && employees.some(e => e.reportsTo === currentUser?.id), [userRole, currentUser, employees]);
-    const showScenarioPlanner = useMemo(() => userRole === 'superadmin' || !!userCompany?.features?.hasScenarioPlanner, [userRole, userCompany]);
 
     useEffect(() => {
         if (userRole === 'superadmin' && companies.length > 0) {
@@ -278,7 +264,6 @@ function TeamReportView() {
 
     return (
         <div className="space-y-4">
-            {/* --- Filter Section --- */}
             <div className="p-4 border border-slate-200 rounded-lg">
                 <div className="flex justify-between items-start mb-4">
                     <Label htmlFor="mode-switch" className="space-y-1">
@@ -299,7 +284,6 @@ function TeamReportView() {
 
             {selectedCompanyName ? (
                 <div className="space-y-4 pt-4 border-t border-slate-200">
-                    {/* --- Stats Section --- */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border border-slate-200 rounded-lg divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
                         <StatBlock title="Rata-Rata Skor Tim" value={teamStats.averageScore.toString()} icon={BarChart3} description="Selama periode terpilih" />
                         <StatBlock title="Performa Tertinggi" value={teamStats.topPerformer.name} icon={TrendingUp} description={`Skor: ${teamStats.topPerformer.score}`} iconColor="text-emerald-500" />
@@ -307,7 +291,6 @@ function TeamReportView() {
                         <StatBlock title="Jumlah Karyawan" value={sortedReportData.length.toString()} icon={Users} description="Dalam filter terpilih" />
                     </div>
                     
-                    {/* --- Chart Section --- */}
                     <div className={cn("grid grid-cols-1 gap-4", mode === 'trend' ? "lg:grid-cols-5" : "lg:grid-cols-1")}>
                         <div className={cn("h-[300px]", mode === 'trend' ? "lg:col-span-3" : "lg:col-span-1")}>
                            <h3 className="text-sm font-semibold text-slate-600 mb-2">Perjalanan Kinerja Tim</h3>
@@ -322,7 +305,6 @@ function TeamReportView() {
                         )}
                     </div>
                     
-                    {/* --- Table Section --- */}
                     <div className="pt-4 border-t border-slate-200">
                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                             <div>
@@ -330,7 +312,6 @@ function TeamReportView() {
                                 <p className="text-sm text-slate-500">Menampilkan {sortedReportData.length} hasil untuk periode terpilih.</p>
                             </div>
                             <div className="flex items-center gap-2 self-end sm:self-center">
-                                {showScenarioPlanner && (isManager || userRole === 'manajemen') && <Button size="sm" onClick={() => setIsScenarioPlannerOpen(true)} variant="outline" className="border-slate-300"><Wand2 className="mr-2 h-4 w-4" />AI Planner</Button>}
                                 {isManager && (<Button asChild variant="outline" size="sm" className="border-slate-300"><Link href="/my-performance"><UserCog className="mr-2 h-4 w-4" />Performa Saya</Link></Button>)}
                             </div>
                         </div>
@@ -373,7 +354,6 @@ function TeamReportView() {
                 </div>
             ) : (<div className="text-center text-slate-500 py-20 border border-dashed rounded-lg"><p>Silakan pilih perusahaan untuk menampilkan laporan.</p></div>)}
             {selectedKpiDataForDetail && (<ReportDetailView kpiData={selectedKpiDataForDetail} onClose={() => setSelectedKpiDataForDetail(null)} />)}
-            {showScenarioPlanner && <ScenarioPlannerDialog isOpen={isScenarioPlannerOpen} onOpenChange={setIsScenarioPlannerOpen} filteredReportData={reportData as KpiData[]} />}
         </div>
     );
 }
@@ -391,7 +371,7 @@ export function ReportDetailView({ kpiData, onClose }: { kpiData: KpiData, onClo
                 <div className="flex items-center justify-between p-4 border-b bg-slate-50 sticky top-0 z-10">
                     <h2 className="font-semibold text-slate-800">Detail Pencapaian</h2>
                     <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} title={isExpanded ? "Kecilkan" : "Perlebar"} className="hidden sm:inline-flex"><AnimatePresence mode="wait">{isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</AnimatePresence></Button>
+                        <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} title={isExpanded ? "Kecilkan" : "Perlebar"} className="hidden sm:inline-flex">{isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</Button>
                         <Button variant="ghost" size="icon" onClick={onClose}><X size={18} /></Button>
                     </div>
                 </div>
@@ -402,10 +382,6 @@ export function ReportDetailView({ kpiData, onClose }: { kpiData: KpiData, onClo
     );
 }
 
-
-// =================================================================
-// 3. MAIN PAGE COMPONENT (DENSE UI)
-// =================================================================
 export default function ReportsPage() {
     const { setPageContext } = usePageContext();
     const [activeTab, setActiveTab] = useState("team");
@@ -433,4 +409,3 @@ export default function ReportsPage() {
       </div>
     );
 }
-

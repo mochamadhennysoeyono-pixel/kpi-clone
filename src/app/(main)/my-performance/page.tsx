@@ -15,7 +15,6 @@ import { useAuth } from "@/contexts/auth-context";
 import { format, parse } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { AchievementDetailDialog } from "@/components/reports/achievement-detail-dialog";
-import { AIFeedbackCoach } from "@/components/my-performance/ai-feedback-coach";
 import { usePageContext } from "@/contexts/page-context";
 
 
@@ -45,7 +44,6 @@ export default function MyPerformancePage() {
         return kpiData.find(d => d.employeeId === currentUser.id && d.period === selectedPeriod) || null;
     }, [kpiData, currentUser, selectedPeriod]);
     
-    // Effect to update page context for KIPI
     useEffect(() => {
         setPageContext('Halaman Performa Saya', null);
     }, [setPageContext]);
@@ -95,10 +93,6 @@ export default function MyPerformancePage() {
                 </div>
             </div>
             
-            {myKpiDataForPeriod && (
-                <AIFeedbackCoach kpiData={myKpiDataForPeriod} />
-            )}
-
             {myKpiDataForPeriod ? (
                 <Card>
                     <CardContent className="p-0 sm:p-6">

@@ -20,7 +20,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { PlusCircle, MoreHorizontal, ChevronDown, CalendarDays, BellRing, Settings } from "lucide-react";
-import { KpiSuggestionForm } from "@/components/setup-kpi/kpi-suggestion-form";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { KpiSetup, Company, KpiIndicator, KpiIndicatorCycle } from '@/types';
@@ -113,7 +112,7 @@ export default function SetupKpiPage() {
     }
 
     if (isManager && userRole !== 'manajemen' && currentUser) {
-      const subordinateIds = employees.filter(e => e.reportsTo === managerId).map(e => e.id);
+      const subordinateIds = employees.filter(e => e.reportsTo === currentUser.id).map(e => e.id);
       const teamIds = [currentUser.id, ...subordinateIds];
       const teamMembers = employees.filter(e => teamIds.includes(e.id));
       
@@ -186,7 +185,6 @@ export default function SetupKpiPage() {
 
   return (
     <div className="space-y-6">
-      <KpiSuggestionForm onAddIndicators={handleAddSetup} />
       <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
         <CardHeader>
           <div className="flex flex-col gap-4">

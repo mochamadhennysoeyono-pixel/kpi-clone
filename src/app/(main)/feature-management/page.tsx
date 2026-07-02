@@ -18,14 +18,9 @@ import {
 import type { Company } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 
-const features: { key: keyof NonNullable<Company['features']>, label: string }[] = [
-    { key: 'hasAiKpiWizard', label: 'AI KPI Wizard' },
-    { key: 'hasPageAssistant', label: 'Page Assistant (KIPI)' },
-    { key: 'hasFeedbackCoach', label: 'AI Feedback Coach' },
-    { key: 'hasKpiSuggestion', label: 'AI KPI Suggestion' },
-    { key: 'hasScenarioPlanner', label: 'AI Scenario Planner' },
+const features: { key: string, label: string }[] = [
+    // AI features removed from management list
 ];
 
 export default function FeatureManagementPage() {
@@ -33,7 +28,7 @@ export default function FeatureManagementPage() {
   const { userRole } = useAuth();
   const { toast } = useToast();
 
-  const handleToggleFeature = async (company: Company, feature: keyof NonNullable<Company['features']>, checked: boolean) => {
+  const handleToggleFeature = async (company: Company, feature: string, checked: boolean) => {
     try {
       const currentFeatures = company.features || {};
       await updateCompany(company.id, {
@@ -89,6 +84,7 @@ export default function FeatureManagementPage() {
                    {features.map(f => (
                       <TableHead key={f.key} className="text-center">{f.label}</TableHead>
                   ))}
+                  {features.length === 0 && <TableHead className="text-center italic text-muted-foreground">Tidak ada fitur tambahan aktif</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -109,11 +105,12 @@ export default function FeatureManagementPage() {
                         <TableCell key={f.key} className="text-center">
                             <Switch
                                 id={`${f.key}-switch-${company.id}`}
-                                checked={!!company.features?.[f.key]}
+                                checked={!!(company.features as any)?.[f.key]}
                                 onCheckedChange={(checked) => handleToggleFeature(company, f.key, checked)}
                             />
                         </TableCell>
                     ))}
+                    {features.length === 0 && <TableCell className="text-center">-</TableCell>}
                   </TableRow>
                 ))}
               </TableBody>

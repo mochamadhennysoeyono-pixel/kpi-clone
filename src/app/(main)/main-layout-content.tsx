@@ -1,4 +1,3 @@
-
 // src/app/(main)/main-layout-content.tsx
 "use client";
 
@@ -7,7 +6,6 @@ import Header from '@/components/layout/header';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter, usePathname } from 'next/navigation';
 import { useMasterData } from '@/contexts/master-data-context';
-import { PageAssistant } from '@/components/layout/page-assistant';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { AppSidebar } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -125,7 +123,6 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
             </div>
           </main>
         </ScrollArea>
-        <PageAssistant />
         <BottomNav />
       </div>
     );
@@ -146,7 +143,6 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
             </ScrollArea>
         </div>
       </div>
-      <PageAssistant />
     </div>
   );
 }

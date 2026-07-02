@@ -1,4 +1,3 @@
-
 // src/lib/nav-items.ts
 
 import React from 'react';
@@ -13,13 +12,10 @@ import {
     FileText, 
     LayoutGrid, 
     Target, 
-    Wand2, 
     Calendar, 
     User, 
     Users2, 
     Workflow, 
-    BrainCircuit, 
-    KeyRound, 
     ListChecks, 
     Image as ImageIcon, 
     FilePieChart, 
@@ -64,19 +60,16 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/master-data/hierarchy': GitFork,
     '/master-data/kpi-categories': FolderKanban,
     '/master-data/kbo-categories': BookCopy,
-    '/master-data/kbo-competencies': BrainCircuit,
+    '/master-data/kbo-competencies': ClipboardPen,
     '/master-data/kpi-data': Database,
     '/master-data/company-objectives': Target,
     '/media-library': ImageIcon,
-    '/ai/knowledge-base': BrainCircuit,
-    'tools': Wand2,
-    '/kpi-wizard': Wand2,
     '/appraisal-settings': ClipboardPen,
     '/kbo-appraisal': AreaChart,
     '/setup-kpi': Settings,
     '/input-achievement': FilePlus2,
     'manajemen-sistem': SlidersHorizontal,
-    'manajemen-fitur': KeyRound,
+    'manajemen-fitur': SlidersHorizontal,
     'analisis-laporan': FilePieChart,
     'pusat-data': Database,
     'manajemen-kpi': ClipboardCheck,
@@ -144,11 +137,9 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
       canAccessOkr: (subscriptionPlan?.features?.allowOkr === true) || userRole === 'superadmin',
       canAccessLms: (subscriptionPlan?.features?.allowLms === true) || userRole === 'superadmin',
       canAccessCollabSpace: (subscriptionPlan?.features?.allowCollabSpace === true) || userRole === 'superadmin',
-      canAccessAi: (subscriptionPlan?.features?.allowAiFeatures === true) || userRole === 'superadmin',
       canAccessDocs: (subscriptionPlan?.features?.allowDocumentManagement === true) || userRole === 'superadmin',
       canAccessReports: (subscriptionPlan?.features?.allowReporting !== false) || userRole === 'superadmin',
       
-      hasAiKpiWizard: !!userCompany?.features?.hasAiKpiWizard && ((subscriptionPlan?.features?.allowAiFeatures === true) || userRole === 'superadmin'),
       isOkrParticipant: isOkrParticipant && (subscriptionPlan?.features?.allowOkr === true),
     };
     
@@ -286,16 +277,6 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
                 { href: '/document-management/contracts', label: 'Kontrak Kerja', show: true, iconName: '/document-management/contracts' },
             ]
         },
-
-        {
-            label: 'Tools AI',
-            iconName: 'tools',
-            show: capabilities.canAccessAi && (capabilities.isSuperAdmin || capabilities.hasAiKpiWizard),
-            subItems: [
-                { href: '/kpi-wizard', label: 'AI KPI Wizard', show: true, iconName: '/kpi-wizard' },
-                { href: '/ai/knowledge-base', label: 'Knowledge Base', show: capabilities.isSuperAdmin, iconName: '/ai/knowledge-base' },
-            ]
-        },
         
         { href: '/subscription-status', label: 'Status Paket', show: capabilities.isCompanyAdmin, iconName: '/subscription-status' },
         { href: '/company-admin-management', label: 'Manajemen Admin', show: capabilities.isCompanyAdmin, iconName: '/company-admin-management' },
@@ -330,8 +311,7 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
         'Manajemen KPI', 
         'Manajemen KBO', 
         'Manajemen Pembelajaran', 
-        'Manajemen Dokumen', 
-        'Tools AI'
+        'Manajemen Dokumen'
       ],
       manajemen: [
         'Pusat Data', 

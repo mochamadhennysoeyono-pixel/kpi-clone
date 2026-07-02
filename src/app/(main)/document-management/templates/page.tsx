@@ -12,12 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuGroup, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
-import { PlusCircle, Search, MoreHorizontal, FileText, Edit, Copy, Trash2, Eye, Wand2, ChevronDown, Link2, Upload, ClipboardCopy, Tags, X, Download } from "lucide-react";
+import { PlusCircle, Search, MoreHorizontal, FileText, Edit, Copy, Trash2, Eye, ChevronDown, Link2, Upload, ClipboardCopy, Tags, X, Download } from "lucide-react";
 import { useMasterData } from "@/contexts/master-data-context";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import type { DocumentTemplate, DocumentCategory } from "@/types";
 import { useAuth } from "@/contexts/auth-context";
-import { AiDocumentGeneratorDialog } from "@/components/documents/ai-document-generator-dialog";
 import { ExternalTemplateDialog } from "@/components/documents/external-template-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { extractGoogleDocData } from '@/lib/actions';
@@ -55,10 +54,8 @@ export default function TemplatesPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"all" | string>("all");
-  const [templateToDelete, setTemplateToDelete] = useState<DocumentTemplate | null>(null);
   const [templatesToDelete, setTemplatesToDelete] = useState<DocumentTemplate[] | null>(null);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [isAiGeneratorOpen, setAiGeneratorOpen] = useState(false);
   const [isExternalDialogOpen, setExternalDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
@@ -239,10 +236,6 @@ export default function TemplatesPage() {
                       <Upload className="mr-2 h-4 w-4" />
                       Unggah dari .docx
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setAiGeneratorOpen(true)}>
-                      <Wand2 className="mr-2 h-4 w-4" />
-                      Buat dengan Bantuan AI
-                  </DropdownMenuItem>
                    <DropdownMenuItem onClick={() => setExternalDialogOpen(true)}>
                       <Link2 className="mr-2 h-4 w-4" />
                       Hubungkan dari Google Docs
@@ -391,10 +384,6 @@ export default function TemplatesPage() {
       onConfirm={handleDeleteConfirm}
       itemName={templatesToDelete?.length === 1 ? templatesToDelete[0].name : `${templatesToDelete?.length} template`}
       itemType="template"
-    />
-    <AiDocumentGeneratorDialog
-        isOpen={isAiGeneratorOpen}
-        onOpenChange={setAiGeneratorOpen}
     />
     <ExternalTemplateDialog 
         isOpen={isExternalDialogOpen}

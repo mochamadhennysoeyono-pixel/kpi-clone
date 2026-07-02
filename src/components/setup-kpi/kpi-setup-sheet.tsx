@@ -2,11 +2,10 @@
 "use client";
 
 import * as React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import Link from 'next/link';
 import {
   Sheet,
   SheetContent,
@@ -28,7 +27,7 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { KpiSetup, KpiIndicator, KpiIndicatorCycle, Department, Position, Company, Employee } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PlusCircle, HelpCircle, AlertCircle, Wand2 } from 'lucide-react';
+import { PlusCircle, AlertCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useMasterData } from '@/contexts/master-data-context';
 import { useAuth } from '@/contexts/auth-context';
@@ -40,7 +39,6 @@ import { parse, lastDayOfMonth } from 'date-fns';
 import { DEFAULT_KPI_CATEGORIES } from '@/lib/default-data';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
-import { KPIWizardDialog } from '../kpi/kpi-wizard-dialog';
 
 
 const indicatorSchema = z.object({
@@ -64,7 +62,6 @@ const indicatorSchema = z.object({
       employeeId: z.string(),
   }).optional(),
   targetOverrides: z.record(z.number()).optional(),
-  reasoning: z.string().optional(), // AI reasoning
 });
 
 const setupSchema = z.object({
@@ -85,7 +82,6 @@ const setupSchema = z.object({
   pendingIndicators: z.array(indicatorSchema).optional(),
 }).refine(data => {
     const totalWeight = data.indicators.reduce((sum, ind) => sum + Number(ind.weight || 0), 0);
-    // Allow for small floating point inaccuracies
     return Math.abs(totalWeight - 100) < 0.001;
 }, {
     message: "Total bobot semua indikator harus 100%",
@@ -108,7 +104,6 @@ export function KpiSetupSheet({ isOpen, onOpenChange, setup, isCloning = false, 
   const { kpiCategories, departments, positions, companies, employees, kpiSetups } = useMasterData();
   const { currentUser, userRole } = useAuth();
   const { toast } = useToast();
-  const [isWizardOpen, setIsWizardOpen] = useState(false);
 
   const form = useForm<SetupFormValues>({
     resolver: zodResolver(setupSchema),
@@ -146,22 +141,6 @@ export function KpiSetupSheet({ isOpen, onOpenChange, setup, isCloning = false, 
 
   const userCompany = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
   const isHoldingAdmin = useMemo(() => userRole === 'manajemen' && !!userCompany?.isHolding, [userRole, userCompany]);
-
-  const showWizardButton = useMemo(() => {
-    if (userRole === 'superadmin') {
-      return true;
-    }
-    if (currentUser?.company) {
-      const company = companies.find(c => c.name === currentUser.company);
-      return !!company?.features?.hasAiKpiWizard;
-    }
-    return false;
-  }, [userRole, currentUser, companies]);
-  
-  const isManager = useMemo(() => {
-    if (!currentUser || (userRole !== 'user' && userRole !== 'manajemen')) return false;
-    return employees.some(e => e.reportsTo === currentUser.id);
-  }, [currentUser, userRole, employees]);
 
   const manageableCompanies = useMemo(() => {
     if (userRole === 'superadmin') return companies.filter(c => c.status === 'Aktif');
@@ -206,7 +185,6 @@ export function KpiSetupSheet({ isOpen, onOpenChange, setup, isCloning = false, 
 
   const handleCompanyChange = (companyName: string) => {
     form.setValue('company', companyName);
-    // Reset dependent fields when company changes
     form.setValue('department', '');
     form.setValue('position', '');
     form.setValue('level', undefined);
@@ -214,12 +192,10 @@ export function KpiSetupSheet({ isOpen, onOpenChange, setup, isCloning = false, 
   
   const handleDepartmentChange = (departmentName: string) => {
     form.setValue('department', departmentName);
-    // Reset dependent fields when department changes
     form.setValue('position', '');
     form.setValue('level', undefined);
   }
 
-  // Effect to initialize the form when it opens or dependencies change
   useEffect(() => {
     if (!isOpen) return;
 
@@ -237,7 +213,7 @@ export function KpiSetupSheet({ isOpen, onOpenChange, setup, isCloning = false, 
       calculationMethod: 'Target Maksimal',
     };
   
-    if (setup) { // Editing existing setup
+    if (setup) { 
       const sanitizedIndicators = sanitizeIndicators(setup.indicators || []);
       const deadlineValue = typeof setup.kpiInputDeadline === 'number'
         ? { type: 'specific_date' as const, value: setup.kpiInputDeadline }
@@ -256,13 +232,13 @@ export function KpiSetupSheet({ isOpen, onOpenChange, setup, isCloning = false, 
         indicators: sanitizedIndicators.length > 0 ? sanitizedIndicators.map(ind => ({ ...defaultIndicator, ...ind })) : [defaultIndicator],
         pendingIndicators: setup.pendingIndicators || [],
       });
-    } else { // Creating new setup
+    } else { 
       const manualIndicators = initialIndicators.length > 0
         ? initialIndicators.map((draft, i) => ({ 
             ...defaultIndicator, 
             id: `IND${Date.now()}-${i}`,
             indicator: draft.indicator || draft.kpiName, 
-            weight: 0, // start with 0 weight
+            weight: 0,
             category: draft.category,
             measurement: draft.measurement,
             cycle: draft.cycle,
@@ -270,7 +246,6 @@ export function KpiSetupSheet({ isOpen, onOpenChange, setup, isCloning = false, 
             targetFormat: draft.targetFormat,
             unit: draft.unit,
             calculationMethod: draft.calculationMethod,
-            reasoning: draft.reasoning,
         }))
         : [defaultIndicator];
       
@@ -288,7 +263,6 @@ export function KpiSetupSheet({ isOpen, onOpenChange, setup, isCloning = false, 
     }
   }, [isOpen, setup, isCloning, initialIndicators, form, currentUser, userRole, toast]);
 
-  // Effect to get sourced indicators from supervisor
   useEffect(() => {
     if (!isOpen || isCloning || !companyForSetup || !departmentForSetup || !positionForSetup || !levelForSetup || !validFromForSetup || !validToForSetup) {
       return;
@@ -367,7 +341,6 @@ export function KpiSetupSheet({ isOpen, onOpenChange, setup, isCloning = false, 
   }
   
   const onSubmit = (data: SetupFormValues) => {
-    // Only run overlap validation for NEW or CLONED setups.
     if (!data.id || isCloning) {
       const newPeriodStart = new Date(data.validFrom);
       const newPeriodEnd = new Date(data.validTo);
@@ -397,11 +370,10 @@ export function KpiSetupSheet({ isOpen, onOpenChange, setup, isCloning = false, 
       }
     }
 
-    const cleanedIndicators = data.indicators.map((indicator, index) => {
+    const cleanedIndicators = data.indicators.map((indicator) => {
         const cleanIndicator: any = { ...indicator };
         if (!cleanIndicator.rollup?.enabled) delete cleanIndicator.rollup;
         if (isCloning && cleanIndicator.targetOverrides) delete cleanIndicator.targetOverrides;
-        // Ensure default method is saved if not specified
         cleanIndicator.calculationMethod = cleanIndicator.calculationMethod || 'Target Maksimal';
         return cleanIndicator;
     });
@@ -446,15 +418,6 @@ export function KpiSetupSheet({ isOpen, onOpenChange, setup, isCloning = false, 
   };
   
   const formErrors = form.formState.errors;
-
-  const wizardPrefilledData = React.useMemo(() => ({
-    jobTitle: positionForSetup,
-    department: departmentForSetup,
-    jobLevel: levelForSetup as any,
-    company: companyForSetup
-  }), [positionForSetup, departmentForSetup, levelForSetup, companyForSetup]);
-
-  const wizardButtonDisabled = !positionForSetup || !departmentForSetup || !levelForSetup;
 
   return (
     <>
@@ -688,33 +651,8 @@ export function KpiSetupSheet({ isOpen, onOpenChange, setup, isCloning = false, 
                   
                   <Separator className="my-6" />
 
-                  <div className="relative p-4 border-2 border-dashed rounded-lg">
-                      {showWizardButton && (
-                        <TooltipProvider>
-                            <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-background px-4">
-                                    <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setIsWizardOpen(true)}
-                                    disabled={wizardButtonDisabled}
-                                    >
-                                    <Wand2 className="mr-2 h-4 w-4" /> Gunakan AI KPI Wizard
-                                    </Button>
-                                </div>
-                            </TooltipTrigger>
-                            {wizardButtonDisabled && (
-                                <TooltipContent>
-                                <p>Pilih Perusahaan, Departemen, Posisi, dan Level terlebih dahulu.</p>
-                                </TooltipContent>
-                            )}
-                            </Tooltip>
-                        </TooltipProvider>
-                      )}
-
-                      <h3 className="text-lg font-medium mb-4 mt-6">Indikator KPI</h3>
+                  <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-medium mb-4">Indikator KPI</h3>
                        <div className="flex flex-col gap-4">
                           {fields.map((field, indicatorIndex) => (
                              <IndicatorFields
@@ -735,7 +673,7 @@ export function KpiSetupSheet({ isOpen, onOpenChange, setup, isCloning = false, 
                           onClick={() => append({ id: `IND${Date.now()}`, category: '', indicator: '', measurement: '', target: 100, targetFormat: 'Numerik', unit: 'Poin', weight: 0, code: '', cycle: 'Bulanan', calculationMethod: 'Target Maksimal' })}
                       >
                           <PlusCircle className="mr-2 h-4 w-4" />
-                          Tambah Indikator Manual
+                          Tambah Indikator
                       </Button>
                       {formErrors.indicators?.root && (
                           <p className="text-sm font-medium text-destructive mt-2">{formErrors.indicators.root.message}</p>
@@ -770,35 +708,6 @@ export function KpiSetupSheet({ isOpen, onOpenChange, setup, isCloning = false, 
           </Form>
         </SheetContent>
       </Sheet>
-      
-      {showWizardButton && (
-        <KPIWizardDialog
-            isOpen={isWizardOpen}
-            onOpenChange={setIsWizardOpen}
-            prefilledData={wizardPrefilledData}
-            onComplete={(suggestions) => {
-                const currentIndicators = form.getValues('indicators').filter(ind => ind.indicator); // Keep only indicators that have been filled out
-                const newIndicators = suggestions.map((s, i) => ({
-                    id: `IND${Date.now()}-${i}`,
-                    category: s.category || '',
-                    indicator: s.indicator || '',
-                    measurement: s.measurement || '',
-                    target: s.target || 0,
-                    targetFormat: s.targetFormat || 'Numerik',
-                    unit: s.unit || '',
-                    weight: 0, // Set initial weight to 0
-                    cycle: s.cycle || 'Bulanan',
-                    calculationMethod: 'Target Maksimal',
-                    reasoning: s.reasoning,
-                }));
-                replace([...currentIndicators, ...newIndicators]);
-                toast({
-                    title: "Saran KPI Ditambahkan",
-                    description: "Saran dari AI telah ditambahkan ke daftar. Sesuaikan bobotnya agar total menjadi 100%.",
-                });
-            }}
-        />
-      )}
     </>
   );
 }
