@@ -67,7 +67,7 @@ function MotionNav() {
         )}
         onMouseEnter={() => !isMobile && setIsOpen(true)}
       >
-        {/* Top Header Section: No Separator for Seamless Look */}
+        {/* Top Header Section */}
         <div className="flex items-center justify-between px-6 pt-7 pb-6 flex-shrink-0">
           <div className="flex items-center justify-center min-h-[40px]">
             <AnimatePresence mode="wait">
@@ -301,6 +301,11 @@ export function AppSidebar() {
 /** SidebarTrigger - small clickable menu icon shown in header */
 export function SidebarTrigger() {
   const { isOpen, setIsOpen } = useSidebar();
+  const isMobile = useIsMobile();
+
+  // On desktop, we hide the trigger if the sidebar is already open
+  // since the sidebar has its own internal close (X) button.
+  if (isOpen && !isMobile) return null;
 
   return (
     <Button
@@ -310,17 +315,7 @@ export function SidebarTrigger() {
       className="rounded-xl hover:bg-slate-100 transition-colors duration-300"
       aria-label="Toggle Sidebar"
     >
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={isOpen ? "x" : "menu"}
-          initial={{ opacity: 0, rotate: -45, scale: 0.8 }}
-          animate={{ opacity: 1, rotate: 0, scale: 1 }}
-          exit={{ opacity: 0, rotate: 45, scale: 0.8 }}
-          transition={{ duration: 0.2 }}
-        >
-          {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </motion.div>
-      </AnimatePresence>
+      <Menu className="h-5 w-5" />
     </Button>
   );
 }
