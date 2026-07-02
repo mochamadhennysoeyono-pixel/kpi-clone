@@ -53,6 +53,7 @@ export type SubscriptionLog = {
   id: string;
   companyId: string;
   companyName: string;
+  company: string; // MOD: Added for consistent filtering
   planId: string;
   planName: string;
   action: SubscriptionLogAction;

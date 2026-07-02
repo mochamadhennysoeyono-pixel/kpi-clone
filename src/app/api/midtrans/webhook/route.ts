@@ -1,3 +1,4 @@
+
 // src/app/api/midtrans/webhook/route.ts
 import { NextResponse } from 'next/server';
 import { db, adminApp } from '@/lib/firebase/server';
@@ -99,6 +100,7 @@ async function processSuccessfulSubscription(companyId: string, planId: string, 
     batch.set(logRef, {
         companyId: companyId,
         companyName: companyData.name,
+        company: companyData.name, // MOD: Explicit 'company' field for MasterDataProvider filter
         planId: planId,
         planName: planData.name,
         action: 'UPGRADE',

@@ -1,3 +1,4 @@
+
 // src/actions/payment.action.ts
 "use server";
 
@@ -108,6 +109,7 @@ export async function processPaymentSuccess(companyId: string, planId: string, a
         batch.set(logRef, {
             companyId: companyId,
             companyName: companyData.name,
+            company: companyData.name, // MOD: Explicit 'company' field for MasterDataProvider filter
             planId: planId,
             planName: planData.name,
             action: 'UPGRADE',
