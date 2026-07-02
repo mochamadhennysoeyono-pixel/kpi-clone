@@ -4,10 +4,20 @@
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
 import { db } from '@/lib/firebase/client';
-import type { Company, Department, Position, Employee, CompanyAdmin, KpiCategory, KboCategory, KboSetup, AppraisalSetup, KpiSetup, KpiData, PerformanceStatus, TargetOverride, KboAssessment, AppraisalTask, SubscriptionPlan, LmsQuiz, Course, Enrollment, DocumentTemplate, OKR, NotificationTemplate, LearningProgram, CompanyObjective, AiTool, MediaFile, CollabSpace, CollabTask, CollabMessage, EmailTemplate, WhatsappTemplate, CommunicationCategory, SubscriptionLog, OkrStatus } from '@/types';
+import type { 
+    Company, Department, Position, Employee, CompanyAdmin, KpiCategory, KboCategory, 
+    KboSetup, AppraisalSetup, KpiSetup, KpiData, PerformanceStatus, TargetOverride, 
+    KboAssessment, AppraisalTask, SubscriptionPlan, LmsQuiz, Course, Enrollment, 
+    DocumentTemplate, OKR, NotificationTemplate, LearningProgram, CompanyObjective, 
+    AiTool, MediaFile, CollabSpace, CollabTask, CollabMessage, EmailTemplate, 
+    WhatsappTemplate, CommunicationCategory, SubscriptionLog, Memo
+} from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './auth-context';
-import { collection, getDocs, DocumentData as FsDocumentData, query, where, addDoc, doc, updateDoc, writeBatch, getDoc, runTransaction, documentId, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { 
+    collection, getDocs, query, where, addDoc, doc, updateDoc, writeBatch, 
+    serverTimestamp, deleteDoc, setDoc 
+} from 'firebase/firestore';
 import { DEFAULT_KPI_CATEGORIES, DEFAULT_KBO_CATEGORIES } from '@/lib/default-data';
 import { enrollmentWithMethods } from '@/types';
 
@@ -43,7 +53,8 @@ interface MasterDataContextType {
   collabTasks: CollabTask[];
   collabMessages: CollabMessage[];
   subscriptionLogs: SubscriptionLog[];
-  updateEnrollmentInContext: (enrollmentId: string, updateData: Partial<Enrollment>) => void;
+  memos: Memo[];
+  fetchData: (isSilent?: boolean) => Promise<void>;
   addCompany: (company: Omit<Company, 'id'>) => Promise<Company | null>;
   updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
   deleteCompany: (id: string) => Promise<void>;
@@ -100,6 +111,7 @@ interface MasterDataContextType {
   updateLearningProgram: (id: string, data: Partial<LearningProgram>) => Promise<void>;
   enrollToCourse: (courseId: string, employeeId: string) => Promise<Enrollment | null>;
   updateEnrollment: (enrollmentId: string, data: Partial<Enrollment>) => Promise<void>;
+  resetEnrollment: (enrollmentId: string) => Promise<void>;
   addCollabSpace: (space: Omit<CollabSpace, 'id'>) => Promise<CollabSpace | null>;
   updateCollabSpace: (id: string, data: Partial<CollabSpace>) => Promise<void>;
   deleteCollabSpace: (id: string) => Promise<void>;
@@ -114,7 +126,12 @@ interface MasterDataContextType {
   deleteWhatsappTemplate: (id: string) => Promise<void>;
   initializeDefaultEmailTemplates: () => Promise<void>;
   initializeDefaultWhatsappTemplates: () => Promise<void>;
-  fetchData: (isSilent?: boolean) => Promise<void>;
+  addAiTool: (d: Omit<AiTool, 'id'>) => Promise<AiTool | null>;
+  updateAiTool: (id: string, data: Partial<AiTool>) => Promise<void>;
+  deleteAiTool: (id: string) => Promise<void>;
+  addMediaFile: (d: Omit<MediaFile, 'id'>) => Promise<MediaFile | null>;
+  deleteMediaFile: (id: string) => Promise<void>;
+  addMemo: (memo: Omit<Memo, 'id'>) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -128,7 +145,7 @@ export function useMasterData() {
   return context;
 }
 
-const mapSnapshot = <T extends FsDocumentData>(snapshot: any): T[] => {
+const mapSnapshot = <T extends any>(snapshot: any): T[] => {
     return snapshot.docs.map((d: any) => ({ ...d.data(), id: d.id })) as T[];
 }
 
@@ -169,7 +186,11 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     memos: Memo[];
   }>({
     companies: [], departments: [], positions: [], employees: [], companyAdmins: [], companyObjectives: [],
-    kpiCategories: [], kboCategories: [], kboSetups: [], kpiSetups: [], appraisalSetups: [], documentTemplates: [], emailTemplates: [], whatsappTemplates: [], notificationTemplates: [], kpiData: [], okrs: [], targetOverrides: [], kboAssessments: [], appraisalTasks: [], subscriptionPlans: [], courses: [], quizzes: [], learningPrograms: [], enrollments: [], aiTools: [], mediaFiles: [], collabSpaces: [], collabTasks: [], collabMessages: [], subscriptionLogs: [], memos: [],
+    kpiCategories: [], kboCategories: [], kboSetups: [], kpiSetups: [], appraisalSetups: [], documentTemplates: [], 
+    emailTemplates: [], whatsappTemplates: [], notificationTemplates: [], kpiData: [], okrs: [], 
+    targetOverrides: [], kboAssessments: [], appraisalTasks: [], subscriptionPlans: [], courses: [], 
+    quizzes: [], learningPrograms: [], enrollments: [], aiTools: [], mediaFiles: [], collabSpaces: [], 
+    collabTasks: [], collabMessages: [], subscriptionLogs: [], memos: [],
   });
   const [isLoading, setIsLoading] = useState(true);
   const hasFetchedRef = useRef(false);
@@ -204,11 +225,17 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
             }
         }
 
-        // Global Collections
-        const globalCollections = ['subscriptionPlans', 'emailTemplates', 'whatsappTemplates', 'notificationTemplates', 'aiTools'];
+        // Global/Large Collections
+        const globalCollections = ['subscriptionPlans', 'emailTemplates', 'whatsappTemplates', 'notificationTemplates', 'aiTools', 'targetOverrides', 'lmsEnrollments', 'memos'];
         
         // Scoped Collections
-        const collectionsWithCompany = ['departments', 'positions', 'employees', 'companyAdmins', 'companyObjectives', 'kpiCategories', 'kboCategories', 'kboSetups', 'kpiSetups', 'appraisalSetups', 'documentTemplates', 'kpiData', 'okrs', 'lmsCourses', 'lmsQuizzes', 'learningPrograms', 'mediaFiles', 'collabSpaces', 'collabTasks', 'subscriptionLogs'];
+        const collectionsWithCompany = [
+            'departments', 'positions', 'employees', 'companyAdmins', 'companyObjectives', 
+            'kpiCategories', 'kboCategories', 'kboSetups', 'kpiSetups', 'appraisalSetups', 
+            'documentTemplates', 'kpiData', 'okrs', 'lmsCourses', 'lmsQuizzes', 
+            'learningPrograms', 'mediaFiles', 'collabSpaces', 'collabTasks', 'subscriptionLogs',
+            'kboAssessments', 'appraisalTasks'
+        ];
         
         const [scopedSnaps, globalSnaps] = await Promise.all([
              Promise.all(collectionsWithCompany.map(coll => 
@@ -219,8 +246,19 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
             ))
         ]);
 
-        const [departmentsSnap, positionsSnap, employeesSnap, companyAdminsSnap, companyObjectivesSnap, kpiCategoriesSnap, kboCategoriesSnap, kboSetupsSnap, kpiSetupsSnap, appraisalSetupsSnap, documentTemplatesSnap, kpiDataSnap, okrsSnap, coursesSnap, quizzesSnap, learningProgramsSnap, mediaFilesSnap, collabSpacesSnap, collabTasksSnap, subscriptionLogsSnap] = scopedSnaps;
-        const [subscriptionPlansSnap, emailTemplatesSnap, whatsappTemplatesSnap, notificationTemplatesSnap, aiToolsSnap] = globalSnaps;
+        const [
+            departmentsSnap, positionsSnap, employeesSnap, companyAdminsSnap, companyObjectivesSnap, 
+            kpiCategoriesSnap, kboCategoriesSnap, kboSetupsSnap, kpiSetupsSnap, appraisalSetupsSnap, 
+            documentTemplatesSnap, kpiDataSnap, okrsSnap, coursesSnap, quizzesSnap, 
+            learningProgramsSnap, mediaFilesSnap, collabSpacesSnap, collabTasksSnap, subscriptionLogsSnap,
+            kboAssessmentsSnap, appraisalTasksSnap
+        ] = scopedSnaps;
+
+        const [
+            subscriptionPlansSnap, emailTemplatesSnap, whatsappTemplatesSnap, 
+            notificationTemplatesSnap, aiToolsSnap, targetOverridesSnap, 
+            enrollmentsSnap, memosSnap
+        ] = globalSnaps;
 
         setData(prev => ({
             ...prev,
@@ -250,6 +288,11 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
             collabSpaces: mapSnapshot<CollabSpace>(collabSpacesSnap),
             collabTasks: mapSnapshot<CollabTask>(collabTasksSnap),
             subscriptionLogs: mapSnapshot<SubscriptionLog>(subscriptionLogsSnap),
+            kboAssessments: mapSnapshot<KboAssessment>(kboAssessmentsSnap),
+            appraisalTasks: mapSnapshot<AppraisalTask>(appraisalTasksSnap),
+            targetOverrides: mapSnapshot<TargetOverride>(targetOverridesSnap),
+            enrollments: mapSnapshot<any>(enrollmentsSnap).map(e => enrollmentWithMethods(e)),
+            memos: mapSnapshot<Memo>(memosSnap),
         }));
 
         hasFetchedRef.current = true;
@@ -258,7 +301,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
       } finally {
         setIsLoading(false);
       }
-    }, [isAuthLoading, currentUser, userRole, companies]);
+    }, [isAuthLoading, currentUser, userRole]);
 
   useEffect(() => {
     fetchData();
@@ -269,7 +312,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     try {
         const docRef = await addDoc(collection(db, collectionName), { ...docData, createdAt: serverTimestamp(), createdBy: currentUser?.id });
         const newDoc = { id: docRef.id, ...docData } as T;
-        setData(prev => ({...prev, [stateKey]: [...prev[stateKey as keyof typeof data], newDoc]}));
+        setData(prev => ({...prev, [stateKey]: [...(prev[stateKey as keyof typeof data] as any[]), newDoc]}));
         if (!silent) toast({ title: "Data Disimpan" });
         return newDoc;
     } catch (e: any) {
@@ -305,7 +348,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
         await batch.commit();
         setData(prev => ({
             ...prev,
-            [stateKey]: prev[stateKey as keyof typeof data].filter((item: any) => !docIds.includes(item.id))
+            [stateKey]: (prev[stateKey as keyof typeof data] as any[]).filter((item: any) => !docIds.includes(item.id))
         }));
         toast({ title: "Data Dihapus" });
     } catch (e: any) {
@@ -315,7 +358,6 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
 
   const value: MasterDataContextType = {
     ...data,
-    updateEnrollmentInContext: () => {},
     fetchData,
     isLoading,
     addCompany: (d) => addDocAndUpdateState<Company>('companies', d, 'companies'),
@@ -357,17 +399,57 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     deleteAppraisalSetup: (id) => deleteDocsAndUpdateState('appraisalSetups', [id], 'appraisalSetups'),
 
     generateAppraisalTasks: async () => {},
-    addKboAssessment: async () => {},
-    deleteKboAssessment: async () => {},
-    addKpiSetup: (d) => addDocAndUpdateState<KpiSetup>('kpiSetups', d, 'kpiSetups'),
-    updateKpiSetup: (id, d) => updateDocAndUpdateState<KpiSetup>('kpiSetups', id, d, 'kpiSetups'),
+    addKboAssessment: async (assessment) => {
+        const id = `${assessment.setupId}_${assessment.subjectId}_${assessment.raterId}`;
+        const ref = doc(db, 'kboAssessments', id);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+            await updateDoc(ref, {
+                [`assessments.${assessment.kboSetupId}`]: {
+                    selections: assessment.selections,
+                    totalScore: assessment.totalScore,
+                    notes: assessment.notes || ""
+                },
+                timestamp: serverTimestamp()
+            });
+        } else {
+            await setDoc(ref, {
+                ...assessment,
+                assessments: {
+                    [assessment.kboSetupId]: {
+                        selections: assessment.selections,
+                        totalScore: assessment.totalScore,
+                        notes: assessment.notes || ""
+                    }
+                },
+                timestamp: serverTimestamp()
+            });
+        }
+    },
+    deleteKboAssessment: async (assessmentId, kboSetupId) => {
+        const ref = doc(db, 'kboAssessments', assessmentId);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+            const currentAssessments = snap.data().assessments || {};
+            delete currentAssessments[kboSetupId];
+            if (Object.keys(currentAssessments).length === 0) {
+                await deleteDoc(ref);
+            } else {
+                await updateDoc(ref, { assessments: currentAssessments });
+            }
+        }
+    },
+    addKpiSetup: (d, silent) => addDocAndUpdateState<KpiSetup>('kpiSetups', d, 'kpiSetups', silent),
+    updateKpiSetup: (id, d, silent) => updateDocAndUpdateState<KpiSetup>('kpiSetups', id, d, 'kpiSetups', silent),
     deleteKpiSetup: (id) => deleteDocsAndUpdateState('kpiSetups', [id], 'kpiSetups'),
     
     addDocumentTemplate: (d) => addDocAndUpdateState<DocumentTemplate>('documentTemplates', d, 'documentTemplates'),
     updateDocumentTemplate: (id, d) => updateDocAndUpdateState<DocumentTemplate>('documentTemplates', id, d, 'documentTemplates'),
     deleteDocumentTemplate: (id) => deleteDocsAndUpdateState('documentTemplates', [id], 'documentTemplates'),
     
-    addOrUpdateKpiData: async () => {},
+    addOrUpdateKpiData: async (dataToSave) => {
+        await setDoc(doc(db, 'kpiData', dataToSave.id), { ...dataToSave, updatedAt: serverTimestamp() }, { merge: true });
+    },
     updateKpiData: (id, d) => updateDocAndUpdateState<KpiData>('kpiData', id, d, 'kpiData'),
     deleteKpiData: (ids) => deleteDocsAndUpdateState('kpiData', ids, 'kpiData'),
     
@@ -387,8 +469,28 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     deleteQuiz: (id) => deleteDocsAndUpdateState('lmsQuizzes', [id], 'quizzes'),
     addLearningProgram: (d) => addDocAndUpdateState<LearningProgram>('learningPrograms', d, 'learningPrograms'),
     updateLearningProgram: (id, d) => updateDocAndUpdateState<LearningProgram>('learningPrograms', id, d, 'learningPrograms'),
-    enrollToCourse: async () => null,
-    updateEnrollment: async () => {},
+    
+    enrollToCourse: async (courseId, employeeId) => {
+        const id = `${employeeId}_${courseId}`;
+        const ref = doc(db, 'lmsEnrollments', id);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) {
+            const newEnrollment = {
+                id, courseId, employeeId, status: 'in-progress', progress: 0,
+                topicStatus: {}, startedAt: new Date(),
+            };
+            await setDoc(ref, newEnrollment);
+            return enrollmentWithMethods(newEnrollment as any);
+        }
+        return enrollmentWithMethods(snap.data() as any);
+    },
+    updateEnrollment: async (id, d) => {
+        await updateDoc(doc(db, 'lmsEnrollments', id), { ...d, updatedAt: serverTimestamp() });
+    },
+    resetEnrollment: async (id) => {
+        await deleteDoc(doc(db, 'lmsEnrollments', id));
+        fetchData(true);
+    },
     addEmailTemplate: (d) => addDocAndUpdateState<EmailTemplate>('emailTemplates', d, 'emailTemplates'),
     updateEmailTemplate: (id, d) => updateDocAndUpdateState<EmailTemplate>('emailTemplates', id, d, 'emailTemplates'),
     deleteEmailTemplate: (id) => deleteDocsAndUpdateState('emailTemplates', [id], 'emailTemplates'),
@@ -408,6 +510,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     addCollabTask: (d) => addDocAndUpdateState<CollabTask>('collabTasks', d, 'collabTasks'),
     updateCollabTask: (id, d) => updateDocAndUpdateState<CollabTask>('collabTasks', id, d, 'collabTasks'),
     deleteCollabTask: (id) => deleteDocsAndUpdateState('collabTasks', [id], 'collabTasks'),
+    addMemo: (d) => addDocAndUpdateState<any>('memos', d, 'memos'),
   };
 
   return (
