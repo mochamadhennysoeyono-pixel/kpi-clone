@@ -42,7 +42,7 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
 
   if (totalIsLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="flex h-screen w-full items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-6">
           <Ripple className="w-16 h-16 text-primary" />
           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">
@@ -85,11 +85,11 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
   }
 
   if (isDocEditor) {
-    return <div className="h-screen flex flex-col">{contentToRender}</div>;
+    return <div className="h-screen flex flex-col bg-white">{contentToRender}</div>;
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 text-foreground overflow-hidden">
+    <div className="flex h-screen bg-white text-foreground overflow-hidden">
       {!hideSidebar && <AppSidebar />}
       
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden relative">

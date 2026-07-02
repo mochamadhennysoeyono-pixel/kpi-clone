@@ -3,7 +3,7 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, X, ChevronDown, Menu } from "lucide-react";
+import { LogOut, X, ChevronDown, Menu, ChevronLeft } from "lucide-react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -22,9 +22,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ScrollArea } from "./scroll-area";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { Avatar, AvatarFallback } from "./avatar";
-import { Separator } from "./separator";
 
-/** AppSidebar component - mini expandable sidebar with White Glassmorphism */
+/** AppSidebar component - mini expandable sidebar with Seamless White Aesthetic */
 function MotionNav() {
   const { isOpen, setIsOpen } = useSidebar();
   const pathname = usePathname();
@@ -63,13 +62,13 @@ function MotionNav() {
         transition={{ type: "spring", stiffness: 300, damping: 35 }}
         className={cn(
           "flex flex-col h-[calc(100vh-2rem)] sticky left-0 top-4 z-50 ml-4 mb-4",
-          "bg-white/80 backdrop-blur-xl border border-white shadow-2xl rounded-[1.5rem] overflow-hidden",
+          "bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[1.5rem] overflow-hidden",
           isMobile ? "fixed h-[calc(100vh-1rem)] top-2 ml-2" : "relative"
         )}
         onMouseEnter={() => !isMobile && setIsOpen(true)}
       >
-        {/* Top Header Section: Now with Adaptive Logo */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
+        {/* Top Header Section: No Separator for Seamless Look */}
+        <div className="flex items-center justify-between px-6 pt-7 pb-6 flex-shrink-0">
           <div className="flex items-center justify-center min-h-[40px]">
             <AnimatePresence mode="wait">
               {isOpen || isMobile ? (
@@ -118,7 +117,7 @@ function MotionNav() {
                   e.stopPropagation();
                   setIsOpen(false);
                 }}
-                className="size-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
+                className="size-8 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-colors"
               >
                 <X size={14} />
               </motion.button>
@@ -126,17 +125,15 @@ function MotionNav() {
           </AnimatePresence>
         </div>
 
-        <Separator className="bg-slate-200/60 mx-6 w-auto mb-2" />
-
         <ScrollArea className="flex-1 px-4">
-             <ul className="space-y-1.5 py-4">
+             <ul className="space-y-1.5 pb-10">
                 {activeModule && (isOpen || isMobile) && (
-                    <li className="mb-6">
+                    <li className="mb-6 px-2">
                         <Button 
                             variant="ghost" 
                             size="sm" 
                             onClick={() => router.push('/portal')}
-                            className="w-full justify-start gap-3 font-black text-[10px] uppercase tracking-widest text-primary bg-primary/5 hover:bg-primary/10 h-11 rounded-2xl border border-primary/10"
+                            className="w-full justify-start gap-3 font-black text-[10px] uppercase tracking-widest text-primary bg-slate-50 hover:bg-slate-100 h-11 rounded-2xl border border-slate-100"
                         >
                             <ChevronLeft size={16} className="stroke-[3px]" />
                             <span>PORTAL UTAMA</span>
@@ -149,8 +146,8 @@ function MotionNav() {
                     const isGroupActive = item.subItems ? item.subItems.some(sub => pathname.startsWith(sub.href)) : false;
                     const isActive = item.href ? pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)) : isGroupActive;
 
-                    const activeClasses = "bg-primary text-white shadow-lg";
-                    const inactiveClasses = "text-slate-600 hover:bg-slate-100 hover:text-slate-900";
+                    const activeClasses = "bg-primary text-white shadow-md";
+                    const inactiveClasses = "text-slate-500 hover:bg-slate-50 hover:text-slate-900";
 
                     if (item.subItems && item.subItems.length > 0) {
                         return (
@@ -160,11 +157,11 @@ function MotionNav() {
                                         <button
                                             className={cn(
                                                 "group flex items-center gap-4 rounded-xl px-4 py-3 text-xs w-full text-left transition-all duration-300",
-                                                isGroupActive ? "text-primary bg-primary/5 font-bold" : inactiveClasses
+                                                isGroupActive ? "text-primary bg-slate-50 font-bold" : inactiveClasses
                                             )}
                                         >
                                             <div className="flex size-5 items-center justify-center shrink-0">
-                                              <Icon size={20} className={cn("transition-colors", isGroupActive ? "text-primary" : "opacity-60")} />
+                                              <Icon size={20} className={cn("transition-colors", isGroupActive ? "text-primary" : "opacity-70")} />
                                             </div>
                                             <AnimatePresence>
                                                 {(isOpen || isMobile) && (
@@ -178,7 +175,7 @@ function MotionNav() {
                                                     </motion.span>
                                                 )}
                                             </AnimatePresence>
-                                             {(isOpen || isMobile) && <ChevronDown size={14} className="shrink-0 transition-transform duration-300 group-data-[state=open]:rotate-180 opacity-40" />}
+                                             {(isOpen || isMobile) && <ChevronDown size={14} className="shrink-0 transition-transform duration-300 group-data-[state=open]:rotate-180 opacity-30" />}
                                         </button>
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>
@@ -188,7 +185,7 @@ function MotionNav() {
                                             initial={{ opacity: 0, y: -5 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -5 }}
-                                            className="ml-6 my-1 border-l border-slate-200"
+                                            className="ml-6 my-1 border-l border-slate-100"
                                           >
                                               {item.subItems.map(subItem => {
                                                   const isSubActive = pathname.startsWith(subItem.href);
@@ -196,7 +193,7 @@ function MotionNav() {
                                                       <li key={subItem.href}>
                                                           <Link href={subItem.href} className={cn(
                                                               "block pl-6 pr-3 py-2 text-[11px] rounded-r-xl border-l-2 transition-all duration-300",
-                                                              isSubActive ? "text-primary border-primary font-black bg-primary/5" : "text-slate-500 border-transparent hover:text-slate-900"
+                                                              isSubActive ? "text-primary border-primary font-black bg-slate-50" : "text-slate-400 border-transparent hover:text-slate-900"
                                                           )}>
                                                               {subItem.label.toUpperCase()}
                                                           </Link>
@@ -222,7 +219,7 @@ function MotionNav() {
                                 )}
                             >
                                 <div className="flex size-5 items-center justify-center shrink-0">
-                                    <Icon size={20} className={cn(!isActive && "opacity-60")} />
+                                    <Icon size={20} className={cn(!isActive && "opacity-70")} />
                                 </div>
                                 <AnimatePresence>
                                 {(isOpen || isMobile) && (
@@ -249,8 +246,8 @@ function MotionNav() {
                 <button
                     onClick={() => logout()}
                     className={cn(
-                      "flex items-center gap-3 w-full rounded-2xl transition-all active:scale-95 border shadow-sm group overflow-hidden",
-                      isOpen || isMobile ? "p-2 bg-slate-50 hover:bg-red-50 border-slate-200/60 hover:border-red-200" : "p-1 bg-transparent border-transparent justify-center"
+                      "flex items-center gap-3 w-full rounded-2xl transition-all active:scale-95 border border-slate-100 shadow-sm group overflow-hidden",
+                      isOpen || isMobile ? "p-2 bg-slate-50 hover:bg-red-50 hover:border-red-100" : "p-1 bg-transparent border-transparent justify-center"
                     )}
                 >
                     <Avatar className={cn("size-10 border-2 border-white shadow-sm shrink-0", !isOpen && !isMobile && "size-12")}>
@@ -266,7 +263,7 @@ function MotionNav() {
                             className="flex-1 text-left min-w-0"
                           >
                             <p className="text-xs font-black text-slate-900 truncate leading-tight uppercase tracking-tight">{currentUser.name}</p>
-                            <div className="flex items-center gap-1.5 mt-0.5 text-slate-500 group-hover:text-red-600 transition-colors">
+                            <div className="flex items-center gap-1.5 mt-0.5 text-slate-400 group-hover:text-red-500 transition-colors">
                                 <LogOut size={10} className="shrink-0" />
                                 <span className="text-[9px] font-black uppercase tracking-widest">LOG OUT</span>
                             </div>
@@ -327,4 +324,3 @@ export function SidebarTrigger() {
     </Button>
   );
 }
-
