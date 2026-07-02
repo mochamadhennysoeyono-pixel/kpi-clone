@@ -8,16 +8,23 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Endpoint Webhook untuk menerima notifikasi dari Midtrans secara real-time.
+ * Diproses menggunakan database 'performance'.
  */
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const serverKey = process.env.MIDTRANS_SERVER_KEY!;
+        const serverKey = process.env.MIDTRANS_SERVER_KEY;
+        const clientKey = process.env.MIDTRANS_CLIENT_KEY;
+
+        if (!serverKey || !clientKey) {
+            console.error("[MIDTRANS_WEBHOOK_ERROR] API Keys tidak ditemukan di environment.");
+            return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+        }
         
         const apiClient = new midtransClient.CoreApi({
             isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
             serverKey: serverKey,
-            clientKey: process.env.MIDTRANS_CLIENT_KEY!
+            clientKey: clientKey
         });
 
         // Verifikasi keaslian notifikasi dari Midtrans
@@ -27,48 +34,57 @@ export async function POST(req: Request) {
         const transactionStatus = statusResponse.transaction_status;
         const fraudStatus = statusResponse.fraud_status;
 
-        // Ambil metadata dari custom fields
+        // Ambil metadata dari custom fields (dikirim saat create transaction)
         const companyId = statusResponse.custom_field1;
         const planId = statusResponse.custom_field2;
 
-        console.log(`[MIDTRANS_WEBHOOK] Notification: ID: ${orderId} | Status: ${transactionStatus} | Company: ${companyId}`);
+        console.log(`[MIDTRANS_WEBHOOK] Incoming: ${orderId} | Status: ${transactionStatus} | Company: ${companyId}`);
 
         if (!companyId || !planId) {
-            console.warn("[MIDTRANS_WEBHOOK] Missing metadata in notification fields.");
+            console.warn("[MIDTRANS_WEBHOOK] Metadata (companyId/planId) tidak ditemukan dalam notifikasi.");
             return NextResponse.json({ message: "Missing metadata" }, { status: 400 });
         }
 
+        // Status sukses menurut Midtrans
         if (transactionStatus === 'capture' || transactionStatus === 'settlement') {
             if (fraudStatus === 'challenge') {
-                console.log(`[MIDTRANS_WEBHOOK] Transaction challenged: ${orderId}`);
+                console.log(`[MIDTRANS_WEBHOOK] Transaksi dicurigai (challenge): ${orderId}`);
             } else {
-                // Pembayaran sukses, jalankan update database
-                await processSuccessfulPayment(companyId, planId, statusResponse.gross_amount);
+                // Pembayaran benar-benar sukses, eksekusi update paket
+                await processSuccessfulSubscription(companyId, planId, statusResponse.gross_amount);
             }
+        } else if (transactionStatus === 'expire' || transactionStatus === 'cancel' || transactionStatus === 'deny') {
+            console.log(`[MIDTRANS_WEBHOOK] Transaksi gagal/expired: ${orderId}`);
+            // Opsional: Log kegagalan ke database jika perlu
         }
 
         return NextResponse.json({ status: 'OK' });
 
     } catch (error: any) {
-        console.error("[MIDTRANS_WEBHOOK_ERROR]", error.message);
+        console.error("[MIDTRANS_WEBHOOK_CRITICAL_ERROR]", error.message);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
 
-async function processSuccessfulPayment(companyId: string, planId: string, amountStr: string) {
+/**
+ * Sinkronisasi data langganan ke Firestore database 'performance'
+ */
+async function processSuccessfulSubscription(companyId: string, planId: string, amountStr: string) {
     const amount = parseFloat(amountStr);
+    
+    // Pastikan referensi mengarah ke database 'performance' via server.ts
     const companyRef = db.collection('companies').doc(companyId);
     const planRef = db.collection('subscriptionPlans').doc(planId);
     
     const [companySnap, planSnap] = await Promise.all([companyRef.get(), planRef.get()]);
     
     if (!companySnap.exists) {
-        console.error(`[MIDTRANS_WEBHOOK_ERROR] Company ID "${companyId}" not found.`);
+        console.error(`[SUBSCRIPTION_ERROR] Company ID "${companyId}" tidak ditemukan.`);
         return;
     }
     
     if (!planSnap.exists) {
-        console.error(`[MIDTRANS_WEBHOOK_ERROR] Plan ID "${planId}" not found.`);
+        console.error(`[SUBSCRIPTION_ERROR] Plan ID "${planId}" tidak ditemukan.`);
         return;
     }
 
@@ -76,24 +92,25 @@ async function processSuccessfulPayment(companyId: string, planId: string, amoun
     const companyData = companySnap.data() as any;
 
     const now = new Date();
-    const expiry = addDays(now, planData.durationDays || 365);
+    const duration = planData.durationDays || 365;
+    const expiry = addDays(now, duration);
 
     const batch = db.batch();
 
-    // 1. Update Status Perusahaan
+    // 1. Update Paket & Masa Aktif Perusahaan
     batch.update(companyRef, {
         subscriptionPlanId: planId,
         subscriptionActivationDate: now.toISOString(),
         subscriptionExpiryDate: expiry.toISOString(),
         status: 'Aktif',
-        // Hapus override custom jika ada, kembali ke standar paket yang baru dibeli
+        // Reset override kustom agar kembali menggunakan limit bawaan paket baru
         customPrice: adminApp.firestore.FieldValue.delete(),
         customUserLimit: adminApp.firestore.FieldValue.delete(),
         customManagementUserLimit: adminApp.firestore.FieldValue.delete(),
         customCompanyLimit: adminApp.firestore.FieldValue.delete(),
     });
 
-    // 2. Catat Log Histori
+    // 2. Simpan Log Audit
     const logRef = db.collection('subscriptionLogs').doc();
     batch.set(logRef, {
         companyId: companyId,
@@ -104,10 +121,10 @@ async function processSuccessfulPayment(companyId: string, planId: string, amoun
         amount: amount,
         startDate: now.toISOString(),
         endDate: expiry.toISOString(),
-        performedBy: 'Midtrans Webhook (Automated)',
+        performedBy: 'Midtrans System (Payment Gateway)',
         timestamp: adminApp.firestore.FieldValue.serverTimestamp(),
     });
 
     await batch.commit();
-    console.log(`[MIDTRANS_WEBHOOK_SUCCESS] Updated company ${companyData.name} to plan ${planData.name}`);
+    console.log(`[SUBSCRIPTION_SUCCESS] Perusahaan ${companyData.name} berhasil di-upgrade ke paket ${planData.name}`);
 }
