@@ -24,8 +24,14 @@ import {
     CheckCircle2,
     XCircle,
     Info,
-    ArrowUpRight,
-    ShoppingCart
+    ShoppingCart,
+    Users,
+    Network,
+    Briefcase,
+    GitMerge,
+    ChevronRight,
+    Settings,
+    Database
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, addDays } from 'date-fns';
@@ -96,7 +102,7 @@ function ModuleCard({
                 </div>
                 {isActive && (
                     <Badge className="absolute top-6 right-6 bg-green-500 hover:bg-green-600 font-bold border-none text-[10px] uppercase">
-                        Aktif
+                        {isTrial ? 'Trial' : 'Aktif'}
                     </Badge>
                 )}
                 <CardTitle className="text-xl font-headline font-bold">{config.name}</CardTitle>
@@ -119,7 +125,7 @@ function ModuleCard({
                             <span className="font-bold">{subscription.quota === -1 ? 'Unlimited' : subscription.quota} User</span>
                         </div>
                         <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground uppercase tracking-tight">Sisa Masa Aktif</span>
+                            <span className="text-muted-foreground uppercase tracking-tight">Masa Berlaku</span>
                             <span className={cn("font-bold", isExpired ? "text-destructive" : "text-primary")}>
                                 {subscription.expiryDate ? format(new Date(subscription.expiryDate), 'd MMM yyyy') : 'N/A'}
                             </span>
@@ -174,6 +180,25 @@ function ModuleCard({
                 </div>
             </CardFooter>
         </Card>
+    );
+}
+
+function AdminDataCard({ label, description, icon: Icon, href, color }: { label: string, description: string, icon: any, href: string, color: string }) {
+    return (
+        <Link href={href} className="block group">
+            <Card className="h-full border-none shadow-sm hover:shadow-md transition-all bg-background">
+                <CardContent className="p-4 flex items-center gap-4">
+                    <div className={cn("p-3 rounded-2xl shrink-0 transition-transform group-hover:scale-110", color)}>
+                        <Icon size={20} className="text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-bold text-slate-800 truncate">{label}</h4>
+                        <p className="text-[10px] text-muted-foreground line-clamp-1">{description}</p>
+                    </div>
+                    <ChevronRight size={14} className="text-muted-foreground opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                </CardContent>
+            </Card>
+        </Link>
     );
 }
 
@@ -305,25 +330,79 @@ export default function PortalPage() {
                         </CardFooter>
                     </Card>
 
-                    <div className="p-6 bg-primary/5 rounded-3xl border border-primary/10 border-dashed space-y-4">
-                        <div className="flex items-center gap-2 text-primary">
-                            <Info size={16} />
-                            <h4 className="text-xs font-black uppercase tracking-widest">Pusat Bantuan</h4>
+                    {/* --- ADMIN TOOLS (ONLY FOR MANAGEMENT) --- */}
+                    {isManagement && (
+                        <div className="space-y-4">
+                             <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 ml-1">
+                                <Database size={12} /> Pondasi Data & Organisasi
+                            </h3>
+                            <div className="grid grid-cols-1 gap-3">
+                                <AdminDataCard 
+                                    label="Data Karyawan" 
+                                    description="Kelola akun dan profil personil" 
+                                    icon={Users} 
+                                    href="/master-data/employees"
+                                    color="bg-indigo-500"
+                                />
+                                <AdminDataCard 
+                                    label="Departemen & Jabatan" 
+                                    description="Atur struktur dan unit kerja" 
+                                    icon={Network} 
+                                    href="/master-data/departments"
+                                    color="bg-sky-500"
+                                />
+                                <AdminDataCard 
+                                    label="Struktur Organisasi" 
+                                    description="Visualisasi hierarki jabatan" 
+                                    icon={GitMerge} 
+                                    href="/master-data/hierarchy"
+                                    color="bg-teal-500"
+                                />
+                            </div>
                         </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                            Butuh bantuan konfigurasi modular? Hubungi Customer Success PERFOM kami untuk panduan integrasi sistem di perusahaan Anda.
-                        </p>
-                        <Button variant="outline" className="w-full text-[10px] font-black uppercase h-9 border-primary/20 hover:bg-primary/5">
-                            Hubungi Admin PERFOM
-                        </Button>
-                    </div>
+                    )}
+
+                    {/* --- HOLDING TOOLS --- */}
+                    {isManagement && (
+                        <div className="space-y-4">
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 ml-1">
+                                <Building size={12} /> Manajemen Grup
+                            </h3>
+                            {company?.isHolding ? (
+                                <AdminDataCard 
+                                    label="Anak Perusahaan" 
+                                    description="Kelola cabang dan sister company" 
+                                    icon={Building} 
+                                    href="/holding-group-management"
+                                    color="bg-rose-500"
+                                />
+                            ) : (
+                                <Card className="border-dashed bg-primary/5">
+                                    <CardContent className="p-6 text-center space-y-4">
+                                        <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary">
+                                            <GitMerge size={24} />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-bold">Aktifkan Mode Holding</p>
+                                            <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                                Punya lebih dari 1 cabang? Kelola semuanya dalam satu pintu PERFOM.
+                                            </p>
+                                        </div>
+                                        <Button asChild variant="outline" size="sm" className="w-full text-[10px] font-black uppercase border-primary/20 h-9">
+                                            <Link href="/holding-management">Upgrade Ke Holding</Link>
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* --- MODULAR SECTION --- */}
                 <div className="lg:col-span-8 space-y-8">
                     <div className="space-y-1">
-                        <h1 className="text-4xl font-black tracking-tighter">Halo, {currentUser.name.split(' ')[0]} 👋</h1>
-                        <p className="text-muted-foreground text-lg">Pilih modul yang ingin Anda gunakan hari ini.</p>
+                        <h1 className="text-4xl font-black tracking-tighter text-slate-900">Halo, {currentUser.name.split(' ')[0]} 👋</h1>
+                        <p className="text-slate-500 text-lg">Pilih modul operasional yang ingin Anda gunakan.</p>
                     </div>
 
                     {activeModules.length > 0 && (
@@ -362,78 +441,56 @@ export default function PortalPage() {
                             </div>
                         </div>
                     )}
-                </div>
-            </div>
-
-            {/* --- BILLING & LOGS SECTION (Only for Management) --- */}
-            {isManagement && (
-                <Card className="border-none shadow-xl rounded-3xl overflow-hidden mt-10">
-                    <CardHeader className="bg-muted/30 p-8 border-b">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2 text-primary mb-2">
-                                    <History size={20} className="stroke-[3px]" />
-                                    <h4 className="text-xs font-black uppercase tracking-[0.2em]">Billing & Activation Logs</h4>
-                                </div>
-                                <CardTitle className="text-2xl font-bold font-headline">Riwayat Aktivitas Paket</CardTitle>
-                                <CardDescription>Monitoring transparansi biaya dan pembaruan kuota modul.</CardDescription>
+                    
+                    {/* --- SYSTEM LOGS (Only for Management) --- */}
+                    {isManagement && (
+                        <div className="space-y-4 pt-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                    <History className="size-4" /> Riwayat Aktivitas & Billing
+                                </h3>
+                                <Link href="/subscription-status" className="text-[10px] font-black uppercase text-primary hover:underline">
+                                    Lihat Semua Detail
+                                </Link>
                             </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <Table>
-                            <TableHeader className="bg-muted/10">
-                                <TableRow className="border-none">
-                                    <TableHead className="font-black text-[10px] uppercase tracking-widest py-5 pl-8">Tanggal</TableHead>
-                                    <TableHead className="font-black text-[10px] uppercase tracking-widest">Modul / Aksi</TableHead>
-                                    <TableHead className="font-black text-[10px] uppercase tracking-widest text-right">Nilai Transaksi</TableHead>
-                                    <TableHead className="font-black text-[10px] uppercase tracking-widest text-right pr-8">Petugas</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {logs.length > 0 ? logs.map(log => (
-                                    <TableRow key={log.id} className="hover:bg-muted/5 transition-colors border-border/40">
-                                        <TableCell className="py-5 pl-8 font-medium text-xs">
-                                            {log.timestamp?.toDate ? format(log.timestamp.toDate(), 'dd MMM yyyy, HH:mm') : 'Baru saja'}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-col gap-1">
-                                                <span className="font-black text-xs uppercase tracking-tight">{log.planName}</span>
-                                                <div className="flex items-center gap-2">
+                            <Card className="border-none shadow-sm overflow-hidden rounded-2xl">
+                                <Table>
+                                    <TableBody>
+                                        {logs.slice(0, 5).map(log => (
+                                            <TableRow key={log.id} className="hover:bg-muted/5 border-border/40">
+                                                <TableCell className="py-4 pl-6">
+                                                    <p className="text-xs font-bold uppercase">{log.planName}</p>
+                                                    <p className="text-[10px] text-muted-foreground">{log.timestamp?.toDate ? format(log.timestamp.toDate(), 'd MMM yyyy') : 'Baru saja'}</p>
+                                                </TableCell>
+                                                <TableCell>
                                                     <Badge variant="outline" className={cn(
-                                                        "text-[9px] font-bold px-1.5 h-4 border-none",
+                                                        "text-[8px] font-bold px-1.5 h-4 border-none",
                                                         log.action === 'UPGRADE' ? "bg-green-100 text-green-700" : 
                                                         log.action === 'TRIAL' ? "bg-amber-100 text-amber-700" :
                                                         "bg-blue-100 text-blue-700"
                                                     )}>
                                                         {log.action}
                                                     </Badge>
-                                                    {log.moduleId && <span className="text-[10px] text-muted-foreground italic font-medium">({log.moduleId})</span>}
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right font-black font-mono text-sm">
-                                            {log.amount > 0 ? `Rp ${log.amount.toLocaleString('id-ID')}` : 'FREE'}
-                                        </TableCell>
-                                        <TableCell className="text-right pr-8">
-                                            <div className="flex items-center justify-end gap-2 text-xs font-bold text-muted-foreground">
-                                                <User size={12} className="opacity-40" />
-                                                {log.performedBy}
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                )) : (
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="h-32 text-center text-muted-foreground italic">
-                                            Belum ada catatan transaksi modul ditemukan.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-            )}
+                                                </TableCell>
+                                                <TableCell className="text-right pr-6 font-bold text-xs">
+                                                    {log.amount > 0 ? `Rp ${log.amount.toLocaleString('id-ID')}` : 'FREE'}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                        {logs.length === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={3} className="h-24 text-center text-[10px] text-muted-foreground uppercase font-bold opacity-30 italic">
+                                                    Belum ada catatan aktivitas.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </Card>
+                        </div>
+                    )}
+                </div>
+            </div>
 
             <ModuleSubscriptionDialog 
                 isOpen={isSubDialogOpen}

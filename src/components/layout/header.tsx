@@ -1,14 +1,16 @@
+
 // src/components/layout/header.tsx
 'use client';
 
 import {useState, useEffect} from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   CircleUser,
   LogOut,
   Settings,
-  LayoutGrid
+  LayoutGrid,
+  ChevronLeft
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {
@@ -75,6 +77,7 @@ export default function Header() {
   const { currentUser, userRole, logout } = useAuth();
   const isMobile = useIsMobile();
   const pathname = usePathname();
+  const router = useRouter();
   const isPortal = pathname === '/portal';
   
   const handleLogout = () => {
@@ -88,7 +91,7 @@ export default function Header() {
         "no-print"
     )}>
         <div className="flex items-center gap-3">
-          {(isMobile || isPortal) ? (
+          {isPortal ? (
             <div className="flex items-center gap-3">
                 <Image 
                     src="/logo.png" 
@@ -96,10 +99,23 @@ export default function Header() {
                     width={120}
                     height={32}
                 />
-                {!isPortal && <Separator orientation="vertical" className="h-6" />}
             </div>
           ) : (
-            <SidebarTrigger />
+            <div className="flex items-center gap-2">
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => router.push('/portal')}
+                    className="hidden lg:flex gap-2 font-bold text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary transition-all active:scale-95 px-2"
+                >
+                    <ChevronLeft size={16} className="stroke-[3px]" />
+                    Portal Utama
+                </Button>
+                <div className="hidden lg:block">
+                     <Separator orientation="vertical" className="h-6 mx-2 opacity-40" />
+                </div>
+                <SidebarTrigger />
+            </div>
           )}
         </div>
 
@@ -107,7 +123,7 @@ export default function Header() {
         {isPortal ? (
             <Badge variant="outline" className="h-9 px-4 rounded-xl gap-2 font-bold uppercase tracking-widest bg-primary/5 border-primary/20 text-primary">
                 <LayoutGrid size={16} />
-                Portal Modul PERFOM
+                Portal Utama PERFOM
             </Badge>
         ) : <LiveClock />}
       </div>
@@ -132,13 +148,13 @@ export default function Header() {
             <DropdownLabel user={currentUser} />
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-                <Link href="/settings">
+                <Link href="/settings" className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4"/>
                   {userRole === 'superadmin' ? 'Pengaturan' : 'Profil'}
                 </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Keluar</span>
               </DropdownMenuItem>

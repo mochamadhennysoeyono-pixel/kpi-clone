@@ -157,18 +157,18 @@ export function getNavItems(
       isRegularUser: userRole === 'user' && !hasSubordinates,
       isManager: userRole === 'manajemen' || hasSubordinates,
       
-      isHolding: userCompany?.isHolding === true && (subscriptionPlan?.features?.allowHolding !== false),
-      canBecomeHolding: subscriptionPlan?.features?.allowHolding === true,
+      isHolding: userCompany?.isHolding === true,
+      canBecomeHolding: userCompany?.canBecomeHolding === true,
       
-      canAccessKpi: (subscriptionPlan?.features?.allowKpi !== false) || userRole === 'superadmin',
-      canAccessKbo: (subscriptionPlan?.features?.allowKbo !== false) || userRole === 'superadmin',
-      canAccessOkr: (subscriptionPlan?.features?.allowOkr === true) || userRole === 'superadmin',
-      canAccessLms: (subscriptionPlan?.features?.allowLms === true) || userRole === 'superadmin',
-      canAccessCollabSpace: (subscriptionPlan?.features?.allowCollabSpace === true) || userRole === 'superadmin',
-      canAccessDocs: (subscriptionPlan?.features?.allowDocumentManagement === true) || userRole === 'superadmin',
-      canAccessReports: (subscriptionPlan?.features?.allowReporting !== false) || userRole === 'superadmin',
+      canAccessKpi: true,
+      canAccessKbo: true,
+      canAccessOkr: true,
+      canAccessLms: true,
+      canAccessCollabSpace: true,
+      canAccessDocs: true,
+      canAccessReports: true,
       
-      isOkrParticipant: isOkrParticipant && (subscriptionPlan?.features?.allowOkr === true),
+      isOkrParticipant: isOkrParticipant,
     };
     
     const allNavItems = [
@@ -192,7 +192,7 @@ export function getNavItems(
         { 
             label: 'Pondasi Data', 
             iconName: 'pusat-data', 
-            show: capabilities.isSuperAdmin || (capabilities.isCompanyAdmin && !isMobile),
+            show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin,
             subItems: [
                 { href: '/master-data/company', label: 'Data Perusahaan', show: capabilities.isSuperAdmin, iconName: '/master-data/company' },
                 { href: '/master-data/company-objectives', label: 'Objective Perusahaan', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/master-data/company-objectives' },
@@ -214,7 +214,6 @@ export function getNavItems(
                 { href: '/holding-group-management', label: 'Manajemen Grup', show: true, iconName: '/holding-group-management' },
             ] 
         },
-        { href: '/holding-management', label: 'Aktivasi Holding', show: capabilities.isCompanyAdmin && !capabilities.isHolding && capabilities.canBecomeHolding, iconName: '/holding-management' },
 
         { 
             label: 'CollabSpace', 
@@ -360,7 +359,6 @@ export function getNavItems(
       manajemen: [
         'Pondasi Data', 
         'Pusat Holding', 
-        '/holding-management', 
         'CollabSpace', 
         'Analisis & Laporan', 
         'Manajemen KPI', 

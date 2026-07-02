@@ -1,3 +1,4 @@
+
 // src/app/(main)/main-layout-content.tsx
 "use client";
 
@@ -38,6 +39,7 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
   const isDocEditor = pathname.startsWith('/document-management/templates/');
   const activeModule = getActiveModuleFromPath(pathname);
   
+  // Sidebar is hidden on the Portal and for the Document Editor
   const hideSidebar = isPortal || isDocEditor;
 
   if (totalIsLoading) {
@@ -57,32 +59,8 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
     return null;
   }
 
+  // Final content check logic
   let contentToRender = children;
-
-  // Module Access Validation
-  if (!isSuperAdmin && !isPortal && activeModule) {
-      const company = companies.find(c => c.name === currentUser.company);
-      const subscription = company?.moduleSubscriptions?.[activeModule];
-      
-      if (!subscription || subscription.status !== 'active') {
-          contentToRender = (
-              <div className="flex flex-col items-center justify-center h-[70vh] w-full text-center p-8 space-y-6">
-                  <div className="size-20 bg-destructive/10 rounded-full flex items-center justify-center text-destructive">
-                    <AlertCircle size={40} />
-                  </div>
-                  <div className="space-y-2">
-                    <h1 className="text-2xl font-black uppercase tracking-tight">Akses Modul Terbatas</h1>
-                    <p className="text-muted-foreground max-w-md mx-auto">
-                        Perusahaan Anda belum berlangganan modul ini atau masa aktif paket telah berakhir di portal PERFOM.
-                    </p>
-                  </div>
-                  <Button onClick={() => router.push('/portal')} className="font-bold px-8 rounded-xl h-11">
-                    Kembali ke Portal Modul
-                  </Button>
-              </div>
-          );
-      }
-  }
 
   if (isDocEditor) {
     return <div className="h-screen flex flex-col bg-white">{contentToRender}</div>;
