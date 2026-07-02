@@ -180,7 +180,25 @@ function SubscriptionPlansContent() {
         }
 
         try {
-            const res = await createSubscriptionTransaction(plan, relevantCompanyForPlan, currentUser);
+            // MANUALLY EXTRACT PLAIN VALUES to avoid "toJSON methods are not supported" error
+            const plainPlan = {
+                id: plan.id,
+                price: plan.price,
+                name: plan.name
+            };
+
+            const plainCompany = {
+                id: relevantCompanyForPlan.id,
+                name: relevantCompanyForPlan.name
+            };
+
+            const plainUser = {
+                name: currentUser.name,
+                email: currentUser.email,
+                phone: currentUser.phone || ""
+            };
+
+            const res = await createSubscriptionTransaction(plainPlan, plainCompany, plainUser);
             
             if (res.success && res.token) {
                 if (window.snap) {

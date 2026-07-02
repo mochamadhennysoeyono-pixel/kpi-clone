@@ -2,16 +2,15 @@
 "use server";
 
 import midtransClient from 'midtrans-client';
-import type { SubscriptionPlan, Employee, Company } from '@/types';
 
 /**
  * Membuat transaksi baru di Midtrans dan mengembalikan Snap Token.
- * MENGAMBIL API KEYS LANGSUNG DARI ENVIRONMENT VARIABLES.
+ * MENGGUNAKAN PLAIN OBJECTS UNTUK MENGHINDARI SERIALIZATION ERROR.
  */
 export async function createSubscriptionTransaction(
-    plan: SubscriptionPlan, 
-    company: Company, 
-    user: Employee
+    plan: { id: string; price: number; name: string }, 
+    company: { id: string; name: string }, 
+    user: { name: string; email: string; phone?: string }
 ) {
     // Mengambil kredensial dari System Environment Variables
     const serverKey = process.env.MIDTRANS_SERVER_KEY || "Mid-server-BaagyjkErNfOuiKha6hsXhlN";
