@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/auth-context";
 import Image from "next/image";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Ripple } from "@/components/ui/ripple";
 
 // --- Right Side Visual Panel ---
 const BrandingVisual = () => {
@@ -225,12 +226,12 @@ export default function LoginPage() {
   if (isAuthLoading || (!isAuthLoading && currentUser)) {
      return (
         <div className="flex min-h-screen items-center justify-center bg-white">
-            <div className="flex flex-col items-center gap-4 text-center">
-                <Image src="/logo.png" alt="Perfom Logo" width={120} height={32} unoptimized />
-                <div className="flex items-center gap-2 font-medium text-slate-500">
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                    <span>{currentUser ? "Berhasil masuk, mengarahkan..." : "Memuat Sesi..."}</span>
-                </div>
+            <div className="flex flex-col items-center gap-6 text-center">
+                <Image src="/logo.png" alt="Perfom Logo" width={140} height={38} unoptimized />
+                <Ripple className="w-12 h-12 text-primary" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 animate-pulse">
+                    {currentUser ? "Berhasil masuk, mengarahkan..." : "Memuat Sesi..."}
+                </p>
             </div>
         </div>
     );
