@@ -27,9 +27,10 @@ export type Employee = {
   reportsTo?: string; 
   joinDate: string;
   status: 'Aktif' | 'Tidak Aktif' | 'Menunggu Persetujuan';
-  role: 'user'; 
+  role: 'user' | 'manajemen' | 'superadmin'; 
   loginStatus: LoginStatus;
   fcmTokens?: string[]; 
+  moduleAccess?: Record<string, boolean>; // New field for Assignment Slot
 };
 
 // Akun Admin Perusahaan (Manajemen)

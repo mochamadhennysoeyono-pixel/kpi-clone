@@ -1,3 +1,4 @@
+
 // src/app/(main)/master-data/employees/page.tsx
 "use client";
 
@@ -48,19 +49,136 @@ import {
   AlertCircle,
   Users,
   Loader2,
+  ShieldCheck,
+  ShieldAlert,
+  Zap
 } from "lucide-react";
-import type { Employee, LoginStatus, Company, SubscriptionPlan } from "@/types";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import type { Employee, LoginStatus, Company, SubscriptionPlan, ModuleId } from "@/types";
 import { EmployeeFormSheet } from "@/components/master-data/employees/employee-form-sheet";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useMasterData } from "@/contexts/master-data-context";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
-import { db } from "@/lib/firebase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { id as localeId } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
 import { isValid } from "date-fns";
+
+// --- Assignment Slot Dialog ---
+function ModuleAccessDialog({ 
+    isOpen, 
+    onOpenChange, 
+    employee, 
+    company, 
+    allEmployees,
+    onSave 
+}: { 
+    isOpen: boolean, 
+    onOpenChange: (o: boolean) => void, 
+    employee: Employee | null, 
+    company: Company | null,
+    allEmployees: Employee[],
+    onSave: (id: string, access: Record<string, boolean>) => Promise<void>
+}) {
+    const [localAccess, setLocalAccess] = useState<Record<string, boolean>>({});
+    const [isSaving, setIsSaving] = useState(false);
+    
+    useEffect(() => {
+        if (employee) {
+            setLocalAccess(employee.moduleAccess || {});
+        }
+    }, [employee]);
+
+    const activeModules = useMemo(() => {
+        if (!company?.moduleSubscriptions) return [];
+        return Object.entries(company.moduleSubscriptions)
+            .filter(([_, sub]) => sub.status === 'active')
+            .map(([id, sub]) => ({ id, ...sub }));
+    }, [company]);
+
+    const getUsage = (moduleId: string) => {
+        return allEmployees.filter(e => e.company === company?.name && e.moduleAccess?.[moduleId]).length;
+    };
+
+    const handleToggle = (moduleId: string, enabled: boolean) => {
+        const usage = getUsage(moduleId);
+        const sub = company?.moduleSubscriptions?.[moduleId as ModuleId];
+        const limit = sub?.quota ?? 0;
+
+        if (enabled && limit !== -1 && usage >= limit) {
+            alert(`Kuota modul ini sudah penuh (${usage}/${limit}).`);
+            return;
+        }
+
+        setLocalAccess(prev => ({ ...prev, [moduleId]: enabled }));
+    };
+
+    const handleConfirm = async () => {
+        if (!employee) return;
+        setIsSaving(true);
+        await onSave(employee.id, localAccess);
+        setIsSaving(false);
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Zap className="size-5 text-primary" />
+                        Kelola Akses Modul (Slotting)
+                    </DialogTitle>
+                    <DialogDescription>
+                        Tentukan modul apa saja yang dapat diakses oleh <strong>{employee?.name}</strong>.
+                    </DialogDescription>
+                </DialogHeader>
+                
+                <div className="py-6 space-y-4">
+                    {activeModules.length > 0 ? activeModules.map(mod => {
+                        const usage = getUsage(mod.id);
+                        const isCurrentlyAccessed = employee?.moduleAccess?.[mod.id];
+                        const isNewlyEnabled = localAccess[mod.id];
+                        
+                        return (
+                            <div key={mod.id} className="flex items-center justify-between p-4 rounded-xl border bg-muted/20">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-bold uppercase tracking-tight">{mod.id}</p>
+                                    <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase">
+                                        <Users size={10} />
+                                        Kuota: <span className={cn(usage >= mod.quota && mod.quota !== -1 ? "text-destructive" : "text-primary")}>
+                                            {usage} / {mod.quota === -1 ? '∞' : mod.quota}
+                                        </span>
+                                    </div>
+                                </div>
+                                <Switch 
+                                    checked={!!localAccess[mod.id]} 
+                                    onCheckedChange={(val) => handleToggle(mod.id, val)}
+                                />
+                            </div>
+                        );
+                    }) : (
+                        <div className="text-center py-10 opacity-40 italic text-sm">
+                            Perusahaan belum berlangganan modul apa pun.
+                        </div>
+                    )}
+                </div>
+
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => onOpenChange(false)}>Batal</Button>
+                    <Button onClick={handleConfirm} disabled={isSaving || activeModules.length === 0}>
+                        {isSaving && <Loader2 className="size-4 animate-spin mr-2" />}
+                        Simpan Hak Akses
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -75,12 +193,17 @@ export default function EmployeesPage() {
     positions,
     fetchData,
     subscriptionPlans,
+    updateEmployee
   } = useMasterData();
 
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | undefined>(undefined);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [employeesToDelete, setEmployeesToDelete] = useState<Employee[] | null>(null);
+  
+  const [isAccessDialogOpen, setIsAccessDialogOpen] = useState(false);
+  const [employeeForAccess, setEmployeeForAccess] = useState<Employee | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -115,13 +238,11 @@ export default function EmployeesPage() {
         relevantCompany = companies.find(c => c.id === userCompany.parentId) || null;
     }
 
-    // Default fallbacks if no plan found
     const DEFAULT_USER_LIMIT = 5;
     const DEFAULT_MGMT_LIMIT = 2;
 
     const plan = subscriptionPlans.find(p => p.id === relevantCompany?.subscriptionPlanId);
     
-    // Resolve final limits (prioritize custom overrides then plan defaults)
     const userLimit = relevantCompany?.customUserLimit ?? plan?.userLimit ?? DEFAULT_USER_LIMIT;
     const mgmtLimit = relevantCompany?.customManagementUserLimit ?? plan?.managementUserLimit ?? DEFAULT_MGMT_LIMIT;
 
@@ -300,9 +421,9 @@ export default function EmployeesPage() {
   
     try {
         for (const employee of employeesToSend) {
-            const result = await sendPasswordReset(employee.email, true); 
+            const result = await sendPasswordReset(employee.email, employee.name, true); 
             if (result.success) successCount++; else errorCount++;
-            await sleep(2000); // 2s throttling for SMTP stability
+            await sleep(2000); 
         }
         
         toast({
@@ -353,7 +474,7 @@ export default function EmployeesPage() {
 
     setIsLoading(true);
     try {
-        const result = await addUserAsAdmin(employeeData, false); // Explicitly false: No email on creation
+        const result = await addUserAsAdmin(employeeData, false, true); 
         if(result.success){
             await fetchData();
             toast({ title: "Karyawan Ditambahkan", description: `Akun untuk ${employeeData.name} telah dibuat dengan status No Login.` });
@@ -393,11 +514,11 @@ export default function EmployeesPage() {
     }
   };
 
-  const handleSendInvitation = async (email: string) => {
+  const handleSendInvitation = async (email: string, name: string) => {
     setIsSendingInvitation(email);
     setIsLoading(true);
     try {
-        const result = await sendPasswordReset(email);
+        const result = await sendPasswordReset(email, name);
         if (result.success) {
           toast({ title: 'Undangan Terkirim', description: `Email pembaruan kata sandi telah dikirim ke ${email}.` });
           await fetchData();
@@ -408,6 +529,16 @@ export default function EmployeesPage() {
         setIsSendingInvitation(null);
         setIsLoading(false);
     }
+  };
+
+  const handleSaveModuleAccess = async (id: string, moduleAccess: Record<string, boolean>) => {
+      try {
+          await updateEmployee(id, { moduleAccess });
+          toast({ title: "Akses Modul Diperbarui" });
+          await fetchData(true);
+      } catch (e: any) {
+          toast({ variant: 'destructive', title: "Gagal Update", description: e.message });
+      }
   };
 
   const handleImportClick = () => {
@@ -480,16 +611,12 @@ export default function EmployeesPage() {
         let failCount = 0;
 
         for (const row of jsonData) {
-            // --- NORMALIZE COMPANY NAME ---
-            // Find existing company case-insensitively from the list of manageable companies
             const rawCompany = String(row['Perusahaan'] || '').trim();
             const normalizedCompany = manageableCompanies.find(c => c.name.toLowerCase() === rawCompany.toLowerCase())?.name || rawCompany;
 
-            // --- ROBUST DATE PARSING ---
             let joinDate = new Date().toISOString().split('T')[0];
             if (row['Tanggal Bergabung (YYYY-MM-DD)']) {
                 const rawDate = row['Tanggal Bergabung (YYYY-MM-DD)'];
-                // If it's an Excel serial date (number)
                 if (typeof rawDate === 'number') {
                     const date = new Date((rawDate - 25569) * 86400 * 1000);
                     if (isValid(date)) joinDate = date.toISOString().split('T')[0];
@@ -518,7 +645,6 @@ export default function EmployeesPage() {
                 continue;
             }
             
-            // Check quota during import
             if (employeeData.role === 'user' && quotaInfo && quotaInfo.userLimitReached) {
                 failCount++;
                 continue;
@@ -528,14 +654,13 @@ export default function EmployeesPage() {
                 continue;
             }
 
-            // --- CALL addUserAsAdmin with SILENT flag to prevent flickering global loading ---
             const result = await addUserAsAdmin(employeeData, false, true); 
             if (result.success) {
                 successCount++;
             } else {
                 failCount++;
             }
-            await sleep(1500); // Throttling for stability
+            await sleep(1500); 
         }
         
         await fetchData(true);
@@ -702,7 +827,7 @@ export default function EmployeesPage() {
                   </TableHead>
                   <TableHead>Karyawan</TableHead>
                   <TableHead className="hidden md:table-cell">Jabatan</TableHead>
-                  <TableHead className="hidden lg:table-cell">No. Telepon</TableHead>
+                  <TableHead className="hidden lg:table-cell">Akses Modul</TableHead>
                   <TableHead className="hidden lg:table-cell">Status Akun</TableHead>
                   <TableHead className="hidden lg:table-cell">Status Login</TableHead>
                   <TableHead>
@@ -711,67 +836,87 @@ export default function EmployeesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredEmployees.map((employee) => (
-                  <TableRow key={employee.id} data-state={selectedRowIds.includes(employee.id) && "selected"}>
-                    <TableCell>
-                          <Checkbox
-                              checked={selectedRowIds.includes(employee.id)}
-                              onCheckedChange={() => handleRowSelect(employee.id)}
-                              aria-label={`Pilih ${employee.name}`}
-                              disabled={employee.id === currentUser?.id}
-                          />
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
-                        <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-full bg-muted">
-                          <User className="h-5 w-5 text-muted-foreground" />
+                {filteredEmployees.map((employee) => {
+                  const accessedModules = Object.entries(employee.moduleAccess || {})
+                      .filter(([_, enabled]) => enabled)
+                      .map(([id]) => id);
+
+                  return (
+                    <TableRow key={employee.id} data-state={selectedRowIds.includes(employee.id) && "selected"}>
+                        <TableCell>
+                            <Checkbox
+                                checked={selectedRowIds.includes(employee.id)}
+                                onCheckedChange={() => handleRowSelect(employee.id)}
+                                aria-label={`Pilih ${employee.name}`}
+                                disabled={employee.id === currentUser?.id}
+                            />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                            <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-full bg-muted">
+                            <User className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div className="grid gap-0.5">
+                            <span className="font-medium">{employee.name}</span>
+                            <span className="text-sm text-muted-foreground sm:hidden">{employee.position}</span>
+                            <span className="text-xs text-muted-foreground hidden sm:inline">{employee.email}</span>
+                            </div>
                         </div>
-                        <div className="grid gap-0.5">
-                          <span className="font-medium">{employee.name}</span>
-                          <span className="text-sm text-muted-foreground sm:hidden">{employee.position}</span>
-                          <span className="text-xs text-muted-foreground hidden sm:inline">{employee.email}</span>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">{employee.position}</TableCell>
-                    <TableCell className="hidden lg:table-cell">{employee.phone || '-'}</TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <Badge variant={employee.status === "Aktif" ? "default" : "outline"}>
-                        {employee.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <Badge variant="outline" className={cn("font-medium", getLoginStatusBadge(employee.loginStatus))}>
-                        {employee.loginStatus}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost" disabled={isSendingInvitation === employee.email}>
-                            {isSendingInvitation === employee.email ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
-                            <span className="sr-only">Buka menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => handleEditEmployee(employee)}>Ubah</DropdownMenuItem>
-                          <DropdownMenuItem onClick={async () => await handleSendInvitation(employee.email)}>
-                            <Send className="mr-2 h-4 w-4" />
-                            Kirim Pembaruan Sandi
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(employee)} disabled={employee.id === currentUser?.id}>Hapus</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">{employee.position}</TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                            <div className="flex flex-wrap gap-1">
+                                {accessedModules.length > 0 ? accessedModules.map(m => (
+                                    <Badge key={m} variant="secondary" className="text-[8px] h-4 uppercase font-bold px-1">{m}</Badge>
+                                )) : <span className="text-[10px] text-muted-foreground italic">No Access</span>}
+                            </div>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                        <Badge variant={employee.status === "Aktif" ? "default" : "outline"}>
+                            {employee.status}
+                        </Badge>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                        <Badge variant="outline" className={cn("font-medium", getLoginStatusBadge(employee.loginStatus))}>
+                            {employee.loginStatus}
+                        </Badge>
+                        </TableCell>
+                        <TableCell>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost" disabled={isSendingInvitation === employee.email}>
+                                {isSendingInvitation === employee.email ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
+                                <span className="sr-only">Buka menu</span>
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Aksi Karyawan</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => { setEmployeeForAccess(employee); setIsAccessDialogOpen(true); }}>
+                                <Zap className="mr-2 h-4 w-4" /> Kelola Akses Modul
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditEmployee(employee)}>
+                                <Pencil size={16} className="mr-2" /> Ubah Profil
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={async () => await handleSendInvitation(employee.email, employee.name)}>
+                                <Send className="mr-2 h-4 w-4" />
+                                Kirim Reset Sandi
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(employee)} disabled={employee.id === currentUser?.id}>
+                                <Trash2 size={16} className="mr-2" /> Hapus Akun
+                            </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
+      
       <EmployeeFormSheet 
         isOpen={isSheetOpen} 
         onOpenChange={setSheetOpen} 
@@ -780,6 +925,16 @@ export default function EmployeesPage() {
         onAdd={handleAdd}
         quotaInfo={quotaInfo as any}
       />
+
+      <ModuleAccessDialog 
+        isOpen={isAccessDialogOpen}
+        onOpenChange={setIsAccessDialogOpen}
+        employee={employeeForAccess}
+        company={userCompany || null}
+        allEmployees={employees}
+        onSave={handleSaveModuleAccess}
+      />
+
       <DeleteConfirmationDialog
         isOpen={isDeleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
@@ -790,3 +945,4 @@ export default function EmployeesPage() {
     </div>
   );
 }
+
