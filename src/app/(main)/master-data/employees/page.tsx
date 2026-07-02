@@ -51,7 +51,8 @@ import {
   Loader2,
   ShieldCheck,
   ShieldAlert,
-  Zap
+  Zap,
+  Pencil
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -704,7 +705,7 @@ export default function EmployeesPage() {
                     <Users className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                    <CardTitle className="font-headline text-2xl">Data Karyawan</CardTitle>
+                    <CardTitle className="font-headline text-2xl text-foreground">Data Karyawan</CardTitle>
                     <CardDescription>
                         Kelola data karyawan di perusahaan Anda. Menampilkan {filteredEmployees.length} data.
                     </CardDescription>
@@ -857,7 +858,7 @@ export default function EmployeesPage() {
                             <User className="h-5 w-5 text-muted-foreground" />
                             </div>
                             <div className="grid gap-0.5">
-                            <span className="font-medium">{employee.name}</span>
+                            <span className="font-medium text-foreground">{employee.name}</span>
                             <span className="text-sm text-muted-foreground sm:hidden">{employee.position}</span>
                             <span className="text-xs text-muted-foreground hidden sm:inline">{employee.email}</span>
                             </div>
@@ -945,4 +946,3 @@ export default function EmployeesPage() {
     </div>
   );
 }
-

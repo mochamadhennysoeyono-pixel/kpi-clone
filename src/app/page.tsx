@@ -37,7 +37,7 @@ export default function RootPage() {
         <div className="flex flex-col items-center gap-6">
           <Ripple className="size-24 text-primary" />
           <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground animate-pulse pl-[0.4em]">
-            KIPIAI CORE
+            PERFOM CORE
           </p>
         </div>
       </div>
