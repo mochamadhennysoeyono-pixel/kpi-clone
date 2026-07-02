@@ -38,8 +38,6 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
   const isDocEditor = pathname.startsWith('/document-management/templates/');
   const activeModule = getActiveModuleFromPath(pathname);
   
-  // MOD: Sidebar only hidden for Portal and Editor. 
-  // For modules, it remains but shows dynamic filtered content.
   const hideSidebar = isPortal || isDocEditor;
 
   if (totalIsLoading) {
@@ -91,7 +89,7 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
+    <div className="flex h-screen bg-slate-50 text-foreground overflow-hidden">
       {!hideSidebar && <AppSidebar />}
       
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden relative">
@@ -101,7 +99,7 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
             <ScrollArea className="flex-1 w-full">
                 <main className="w-full min-w-0">
                     <div className={cn(
-                        "p-4 sm:p-6 lg:p-8 w-full min-w-0 overflow-hidden",
+                        "p-4 sm:p-6 lg:p-10 w-full min-w-0 overflow-hidden",
                         isPortal && "lg:p-12 max-w-7xl mx-auto"
                     )}>
                         {contentToRender}

@@ -1,3 +1,4 @@
+
 /* src/app/globals.css */
 @tailwind base;
 @tailwind components;
@@ -14,9 +15,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* MOD: Changed primary color for light theme to the new dark blue */
     --primary: 222 47% 11%; /* #0f172a */
-    --primary-foreground: 0 0% 98%; /* Kept white text for contrast */
+    --primary-foreground: 0 0% 98%;
 
     --secondary: 160 84% 39%; 
     --secondary-foreground: 0 0% 98%;
@@ -33,14 +33,13 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     
-    /* MOD: Changed ring color to match the new primary color */
     --ring: 222 47% 11%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222 47% 11%; /* This is already #0f172a */
+    --background: 222 47% 11%;
     --foreground: 0 0% 98%;
 
     --card: 222 47% 14%;
@@ -49,8 +48,7 @@
     --popover: 222 47% 11%;
     --popover-foreground: 0 0% 98%;
 
-    /* MOD: Kept the vibrant blue for dark theme primary to ensure visibility */
-    --primary: 222 83% 58%; /* #2563EB - This provides necessary contrast */
+    --primary: 222 83% 58%; /* #2563EB */
     --primary-foreground: 0 0% 98%;
 
     --secondary: 160 84% 39%;
@@ -67,7 +65,7 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 222 83% 58%; /* Ring in dark mode should match the vibrant primary */
+    --ring: 222 83% 58%;
   }
 }
 
@@ -78,4 +76,29 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@layer utilities {
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
 }
