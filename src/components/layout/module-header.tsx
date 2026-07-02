@@ -51,8 +51,8 @@ export function ModuleHeader() {
 
     const userSubscriptionPlan = useMemo(() => {
         if (!userCompany) return null;
-        const relevantCompany = userCompany.parentId ? (companies.find(c => c.id === userCompany.parentId) || userCompany) : userCompany;
-        return subscriptionPlans.find(p => p.id === relevantCompany.subscriptionPlanId) || null;
+        const relComp = userCompany.parentId ? (companies.find(c => c.id === userCompany.parentId) || userCompany) : userCompany;
+        return subscriptionPlans.find(p => p.id === relComp.subscriptionPlanId) || null;
     }, [userCompany, companies, subscriptionPlans]);
 
     const hasSubordinates = useMemo(() => {
@@ -79,8 +79,10 @@ export function ModuleHeader() {
 
     if (!activeModule) return null;
 
+    const currentModuleName = MODULE_NAMES[activeModule as string] || 'Modul';
+
     return (
-        <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-4 sticky top-0 z-[100] shadow-sm no-print">
+        <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-4 sticky top-0 z-[100] shadow-sm no-print w-full">
             <div className="flex items-center gap-4 w-full max-w-7xl mx-auto">
                 <Button 
                     variant="ghost" 
@@ -99,7 +101,7 @@ export function ModuleHeader() {
                         <LayoutGrid size={18} />
                     </div>
                     <span className="font-black text-xs uppercase tracking-widest hidden lg:inline-block">
-                        {MODULE_NAMES[activeModule as string] || 'Modul'}
+                        {currentModuleName}
                     </span>
                 </div>
 
@@ -119,14 +121,14 @@ export function ModuleHeader() {
                                             <DropdownMenuLabel className="text-[10px] font-black uppercase text-muted-foreground mb-1">{item.label}</DropdownMenuLabel>
                                             {item.subItems.map((sub: any) => {
                                                 const SubIcon = iconMap[sub.iconName || sub.href || 'default'] || LayoutGrid;
-                                                const isActive = pathname.startsWith(sub.href);
+                                                const isSubActive = pathname.startsWith(sub.href);
                                                 return (
                                                     <DropdownMenuItem key={sub.href} asChild>
                                                         <Link href={sub.href} className={cn(
                                                             "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all",
-                                                            isActive ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-muted"
+                                                            isSubActive ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-muted"
                                                         )}>
-                                                            <SubIcon size={14} className={cn(isActive ? "text-primary-foreground" : "text-muted-foreground")} />
+                                                            <SubIcon size={14} className={cn(isSubActive ? "text-primary-foreground" : "text-muted-foreground")} />
                                                             <span className="text-xs font-semibold">{sub.label}</span>
                                                         </Link>
                                                     </DropdownMenuItem>
@@ -170,14 +172,14 @@ export function ModuleHeader() {
                                     <DropdownMenuGroup>
                                         {(pondasiNav.subItems || []).map((sub: any) => {
                                             const SubIcon = iconMap[sub.iconName || sub.href || 'default'] || Database;
-                                            const isActive = pathname.startsWith(sub.href);
+                                            const isSubActive = pathname.startsWith(sub.href);
                                             return (
                                                 <DropdownMenuItem key={sub.href} asChild>
                                                     <Link href={sub.href} className={cn(
                                                         "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all",
-                                                        isActive ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-muted"
+                                                        isSubActive ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-muted"
                                                     )}>
-                                                        <SubIcon size={14} className={isActive ? "text-primary-foreground" : "text-muted-foreground")} />
+                                                        <SubIcon size={14} className={isSubActive ? "text-primary-foreground" : "text-muted-foreground")} />
                                                         <span className="text-xs font-semibold">{sub.label}</span>
                                                     </Link>
                                                 </DropdownMenuItem>
