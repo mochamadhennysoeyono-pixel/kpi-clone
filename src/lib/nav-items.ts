@@ -127,7 +127,16 @@ export const getActiveModuleFromPath = (path: string): ModuleId | null => {
     return null;
 };
 
-export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCompany: Company | null | undefined, subscriptionPlan: SubscriptionPlan | null | undefined, isMobile: boolean, currentUser?: Employee | null, okrs?: OKR[]) {
+export function getNavItems(
+    userRole: UserRole, 
+    hasSubordinates: boolean, 
+    userCompany: Company | null | undefined, 
+    subscriptionPlan: SubscriptionPlan | null | undefined, 
+    isMobile: boolean, 
+    currentUser?: Employee | null, 
+    okrs?: OKR[],
+    activeModule?: ModuleId | null
+) {
     if (!userRole) return [];
 
     const isOkrParticipant = (currentUser && okrs) ? okrs.some(okr =>
@@ -308,7 +317,7 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
         { href: '/company-admin-management', label: 'Manajemen Admin', show: capabilities.isCompanyAdmin, iconName: '/company-admin-management' },
     ];
 
-    const visibleItems = allNavItems
+    let visibleItems = allNavItems
         .filter(item => item.show)
         .map(item => {
             if (item.subItems) {
@@ -319,6 +328,15 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             return item;
         })
         .filter((item): item is NonNullable<typeof item> => item !== null);
+
+    // --- Dynamic Filtering based on activeModule ---
+    if (activeModule && !capabilities.isSuperAdmin) {
+        visibleItems = visibleItems.filter(item => {
+            if (item.moduleId === activeModule) return true;
+            if (item.subItems && item.subItems.some(sub => (sub as any).moduleId === activeModule)) return true;
+            return false;
+        });
+    }
 
     if (isMobile) {
         return visibleItems;

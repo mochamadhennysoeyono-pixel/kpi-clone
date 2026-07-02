@@ -1,23 +1,21 @@
+
 "use client";
 
 import React from 'react';
 import Header from '@/components/layout/header';
-import { ModuleHeader } from '@/components/layout/module-header';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter, usePathname } from 'next/navigation';
 import { useMasterData } from '@/contexts/master-data-context';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { AppSidebar } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { AlertCircle, LayoutGrid } from 'lucide-react'; 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePageContext } from '@/contexts/page-context';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Ripple } from '@/components/ui/ripple';
 import { getActiveModuleFromPath } from '@/lib/nav-items';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { AlertCircle } from 'lucide-react';
 
 export default function MainLayoutContent({ children }: { children: React.ReactNode }) {
   const { currentUser, isLoading: isAuthLoading, userRole } = useAuth();
@@ -40,8 +38,9 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
   const isDocEditor = pathname.startsWith('/document-management/templates/');
   const activeModule = getActiveModuleFromPath(pathname);
   
-  const hideSidebar = isPortal || isDocEditor || (!isSuperAdmin && !!activeModule);
-  const showModuleHeader = !isSuperAdmin && !!activeModule && !isDocEditor;
+  // MOD: Sidebar only hidden for Portal and Editor. 
+  // For modules, it remains but shows dynamic filtered content.
+  const hideSidebar = isPortal || isDocEditor;
 
   if (totalIsLoading) {
     return (
@@ -62,6 +61,7 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
 
   let contentToRender = children;
 
+  // Module Access Validation
   if (!isSuperAdmin && !isPortal && activeModule) {
       const company = companies.find(c => c.name === currentUser.company);
       const subscription = company?.moduleSubscriptions?.[activeModule];
@@ -95,14 +95,14 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
       {!hideSidebar && <AppSidebar />}
       
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden relative">
-        {showModuleHeader ? <ModuleHeader /> : <Header />}
+        <Header />
         
         <div className="flex-1 min-h-0 overflow-hidden flex flex-col relative">
             <ScrollArea className="flex-1 w-full">
                 <main className="w-full min-w-0">
                     <div className={cn(
                         "p-4 sm:p-6 lg:p-8 w-full min-w-0 overflow-hidden",
-                        (isPortal || showModuleHeader) && "lg:p-12 max-w-7xl mx-auto"
+                        isPortal && "lg:p-12 max-w-7xl mx-auto"
                     )}>
                         {contentToRender}
                     </div>

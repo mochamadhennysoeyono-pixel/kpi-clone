@@ -1,16 +1,17 @@
+
 // src/components/ui/sidebar.tsx
 "use client";
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X, ChevronLeft, LayoutGrid } from "lucide-react";
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from "@/lib/utils";
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
-import { getNavItems, iconMap } from '@/lib/nav-items';
+import { getNavItems, iconMap, getActiveModuleFromPath } from '@/lib/nav-items';
 import type { UserRole, Company, SubscriptionPlan, Employee, OKR } from "@/types";
 import {
   Collapsible,
@@ -27,10 +28,13 @@ import { useSidebar } from "@/contexts/sidebar-context";
 function MotionNav() {
   const { isOpen, setIsOpen } = useSidebar();
   const pathname = usePathname();
+  const router = useRouter();
   const { currentUser, userRole, logout } = useAuth();
   const { employees, companies, subscriptionPlans, okrs } = useMasterData();
   const isMobile = useIsMobile();
   
+  const activeModule = getActiveModuleFromPath(pathname);
+
   const userCompany = React.useMemo(() => {
     if (!currentUser) return null;
     return companies.find(c => c.name === currentUser.company);
@@ -48,7 +52,7 @@ function MotionNav() {
     return employees.some(e => e.reportsTo === currentUser.id);
   }, [currentUser, employees]);
   
-  const navItems = getNavItems(userRole, hasSubordinates, userCompany, userSubscriptionPlan, !!isMobile, currentUser, okrs);
+  const navItems = getNavItems(userRole, hasSubordinates, userCompany, userSubscriptionPlan, !!isMobile, currentUser, okrs, activeModule);
     
   return (
      <motion.nav
@@ -105,12 +109,26 @@ function MotionNav() {
 
           <ScrollArea className="flex-1 mt-4">
              <ul className="space-y-1 px-1">
+                {/* --- Back to Portal Button (Module Context) --- */}
+                {activeModule && (isOpen || isMobile) && (
+                    <li className="px-2 mb-4">
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => router.push('/portal')}
+                            className="w-full justify-start gap-2 font-black text-[10px] uppercase tracking-wider text-primary bg-primary/5 hover:bg-primary/10 h-10 rounded-xl"
+                        >
+                            <ChevronLeft size={14} className="stroke-[3px]" />
+                            Kembali ke Portal
+                        </Button>
+                    </li>
+                )}
+
                 {navItems.map((item) => {
                     const Icon = iconMap[item.iconName || 'default'];
                     const isGroupActive = item.subItems ? item.subItems.some(sub => pathname.startsWith(sub.href)) : false;
                     const isActive = item.href ? pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)) : isGroupActive;
 
-                    // --- REFACTORED: Use consistent dark style for active items --- //
                     const activeClasses = "bg-slate-900 text-white hover:bg-slate-800";
                     const inactiveClasses = "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700";
 
@@ -228,6 +246,7 @@ function MotionNav() {
     </motion.nav>
   )
 }
+
 
 export function AppSidebar() {
   const { isOpen, toggleSidebar } = useSidebar();
