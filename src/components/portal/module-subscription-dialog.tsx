@@ -8,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -19,14 +18,13 @@ import {
     CreditCard, 
     Users, 
     Calendar, 
-    ArrowRight,
     Loader2,
     CheckCircle2,
     Info,
     Receipt
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
-import type { ModuleId, Company, ModuleSubscription } from '@/types';
+import type { ModuleId, Company } from '@/types';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -115,15 +113,21 @@ export function ModuleSubscriptionDialog({
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-[2rem] flex flex-col max-h-[90vh]">
-                {/* Minimal Header */}
-                <div className="p-4 px-6 flex items-center justify-between bg-muted/20 border-b">
+                {/* Header Minimalist (Fulfilling Accessibility Requirements) */}
+                <DialogHeader className="p-4 px-6 flex flex-row items-center justify-between bg-muted/20 border-b space-y-0">
                     <div className="flex items-center gap-3">
                         <div className={cn("p-1.5 rounded-lg", module.bg, module.color)}>
                             <Icon size={16} />
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/60">{module.name}</span>
+                        <DialogTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/60">
+                            {module.name}
+                        </DialogTitle>
                     </div>
-                </div>
+                    {/* Hidden visually but accessible for Screen Readers */}
+                    <DialogDescription className="sr-only">
+                        Konfigurasi dan rincian biaya langganan untuk {module.name}.
+                    </DialogDescription>
+                </DialogHeader>
 
                 <ScrollArea className="flex-1 min-h-0 bg-background">
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-0">
@@ -264,3 +268,4 @@ export function ModuleSubscriptionDialog({
         </Dialog>
     );
 }
+
