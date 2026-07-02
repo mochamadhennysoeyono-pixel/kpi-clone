@@ -65,38 +65,41 @@ function MotionNav() {
         transition={{ type: "spring", stiffness: 300, damping: 35 }}
         className={cn(
           "flex flex-col h-[calc(100vh-2rem)] sticky left-0 top-4 z-50 ml-4 mb-4",
-          "bg-slate-900/90 backdrop-blur-xl border border-white/10 shadow-2xl rounded-[3rem] overflow-hidden",
+          "bg-slate-900/90 backdrop-blur-xl border border-white/10 shadow-2xl rounded-[1.5rem] overflow-hidden",
           isMobile ? "fixed h-[calc(100vh-1rem)] top-2 ml-2" : "relative"
         )}
+        // MOD: Sidebar opens on hover but does not close on mouse leave
         onMouseEnter={() => !isMobile && setIsOpen(true)}
-        onMouseLeave={() => !isMobile && setIsOpen(false)}
       >
-        {/* Top Header Section (Mac-style status bar area) */}
+        {/* Top Header Section */}
         <div className="flex items-center justify-between px-6 pt-8 pb-4 flex-shrink-0">
           <div className="flex items-center gap-1.5">
             <div className="size-2.5 rounded-full bg-red-500/80" />
             <div className="size-2.5 rounded-full bg-amber-500/80" />
             <div className="size-2.5 rounded-full bg-green-500/80" />
           </div>
+          
+          {/* MOD: Replace Bell with manual close button (X) when open */}
           <AnimatePresence>
             {isOpen && (
-              <motion.div
+              <motion.button
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                className="relative"
+                onClick={() => setIsOpen(false)}
+                className="size-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 transition-colors"
+                title="Tutup Sidebar"
               >
-                <Bell size={18} className="text-white/60" />
-                <span className="absolute -top-1 -right-1 size-3 bg-red-500 rounded-full border-2 border-slate-900 flex items-center justify-center text-[7px] font-black text-white">4</span>
-              </motion.div>
+                <X size={16} />
+              </motion.button>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Profile Section (Floating in the sidebar) */}
+        {/* Profile Section */}
         <div className={cn("px-4 mb-4 transition-all", !isOpen && "px-0 flex justify-center")}>
           <div className={cn(
-            "p-3 rounded-[2rem] bg-white/5 border border-white/10 flex items-center gap-3 transition-all",
+            "p-3 rounded-[1.2rem] bg-white/5 border border-white/10 flex items-center gap-3 transition-all",
             !isOpen && "rounded-full p-1"
           )}>
             <Avatar className={cn("size-10 border-2 border-white/20", !isOpen && "size-12")}>
@@ -123,7 +126,6 @@ function MotionNav() {
 
         <ScrollArea className="flex-1 px-4">
              <ul className="space-y-1.5 pb-10">
-                {/* --- Back to Portal Button (Module Context) --- */}
                 {activeModule && isOpen && (
                     <li className="mb-6">
                         <Button 
@@ -153,7 +155,7 @@ function MotionNav() {
                                     <CollapsibleTrigger asChild>
                                         <button
                                             className={cn(
-                                                "group flex items-center gap-4 rounded-2xl px-4 py-3 text-xs w-full text-left transition-all duration-300",
+                                                "group flex items-center gap-4 rounded-xl px-4 py-3 text-xs w-full text-left transition-all duration-300",
                                                 isGroupActive ? "text-white bg-white/10" : inactiveClasses
                                             )}
                                         >
@@ -211,7 +213,7 @@ function MotionNav() {
                             <Link
                                 href={item.href || '#'}
                                 className={cn(
-                                    `group flex items-center gap-4 rounded-2xl px-4 py-3 text-xs transition-all duration-300`,
+                                    `group flex items-center gap-4 rounded-xl px-4 py-3 text-xs transition-all duration-300`,
                                     isActive ? activeClasses : inactiveClasses
                                 )}
                             >
@@ -241,7 +243,7 @@ function MotionNav() {
             <div className="p-4 flex-shrink-0">
                 <button
                     onClick={() => logout()}
-                    className="flex items-center gap-4 w-full rounded-2xl px-4 py-3 text-xs font-bold text-white/50 bg-white/5 hover:bg-red-500/20 hover:text-red-400 transition-all active:scale-95"
+                    className="flex items-center gap-4 w-full rounded-xl px-4 py-3 text-xs font-bold text-white/50 bg-white/5 hover:bg-red-500/20 hover:text-red-400 transition-all active:scale-95"
                 >
                     <LogOut size={20}/>
                     <AnimatePresence>
