@@ -338,25 +338,11 @@ export default function PortalPage() {
                             </h3>
                             <div className="grid grid-cols-1 gap-3">
                                 <AdminDataCard 
-                                    label="Data Karyawan" 
-                                    description="Kelola akun dan profil personil" 
-                                    icon={Users} 
+                                    label="Setup Master Data" 
+                                    description="Kelola personil, departemen, dan hierarki" 
+                                    icon={Settings} 
                                     href="/master-data/employees"
-                                    color="bg-indigo-500"
-                                />
-                                <AdminDataCard 
-                                    label="Departemen & Jabatan" 
-                                    description="Atur struktur dan unit kerja" 
-                                    icon={Network} 
-                                    href="/master-data/departments"
-                                    color="bg-sky-500"
-                                />
-                                <AdminDataCard 
-                                    label="Struktur Organisasi" 
-                                    description="Visualisasi hierarki jabatan" 
-                                    icon={GitMerge} 
-                                    href="/master-data/hierarchy"
-                                    color="bg-teal-500"
+                                    color="bg-indigo-600"
                                 />
                             </div>
                         </div>

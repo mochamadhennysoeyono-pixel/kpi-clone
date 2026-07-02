@@ -47,7 +47,7 @@ export type CompanyAdmin = {
 };
 
 // --- Modular Subscription Types ---
-export type ModuleId = 'appraisal' | 'lms' | 'collabspace';
+export type ModuleId = 'appraisal' | 'lms' | 'collabspace' | 'foundation';
 
 export type ModuleSubscription = {
     status: 'active' | 'inactive' | 'expired';

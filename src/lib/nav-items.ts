@@ -123,6 +123,7 @@ export const getActiveModuleFromPath = (path: string): ModuleId | null => {
     
     if (path.startsWith('/lms')) return 'lms';
     if (path.startsWith('/collab-space')) return 'collabspace';
+    if (path.startsWith('/master-data') || path.startsWith('/media-library')) return 'foundation';
     
     return null;
 };
@@ -193,6 +194,7 @@ export function getNavItems(
             label: 'Pondasi Data', 
             iconName: 'pusat-data', 
             show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin,
+            moduleId: 'foundation',
             subItems: [
                 { href: '/master-data/company', label: 'Data Perusahaan', show: capabilities.isSuperAdmin, iconName: '/master-data/company' },
                 { href: '/master-data/company-objectives', label: 'Objective Perusahaan', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/master-data/company-objectives' },
@@ -208,6 +210,7 @@ export function getNavItems(
             label: 'Pusat Holding', 
             iconName: 'pusat-holding', 
             show: (capabilities.isCompanyAdmin && capabilities.isHolding) || capabilities.isSuperAdmin,
+            moduleId: 'foundation',
             subItems: [
                 { href: '/holding-dashboard', label: 'Dasbor Agregat', show: true, iconName: '/holding-dashboard' },
                 { href: '/holding-kpi-setup', label: 'Pengaturan KPI Induk', show: true, iconName: '/holding-kpi-setup' },
@@ -329,10 +332,13 @@ export function getNavItems(
         .filter((item): item is NonNullable<typeof item> => item !== null);
 
     // --- Dynamic Filtering based on activeModule ---
-    if (activeModule && !capabilities.isSuperAdmin) {
+    // We enforce this even for Superadmin to ensure a clean context-specific sidebar
+    if (activeModule) {
         visibleItems = visibleItems.filter(item => {
             if (item.moduleId === activeModule) return true;
             if (item.subItems && item.subItems.some(sub => (sub as any).moduleId === activeModule)) return true;
+            // Always allow "Manajemen Sistem" for Superadmin even if they are in a module
+            if (capabilities.isSuperAdmin && item.label === 'Manajemen Sistem') return true;
             return false;
         });
     }
