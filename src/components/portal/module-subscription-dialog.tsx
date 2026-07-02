@@ -137,7 +137,7 @@ export function ModuleSubscriptionDialog({
                                         variant="outline" 
                                         size="icon" 
                                         className="size-12 rounded-xl border-2 border-primary/20 hover:bg-primary/5 hover:border-primary text-primary shadow-sm active:scale-95"
-                                        onClick={() => setQuota(Math.max(5, quota - 1))}
+                                        onClick={() => setQuota(Math.max(1, quota - 1))}
                                     >
                                         <Minus className="size-5 stroke-[3px]" />
                                     </Button>
@@ -145,7 +145,7 @@ export function ModuleSubscriptionDialog({
                                         <Input 
                                             type="number" 
                                             value={quota}
-                                            onChange={(e) => setQuota(Math.max(5, Math.min(500, parseInt(e.target.value) || 5)))}
+                                            onChange={(e) => setQuota(Math.max(1, parseInt(e.target.value) || 1))}
                                             className="border-none bg-transparent text-4xl font-black text-center focus-visible:ring-0 h-auto p-0 shadow-none text-primary"
                                         />
                                         <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] -mt-1">Seats</p>
@@ -155,14 +155,10 @@ export function ModuleSubscriptionDialog({
                                         variant="outline" 
                                         size="icon" 
                                         className="size-12 rounded-xl border-2 border-primary/20 hover:bg-primary/5 hover:border-primary text-primary shadow-sm active:scale-95"
-                                        onClick={() => setQuota(Math.min(500, quota + 1))}
+                                        onClick={() => setQuota(quota + 1)}
                                     >
                                         <Plus className="size-5 stroke-[3px]" />
                                     </Button>
-                                </div>
-                                <div className="flex items-center gap-2 text-[9px] font-bold text-muted-foreground uppercase tracking-wider ml-1">
-                                    <Info size={10} className="text-primary" />
-                                    Min. 5 User • Maks. 500 User
                                 </div>
                             </div>
 
