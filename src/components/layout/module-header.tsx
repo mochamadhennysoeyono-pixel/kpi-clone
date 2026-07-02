@@ -74,7 +74,7 @@ export function ModuleHeader() {
     }, [navItems, activeModule]);
 
     const pondasiNav = useMemo(() => {
-        return navItems.find(item => item.label === 'Pondasi Data') || null;
+        return navItems.find((item: any) => item.label === 'Pondasi Data') || null;
     }, [navItems]);
 
     if (!activeModule) return null;
@@ -99,7 +99,7 @@ export function ModuleHeader() {
                         <LayoutGrid size={18} />
                     </div>
                     <span className="font-black text-xs uppercase tracking-widest hidden lg:inline-block">
-                        {MODULE_NAMES[activeModule] || 'Modul'}
+                        {MODULE_NAMES[activeModule as string] || 'Modul'}
                     </span>
                 </div>
 

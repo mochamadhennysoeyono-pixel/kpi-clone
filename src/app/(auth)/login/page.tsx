@@ -13,7 +13,6 @@ import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Ripple } from "@/components/ui/ripple";
 
-// --- Right Side Visual Panel ---
 const BrandingVisual = () => {
   return (
     <div 
@@ -32,8 +31,6 @@ const BrandingVisual = () => {
     </div>
   );
 };
-
-// --- Form Implementations ---
 
 const EmailLoginForm = () => {
   const { loginWithEmail } = useAuth();
@@ -209,8 +206,6 @@ const RegisterForm = ({ onToggle }: { onToggle: (tab: string) => void }) => {
   );
 };
 
-
-// --- Main Page (Calibrated Layout) ---
 export default function LoginPage() {
   const { currentUser, isLoading: isAuthLoading, userRole } = useAuth();
   const router = useRouter();
@@ -218,7 +213,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isAuthLoading && currentUser) {
-      const targetPath = userRole === "superadmin" ? "/dashboard" : "/beranda";
+      const targetPath = userRole === "superadmin" ? "/dashboard" : "/portal";
       router.replace(targetPath);
     }
   }, [isAuthLoading, currentUser, router, userRole]);
@@ -228,7 +223,9 @@ export default function LoginPage() {
         <div className="flex min-h-screen items-center justify-center bg-white">
             <div className="flex flex-col items-center gap-6 text-center">
                 <Image src="/logo.png" alt="Perfom Logo" width={140} height={38} unoptimized />
-                <Ripple className="w-12 h-12 text-primary" />
+                <div className="size-16">
+                  <Ripple className="w-full h-full text-primary" />
+                </div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 animate-pulse">
                     {currentUser ? "Berhasil masuk, mengarahkan..." : "Memuat Sesi..."}
                 </p>
@@ -239,14 +236,11 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen w-full bg-white flex">
-      {/* Left Side: Form (Calibrated) */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 md:p-12">
         <div className="w-full max-w-sm">
-          
           <div className="mb-6">
             <Image src="/logo.png" alt="Perfom Logo" width={140} height={38} unoptimized />
           </div>
-          
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900 mb-2">
             {activeTab === 'login' ? 'Selamat Datang' : 'Daftar Perusahaan'}
           </h2>
@@ -255,7 +249,6 @@ export default function LoginPage() {
               ? 'Masuk untuk memantau progres dan meningkatkan performa Anda.' 
               : 'Mulai transformasi manajemen performa tim Anda hari ini.'}
           </p>
-          
           <div className="grid grid-cols-2 gap-2 mb-8 bg-slate-100 p-1 rounded-full border border-slate-200">
               <Button
                   onClick={() => setActiveTab('login')}
@@ -282,14 +275,11 @@ export default function LoginPage() {
                   Registrasi Bisnis
               </Button>
           </div>
-
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               {activeTab === 'login' ? <EmailLoginForm /> : <RegisterForm onToggle={setActiveTab} />}
           </div>
         </div>
       </div>
-
-      {/* Right Side: Branding Visual */}
       <BrandingVisual />
     </div>
   );
