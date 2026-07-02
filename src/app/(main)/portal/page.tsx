@@ -1,3 +1,4 @@
+// src/app/(main)/portal/page.tsx
 "use client";
 
 import { useMemo, useState } from 'react';
@@ -290,10 +291,10 @@ export default function PortalPage() {
                             <h4 className="text-xs font-black uppercase tracking-widest">Pusat Bantuan</h4>
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed">
-                            Butuh bantuan konfigurasi modular? Hubungi Customer Success KIPIAI kami untuk panduan integrasi sistem di perusahaan Anda.
+                            Butuh bantuan konfigurasi modular? Hubungi Customer Success PERFOM kami untuk panduan integrasi sistem di perusahaan Anda.
                         </p>
                         <Button variant="outline" className="w-full text-[10px] font-black uppercase h-9 border-primary/20 hover:bg-primary/5">
-                            Hubungi Admin KIPIAI
+                            Hubungi Admin PERFOM
                         </Button>
                     </div>
                 </div>

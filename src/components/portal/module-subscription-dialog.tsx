@@ -99,7 +99,7 @@ export function ModuleSubscriptionDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl p-0 overflow-hidden border-none shadow-2xl flex flex-col h-full max-h-[90vh] md:max-h-[85vh]">
+            <DialogContent className="max-w-4xl p-0 overflow-hidden border-none shadow-2xl flex flex-col h-full max-h-[95vh]">
                 <DialogHeader className="p-4 px-6 flex flex-row items-center justify-between bg-muted/20 border-b shrink-0">
                     <div className="flex items-center gap-2">
                         <div className={cn("p-1.5 rounded-lg", module.bg, module.color)}>
@@ -160,8 +160,8 @@ export function ModuleSubscriptionDialog({
                                 <div className="grid grid-cols-3 gap-3">
                                     {[
                                         { val: 1, label: 'Bulanan', sub: 'Normal' },
-                                        { val: 6, label: '6 Bulan', sub: 'Hemat 3%', color: 'text-blue-600' },
-                                        { val: 12, label: '12 Bulan', sub: 'Hemat 5%', color: 'text-blue-600' },
+                                        { val: 6, label: '6 Bulan', sub: 'Hemat 3%', color: 'text-[#2563eb]' },
+                                        { val: 12, label: '12 Bulan', sub: 'Hemat 5%', color: 'text-[#2563eb]' },
                                     ].map((opt) => (
                                         <button
                                             key={opt.val}
@@ -183,8 +183,8 @@ export function ModuleSubscriptionDialog({
                                 </div>
                                 {pricing.savingTotal > 0 && (
                                     <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                                        <div className="p-1 bg-blue-500 rounded-full text-white"><Check size={10} strokeWidth={4} /></div>
-                                        <p className="text-[11px] font-bold text-blue-700">
+                                        <div className="p-1 bg-[#2563eb] rounded-full text-white"><Check size={10} strokeWidth={4} /></div>
+                                        <p className="text-[11px] font-bold text-[#2563eb]">
                                             Hemat Rp {pricing.savingTotal.toLocaleString('id-ID')} dengan paket {durationMonths} bulan
                                         </p>
                                     </div>
@@ -197,7 +197,7 @@ export function ModuleSubscriptionDialog({
                                     <span className="text-[10px] font-black uppercase tracking-widest">Bantuan</span>
                                 </div>
                                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                    Pilih jumlah karyawan dan durasi yang sesuai untuk mendapatkan penawaran terbaik.
+                                    Pilih jumlah karyawan dan durasi yang sesuai untuk mendapatkan penawaran terbaik dari sistem PERFOM.
                                 </p>
                             </div>
                         </div>
@@ -213,7 +213,7 @@ export function ModuleSubscriptionDialog({
                                         <span className="font-bold text-slate-700">Rp {pricing.monthlyBase.toLocaleString('id-ID')}</span>
                                     </div>
                                     {pricing.monthlyDiscount > 0 && (
-                                        <div className="flex justify-between items-center text-blue-600">
+                                        <div className="flex justify-between items-center text-[#2563eb]">
                                             <span className="font-bold text-xs italic uppercase tracking-tight">Diskon Durasi {pricing.discountPercent}%</span>
                                             <span className="font-bold">-Rp {pricing.monthlyDiscount.toLocaleString('id-ID')}</span>
                                         </div>
@@ -245,10 +245,10 @@ export function ModuleSubscriptionDialog({
                                 <div className="flex flex-col sm:flex-row gap-3">
                                     <Button 
                                         variant="outline" 
-                                        className="flex-1 font-black text-[10px] uppercase tracking-widest h-12 border-blue-200 bg-blue-50/30 hover:bg-blue-100 text-blue-700 rounded-xl"
+                                        className="flex-1 font-black text-[10px] uppercase tracking-widest h-12 border-blue-200 bg-blue-50/30 hover:bg-blue-100 text-[#2563eb] rounded-xl"
                                         onClick={() => handleAction('trial')}
                                     >
-                                        Demo 14 Hari
+                                        Coba Gratis 14 Hari
                                     </Button>
                                     <Button 
                                         onClick={() => handleAction('paid')}

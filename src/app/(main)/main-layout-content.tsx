@@ -1,4 +1,4 @@
-
+// src/app/(main)/main-layout-content.tsx
 "use client";
 
 import React from 'react';
@@ -73,7 +73,7 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
                   <div className="space-y-2">
                     <h1 className="text-2xl font-black uppercase tracking-tight">Akses Modul Terbatas</h1>
                     <p className="text-muted-foreground max-w-md mx-auto">
-                        Perusahaan Anda belum berlangganan modul ini atau masa aktif paket telah berakhir.
+                        Perusahaan Anda belum berlangganan modul ini atau masa aktif paket telah berakhir di portal PERFOM.
                     </p>
                   </div>
                   <Button onClick={() => router.push('/portal')} className="font-bold px-8 rounded-xl h-11">

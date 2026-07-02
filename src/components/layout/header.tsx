@@ -107,7 +107,7 @@ export default function Header() {
         {isPortal ? (
             <Badge variant="outline" className="h-9 px-4 rounded-xl gap-2 font-bold uppercase tracking-widest bg-primary/5 border-primary/20 text-primary">
                 <LayoutGrid size={16} />
-                Portal Modul KIPIAI
+                Portal Modul PERFOM
             </Badge>
         ) : <LiveClock />}
       </div>
