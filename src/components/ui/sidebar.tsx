@@ -1,4 +1,3 @@
-
 // src/components/ui/sidebar.tsx
 "use client";
 
@@ -26,7 +25,7 @@ import { useSidebar } from "@/contexts/sidebar-context";
 import { Avatar, AvatarFallback } from "./avatar";
 import { Separator } from "./separator";
 
-/** AppSidebar component - mini expandable sidebar */
+/** AppSidebar component - mini expandable sidebar with White Glassmorphism */
 function MotionNav() {
   const { isOpen, setIsOpen } = useSidebar();
   const pathname = usePathname();
@@ -65,21 +64,19 @@ function MotionNav() {
         transition={{ type: "spring", stiffness: 300, damping: 35 }}
         className={cn(
           "flex flex-col h-[calc(100vh-2rem)] sticky left-0 top-4 z-50 ml-4 mb-4",
-          "bg-slate-900/90 backdrop-blur-xl border border-white/10 shadow-2xl rounded-[1.5rem] overflow-hidden",
+          "bg-white/80 backdrop-blur-xl border border-white shadow-2xl rounded-[1.5rem] overflow-hidden",
           isMobile ? "fixed h-[calc(100vh-1rem)] top-2 ml-2" : "relative"
         )}
-        // MOD: Sidebar opens on hover but does not close on mouse leave
         onMouseEnter={() => !isMobile && setIsOpen(true)}
       >
         {/* Top Header Section */}
         <div className="flex items-center justify-between px-6 pt-8 pb-4 flex-shrink-0">
           <div className="flex items-center gap-1.5">
-            <div className="size-2.5 rounded-full bg-red-500/80" />
-            <div className="size-2.5 rounded-full bg-amber-500/80" />
-            <div className="size-2.5 rounded-full bg-green-500/80" />
+            <div className="size-2.5 rounded-full bg-red-500/60" />
+            <div className="size-2.5 rounded-full bg-amber-500/60" />
+            <div className="size-2.5 rounded-full bg-green-500/60" />
           </div>
           
-          {/* MOD: Replace Bell with manual close button (X) when open */}
           <AnimatePresence>
             {isOpen && (
               <motion.button
@@ -87,10 +84,10 @@ function MotionNav() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 onClick={() => setIsOpen(false)}
-                className="size-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 transition-colors"
+                className="size-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
                 title="Tutup Sidebar"
               >
-                <X size={16} />
+                <X size={14} />
               </motion.button>
             )}
           </AnimatePresence>
@@ -99,10 +96,10 @@ function MotionNav() {
         {/* Profile Section */}
         <div className={cn("px-4 mb-4 transition-all", !isOpen && "px-0 flex justify-center")}>
           <div className={cn(
-            "p-3 rounded-[1.2rem] bg-white/5 border border-white/10 flex items-center gap-3 transition-all",
-            !isOpen && "rounded-full p-1"
+            "p-3 rounded-[1.2rem] bg-slate-50/50 border border-slate-200/50 flex items-center gap-3 transition-all",
+            !isOpen && "rounded-full p-1 bg-transparent border-none"
           )}>
-            <Avatar className={cn("size-10 border-2 border-white/20", !isOpen && "size-12")}>
+            <Avatar className={cn("size-10 border-2 border-white shadow-sm", !isOpen && "size-12")}>
               <AvatarFallback className="bg-primary text-white font-black text-sm">{userInitial}</AvatarFallback>
             </Avatar>
             <AnimatePresence>
@@ -113,16 +110,15 @@ function MotionNav() {
                   exit={{ opacity: 0, x: -10 }}
                   className="flex-1 min-w-0"
                 >
-                  <p className="text-sm font-bold text-white truncate">{currentUser?.name}</p>
-                  <p className="text-[10px] text-white/40 uppercase tracking-tighter truncate leading-none mt-0.5">{currentUser?.position}</p>
+                  <p className="text-sm font-bold text-slate-900 truncate">{currentUser?.name}</p>
+                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tighter truncate leading-none mt-0.5">{currentUser?.position}</p>
                 </motion.div>
               )}
             </AnimatePresence>
-            {isOpen && <ChevronLeft size={16} className="text-white/20" />}
           </div>
         </div>
 
-        <Separator className="bg-white/5 mx-6 w-auto mb-4" />
+        <Separator className="bg-slate-200/60 mx-6 w-auto mb-4" />
 
         <ScrollArea className="flex-1 px-4">
              <ul className="space-y-1.5 pb-10">
@@ -132,7 +128,7 @@ function MotionNav() {
                             variant="ghost" 
                             size="sm" 
                             onClick={() => router.push('/portal')}
-                            className="w-full justify-start gap-3 font-black text-[10px] uppercase tracking-widest text-primary bg-primary/10 hover:bg-primary/20 h-11 rounded-2xl border border-primary/20"
+                            className="w-full justify-start gap-3 font-black text-[10px] uppercase tracking-widest text-primary bg-primary/5 hover:bg-primary/10 h-11 rounded-2xl border border-primary/10"
                         >
                             <ChevronLeft size={16} className="stroke-[3px]" />
                             <span>PORTAL UTAMA</span>
@@ -145,8 +141,8 @@ function MotionNav() {
                     const isGroupActive = item.subItems ? item.subItems.some(sub => pathname.startsWith(sub.href)) : false;
                     const isActive = item.href ? pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)) : isGroupActive;
 
-                    const activeClasses = "bg-primary text-white shadow-[0_8px_16px_rgba(var(--primary),0.3)]";
-                    const inactiveClasses = "text-white/50 hover:bg-white/5 hover:text-white";
+                    const activeClasses = "bg-primary text-white shadow-lg";
+                    const inactiveClasses = "text-slate-600 hover:bg-slate-100 hover:text-slate-900";
 
                     if (item.subItems && item.subItems.length > 0) {
                         return (
@@ -156,11 +152,11 @@ function MotionNav() {
                                         <button
                                             className={cn(
                                                 "group flex items-center gap-4 rounded-xl px-4 py-3 text-xs w-full text-left transition-all duration-300",
-                                                isGroupActive ? "text-white bg-white/10" : inactiveClasses
+                                                isGroupActive ? "text-primary bg-primary/5 font-bold" : inactiveClasses
                                             )}
                                         >
                                             <div className="flex size-5 items-center justify-center shrink-0">
-                                              <Icon size={20} className={cn("transition-colors", isGroupActive ? "text-primary" : "")} />
+                                              <Icon size={20} className={cn("transition-colors", isGroupActive ? "text-primary" : "opacity-60")} />
                                             </div>
                                             <AnimatePresence>
                                                 {(isOpen || isMobile) && (
@@ -184,7 +180,7 @@ function MotionNav() {
                                             initial={{ opacity: 0, y: -5 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -5 }}
-                                            className="ml-6 my-1 border-l border-white/10"
+                                            className="ml-6 my-1 border-l border-slate-200"
                                           >
                                               {item.subItems.map(subItem => {
                                                   const isSubActive = pathname.startsWith(subItem.href);
@@ -192,7 +188,7 @@ function MotionNav() {
                                                       <li key={subItem.href}>
                                                           <Link href={subItem.href} className={cn(
                                                               "block pl-6 pr-3 py-2 text-[11px] rounded-r-xl border-l-2 transition-all duration-300",
-                                                              isSubActive ? "text-primary border-primary font-black bg-primary/5" : "text-white/40 border-transparent hover:text-white"
+                                                              isSubActive ? "text-primary border-primary font-black bg-primary/5" : "text-slate-500 border-transparent hover:text-slate-900"
                                                           )}>
                                                               {subItem.label.toUpperCase()}
                                                           </Link>
@@ -213,12 +209,12 @@ function MotionNav() {
                             <Link
                                 href={item.href || '#'}
                                 className={cn(
-                                    `group flex items-center gap-4 rounded-xl px-4 py-3 text-xs transition-all duration-300`,
+                                    `group flex items-center gap-4 rounded-xl px-4 py-3 text-xs transition-all duration-300 font-bold`,
                                     isActive ? activeClasses : inactiveClasses
                                 )}
                             >
                                 <div className="flex size-5 items-center justify-center shrink-0">
-                                    <Icon size={20} />
+                                    <Icon size={20} className={cn(!isActive && "opacity-60")} />
                                 </div>
                                 <AnimatePresence>
                                 {(isOpen || isMobile) && (
@@ -243,9 +239,9 @@ function MotionNav() {
             <div className="p-4 flex-shrink-0">
                 <button
                     onClick={() => logout()}
-                    className="flex items-center gap-4 w-full rounded-xl px-4 py-3 text-xs font-bold text-white/50 bg-white/5 hover:bg-red-500/20 hover:text-red-400 transition-all active:scale-95"
+                    className="flex items-center gap-4 w-full rounded-xl px-4 py-3 text-xs font-black text-slate-500 bg-slate-50 hover:bg-red-50 hover:text-red-600 transition-all active:scale-95 border border-slate-100"
                 >
-                    <LogOut size={20}/>
+                    <LogOut size={20} className="opacity-60" />
                     <AnimatePresence>
                         {isOpen && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>LOG OUT</motion.span>}
                     </AnimatePresence>
@@ -266,7 +262,7 @@ export function AppSidebar() {
         <AnimatePresence>
             {isOpen && (
                 <React.Fragment key="sidebar-mobile">
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={toggleSidebar} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]" />
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={toggleSidebar} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]" />
                     <MotionNav />
                 </React.Fragment>
             )}
@@ -286,7 +282,7 @@ export function SidebarTrigger() {
       variant="ghost"
       size="icon"
       onClick={() => setIsOpen(!isOpen)}
-      className="rounded-xl hover:bg-muted transition-colors duration-300"
+      className="rounded-xl hover:bg-slate-100 transition-colors duration-300"
       aria-label="Toggle Sidebar"
     >
       <AnimatePresence mode="wait">
@@ -303,3 +299,4 @@ export function SidebarTrigger() {
     </Button>
   );
 }
+
