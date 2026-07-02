@@ -14,7 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePageContext } from '@/contexts/page-context';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ConcentricRing } from '@/components/ui/concentric-ring';
+import { Ripple } from '@/components/ui/ripple';
 
 export default function MainLayoutContent({ children }: { children: React.ReactNode }) {
   const { currentUser, isLoading: isAuthLoading, userRole } = useAuth();
@@ -35,10 +35,10 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
   if (totalIsLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <ConcentricRing className="w-12 h-12 text-primary" style={{ '--duration': '1.5s' } as React.CSSProperties} />
-          <p className="text-sm font-medium text-muted-foreground animate-pulse">
-            Memuat data...
+        <div className="flex flex-col items-center gap-6">
+          <Ripple className="w-16 h-16 text-primary" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">
+            Sinkronisasi Data...
           </p>
         </div>
       </div>
