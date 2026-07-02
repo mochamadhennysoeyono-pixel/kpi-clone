@@ -124,6 +124,7 @@ export const getActiveModuleFromPath = (path: string): ModuleId | null => {
     if (path.startsWith('/lms')) return 'lms';
     if (path.startsWith('/collab-space')) return 'collabspace';
     if (path.startsWith('/master-data') || path.startsWith('/media-library')) return 'foundation';
+    if (path.startsWith('/holding-dashboard') || path.startsWith('/holding-kpi-setup') || path.startsWith('/holding-group-management')) return 'holding';
     
     return null;
 };
@@ -210,7 +211,7 @@ export function getNavItems(
             label: 'Pusat Holding', 
             iconName: 'pusat-holding', 
             show: (capabilities.isCompanyAdmin && capabilities.isHolding) || capabilities.isSuperAdmin,
-            moduleId: 'foundation',
+            moduleId: 'holding',
             subItems: [
                 { href: '/holding-dashboard', label: 'Dasbor Agregat', show: true, iconName: '/holding-dashboard' },
                 { href: '/holding-kpi-setup', label: 'Pengaturan KPI Induk', show: true, iconName: '/holding-kpi-setup' },
@@ -332,7 +333,6 @@ export function getNavItems(
         .filter((item): item is NonNullable<typeof item> => item !== null);
 
     // --- Dynamic Filtering based on activeModule ---
-    // We enforce this even for Superadmin to ensure a clean context-specific sidebar
     if (activeModule) {
         visibleItems = visibleItems.filter(item => {
             if (item.moduleId === activeModule) return true;

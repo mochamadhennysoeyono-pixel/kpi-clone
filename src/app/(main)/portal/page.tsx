@@ -31,16 +31,18 @@ import {
     GitMerge,
     ChevronRight,
     Settings,
-    Database
+    Database,
+    Loader2
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, addDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import type { ModuleId, ModuleSubscription, SubscriptionLog } from '@/types';
+import type { ModuleId, ModuleSubscription, SubscriptionLog, Company } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ModuleSubscriptionDialog } from '@/components/portal/module-subscription-dialog';
+import { GroupManagementDialog } from '@/components/holding/group-management-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { serverTimestamp } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
@@ -183,21 +185,29 @@ function ModuleCard({
     );
 }
 
-function AdminDataCard({ label, description, icon: Icon, href, color }: { label: string, description: string, icon: any, href: string, color: string }) {
+function AdminDataCard({ label, description, icon: Icon, href, color, onClick }: { label: string, description: string, icon: any, href?: string, color: string, onClick?: () => void }) {
+    const content = (
+        <Card className="h-full border-none shadow-sm hover:shadow-md transition-all bg-background cursor-pointer">
+            <CardContent className="p-4 flex items-center gap-4">
+                <div className={cn("p-3 rounded-2xl shrink-0 transition-transform group-hover:scale-110", color)}>
+                    <Icon size={20} className="text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-bold text-slate-800 truncate">{label}</h4>
+                    <p className="text-[10px] text-muted-foreground line-clamp-1">{description}</p>
+                </div>
+                <ChevronRight size={14} className="text-muted-foreground opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+            </CardContent>
+        </Card>
+    );
+
+    if (onClick) {
+        return <div onClick={onClick} className="block group">{content}</div>;
+    }
+
     return (
-        <Link href={href} className="block group">
-            <Card className="h-full border-none shadow-sm hover:shadow-md transition-all bg-background">
-                <CardContent className="p-4 flex items-center gap-4">
-                    <div className={cn("p-3 rounded-2xl shrink-0 transition-transform group-hover:scale-110", color)}>
-                        <Icon size={20} className="text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-slate-800 truncate">{label}</h4>
-                        <p className="text-[10px] text-muted-foreground line-clamp-1">{description}</p>
-                    </div>
-                    <ChevronRight size={14} className="text-muted-foreground opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                </CardContent>
-            </Card>
+        <Link href={href || '#'} className="block group">
+            {content}
         </Link>
     );
 }
@@ -209,9 +219,16 @@ export default function PortalPage() {
 
     const [isSubDialogOpen, setIsSubDialogOpen] = useState(false);
     const [selectedModule, setSelectedModule] = useState<any>(null);
+    const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
+    const [isUpgrading, setIsUpgrading] = useState(false);
 
     const company = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
     const isManagement = userRole === 'manajemen';
+
+    const childCompanies = useMemo(() => {
+        if (!company) return [];
+        return companies.filter(c => c.parentId === company.id);
+    }, [company, companies]);
 
     const activeModules = useMemo(() => {
         return MODULE_CATALOG.filter(m => company?.moduleSubscriptions?.[m.id]?.status === 'active');
@@ -231,6 +248,20 @@ export default function PortalPage() {
                 return dateB.getTime() - dateA.getTime();
             });
     }, [subscriptionLogs, company]);
+
+    const handleUpgradeToHolding = async () => {
+        if (!company) return;
+        setIsUpgrading(true);
+        try {
+            await updateCompany(company.id, { isHolding: true });
+            toast({ title: "Upgrade Berhasil!", description: "Mode Holding Company kini aktif. Anda dapat mulai menambah anak perusahaan." });
+            await fetchData(true);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Gagal Upgrade", description: error.message });
+        } finally {
+            setIsUpgrading(false);
+        }
+    };
 
     const handleActivateModule = async (data: { type: 'trial' | 'paid', quota: number, duration: number, totalPrice: number }) => {
         if (!company || !selectedModule) return;
@@ -356,29 +387,38 @@ export default function PortalPage() {
                             </h3>
                             {company?.isHolding ? (
                                 <AdminDataCard 
-                                    label="Anak Perusahaan" 
-                                    description="Kelola cabang dan sister company" 
+                                    label="Manajemen Grup" 
+                                    description="Kelola anak perusahaan dan unit bisnis" 
                                     icon={Building} 
-                                    href="/holding-group-management"
+                                    onClick={() => setIsGroupDialogOpen(true)}
                                     color="bg-rose-500"
                                 />
                             ) : (
-                                <Card className="border-dashed bg-primary/5">
-                                    <CardContent className="p-6 text-center space-y-4">
-                                        <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary">
-                                            <GitMerge size={24} />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-xs font-bold">Aktifkan Mode Holding</p>
-                                            <p className="text-[10px] text-muted-foreground leading-relaxed">
-                                                Punya lebih dari 1 cabang? Kelola semuanya dalam satu pintu PERFOM.
-                                            </p>
-                                        </div>
-                                        <Button asChild variant="outline" size="sm" className="w-full text-[10px] font-black uppercase border-primary/20 h-9">
-                                            <Link href="/holding-management">Upgrade Ke Holding</Link>
-                                        </Button>
-                                    </CardContent>
-                                </Card>
+                                company?.canBecomeHolding && (
+                                    <Card className="border-dashed bg-primary/5">
+                                        <CardContent className="p-6 text-center space-y-4">
+                                            <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary">
+                                                <GitMerge size={24} />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold">Aktifkan Mode Holding</p>
+                                                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                                    Punya lebih dari 1 cabang? Kelola semuanya dalam satu pintu PERFOM.
+                                                </p>
+                                            </div>
+                                            <Button 
+                                                onClick={handleUpgradeToHolding}
+                                                disabled={isUpgrading}
+                                                variant="outline" 
+                                                size="sm" 
+                                                className="w-full text-[10px] font-black uppercase border-primary/20 h-9"
+                                            >
+                                                {isUpgrading ? <Loader2 className="size-3 animate-spin mr-2" /> : null}
+                                                Upgrade Ke Holding
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+                                )
                             )}
                         </div>
                     )}
@@ -413,7 +453,7 @@ export default function PortalPage() {
                     {inactiveModules.length > 0 && (
                         <div className="space-y-4">
                             <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                <LayoutGrid className="size-4" /> Modul Tersedia
+                                <LayoutGrid size={4} /> Modul Tersedia
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {inactiveModules.map(m => (
@@ -485,6 +525,15 @@ export default function PortalPage() {
                 company={company || null}
                 onConfirm={handleActivateModule}
             />
+
+            {company && (
+                <GroupManagementDialog 
+                    isOpen={isGroupDialogOpen}
+                    onOpenChange={setIsGroupDialogOpen}
+                    holdingCompany={company}
+                    childCompanies={childCompanies}
+                />
+            )}
         </div>
     );
 }
