@@ -1,4 +1,3 @@
-
 // src/components/portal/module-subscription-dialog.tsx
 "use client";
 
@@ -25,6 +24,7 @@ import {
     Loader2,
     CheckCircle2
 } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
 import type { ModuleId, Company, ModuleSubscription } from '@/types';
 import { cn } from '@/lib/utils';
 
