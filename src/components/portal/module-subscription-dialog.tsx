@@ -12,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { 
     Zap, 
     CreditCard, 
@@ -21,7 +20,8 @@ import {
     Loader2,
     CheckCircle2,
     Info,
-    Receipt
+    Receipt,
+    Check
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import type { ModuleId, Company } from '@/types';
@@ -37,11 +37,11 @@ interface ModuleSubscriptionDialogProps {
   onConfirm: (data: { type: 'trial' | 'paid', quota: number, duration: number, totalPrice: number }) => Promise<void>;
 }
 
-// Pricing configuration
+// Pricing configuration (Price per user per month)
 const BASE_PRICES: Record<ModuleId, number> = {
-    'appraisal': 15000,   // Rp 15k / user / month
-    'lms': 10000,         // Rp 10k / user / month
-    'collabspace': 12000, // Rp 12k / user / month
+    'appraisal': 15000,   // Rp 15k
+    'lms': 10000,         // Rp 10k
+    'collabspace': 12000, // Rp 12k
 };
 
 export function ModuleSubscriptionDialog({ 
@@ -52,13 +52,13 @@ export function ModuleSubscriptionDialog({
     onConfirm 
 }: ModuleSubscriptionDialogProps) {
     const [quota, setQuota] = useState(10);
-    const [isYearly, setIsYearly] = useState(true);
+    const [durationMonths, setDurationMonths] = useState<1 | 6 | 12>(12);
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             setQuota(10);
-            setIsYearly(true);
+            setDurationMonths(12);
         }
     }, [isOpen, module?.id]);
 
@@ -68,28 +68,24 @@ export function ModuleSubscriptionDialog({
     }, [company, module]);
 
     const pricing = useMemo(() => {
-        if (!module) return { monthlyUnit: 0, monthlyTotal: 0, total: 0, discount: 0 };
+        if (!module) return { monthlyUnit: 0, monthlyTotal: 0, total: 0, discount: 0, discountPercent: 0 };
         const monthlyUnit = BASE_PRICES[module.id];
         const monthlyTotal = quota * monthlyUnit;
+        const rawTotal = monthlyTotal * durationMonths;
         
-        if (isYearly) {
-            const annualRaw = monthlyTotal * 12;
-            const discount = annualRaw * 0.2; // 20% discount for yearly
-            return {
-                monthlyUnit,
-                monthlyTotal,
-                total: annualRaw - discount,
-                discount: discount
-            };
-        }
+        let discountPercent = 0;
+        if (durationMonths === 6) discountPercent = 0.1; // 10% off for 6 months
+        if (durationMonths === 12) discountPercent = 0.2; // 20% off for 12 months
 
+        const discount = rawTotal * discountPercent;
         return {
             monthlyUnit,
             monthlyTotal,
-            total: monthlyTotal,
-            discount: 0
+            total: rawTotal - discount,
+            discount,
+            discountPercent: discountPercent * 100
         };
-    }, [module, quota, isYearly]);
+    }, [module, quota, durationMonths]);
 
     const handleAction = async (type: 'trial' | 'paid') => {
         setIsLoading(true);
@@ -97,7 +93,7 @@ export function ModuleSubscriptionDialog({
             await onConfirm({
                 type,
                 quota: type === 'trial' ? 10 : quota,
-                duration: isYearly ? 365 : 30,
+                duration: type === 'trial' ? 14 : (durationMonths * 30),
                 totalPrice: type === 'trial' ? 0 : pricing.total
             });
             onOpenChange(false);
@@ -113,7 +109,6 @@ export function ModuleSubscriptionDialog({
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-[2rem] flex flex-col max-h-[90vh]">
-                {/* Header Minimalist (Fulfilling Accessibility Requirements) */}
                 <DialogHeader className="p-4 px-6 flex flex-row items-center justify-between bg-muted/20 border-b space-y-0">
                     <div className="flex items-center gap-3">
                         <div className={cn("p-1.5 rounded-lg", module.bg, module.color)}>
@@ -123,7 +118,6 @@ export function ModuleSubscriptionDialog({
                             {module.name}
                         </DialogTitle>
                     </div>
-                    {/* Hidden visually but accessible for Screen Readers */}
                     <DialogDescription className="sr-only">
                         Konfigurasi dan rincian biaya langganan untuk {module.name}.
                     </DialogDescription>
@@ -142,7 +136,7 @@ export function ModuleSubscriptionDialog({
                                 <div className="flex justify-between items-end">
                                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Kapasitas User</Label>
                                     <div className="text-right">
-                                        <span className="text-4xl font-black text-primary">{quota}</span>
+                                        <span className="text-4xl font-black text-[#2563eb]">{quota}</span>
                                         <span className="ml-1.5 text-xs font-bold text-muted-foreground uppercase tracking-widest">Seats</span>
                                     </div>
                                 </div>
@@ -151,7 +145,7 @@ export function ModuleSubscriptionDialog({
                                     onValueChange={(vals) => setQuota(vals[0])}
                                     max={200}
                                     min={5}
-                                    step={5}
+                                    step={1}
                                     className="py-4"
                                 />
                                 <div className="flex justify-between text-[9px] font-bold text-muted-foreground uppercase px-1">
@@ -161,38 +155,48 @@ export function ModuleSubscriptionDialog({
                             </div>
 
                             <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Siklus Penagihan</Label>
-                                <div 
-                                    className={cn(
-                                        "flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer group",
-                                        isYearly ? "bg-primary/5 border-primary/20 shadow-sm" : "bg-background border-border/40 hover:border-border"
-                                    )}
-                                    onClick={() => setIsYearly(!isYearly)}
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className={cn(
-                                            "size-10 rounded-xl flex items-center justify-center border shadow-sm transition-colors",
-                                            isYearly ? "bg-primary text-white border-primary" : "bg-muted text-muted-foreground"
-                                        )}>
-                                            <Calendar size={18} />
-                                        </div>
-                                        <div className="space-y-0.5">
-                                            <p className="text-xs font-black uppercase tracking-tight">Langganan Tahunan</p>
-                                            <p className="text-[10px] font-medium text-muted-foreground">Bayar sekali untuk 12 bulan penuh.</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        {isYearly && <Badge className="bg-emerald-500 text-white border-none text-[8px] h-4 font-black">HEMAT 20%</Badge>}
-                                        <Switch checked={isYearly} onCheckedChange={setIsYearly} />
-                                    </div>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Durasi Berlangganan</Label>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    {[
+                                        { val: 1, label: '1 Bulan', discount: null },
+                                        { val: 6, label: '6 Bulan', discount: 'HEMAT 10%' },
+                                        { val: 12, label: '12 Bulan', discount: 'HEMAT 20%' },
+                                    ].map((opt) => (
+                                        <button
+                                            key={opt.val}
+                                            type="button"
+                                            onClick={() => setDurationMonths(opt.val as any)}
+                                            className={cn(
+                                                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-1 relative",
+                                                durationMonths === opt.val 
+                                                    ? "border-[#2563eb] bg-blue-50 shadow-sm" 
+                                                    : "border-border/40 bg-background hover:border-border"
+                                            )}
+                                        >
+                                            {opt.discount && (
+                                                <Badge className="absolute -top-2 bg-[#2563eb] text-white border-none text-[7px] font-black h-4 px-1.5">
+                                                    {opt.discount}
+                                                </Badge>
+                                            )}
+                                            <Calendar className={cn("size-5 mb-1", durationMonths === opt.val ? "text-[#2563eb]" : "text-muted-foreground")} />
+                                            <span className={cn("text-xs font-black uppercase", durationMonths === opt.val ? "text-[#2563eb]" : "text-foreground/70")}>
+                                                {opt.label}
+                                            </span>
+                                            {durationMonths === opt.val && (
+                                                <div className="absolute top-2 right-2">
+                                                    <CheckCircle2 size={12} className="text-[#2563eb]" />
+                                                </div>
+                                            )}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                         </div>
 
-                        {/* RIGHT: SUMMARY (The "Invoice" Side) */}
+                        {/* RIGHT: SUMMARY */}
                         <div className="lg:col-span-2 bg-muted/30 border-l border-border/40 p-8 md:p-10 flex flex-col justify-between">
                             <div className="space-y-8">
-                                <div className="flex items-center gap-2 text-primary">
+                                <div className="flex items-center gap-2 text-[#2563eb]">
                                     <Receipt size={18} />
                                     <h4 className="text-[10px] font-black uppercase tracking-widest">Ringkasan Tagihan</h4>
                                 </div>
@@ -203,31 +207,35 @@ export function ModuleSubscriptionDialog({
                                         <span className="font-bold">Rp {pricing.monthlyUnit.toLocaleString('id-ID')}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-xs">
-                                        <span className="text-muted-foreground font-medium">Total User ({quota})</span>
+                                        <span className="text-muted-foreground font-medium">Subtotal Bulanan ({quota} User)</span>
                                         <span className="font-bold">Rp {pricing.monthlyTotal.toLocaleString('id-ID')}</span>
                                     </div>
-                                    {isYearly && (
-                                        <div className="flex justify-between items-center text-xs text-emerald-600">
-                                            <span className="font-medium">Potongan Tahunan (20%)</span>
+                                    <div className="flex justify-between items-center text-xs">
+                                        <span className="text-muted-foreground font-medium">Durasi Paket</span>
+                                        <span className="font-bold">{durationMonths} Bulan</span>
+                                    </div>
+                                    {pricing.discount > 0 && (
+                                        <div className="flex justify-between items-center text-xs text-[#2563eb]">
+                                            <span className="font-medium">Potongan Paket ({pricing.discountPercent}%)</span>
                                             <span className="font-bold">-Rp {pricing.discount.toLocaleString('id-ID')}</span>
                                         </div>
                                     )}
                                     <Separator className="bg-border/60" />
                                     <div className="space-y-1">
                                         <div className="flex justify-between items-end">
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total Investasi</span>
-                                            <span className="text-2xl font-black text-primary">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total Tagihan</span>
+                                            <span className="text-2xl font-black text-[#2563eb]">
                                                 Rp {Math.round(pricing.total).toLocaleString('id-ID')}
                                             </span>
                                         </div>
                                         <p className="text-right text-[9px] font-bold text-muted-foreground uppercase opacity-60">
-                                            DITAGIHKAN SETIAP {isYearly ? 'TAHUN' : 'BULAN'}
+                                            DITAGIHKAN SEKALI UNTUK {durationMonths} BULAN
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="p-4 rounded-xl bg-background/50 border border-border/40 border-dashed space-y-3">
-                                    <div className="flex gap-2 text-primary">
+                                    <div className="flex gap-2 text-[#2563eb]">
                                         <Info size={14} className="shrink-0 mt-0.5" />
                                         <p className="text-[10px] font-medium leading-relaxed italic opacity-80">
                                             * Nilai ini belum termasuk PPN 11%. Tagihan final akan muncul saat Anda melanjutkan ke metode pembayaran.
@@ -240,7 +248,7 @@ export function ModuleSubscriptionDialog({
                                 <Button 
                                     onClick={() => handleAction('paid')} 
                                     disabled={isLoading}
-                                    className="h-12 w-full font-black uppercase tracking-widest shadow-xl transition-all active:scale-95 group"
+                                    className="h-12 w-full font-black uppercase tracking-wider text-[11px] shadow-xl transition-all active:scale-95 group bg-[#2563eb] hover:bg-[#1d4ed8]"
                                 >
                                     {isLoading ? <Loader2 className="animate-spin size-4" /> : <CreditCard size={18} className="mr-2 group-hover:translate-x-0.5 transition-transform" />}
                                     Lanjutkan Pembayaran
@@ -251,7 +259,7 @@ export function ModuleSubscriptionDialog({
                                         variant="outline" 
                                         onClick={() => handleAction('trial')}
                                         disabled={isLoading}
-                                        className="h-12 w-full font-black uppercase tracking-widest border-2 text-primary hover:bg-primary/5 rounded-xl transition-all text-[10px]"
+                                        className="h-12 w-full font-black uppercase tracking-widest border-2 text-[#2563eb] border-[#2563eb] hover:bg-blue-50 rounded-xl transition-all text-[10px]"
                                     >
                                         <Zap size={16} className="mr-2" /> Aktifkan Trial 14 Hari
                                     </Button>
@@ -268,4 +276,3 @@ export function ModuleSubscriptionDialog({
         </Dialog>
     );
 }
-
