@@ -1,12 +1,15 @@
+
 // src/components/layout/header.tsx
 'use client';
 
 import {useState, useEffect} from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   CircleUser,
   LogOut,
   Settings,
+  LayoutGrid
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {
@@ -70,6 +73,8 @@ function DropdownLabel({ user }: { user: Employee | null }) {
 export default function Header() {
   const { currentUser, userRole, logout } = useAuth();
   const isMobile = useIsMobile();
+  const pathname = usePathname();
+  const isPortal = pathname === '/portal';
   
   const handleLogout = () => {
     logout();
@@ -82,20 +87,28 @@ export default function Header() {
         "no-print"
     )}>
         <div className="flex items-center gap-3">
-          {isMobile ? (
-            <Image 
-                src="/logo.png" 
-                alt="Logo"
-                width={120}
-                height={32}
-            />
+          {(isMobile || isPortal) ? (
+            <div className="flex items-center gap-3">
+                <Image 
+                    src="/logo.png" 
+                    alt="Logo"
+                    width={120}
+                    height={32}
+                />
+                {!isPortal && <Separator orientation="vertical" className="h-6" />}
+            </div>
           ) : (
             <SidebarTrigger />
           )}
         </div>
 
       <div className="hidden md:flex">
-        <LiveClock />
+        {isPortal ? (
+            <Badge variant="outline" className="h-9 px-4 rounded-xl gap-2 font-bold uppercase tracking-widest bg-primary/5 border-primary/20 text-primary">
+                <LayoutGrid size={16} />
+                Portal Modul KIPIAI
+            </Badge>
+        ) : <LiveClock />}
       </div>
 
       <div className='flex items-center gap-2'>

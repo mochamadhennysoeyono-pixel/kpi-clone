@@ -1,7 +1,8 @@
+
 // src/lib/nav-items.ts
 
 import React from 'react';
-import type { UserRole, Company, SubscriptionPlan, Employee, OKR } from "@/types";
+import type { UserRole, Company, SubscriptionPlan, Employee, OKR, ModuleId } from "@/types";
 import { 
     GraduationCap, 
     BookUser, 
@@ -108,6 +109,24 @@ export const iconMap: { [key: string]: React.ElementType } = {
     default: FolderKanban,
 };
 
+// Helper to determine active module from path
+export const getActiveModuleFromPath = (path: string): ModuleId | null => {
+    if (path.startsWith('/action-center') || 
+        path.startsWith('/my-performance') || 
+        path.startsWith('/input-achievement') || 
+        path.startsWith('/reports') || 
+        path.startsWith('/setup-kpi') ||
+        path.startsWith('/appraisal') ||
+        path.startsWith('/okr') ||
+        path.startsWith('/kbo-appraisal')
+    ) return 'appraisal';
+    
+    if (path.startsWith('/lms')) return 'lms';
+    if (path.startsWith('/collab-space')) return 'collabspace';
+    
+    return null;
+};
+
 export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCompany: Company | null | undefined, subscriptionPlan: SubscriptionPlan | null | undefined, isMobile: boolean, currentUser?: Employee | null, okrs?: OKR[]) {
     if (!userRole) return [];
 
@@ -144,7 +163,7 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
     };
     
     const allNavItems = [
-        { href: '/action-center', label: 'Beranda', show: !capabilities.isSuperAdmin && !capabilities.isCompanyAdmin, iconName: '/action-center' },
+        { href: '/action-center', label: 'Beranda', show: !capabilities.isSuperAdmin && !capabilities.isCompanyAdmin, iconName: '/action-center', moduleId: 'appraisal' },
         { href: '/dashboard', label: 'Dashboard Admin', show: capabilities.isSuperAdmin, iconName: '/dashboard' },
         {
             label: 'Manajemen Sistem',
@@ -162,9 +181,9 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
         },
 
         { 
-            label: 'Pusat Data', 
+            label: 'Pondasi Data', 
             iconName: 'pusat-data', 
-            show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin || capabilities.isDeptHead,
+            show: capabilities.isSuperAdmin || (capabilities.isCompanyAdmin && !isMobile),
             subItems: [
                 { href: '/master-data/company', label: 'Data Perusahaan', show: capabilities.isSuperAdmin, iconName: '/master-data/company' },
                 { href: '/master-data/company-objectives', label: 'Objective Perusahaan', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/master-data/company-objectives' },
@@ -192,6 +211,7 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             label: 'CollabSpace', 
             iconName: '/collab-space', 
             show: capabilities.canAccessCollabSpace,
+            moduleId: 'collabspace',
             subItems: [
                 { href: '/collab-space', label: 'Ruangan Saya', show: true, iconName: '/collab-space' },
                 { href: '/collab-space/management', label: 'Manajemen Ruangan', show: capabilities.isCompanyAdmin || capabilities.isSuperAdmin, iconName: '/collab-space/management' },
@@ -203,6 +223,7 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             label: 'Analisis & Laporan',
             iconName: 'analisis-laporan',
             show: capabilities.canAccessReports && (capabilities.isDeptHead || capabilities.isCompanyAdmin || capabilities.isSuperAdmin),
+            moduleId: 'appraisal',
             subItems: [
                  { href: '/reports', label: 'Laporan Kinerja Tim', show: capabilities.canAccessKpi, iconName: '/reports' },
                  { href: '/cycle-reports', label: 'Laporan Siklus', show: capabilities.canAccessKpi, iconName: '/cycle-reports' },
@@ -215,6 +236,7 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             label: 'Manajemen KPI',
             iconName: 'manajemen-kpi',
             show: capabilities.canAccessKpi,
+            moduleId: 'appraisal',
             subItems: [
                 { href: '/my-performance', label: 'Performa Saya', show: !capabilities.isSuperAdmin && !capabilities.isCompanyAdmin, iconName: '/my-performance' },
                 { href: '/input-achievement', label: 'Input Pencapaian', show: !capabilities.isSuperAdmin, iconName: '/input-achievement' },
@@ -228,6 +250,7 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             label: 'Manajemen KBO',
             iconName: 'manajemen-kbo',
             show: capabilities.canAccessKbo && (capabilities.isCompanyAdmin || capabilities.isSuperAdmin),
+            moduleId: 'appraisal',
             subItems: [
                 { href: '/master-data/kbo-categories', label: 'Kategori KBO', show: true, iconName: '/master-data/kbo-categories' },
                 { href: '/master-data/kbo-competencies', label: 'Pustaka Kompetensi', show: true, iconName: '/master-data/kbo-competencies' },
@@ -239,6 +262,7 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             label: 'OKR (Objectives)',
             iconName: 'okr-management',
             show: capabilities.canAccessOkr,
+            moduleId: 'appraisal',
             subItems: [
                  { href: '/okr', label: 'Workspace OKR', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/okr' },
                  { href: '/okr/reports', label: 'Laporan OKR', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/okr/reports' },
@@ -250,6 +274,7 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             label: 'LMS Portal', 
             iconName: 'lms-user', 
             show: !capabilities.isCompanyAdmin && !capabilities.isSuperAdmin && capabilities.canAccessLms,
+            moduleId: 'lms',
             subItems: [
                 { href: '/lms/user/my-learnings', label: 'Kursus Saya', show: true, iconName: '/lms/user/my-learnings' },
             ]
@@ -258,6 +283,7 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
             label: 'Manajemen Pembelajaran', 
             iconName: 'manajemen-pembelajaran', 
             show: capabilities.canAccessLms && (capabilities.isSuperAdmin || capabilities.isCompanyAdmin),
+            moduleId: 'lms',
             subItems: [
                 { href: '/lms/admin/dashboard', label: 'Dasbor Admin', show: true, iconName: '/lms/admin/dashboard' },
                 { href: '/lms/admin/courses', label: 'Manajemen Kursus', show: true, iconName: '/lms/admin/courses' },
@@ -303,7 +329,7 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
       superadmin: [
         '/dashboard', 
         'Manajemen Sistem', 
-        'Pusat Data', 
+        'Pondasi Data', 
         'Pusat Holding',
         'CollabSpace',
         'OKR (Objectives)',
@@ -314,7 +340,7 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
         'Manajemen Dokumen'
       ],
       manajemen: [
-        'Pusat Data', 
+        'Pondasi Data', 
         'Pusat Holding', 
         '/holding-management', 
         'CollabSpace', 
@@ -328,7 +354,7 @@ export function getNavItems(userRole: UserRole, hasSubordinates: boolean, userCo
         '/company-admin-management'
       ],
       "department-head": [
-        '/action-center', 'Pusat Data', 'CollabSpace', 'Analisis & Laporan', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal'
+        '/action-center', 'Pondasi Data', 'CollabSpace', 'Analisis & Laporan', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal'
       ],
       user: [
         '/action-center', 'CollabSpace', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal'

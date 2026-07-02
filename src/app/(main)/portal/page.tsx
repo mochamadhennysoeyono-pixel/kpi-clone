@@ -1,4 +1,3 @@
-
 // src/app/(main)/portal/page.tsx
 "use client";
 
@@ -36,6 +35,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ModuleSubscriptionDialog } from '@/components/portal/module-subscription-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { serverTimestamp } from 'firebase/firestore';
+import { Separator } from '@/components/ui/separator';
 
 // --- Static Data for Modules ---
 const MODULE_CATALOG = [
