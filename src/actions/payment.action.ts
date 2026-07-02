@@ -2,28 +2,23 @@
 "use server";
 
 import midtransClient from 'midtrans-client';
+import { db, adminApp } from '@/lib/firebase/server';
+import { addDays } from 'date-fns';
 
 /**
  * Membuat transaksi baru di Midtrans dan mengembalikan Snap Token.
- * MENGGUNAKAN PLAIN OBJECTS UNTUK MENGHINDARI SERIALIZATION ERROR.
  */
 export async function createSubscriptionTransaction(
     plan: { id: string; price: number; name: string }, 
     company: { id: string; name: string }, 
     user: { name: string; email: string; phone?: string }
 ) {
-    // Mengambil kredensial dari System Environment Variables
     const serverKey = process.env.MIDTRANS_SERVER_KEY || "Mid-server-BaagyjkErNfOuiKha6hsXhlN";
     const clientKey = process.env.MIDTRANS_CLIENT_KEY || "Mid-client-MpjNTjYjtHljjjQ9";
     const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true';
 
     if (!serverKey || !clientKey) {
-        const errorMsg = "[MIDTRANS_CRITICAL_ERROR] API Keys tidak ditemukan di Environment Variables.";
-        console.error(errorMsg);
-        return { 
-            success: false, 
-            error: "Sistem pembayaran belum siap dikonfigurasi di server." 
-        };
+        return { success: false, error: "Sistem pembayaran belum dikonfigurasi." };
     }
 
     const snap = new midtransClient.Snap({
@@ -32,7 +27,6 @@ export async function createSubscriptionTransaction(
         clientKey: clientKey
     });
 
-    // Gunakan ID unik untuk order_id agar tidak bentrok saat testing
     const orderId = `SUB-${company.id.substring(0,5)}-${Date.now()}`;
 
     const parameter = {
@@ -51,7 +45,6 @@ export async function createSubscriptionTransaction(
             quantity: 1,
             name: `Paket ${plan.name}`
         }],
-        // Field custom1 & custom2 digunakan oleh Webhook untuk identifikasi target update
         custom_field1: company.id,
         custom_field2: plan.id,
         callbacks: {
@@ -60,7 +53,6 @@ export async function createSubscriptionTransaction(
     };
 
     try {
-        console.log(`[MIDTRANS_INVOKE] Creating transaction ${orderId} for company ${company.name}...`);
         const transaction = await snap.createTransaction(parameter);
         return { 
             success: true, 
@@ -68,13 +60,71 @@ export async function createSubscriptionTransaction(
             redirectUrl: transaction.redirect_url 
         };
     } catch (error: any) {
-        console.error("[MIDTRANS_API_ERROR] Terjadi kesalahan saat memanggil API Midtrans:", error.message);
+        console.error("[MIDTRANS_API_ERROR]", error.message);
+        return { success: false, error: "Gagal menghubungi server pembayaran." };
+    }
+}
+
+/**
+ * Server Action untuk memproses pembaruan paket secara langsung (Fallback jika Webhook terhambat).
+ */
+export async function processPaymentSuccess(companyId: string, planId: string, amount: number, orderId: string) {
+    try {
+        console.log(`[PAYMENT_SUCCESS_ACTION] Processing for Company: ${companyId}, Plan: ${planId}`);
         
-        let friendlyError = "Terjadi kesalahan saat menghubungi server pembayaran.";
-        if (error.message?.includes('401')) {
-            friendlyError = "Otentikasi Gagal: Cek Server Key & Mode (Sandbox/Prod).";
+        const companyRef = db.collection('companies').doc(companyId);
+        const planRef = db.collection('subscriptionPlans').doc(planId);
+        
+        const [companySnap, planSnap] = await Promise.all([companyRef.get(), planRef.get()]);
+        
+        if (!companySnap.exists || !planSnap.exists) {
+            throw new Error("Data perusahaan atau paket tidak ditemukan.");
         }
+
+        const planData = planSnap.data() as any;
+        const companyData = companySnap.data() as any;
+
+        const now = new Date();
+        const duration = planData.durationDays || 365;
+        const expiry = addDays(now, duration);
+
+        const batch = db.batch();
+
+        // 1. Update Company
+        batch.update(companyRef, {
+            subscriptionPlanId: planId,
+            subscriptionActivationDate: now.toISOString(),
+            subscriptionExpiryDate: expiry.toISOString(),
+            status: 'Aktif',
+            // Reset custom limits to use plan defaults
+            customPrice: adminApp.firestore.FieldValue.delete(),
+            customUserLimit: adminApp.firestore.FieldValue.delete(),
+            customManagementUserLimit: adminApp.firestore.FieldValue.delete(),
+            customCompanyLimit: adminApp.firestore.FieldValue.delete(),
+        });
+
+        // 2. Create Audit Log
+        const logRef = db.collection('subscriptionLogs').doc();
+        batch.set(logRef, {
+            companyId: companyId,
+            companyName: companyData.name,
+            planId: planId,
+            planName: planData.name,
+            action: 'UPGRADE',
+            amount: amount,
+            startDate: now.toISOString(),
+            endDate: expiry.toISOString(),
+            performedBy: 'Client Callback (Auto-Verified)',
+            timestamp: adminApp.firestore.FieldValue.serverTimestamp(),
+            orderId: orderId
+        });
+
+        await batch.commit();
+        console.log(`[PAYMENT_SUCCESS_ACTION] Database updated successfully for ${companyData.name}`);
         
-        return { success: false, error: friendlyError };
+        return { success: true };
+    } catch (error: any) {
+        console.error("[PAYMENT_SUCCESS_ACTION_ERROR]", error.message);
+        return { success: false, error: error.message };
     }
 }

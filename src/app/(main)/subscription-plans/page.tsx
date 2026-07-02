@@ -10,7 +10,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Loader2, Check, X, Shield, Users, Building, ChevronLeft, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { SubscriptionPlan } from '@/types';
-import { createSubscriptionTransaction } from '@/actions/payment.action';
+import { createSubscriptionTransaction, processPaymentSuccess } from '@/actions/payment.action';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -152,7 +152,7 @@ function SubscriptionPlansContent() {
     const router = useRouter();
     const { toast } = useToast();
     const companyId = searchParams.get('companyId');
-    const { companies, subscriptionPlans } = useMasterData();
+    const { companies, subscriptionPlans, fetchData } = useMasterData();
     const { currentUser } = useAuth();
 
     const company = useMemo(() => companies.find(c => c.id === companyId), [companyId, companies]);
@@ -180,32 +180,23 @@ function SubscriptionPlansContent() {
         }
 
         try {
-            // MANUALLY EXTRACT PLAIN VALUES to avoid "toJSON methods are not supported" error
-            const plainPlan = {
-                id: plan.id,
-                price: plan.price,
-                name: plan.name
-            };
-
-            const plainCompany = {
-                id: relevantCompanyForPlan.id,
-                name: relevantCompanyForPlan.name
-            };
-
-            const plainUser = {
-                name: currentUser.name,
-                email: currentUser.email,
-                phone: currentUser.phone || ""
-            };
+            const plainPlan = { id: plan.id, price: plan.price, name: plan.name };
+            const plainCompany = { id: relevantCompanyForPlan.id, name: relevantCompanyForPlan.name };
+            const plainUser = { name: currentUser.name, email: currentUser.email, phone: currentUser.phone || "" };
 
             const res = await createSubscriptionTransaction(plainPlan, plainCompany, plainUser);
             
             if (res.success && res.token) {
                 if (window.snap) {
                     window.snap.pay(res.token, {
-                        onSuccess: (result: any) => {
-                            toast({ title: "Pembayaran Berhasil!", description: "Sistem sedang memperbarui status paket Anda." });
-                            setTimeout(() => router.push('/subscription-status'), 2000);
+                        onSuccess: async (result: any) => {
+                            toast({ title: "Pembayaran Berhasil!", description: "Sedang memperbarui status paket Anda..." });
+                            
+                            // FORCE UPDATE FROM CLIENT (Because Webhook might be blocked in dev environment)
+                            await processPaymentSuccess(relevantCompanyForPlan.id, plan.id, plan.price, result.order_id);
+                            
+                            await fetchData(true); // Silent refresh
+                            setTimeout(() => router.push('/subscription-status'), 1500);
                         },
                         onPending: (result: any) => {
                             toast({ title: "Menunggu Pembayaran", description: "Silakan selesaikan pembayaran sesuai instruksi Midtrans." });
