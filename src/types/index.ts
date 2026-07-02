@@ -499,6 +499,7 @@ export type Company = {
   customCompanyLimit?: number;
   // --- New Modular Subscriptions ---
   moduleSubscriptions?: Record<ModuleId, ModuleSubscription>;
+  usedTrials?: ModuleId[]; // Track modules already trialed
   features?: {
     hasAiKpiWizard?: boolean;
     hasPageAssistant?: boolean;

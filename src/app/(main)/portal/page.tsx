@@ -1,4 +1,5 @@
 
+// src/app/(main)/portal/page.tsx
 "use client";
 
 import { useMemo, useState } from 'react';
@@ -26,12 +27,15 @@ import {
     ArrowUpRight
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import type { ModuleId, ModuleSubscription, SubscriptionLog } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ModuleSubscriptionDialog } from '@/components/portal/module-subscription-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { serverTimestamp } from 'firebase/firestore';
 
 // --- Static Data for Modules ---
 const MODULE_CATALOG = [
@@ -42,7 +46,7 @@ const MODULE_CATALOG = [
         icon: ClipboardCheck,
         color: 'text-blue-600',
         bg: 'bg-blue-50 dark:bg-blue-900/20',
-        route: '/action-center', // Temporary main entry
+        route: '/action-center',
     },
     {
         id: 'lms' as ModuleId,
@@ -67,11 +71,13 @@ const MODULE_CATALOG = [
 function ModuleCard({ 
     config, 
     subscription, 
-    isManagement 
+    isManagement,
+    onActivateRequest
 }: { 
     config: typeof MODULE_CATALOG[0], 
     subscription?: ModuleSubscription, 
-    isManagement: boolean 
+    isManagement: boolean,
+    onActivateRequest: (m: any) => void
 }) {
     const isActive = subscription?.status === 'active';
     const isExpired = subscription?.status === 'expired';
@@ -137,8 +143,12 @@ function ModuleCard({
                     </Button>
                 ) : (
                     isManagement && (
-                        <Button variant="outline" className="w-full font-bold border-primary text-primary hover:bg-primary/5 rounded-xl h-11 border-2">
-                             <Zap className="mr-2 size-4" /> Coba Gratis 14 Hari
+                        <Button 
+                            onClick={() => onActivateRequest(config)}
+                            variant="outline" 
+                            className="w-full font-bold border-primary text-primary hover:bg-primary/5 rounded-xl h-11 border-2"
+                        >
+                             <Zap className="mr-2 size-4" /> Mulai Berlangganan
                         </Button>
                     )
                 )}
@@ -149,18 +159,22 @@ function ModuleCard({
 
 export default function PortalPage() {
     const { currentUser, userRole, logout } = useAuth();
-    const { companies, subscriptionLogs } = useMasterData();
+    const { companies, subscriptionLogs, updateCompany, addSubscriptionLog, fetchData } = useMasterData();
+    const { toast } = useToast();
+
+    const [isSubDialogOpen, setIsSubDialogOpen] = useState(false);
+    const [selectedModule, setSelectedModule] = useState<any>(null);
 
     const company = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
     const isManagement = userRole === 'manajemen';
 
     const activeModules = useMemo(() => {
         return MODULE_CATALOG.filter(m => company?.moduleSubscriptions?.[m.id]?.status === 'active');
-    }, [company, MODULE_CATALOG]);
+    }, [company]);
 
     const inactiveModules = useMemo(() => {
         return MODULE_CATALOG.filter(m => company?.moduleSubscriptions?.[m.id]?.status !== 'active');
-    }, [company, MODULE_CATALOG]);
+    }, [company]);
 
     const logs = useMemo(() => {
         if (!company) return [];
@@ -172,6 +186,58 @@ export default function PortalPage() {
                 return dateB.getTime() - dateA.getTime();
             });
     }, [subscriptionLogs, company]);
+
+    const handleActivateModule = async (data: { type: 'trial' | 'paid', quota: number, duration: number, totalPrice: number }) => {
+        if (!company || !selectedModule) return;
+
+        try {
+            const now = new Date();
+            const expiry = addDays(now, data.duration);
+            
+            const newSubscription: ModuleSubscription = {
+                status: 'active',
+                type: data.type,
+                quota: data.quota,
+                expiryDate: expiry.toISOString(),
+                activatedAt: now.toISOString()
+            };
+
+            const updatedModuleSubscriptions = {
+                ...(company.moduleSubscriptions || {}),
+                [selectedModule.id]: newSubscription
+            };
+
+            const updatedUsedTrials = [...(company.usedTrials || [])];
+            if (data.type === 'trial') {
+                updatedUsedTrials.push(selectedModule.id);
+            }
+
+            await updateCompany(company.id, {
+                moduleSubscriptions: updatedModuleSubscriptions,
+                usedTrials: updatedUsedTrials
+            });
+
+            // Log activity
+            await addSubscriptionLog({
+                companyId: company.id,
+                companyName: company.name,
+                company: company.name,
+                moduleId: selectedModule.id,
+                planName: `Modul ${selectedModule.name}`,
+                action: data.type === 'trial' ? 'TRIAL' : 'UPGRADE',
+                amount: data.totalPrice,
+                startDate: now.toISOString(),
+                endDate: expiry.toISOString(),
+                performedBy: currentUser?.name || 'System',
+                timestamp: serverTimestamp()
+            });
+
+            toast({ title: "Berhasil!", description: `Modul ${selectedModule.name} kini aktif.` });
+            await fetchData(true);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Gagal", description: error.message });
+        }
+    };
 
     if (!currentUser) return null;
 
@@ -252,6 +318,7 @@ export default function PortalPage() {
                                         config={m} 
                                         subscription={company?.moduleSubscriptions?.[m.id]} 
                                         isManagement={isManagement} 
+                                        onActivateRequest={(mod) => { setSelectedModule(mod); setIsSubDialogOpen(true); }}
                                     />
                                 ))}
                             </div>
@@ -269,6 +336,7 @@ export default function PortalPage() {
                                         key={m.id} 
                                         config={m} 
                                         isManagement={isManagement} 
+                                        onActivateRequest={(mod) => { setSelectedModule(mod); setIsSubDialogOpen(true); }}
                                     />
                                 ))}
                             </div>
@@ -290,9 +358,6 @@ export default function PortalPage() {
                                 <CardTitle className="text-2xl font-bold font-headline">Riwayat Aktivitas Paket</CardTitle>
                                 <CardDescription>Monitoring transparansi biaya dan pembaruan kuota modul.</CardDescription>
                             </div>
-                            <Button variant="outline" className="font-bold rounded-xl h-11 border-2">
-                                <Download size={16} className="mr-2" /> Download Laporan (PDF)
-                            </Button>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
@@ -317,7 +382,9 @@ export default function PortalPage() {
                                                 <div className="flex items-center gap-2">
                                                     <Badge variant="outline" className={cn(
                                                         "text-[9px] font-bold px-1.5 h-4 border-none",
-                                                        log.action === 'UPGRADE' ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                                                        log.action === 'UPGRADE' ? "bg-green-100 text-green-700" : 
+                                                        log.action === 'TRIAL' ? "bg-amber-100 text-amber-700" :
+                                                        "bg-blue-100 text-blue-700"
                                                     )}>
                                                         {log.action}
                                                     </Badge>
@@ -347,7 +414,14 @@ export default function PortalPage() {
                     </CardContent>
                 </Card>
             )}
+
+            <ModuleSubscriptionDialog 
+                isOpen={isSubDialogOpen}
+                onOpenChange={setIsSubDialogOpen}
+                module={selectedModule}
+                company={company || null}
+                onConfirm={handleActivateModule}
+            />
         </div>
     );
 }
-

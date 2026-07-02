@@ -132,6 +132,7 @@ interface MasterDataContextType {
   addMediaFile: (d: Omit<MediaFile, 'id'>) => Promise<MediaFile | null>;
   deleteMediaFile: (id: string) => Promise<void>;
   addMemo: (memo: Omit<Memo, 'id'>) => Promise<void>;
+  addSubscriptionLog: (log: Omit<SubscriptionLog, 'id'>) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -468,7 +469,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     updateQuiz: (id, d) => updateDocAndUpdateState<LmsQuiz>('lmsQuizzes', id, d, 'quizzes'),
     deleteQuiz: (id) => deleteDocsAndUpdateState('lmsQuizzes', [id], 'quizzes'),
     addLearningProgram: (d) => addDocAndUpdateState<LearningProgram>('learningPrograms', d, 'learningPrograms'),
-    updateLearningProgram: (id, d) => updateDocAndUpdateState<LearningProgram>('learningPrograms', id, d, 'learningPrograms'),
+    updateLearningProgram: (id, d) => updateDocAndUpdateState<LearningProgram>('id', id, d, 'learningPrograms'),
     
     enrollToCourse: async (courseId, employeeId) => {
         const id = `${employeeId}_${courseId}`;
@@ -511,6 +512,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     updateCollabTask: (id, d) => updateDocAndUpdateState<CollabTask>('collabTasks', id, d, 'collabTasks'),
     deleteCollabTask: (id) => deleteDocsAndUpdateState('collabTasks', [id], 'collabTasks'),
     addMemo: (d) => addDocAndUpdateState<any>('memos', d, 'memos'),
+    addSubscriptionLog: (d) => addDocAndUpdateState<SubscriptionLog>('subscriptionLogs', d, 'subscriptionLogs', true),
   };
 
   return (
@@ -519,3 +521,4 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     </MasterDataContext.Provider>
   );
 }
+
