@@ -4,7 +4,7 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Menu, X, ChevronLeft, LayoutGrid, Bell } from "lucide-react";
+import { LogOut, Menu, X, ChevronLeft, Bell } from "lucide-react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -23,7 +23,8 @@ import { Button } from "./button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ScrollArea } from "./scroll-area";
 import { useSidebar } from "@/contexts/sidebar-context";
-import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
+import { Avatar, AvatarFallback } from "./avatar";
+import { Separator } from "./separator";
 
 /** AppSidebar component - mini expandable sidebar */
 function MotionNav() {
@@ -39,7 +40,7 @@ function MotionNav() {
   const userCompany = React.useMemo(() => {
     if (!currentUser) return null;
     return companies.find(c => c.name === currentUser.company);
-  }, [currentUser, companies]);
+  }, [companies, currentUser]);
 
   const userSubscriptionPlan = React.useMemo(() => {
     if (!userCompany) return null;
@@ -137,7 +138,7 @@ function MotionNav() {
                     </li>
                 )}
 
-                {navItems.map((item, idx) => {
+                {navItems.map((item) => {
                     const Icon = iconMap[item.iconName || 'default'];
                     const isGroupActive = item.subItems ? item.subItems.some(sub => pathname.startsWith(sub.href)) : false;
                     const isActive = item.href ? pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)) : isGroupActive;
