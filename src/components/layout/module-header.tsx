@@ -46,14 +46,13 @@ export function ModuleHeader() {
 
     const userCompany = useMemo(() => {
         if (!currentUser) return null;
-        return companies.find(c => c.name === currentUser.company);
+        return companies.find(c => c.name === currentUser.company) || null;
     }, [currentUser, companies]);
 
     const userSubscriptionPlan = useMemo(() => {
         if (!userCompany) return null;
-        const relevantCompany = userCompany.parentId ? companies.find(c => c.id === userCompany.parentId) : userCompany;
-        if (!relevantCompany) return null;
-        return subscriptionPlans.find(p => p.id === relevantCompany.subscriptionPlanId);
+        const relevantCompany = userCompany.parentId ? (companies.find(c => c.id === userCompany.parentId) || userCompany) : userCompany;
+        return subscriptionPlans.find(p => p.id === relevantCompany.subscriptionPlanId) || null;
     }, [userCompany, companies, subscriptionPlans]);
 
     const hasSubordinates = useMemo(() => {
@@ -75,7 +74,7 @@ export function ModuleHeader() {
     }, [navItems, activeModule]);
 
     const pondasiNav = useMemo(() => {
-        return navItems.find(item => item.label === 'Pondasi Data');
+        return navItems.find(item => item.label === 'Pondasi Data') || null;
     }, [navItems]);
 
     if (!activeModule) return null;
@@ -141,7 +140,7 @@ export function ModuleHeader() {
                             const isActive = item.href === pathname;
                             const Icon = iconMap[item.iconName || item.href || 'default'] || LayoutGrid;
                             return (
-                                <Link key={item.href} href={item.href || '#'}>
+                                <Link key={item.href || item.label} href={item.href || '#'}>
                                     <Button 
                                         variant="ghost" 
                                         size="sm" 
