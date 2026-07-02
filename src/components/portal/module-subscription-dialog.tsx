@@ -10,7 +10,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { 
     Zap, 
@@ -21,7 +21,8 @@ import {
     CheckCircle2,
     Info,
     Receipt,
-    Check
+    Plus,
+    Minus
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import type { ModuleId, Company } from '@/types';
@@ -132,30 +133,46 @@ export function ModuleSubscriptionDialog({
                                 <p className="text-sm text-muted-foreground font-medium">Tentukan jumlah personil dan durasi penggunaan modul.</p>
                             </div>
 
-                            <div className="space-y-6">
-                                <div className="flex justify-between items-end">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Kapasitas User</Label>
-                                    <div className="text-right">
-                                        <span className="text-4xl font-black text-[#2563eb]">{quota}</span>
-                                        <span className="ml-1.5 text-xs font-bold text-muted-foreground uppercase tracking-widest">Seats</span>
+                            {/* QUANTITY SELECTOR (REPLACED SLIDER) */}
+                            <div className="space-y-4">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Jumlah Karyawan</Label>
+                                <div className="flex items-center gap-4 bg-muted/20 p-2 rounded-2xl border border-border/40 max-w-sm">
+                                    <Button 
+                                        type="button"
+                                        variant="outline" 
+                                        size="icon" 
+                                        className="size-12 rounded-xl border-2 border-primary/20 hover:bg-primary/5 hover:border-primary text-primary shadow-sm active:scale-95"
+                                        onClick={() => setQuota(Math.max(5, quota - 1))}
+                                    >
+                                        <Minus className="size-5 stroke-[3px]" />
+                                    </Button>
+                                    <div className="flex-1 text-center min-w-0">
+                                        <Input 
+                                            type="number" 
+                                            value={quota}
+                                            onChange={(e) => setQuota(Math.max(5, Math.min(500, parseInt(e.target.value) || 5)))}
+                                            className="border-none bg-transparent text-4xl font-black text-center focus-visible:ring-0 h-auto p-0 shadow-none text-primary"
+                                        />
+                                        <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] -mt-1">Seats</p>
                                     </div>
+                                    <Button 
+                                        type="button"
+                                        variant="outline" 
+                                        size="icon" 
+                                        className="size-12 rounded-xl border-2 border-primary/20 hover:bg-primary/5 hover:border-primary text-primary shadow-sm active:scale-95"
+                                        onClick={() => setQuota(Math.min(500, quota + 1))}
+                                    >
+                                        <Plus className="size-5 stroke-[3px]" />
+                                    </Button>
                                 </div>
-                                <Slider 
-                                    value={[quota]} 
-                                    onValueChange={(vals) => setQuota(vals[0])}
-                                    max={200}
-                                    min={5}
-                                    step={1}
-                                    className="py-4"
-                                />
-                                <div className="flex justify-between text-[9px] font-bold text-muted-foreground uppercase px-1">
-                                    <span>Min. 5 User</span>
-                                    <span>Maks. 200 User</span>
+                                <div className="flex items-center gap-2 text-[9px] font-bold text-muted-foreground uppercase tracking-wider ml-1">
+                                    <Info size={10} className="text-primary" />
+                                    Min. 5 User • Maks. 500 User
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Durasi Berlangganan</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Durasi Berlangganan</Label>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     {[
                                         { val: 1, label: '1 Bulan', discount: null },
@@ -174,7 +191,7 @@ export function ModuleSubscriptionDialog({
                                             )}
                                         >
                                             {opt.discount && (
-                                                <Badge className="absolute -top-2 bg-[#2563eb] text-white border-none text-[7px] font-black h-4 px-1.5">
+                                                <Badge className="absolute -top-2 bg-[#2563eb] text-white border-none text-[7px] font-black h-4 px-1.5 shadow-md">
                                                     {opt.discount}
                                                 </Badge>
                                             )}
@@ -228,7 +245,7 @@ export function ModuleSubscriptionDialog({
                                                 Rp {Math.round(pricing.total).toLocaleString('id-ID')}
                                             </span>
                                         </div>
-                                        <p className="text-right text-[9px] font-bold text-muted-foreground uppercase opacity-60">
+                                        <p className="text-right text-[9px] font-bold text-muted-foreground uppercase opacity-60 tracking-tight">
                                             DITAGIHKAN SEKALI UNTUK {durationMonths} BULAN
                                         </p>
                                     </div>
