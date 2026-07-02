@@ -1,3 +1,4 @@
+
 // src/contexts/master-data-context.tsx
 "use client";
 
@@ -105,6 +106,14 @@ interface MasterDataContextType {
   addCollabTask: (task: Omit<CollabTask, 'id'>) => Promise<CollabTask | null>;
   updateCollabTask: (id: string, data: Partial<CollabTask>) => Promise<void>;
   deleteCollabTask: (id: string) => Promise<void>;
+  addEmailTemplate: (template: Omit<EmailTemplate, 'id'>) => Promise<void>;
+  updateEmailTemplate: (id: string, data: Partial<EmailTemplate>) => Promise<void>;
+  deleteEmailTemplate: (id: string) => Promise<void>;
+  addWhatsappTemplate: (template: Omit<WhatsappTemplate, 'id'>) => Promise<void>;
+  updateWhatsappTemplate: (id: string, data: Partial<WhatsappTemplate>) => Promise<void>;
+  deleteWhatsappTemplate: (id: string) => Promise<void>;
+  initializeDefaultEmailTemplates: () => Promise<void>;
+  initializeDefaultWhatsappTemplates: () => Promise<void>;
   fetchData: (isSilent?: boolean) => Promise<void>;
   isLoading: boolean;
 }
@@ -157,9 +166,10 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     collabTasks: CollabTask[];
     collabMessages: CollabMessage[];
     subscriptionLogs: SubscriptionLog[];
+    memos: Memo[];
   }>({
     companies: [], departments: [], positions: [], employees: [], companyAdmins: [], companyObjectives: [],
-    kpiCategories: [], kboCategories: [], kboSetups: [], kpiSetups: [], appraisalSetups: [], documentTemplates: [], emailTemplates: [], whatsappTemplates: [], notificationTemplates: [], kpiData: [], okrs: [], targetOverrides: [], kboAssessments: [], appraisalTasks: [], subscriptionPlans: [], courses: [], quizzes: [], learningPrograms: [], enrollments: [], aiTools: [], mediaFiles: [], collabSpaces: [], collabTasks: [], collabMessages: [], subscriptionLogs: [],
+    kpiCategories: [], kboCategories: [], kboSetups: [], kpiSetups: [], appraisalSetups: [], documentTemplates: [], emailTemplates: [], whatsappTemplates: [], notificationTemplates: [], kpiData: [], okrs: [], targetOverrides: [], kboAssessments: [], appraisalTasks: [], subscriptionPlans: [], courses: [], quizzes: [], learningPrograms: [], enrollments: [], aiTools: [], mediaFiles: [], collabSpaces: [], collabTasks: [], collabMessages: [], subscriptionLogs: [], memos: [],
   });
   const [isLoading, setIsLoading] = useState(true);
   const hasFetchedRef = useRef(false);
@@ -194,15 +204,26 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
             }
         }
 
+        // Global Collections
+        const globalCollections = ['subscriptionPlans', 'emailTemplates', 'whatsappTemplates', 'notificationTemplates', 'aiTools'];
+        
+        // Scoped Collections
         const collectionsWithCompany = ['departments', 'positions', 'employees', 'companyAdmins', 'companyObjectives', 'kpiCategories', 'kboCategories', 'kboSetups', 'kpiSetups', 'appraisalSetups', 'documentTemplates', 'kpiData', 'okrs', 'lmsCourses', 'lmsQuizzes', 'learningPrograms', 'mediaFiles', 'collabSpaces', 'collabTasks', 'subscriptionLogs'];
         
-        const snaps = await Promise.all(collectionsWithCompany.map(coll => 
-            getDocs(query(collection(db, coll), where("company", "in", [...companyNamesToQuery, 'Global'])))
-        ));
+        const [scopedSnaps, globalSnaps] = await Promise.all([
+             Promise.all(collectionsWithCompany.map(coll => 
+                getDocs(query(collection(db, coll), where("company", "in", [...companyNamesToQuery, 'Global'])))
+            )),
+             Promise.all(globalCollections.map(coll => 
+                getDocs(collection(db, coll))
+            ))
+        ]);
 
-        const [departmentsSnap, positionsSnap, employeesSnap, companyAdminsSnap, companyObjectivesSnap, kpiCategoriesSnap, kboCategoriesSnap, kboSetupsSnap, kpiSetupsSnap, appraisalSetupsSnap, documentTemplatesSnap, kpiDataSnap, okrsSnap, coursesSnap, quizzesSnap, learningProgramsSnap, mediaFilesSnap, collabSpacesSnap, collabTasksSnap, subscriptionLogsSnap] = snaps;
+        const [departmentsSnap, positionsSnap, employeesSnap, companyAdminsSnap, companyObjectivesSnap, kpiCategoriesSnap, kboCategoriesSnap, kboSetupsSnap, kpiSetupsSnap, appraisalSetupsSnap, documentTemplatesSnap, kpiDataSnap, okrsSnap, coursesSnap, quizzesSnap, learningProgramsSnap, mediaFilesSnap, collabSpacesSnap, collabTasksSnap, subscriptionLogsSnap] = scopedSnaps;
+        const [subscriptionPlansSnap, emailTemplatesSnap, whatsappTemplatesSnap, notificationTemplatesSnap, aiToolsSnap] = globalSnaps;
 
-        setData({
+        setData(prev => ({
+            ...prev,
             companies: allCompanies,
             departments: mapSnapshot<Department>(departmentsSnap),
             positions: mapSnapshot<Position>(positionsSnap),
@@ -215,26 +236,21 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
             kpiSetups: mapSnapshot<KpiSetup>(kpiSetupsSnap),
             appraisalSetups: mapSnapshot<AppraisalSetup>(appraisalSetupsSnap),
             documentTemplates: mapSnapshot<DocumentTemplate>(documentTemplatesSnap),
-            emailTemplates: [],
-            whatsappTemplates: [],
-            notificationTemplates: [],
+            emailTemplates: mapSnapshot<EmailTemplate>(emailTemplatesSnap),
+            whatsappTemplates: mapSnapshot<WhatsappTemplate>(whatsappTemplatesSnap),
+            notificationTemplates: mapSnapshot<NotificationTemplate>(notificationTemplatesSnap),
             kpiData: mapSnapshot<KpiData>(kpiDataSnap),
             okrs: mapSnapshot<OKR>(okrsSnap),
-            targetOverrides: [],
-            kboAssessments: [],
-            appraisalTasks: [],
-            subscriptionPlans: [],
+            subscriptionPlans: mapSnapshot<SubscriptionPlan>(subscriptionPlansSnap),
             courses: mapSnapshot<Course>(coursesSnap),
             quizzes: mapSnapshot<LmsQuiz>(quizzesSnap),
             learningPrograms: mapSnapshot<LearningProgram>(learningProgramsSnap),
-            enrollments: [],
-            aiTools: [],
+            aiTools: mapSnapshot<AiTool>(aiToolsSnap),
             mediaFiles: mapSnapshot<MediaFile>(mediaFilesSnap),
             collabSpaces: mapSnapshot<CollabSpace>(collabSpacesSnap),
             collabTasks: mapSnapshot<CollabTask>(collabTasksSnap),
-            collabMessages: [],
             subscriptionLogs: mapSnapshot<SubscriptionLog>(subscriptionLogsSnap),
-        });
+        }));
 
         hasFetchedRef.current = true;
       } catch (error: any) {
@@ -242,7 +258,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
       } finally {
         setIsLoading(false);
       }
-    }, [isAuthLoading, currentUser, userRole]); // Removed companies from deps
+    }, [isAuthLoading, currentUser, userRole, companies]);
 
   useEffect(() => {
     fetchData();
@@ -373,6 +389,14 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     updateLearningProgram: (id, d) => updateDocAndUpdateState<LearningProgram>('learningPrograms', id, d, 'learningPrograms'),
     enrollToCourse: async () => null,
     updateEnrollment: async () => {},
+    addEmailTemplate: (d) => addDocAndUpdateState<EmailTemplate>('emailTemplates', d, 'emailTemplates'),
+    updateEmailTemplate: (id, d) => updateDocAndUpdateState<EmailTemplate>('emailTemplates', id, d, 'emailTemplates'),
+    deleteEmailTemplate: (id) => deleteDocsAndUpdateState('emailTemplates', [id], 'emailTemplates'),
+    addWhatsappTemplate: (d) => addDocAndUpdateState<WhatsappTemplate>('whatsappTemplates', d, 'whatsappTemplates'),
+    updateWhatsappTemplate: (id, d) => updateDocAndUpdateState<WhatsappTemplate>('whatsappTemplates', id, d, 'whatsappTemplates'),
+    deleteWhatsappTemplate: (id) => deleteDocsAndUpdateState('whatsappTemplates', [id], 'whatsappTemplates'),
+    initializeDefaultEmailTemplates: async () => {},
+    initializeDefaultWhatsappTemplates: async () => {},
     addAiTool: (d) => addDocAndUpdateState<AiTool>('aiTools', d, 'aiTools'),
     updateAiTool: (id, d) => updateDocAndUpdateState<AiTool>('aiTools', id, d, 'aiTools'),
     deleteAiTool: (id) => deleteDocsAndUpdateState('aiTools', [id], 'aiTools'),
