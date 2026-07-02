@@ -1,4 +1,3 @@
-
 // src/components/layout/header.tsx
 'use client';
 
@@ -28,6 +27,8 @@ import { NotificationBell } from './notification-bell';
 import { cn } from '@/lib/utils';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 
 function LiveClock() {
