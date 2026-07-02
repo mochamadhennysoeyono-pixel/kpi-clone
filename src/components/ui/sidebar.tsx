@@ -3,7 +3,7 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Menu, X, ChevronLeft, Bell } from "lucide-react";
+import { LogOut, X, ChevronDown, Menu } from "lucide-react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -11,13 +11,12 @@ import { cn } from "@/lib/utils";
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
 import { getNavItems, iconMap, getActiveModuleFromPath } from '@/lib/nav-items';
-import type { UserRole, Company, SubscriptionPlan, Employee, OKR } from "@/types";
+import type { Employee, OKR, ModuleId } from "@/types";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import { ChevronDown } from "lucide-react";
 import { Button } from "./button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ScrollArea } from "./scroll-area";
@@ -55,7 +54,7 @@ function MotionNav() {
   
   const navItems = getNavItems(userRole, hasSubordinates, userCompany, userSubscriptionPlan, !!isMobile, currentUser, okrs, activeModule);
 
-  const userInitial = currentUser?.name?.substring(0, 1).toUpperCase() || 'S';
+  const userInitial = currentUser?.name?.substring(0, 1).toUpperCase() || 'U';
     
   return (
      <motion.nav
@@ -69,23 +68,57 @@ function MotionNav() {
         )}
         onMouseEnter={() => !isMobile && setIsOpen(true)}
       >
-        {/* Top Header Section */}
-        <div className="flex items-center justify-between px-6 pt-8 pb-4 flex-shrink-0">
-          <div className="flex items-center gap-1.5">
-            <div className="size-2.5 rounded-full bg-red-500/60" />
-            <div className="size-2.5 rounded-full bg-amber-500/60" />
-            <div className="size-2.5 rounded-full bg-green-500/60" />
+        {/* Top Header Section: Now with Adaptive Logo */}
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
+          <div className="flex items-center justify-center min-h-[40px]">
+            <AnimatePresence mode="wait">
+              {isOpen || isMobile ? (
+                <motion.div
+                  key="full-logo"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Image 
+                    src="/logo.png" 
+                    alt="Logo" 
+                    width={120} 
+                    height={32} 
+                    className="object-contain"
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="favicon-logo"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Image 
+                    src="/favicon.png" 
+                    alt="Favicon" 
+                    width={32} 
+                    height={32} 
+                    className="object-contain"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
           
           <AnimatePresence>
-            {isOpen && (
+            {(isOpen || isMobile) && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                onClick={() => setIsOpen(false)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
+                }}
                 className="size-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
-                title="Tutup Sidebar"
               >
                 <X size={14} />
               </motion.button>
@@ -93,36 +126,11 @@ function MotionNav() {
           </AnimatePresence>
         </div>
 
-        {/* Profile Section */}
-        <div className={cn("px-4 mb-4 transition-all", !isOpen && "px-0 flex justify-center")}>
-          <div className={cn(
-            "p-3 rounded-[1.2rem] bg-slate-50/50 border border-slate-200/50 flex items-center gap-3 transition-all",
-            !isOpen && "rounded-full p-1 bg-transparent border-none"
-          )}>
-            <Avatar className={cn("size-10 border-2 border-white shadow-sm", !isOpen && "size-12")}>
-              <AvatarFallback className="bg-primary text-white font-black text-sm">{userInitial}</AvatarFallback>
-            </Avatar>
-            <AnimatePresence>
-              {isOpen && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  className="flex-1 min-w-0"
-                >
-                  <p className="text-sm font-bold text-slate-900 truncate">{currentUser?.name}</p>
-                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tighter truncate leading-none mt-0.5">{currentUser?.position}</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        <Separator className="bg-slate-200/60 mx-6 w-auto mb-4" />
+        <Separator className="bg-slate-200/60 mx-6 w-auto mb-2" />
 
         <ScrollArea className="flex-1 px-4">
-             <ul className="space-y-1.5 pb-10">
-                {activeModule && isOpen && (
+             <ul className="space-y-1.5 py-4">
+                {activeModule && (isOpen || isMobile) && (
                     <li className="mb-6">
                         <Button 
                             variant="ghost" 
@@ -235,15 +243,35 @@ function MotionNav() {
              </ul>
           </ScrollArea>
           
+          {/* Bottom Section: Integrated Profile & Logout */}
           {currentUser && (
             <div className="p-4 flex-shrink-0">
                 <button
                     onClick={() => logout()}
-                    className="flex items-center gap-4 w-full rounded-xl px-4 py-3 text-xs font-black text-slate-500 bg-slate-50 hover:bg-red-50 hover:text-red-600 transition-all active:scale-95 border border-slate-100"
+                    className={cn(
+                      "flex items-center gap-3 w-full rounded-2xl transition-all active:scale-95 border shadow-sm group overflow-hidden",
+                      isOpen || isMobile ? "p-2 bg-slate-50 hover:bg-red-50 border-slate-200/60 hover:border-red-200" : "p-1 bg-transparent border-transparent justify-center"
+                    )}
                 >
-                    <LogOut size={20} className="opacity-60" />
+                    <Avatar className={cn("size-10 border-2 border-white shadow-sm shrink-0", !isOpen && !isMobile && "size-12")}>
+                      <AvatarFallback className="bg-primary text-white font-black text-sm">{userInitial}</AvatarFallback>
+                    </Avatar>
+                    
                     <AnimatePresence>
-                        {isOpen && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>LOG OUT</motion.span>}
+                        {(isOpen || isMobile) && (
+                          <motion.div 
+                            initial={{ opacity: 0, width: 0 }} 
+                            animate={{ opacity: 1, width: "auto" }} 
+                            exit={{ opacity: 0, width: 0 }}
+                            className="flex-1 text-left min-w-0"
+                          >
+                            <p className="text-xs font-black text-slate-900 truncate leading-tight uppercase tracking-tight">{currentUser.name}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5 text-slate-500 group-hover:text-red-600 transition-colors">
+                                <LogOut size={10} className="shrink-0" />
+                                <span className="text-[9px] font-black uppercase tracking-widest">LOG OUT</span>
+                            </div>
+                          </motion.div>
+                        )}
                     </AnimatePresence>
                 </button>
             </div>
