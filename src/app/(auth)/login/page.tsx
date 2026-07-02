@@ -20,10 +20,10 @@ const BrandingVisual = () => {
     >
       <div className="z-10 text-center flex flex-col items-center">
         <h1 className="text-5xl font-semibold text-white tracking-tight">
-          Unlock Your Team's Potential.
+          Unlock Your Full Potential.
         </h1>
         <p className="mt-4 text-lg text-slate-300 max-w-[45ch]">
-          The all-in-one HRIS platform designed to elevate performance and build a culture of excellence.
+          The all-in-one performance platform designed to elevate individual growth and build a culture of excellence.
         </p>
       </div>
        <div className="absolute -bottom-48 -right-48 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
@@ -247,12 +247,12 @@ export default function LoginPage() {
           </div>
           
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900 mb-2">
-            {activeTab === 'login' ? 'Selamat Datang Kembali' : 'Pendaftaran Perusahaan'}
+            {activeTab === 'login' ? 'Selamat Datang' : 'Daftar Perusahaan'}
           </h2>
           <p className="text-slate-600 mb-6 text-sm">
             {activeTab === 'login' 
-              ? 'Masuk untuk mengelola performa tim Anda.' 
-              : 'Daftarkan perusahaan Anda untuk mulai membangun budaya unggul.'}
+              ? 'Masuk untuk memantau progres dan meningkatkan performa Anda.' 
+              : 'Mulai transformasi manajemen performa tim Anda hari ini.'}
           </p>
           
           <div className="grid grid-cols-2 gap-2 mb-8 bg-slate-100 p-1 rounded-full border border-slate-200">
@@ -278,7 +278,7 @@ export default function LoginPage() {
                         : "bg-transparent text-slate-500 hover:text-slate-900"
                 )}
               >
-                  Daftar Baru
+                  Registrasi Bisnis
               </Button>
           </div>
 
