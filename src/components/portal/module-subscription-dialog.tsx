@@ -109,8 +109,8 @@ export function ModuleSubscriptionDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-[2rem] flex flex-col max-h-[90vh]">
-                <DialogHeader className="p-4 px-6 flex flex-row items-center justify-between bg-muted/20 border-b space-y-0">
+            <DialogContent className="max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-[2rem] flex flex-col h-full max-h-[95vh] md:max-h-[90vh]">
+                <DialogHeader className="p-4 px-6 flex flex-row items-center justify-between bg-muted/20 border-b space-y-0 shrink-0">
                     <div className="flex items-center gap-3">
                         <div className={cn("p-1.5 rounded-lg", module.bg, module.color)}>
                             <Icon size={16} />
@@ -127,13 +127,8 @@ export function ModuleSubscriptionDialog({
                 <ScrollArea className="flex-1 min-h-0 bg-background">
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-0">
                         {/* LEFT: CONFIGURATION */}
-                        <div className="lg:col-span-3 p-8 md:p-10 space-y-10">
-                            <div className="space-y-2">
-                                <h3 className="text-2xl font-black tracking-tight">Konfigurasi Akses</h3>
-                                <p className="text-sm text-muted-foreground font-medium">Tentukan jumlah personil dan durasi penggunaan modul.</p>
-                            </div>
-
-                            {/* QUANTITY SELECTOR (REPLACED SLIDER) */}
+                        <div className="lg:col-span-3 p-6 md:p-10 space-y-8 md:space-y-12">
+                            {/* QUANTITY SELECTOR */}
                             <div className="space-y-4">
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Jumlah Karyawan</Label>
                                 <div className="flex items-center gap-4 bg-muted/20 p-2 rounded-2xl border border-border/40 max-w-sm">
@@ -211,7 +206,7 @@ export function ModuleSubscriptionDialog({
                         </div>
 
                         {/* RIGHT: SUMMARY */}
-                        <div className="lg:col-span-2 bg-muted/30 border-l border-border/40 p-8 md:p-10 flex flex-col justify-between">
+                        <div className="lg:col-span-2 bg-muted/30 border-l border-border/40 p-6 md:p-10 flex flex-col justify-between">
                             <div className="space-y-8">
                                 <div className="flex items-center gap-2 text-[#2563eb]">
                                     <Receipt size={18} />
@@ -261,7 +256,7 @@ export function ModuleSubscriptionDialog({
                                 </div>
                             </div>
 
-                            <div className="space-y-3 mt-10">
+                            <div className="space-y-3 mt-8 md:mt-12 pb-6">
                                 <Button 
                                     onClick={() => handleAction('paid')} 
                                     disabled={isLoading}
