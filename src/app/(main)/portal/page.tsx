@@ -1,3 +1,4 @@
+
 // src/app/(main)/portal/page.tsx
 "use client";
 
@@ -23,7 +24,8 @@ import {
     CheckCircle2,
     XCircle,
     Info,
-    ArrowUpRight
+    ArrowUpRight,
+    ShoppingCart
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, addDays } from 'date-fns';
@@ -81,6 +83,7 @@ function ModuleCard({
 }) {
     const isActive = subscription?.status === 'active';
     const isExpired = subscription?.status === 'expired';
+    const isTrial = subscription?.type === 'trial';
     
     return (
         <Card className={cn(
@@ -107,7 +110,9 @@ function ModuleCard({
                     <div className="space-y-3 bg-muted/30 p-3 rounded-xl border border-dashed text-[11px] font-medium">
                         <div className="flex justify-between items-center">
                             <span className="text-muted-foreground uppercase tracking-tight">Tipe Paket</span>
-                            <Badge variant="outline" className="h-5 px-1.5 font-bold uppercase text-[9px]">{subscription.type}</Badge>
+                            <Badge variant={isTrial ? "secondary" : "default"} className={cn("h-5 px-1.5 font-bold uppercase text-[9px]", !isTrial && "bg-blue-600")}>
+                                {subscription.type}
+                            </Badge>
                         </div>
                         <div className="flex justify-between items-center">
                             <span className="text-muted-foreground uppercase tracking-tight">Kuota User</span>
@@ -134,24 +139,39 @@ function ModuleCard({
                 )}
             </CardContent>
 
-            <CardFooter className="pt-4 border-t bg-muted/5 mt-auto">
-                {isActive ? (
-                    <Button asChild className="w-full font-bold shadow-md rounded-xl h-11 transition-all active:scale-95">
-                        <Link href={config.route}>
-                            Masuk Modul <ArrowRight className="ml-2 size-4" />
-                        </Link>
-                    </Button>
-                ) : (
-                    isManagement && (
-                        <Button 
-                            onClick={() => onActivateRequest(config)}
-                            variant="outline" 
-                            className="w-full font-bold border-primary text-primary hover:bg-primary/5 rounded-xl h-11 border-2"
-                        >
-                             <Zap className="mr-2 size-4" /> Mulai Berlangganan
-                        </Button>
-                    )
-                )}
+            <CardFooter className="pt-4 border-t bg-muted/5 mt-auto p-4">
+                <div className="flex items-center gap-2 w-full">
+                    {isActive ? (
+                        <>
+                            <Button asChild className="flex-1 font-bold shadow-md rounded-xl h-11 transition-all active:scale-95">
+                                <Link href={config.route}>
+                                    Masuk Modul <ArrowRight className="ml-2 size-4" />
+                                </Link>
+                            </Button>
+                            {isTrial && isManagement && (
+                                <Button 
+                                    variant="outline" 
+                                    size="icon"
+                                    className="size-11 rounded-xl border-2 border-primary text-primary hover:bg-primary/5 shrink-0"
+                                    onClick={() => onActivateRequest(config)}
+                                    title="Upgrade ke Paket Berbayar"
+                                >
+                                    <ShoppingCart size={18} />
+                                </Button>
+                            )}
+                        </>
+                    ) : (
+                        isManagement && (
+                            <Button 
+                                onClick={() => onActivateRequest(config)}
+                                variant="outline" 
+                                className="w-full font-bold border-primary text-primary hover:bg-primary/5 rounded-xl h-11 border-2"
+                            >
+                                 <Zap className="mr-2 size-4" /> Mulai Berlangganan
+                            </Button>
+                        )
+                    )}
+                </div>
             </CardFooter>
         </Card>
     );
@@ -208,7 +228,7 @@ export default function PortalPage() {
             };
 
             const updatedUsedTrials = [...(company.usedTrials || [])];
-            if (data.type === 'trial') {
+            if (data.type === 'trial' && !updatedUsedTrials.includes(selectedModule.id)) {
                 updatedUsedTrials.push(selectedModule.id);
             }
 
@@ -232,7 +252,7 @@ export default function PortalPage() {
                 timestamp: serverTimestamp()
             });
 
-            toast({ title: "Berhasil!", description: `Modul ${selectedModule.name} kini aktif.` });
+            toast({ title: "Berhasil!", description: data.type === 'trial' ? `Masa trial Modul ${selectedModule.name} kini aktif.` : `Paket Modul ${selectedModule.name} berhasil dibeli.` });
             await fetchData(true);
         } catch (error: any) {
             toast({ variant: 'destructive', title: "Gagal", description: error.message });
@@ -330,7 +350,7 @@ export default function PortalPage() {
                             <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                                 <LayoutGrid className="size-4" /> Modul Tersedia
                             </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {inactiveModules.map(m => (
                                     <ModuleCard 
                                         key={m.id} 

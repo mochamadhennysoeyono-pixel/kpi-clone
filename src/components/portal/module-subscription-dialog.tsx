@@ -1,3 +1,4 @@
+
 // src/components/portal/module-subscription-dialog.tsx
 "use client";
 
@@ -58,6 +59,20 @@ export function ModuleSubscriptionDialog({
         }
     }, [isOpen, module?.id]);
 
+    const isTrialAvailable = useMemo(() => {
+        if (!company || !module) return false;
+        
+        // 1. Check if trial already used for this specific module
+        const hasUsedTrial = company.usedTrials?.includes(module.id);
+        if (hasUsedTrial) return false;
+
+        // 2. Check if currently has an active subscription (trial or paid)
+        const currentSub = company.moduleSubscriptions?.[module.id];
+        if (currentSub && currentSub.status === 'active') return false;
+
+        return true;
+    }, [company, module]);
+
     const pricing = useMemo(() => {
         const monthlyBase = quota * BASE_PRICE;
         const rawMonthlyTotal = monthlyBase;
@@ -110,7 +125,7 @@ export function ModuleSubscriptionDialog({
                         </DialogTitle>
                     </div>
                     <DialogDescription className="sr-only">
-                        Beli paket langganan {module.name}.
+                        Konfigurasi paket langganan untuk {module.name}.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -243,13 +258,15 @@ export function ModuleSubscriptionDialog({
 
                             <div className="flex flex-col gap-3 pt-6 mt-auto">
                                 <div className="flex flex-col sm:flex-row gap-3">
-                                    <Button 
-                                        variant="outline" 
-                                        className="flex-1 font-black text-[10px] uppercase tracking-widest h-12 border-blue-200 bg-blue-50/30 hover:bg-blue-100 text-[#2563eb] rounded-xl"
-                                        onClick={() => handleAction('trial')}
-                                    >
-                                        Coba Gratis 14 Hari
-                                    </Button>
+                                    {isTrialAvailable && (
+                                        <Button 
+                                            variant="outline" 
+                                            className="flex-1 font-black text-[10px] uppercase tracking-widest h-12 border-blue-200 bg-blue-50/30 hover:bg-blue-100 text-[#2563eb] rounded-xl"
+                                            onClick={() => handleAction('trial')}
+                                        >
+                                            Coba Gratis 14 Hari
+                                        </Button>
+                                    )}
                                     <Button 
                                         onClick={() => handleAction('paid')}
                                         disabled={isLoading}
