@@ -9,7 +9,7 @@ import { useMasterData } from '@/contexts/master-data-context';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { AppSidebar } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { AlertCircle } from 'lucide-react'; 
+import { AlertCircle, LayoutGrid } from 'lucide-react'; 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePageContext } from '@/contexts/page-context';
 import { cn } from '@/lib/utils';
