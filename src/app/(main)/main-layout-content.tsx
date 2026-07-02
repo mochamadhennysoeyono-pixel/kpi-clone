@@ -1,3 +1,4 @@
+
 // src/app/(main)/main-layout-content.tsx
 "use client";
 
@@ -49,55 +50,29 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
     return null;
   }
   
-  let userCompany;
-  let isSubscriptionLocked = false;
+  // Logic to hide sidebar: for Portal or specific Rooms
+  const isPortal = pathname === '/portal';
+  const isDocEditor = pathname.startsWith('/document-management/templates/');
+  const hideSidebar = isPortal || isDocEditor;
+
   let contentToRender = children;
 
+  // --- Legacy Subscription Lock logic (to be replaced in later phases) ---
   if (userRole !== 'superadmin') {
-      userCompany = companies.find((c) => c.name === currentUser.company || c.id === currentUser.company);
-      
-      if (userCompany) {
-          if (userCompany.subscriptionExpiryDate) {
-              const expiryDate = new Date(userCompany.subscriptionExpiryDate);
-              expiryDate.setHours(23, 59, 59, 999);
-              if (expiryDate < new Date()) {
-                  isSubscriptionLocked = true;
-              }
-          }
-          
-          if (!isSubscriptionLocked && userCompany.status === 'Tidak Aktif') {
-              isSubscriptionLocked = true;
-          }
-      }
-
-      const isSubscriptionRoute = pathname.startsWith('/subscription-plans') || pathname.startsWith('/subscription-status');
-
-      if (isSubscriptionLocked && !isSubscriptionRoute) {
+      const userCompany = companies.find((c) => c.name === currentUser.company);
+      if (userCompany && userCompany.status === 'Tidak Aktif' && !isPortal) {
           contentToRender = (
               <div className="flex flex-col items-center justify-center h-[80vh] w-full text-center p-4">
                   <AlertCircle className="w-16 h-16 text-destructive mb-4 mx-auto" />
-                  <h1 className="text-2xl font-bold mb-2">
-                      Akses Terbatas
-                  </h1>
-                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                      Masa berlaku trial atau langganan perusahaan "{userCompany?.name}" telah berakhir. Seluruh fitur manajemen performa dinonaktifkan sementara.
-                  </p>
-                  <div className="flex gap-4 justify-center">
-                      {(userRole === 'manajemen') && (
-                          <Button onClick={() => router.push('/subscription-plans')}>
-                            Upgrade / Ganti Paket
-                          </Button>
-                      )}
-                      <Button variant={userRole === 'user' ? "default" : "outline"} onClick={() => router.push('/subscription-status')}>
-                        Status Paket
-                      </Button>
-                  </div>
+                  <h1 className="text-2xl font-bold mb-2">Akses Terbatas</h1>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">Akun perusahaan Anda belum aktif.</p>
+                  <Button onClick={() => router.push('/portal')}>Kembali ke Portal</Button>
               </div>
           );
       }
   }
 
-  if (pathname.startsWith('/document-management/templates/')) {
+  if (isDocEditor) {
     return (
       <div className="h-screen flex flex-col">
         {contentToRender}
@@ -105,44 +80,27 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
     );
   }
 
-  if (isMobile) {
-    return (
-      <div className="bg-background h-screen flex flex-col overflow-hidden">
-        <AppSidebar />
-        <Header />
-        <ScrollArea className="flex-1">
-          <main className={cn(
-            "w-full",
-            !hideBottomNav && "pb-24"
-          )}>
-            <div className={cn(
-              "w-full",
-              !hideBottomNav && "p-3 sm:p-6"
-            )}>
-              {contentToRender}
-            </div>
-          </main>
-        </ScrollArea>
-        <BottomNav />
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      <AppSidebar />
+      {!hideSidebar && <AppSidebar />}
+      
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden relative">
         <Header />
         <div className="flex-1 min-h-0 overflow-hidden flex flex-col relative">
             <ScrollArea className="flex-1 w-full">
                 <main className="w-full min-w-0">
-                    <div className="p-4 sm:p-6 lg:p-8 w-full min-w-0 overflow-hidden">
+                    <div className={cn(
+                        "p-4 sm:p-6 lg:p-8 w-full min-w-0 overflow-hidden",
+                        isPortal && "lg:p-12" // More padding for portal
+                    )}>
                         {contentToRender}
                     </div>
                 </main>
             </ScrollArea>
         </div>
       </div>
+      
+      {isMobile && !hideBottomNav && <BottomNav />}
     </div>
   );
 }

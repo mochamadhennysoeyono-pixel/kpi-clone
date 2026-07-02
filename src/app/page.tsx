@@ -1,3 +1,4 @@
+
 // src/app/page.tsx
 "use client";
 
@@ -19,10 +20,9 @@ export default function RootPage() {
         // Jika sudah login, arahkan ke dashboard sesuai role
         if (userRole === "superadmin") {
           router.replace("/dashboard");
-        } else if (userRole === "manajemen") {
-          router.replace("/reports");
         } else {
-          router.replace("/action-center");
+          // Karyawan dan Manajemen sekarang diarahkan ke Portal sebagai pintu masuk modular
+          router.replace("/portal");
         }
       } else {
         // Jika belum login, arahkan ke halaman login
@@ -33,11 +33,11 @@ export default function RootPage() {
 
   // Render a clean Ripple loading state while the redirect happens.
   return (
-     <div className="flex h-screen w-full items-center justify-center bg-background">
+     <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-6">
-          <Ripple className="w-24 h-24 text-primary" />
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground animate-pulse">
-            Menyiapkan Workspace
+          <Ripple className="size-24 text-primary" />
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground animate-pulse pl-[0.4em]">
+            KIPIAI CORE
           </p>
         </div>
       </div>

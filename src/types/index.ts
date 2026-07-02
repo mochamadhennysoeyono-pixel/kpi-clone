@@ -27,7 +27,7 @@ export type Employee = {
   reportsTo?: string; 
   joinDate: string;
   status: 'Aktif' | 'Tidak Aktif' | 'Menunggu Persetujuan';
-  role: 'user'; // Murni User Operasional
+  role: 'user'; 
   loginStatus: LoginStatus;
   fcmTokens?: string[]; 
 };
@@ -46,6 +46,18 @@ export type CompanyAdmin = {
   createdAt: any;
 };
 
+// --- Modular Subscription Types ---
+export type ModuleId = 'appraisal' | 'lms' | 'collabspace';
+
+export type ModuleSubscription = {
+    status: 'active' | 'inactive' | 'expired';
+    type: 'trial' | 'paid' | 'custom';
+    quota: number; // User limit specifically for this module
+    expiryDate: string; // ISO Date
+    activatedAt?: string;
+    addons?: string[];
+};
+
 // --- Subscription History Logs ---
 export type SubscriptionLogAction = 'TRIAL' | 'UPGRADE' | 'RENEW' | 'EXPIRED' | 'MANUAL_CHANGE';
 
@@ -53,8 +65,9 @@ export type SubscriptionLog = {
   id: string;
   companyId: string;
   companyName: string;
-  company: string; // MOD: Added for consistent filtering
-  planId: string;
+  company: string; 
+  moduleId?: ModuleId; // Log specific module actions
+  planId?: string; // Legacy support
   planName: string;
   action: SubscriptionLogAction;
   amount: number;
@@ -484,6 +497,8 @@ export type Company = {
   customUserLimit?: number;
   customManagementUserLimit?: number;
   customCompanyLimit?: number;
+  // --- New Modular Subscriptions ---
+  moduleSubscriptions?: Record<ModuleId, ModuleSubscription>;
   features?: {
     hasAiKpiWizard?: boolean;
     hasPageAssistant?: boolean;
