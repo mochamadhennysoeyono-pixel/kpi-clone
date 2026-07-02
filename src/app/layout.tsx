@@ -23,9 +23,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   // Determine Midtrans Snap URL based on environment
-  const snapUrl = process.env.MIDTRANS_IS_PRODUCTION === 'true'
+  const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true';
+  const snapUrl = isProduction
     ? "https://app.midtrans.com/snap/snap.js"
     : "https://app.sandbox.midtrans.com/snap/snap.js";
+
+  const clientKey = process.env.MIDTRANS_CLIENT_KEY || "Mid-client-MpjNTjYjtHljjjQ9";
 
   return (
     <html lang="en" className={GeistSans.variable} suppressHydrationWarning>
@@ -46,7 +49,7 @@ export default function RootLayout({
         {/* Load Midtrans Snap Script */}
         <Script 
           src={snapUrl} 
-          data-client-key={process.env.MIDTRANS_CLIENT_KEY}
+          data-client-key={clientKey}
           strategy="beforeInteractive"
         />
       </body>

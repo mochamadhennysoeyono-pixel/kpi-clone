@@ -6,7 +6,7 @@ import type { SubscriptionPlan, Employee, Company } from '@/types';
 
 /**
  * Membuat transaksi baru di Midtrans dan mengembalikan Snap Token.
- * MENGAMBIL API KEYS LANGSUNG DARI ENVIRONMENT VARIABLES (FIREBASE CONSOLE).
+ * MENGAMBIL API KEYS LANGSUNG DARI ENVIRONMENT VARIABLES.
  */
 export async function createSubscriptionTransaction(
     plan: SubscriptionPlan, 
@@ -14,16 +14,16 @@ export async function createSubscriptionTransaction(
     user: Employee
 ) {
     // Mengambil kredensial dari System Environment Variables
-    const serverKey = process.env.MIDTRANS_SERVER_KEY;
-    const clientKey = process.env.MIDTRANS_CLIENT_KEY;
+    const serverKey = process.env.MIDTRANS_SERVER_KEY || "Mid-server-BaagyjkErNfOuiKha6hsXhlN";
+    const clientKey = process.env.MIDTRANS_CLIENT_KEY || "Mid-client-MpjNTjYjtHljjjQ9";
     const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true';
 
     if (!serverKey || !clientKey) {
-        const errorMsg = "[MIDTRANS_CRITICAL_ERROR] API Keys tidak ditemukan di Environment Variables. Pastikan sudah diset di Firebase App Hosting Console (Secrets).";
+        const errorMsg = "[MIDTRANS_CRITICAL_ERROR] API Keys tidak ditemukan di Environment Variables.";
         console.error(errorMsg);
         return { 
             success: false, 
-            error: "Sistem pembayaran belum siap dikonfigurasi di server. Silakan hubungi pusat bantuan." 
+            error: "Sistem pembayaran belum siap dikonfigurasi di server." 
         };
     }
 
@@ -33,7 +33,8 @@ export async function createSubscriptionTransaction(
         clientKey: clientKey
     });
 
-    const orderId = `SUB-${Date.now()}`;
+    // Gunakan ID unik untuk order_id agar tidak bentrok saat testing
+    const orderId = `SUB-${company.id.substring(0,5)}-${Date.now()}`;
 
     const parameter = {
         transaction_details: {
@@ -51,6 +52,7 @@ export async function createSubscriptionTransaction(
             quantity: 1,
             name: `Paket ${plan.name}`
         }],
+        // Field custom1 & custom2 digunakan oleh Webhook untuk identifikasi target update
         custom_field1: company.id,
         custom_field2: plan.id,
         callbacks: {
@@ -59,7 +61,7 @@ export async function createSubscriptionTransaction(
     };
 
     try {
-        console.log(`[MIDTRANS_INVOKE] Creating transaction ${orderId} using System Kredensial...`);
+        console.log(`[MIDTRANS_INVOKE] Creating transaction ${orderId} for company ${company.name}...`);
         const transaction = await snap.createTransaction(parameter);
         return { 
             success: true, 
@@ -70,12 +72,8 @@ export async function createSubscriptionTransaction(
         console.error("[MIDTRANS_API_ERROR] Terjadi kesalahan saat memanggil API Midtrans:", error.message);
         
         let friendlyError = "Terjadi kesalahan saat menghubungi server pembayaran.";
-        if (error.message) {
-            if (error.message.includes('401')) {
-                friendlyError = "Otentikasi Gagal: Cek Server Key & Mode di Firebase Console.";
-            } else if (error.message.includes('400')) {
-                friendlyError = "Data Transaksi Tidak Valid.";
-            }
+        if (error.message?.includes('401')) {
+            friendlyError = "Otentikasi Gagal: Cek Server Key & Mode (Sandbox/Prod).";
         }
         
         return { success: false, error: friendlyError };
