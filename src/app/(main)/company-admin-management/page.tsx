@@ -126,8 +126,11 @@ export default function CompanyAdminManagementPage() {
     return {
         limit,
         currentUsage,
-        isFull: limit !== -1 && currentUsage >= limit,
-        companyName: company.name
+        userLimitReached: false, // Not used for admin
+        managementLimitReached: limit !== -1 && currentUsage >= limit,
+        message: limit !== -1 && currentUsage >= limit ? "Kuota Manajemen penuh. Hubungi pusat untuk upgrade." : "",
+        companyName: company.name,
+        limits: { user: 0, mgmt: limit } // For form display
     };
   }, [selectedCompanyId, companies, subscriptionPlans, companyAdmins, userCompany]);
 
@@ -136,8 +139,8 @@ export default function CompanyAdminManagementPage() {
         toast({ variant: "destructive", title: "Pilih Perusahaan", description: "Harap pilih perusahaan spesifik terlebih dahulu untuk menambah admin." });
         return;
     }
-    if (quotaInfo?.isFull) {
-        toast({ variant: "destructive", title: "Kuota Penuh", description: `Batas admin untuk ${quotaInfo.companyName} telah tercapai.` });
+    if (quotaInfo?.managementLimitReached) {
+        toast({ variant: "destructive", title: "Kuota Penuh", description: quotaInfo.message });
         return;
     }
     setSelectedAdmin(undefined);
@@ -194,7 +197,7 @@ export default function CompanyAdminManagementPage() {
     if (result.success) {
       toast({
         title: "Email Terkirim",
-        description: `Link pembaruan kata sandi untuk ${name} telah berhasil dikirim.`,
+        description: `Link pembaruan sandi / aktivasi untuk ${name} telah berhasil dikirim.`,
       });
     } else {
       toast({
@@ -215,7 +218,9 @@ export default function CompanyAdminManagementPage() {
                 <ShieldCheck className="size-6 text-primary" />
               </div>
               <div>
-                <CardTitle className="font-headline text-2xl">Manajemen Admin Perusahaan</CardTitle>
+                <CardTitle className="font-headline text-2xl">
+                    {isSuperadmin ? "Manajemen Admin Klien" : "Manajemen Tim Admin"}
+                </CardTitle>
                 <CardDescription>
                    {isSuperadmin 
                     ? "Kelola seluruh akun admin dari semua perusahaan klien di satu tempat."
@@ -254,7 +259,7 @@ export default function CompanyAdminManagementPage() {
                     <div className="flex items-center gap-4 px-4 py-2 bg-background rounded-lg border border-border/40 shadow-sm">
                         <div className="text-center border-r pr-4">
                             <p className="text-[9px] font-black uppercase text-muted-foreground">Kuota Terpakai</p>
-                            <p className={cn("text-lg font-black", quotaInfo.isFull ? "text-destructive" : "text-primary")}>
+                            <p className={cn("text-lg font-black", quotaInfo.managementLimitReached ? "text-destructive" : "text-primary")}>
                                 {quotaInfo.currentUsage} / {quotaInfo.limit === -1 ? '∞' : quotaInfo.limit}
                             </p>
                         </div>
@@ -322,7 +327,7 @@ export default function CompanyAdminManagementPage() {
                                     Ubah Profil
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleSendInvitation(admin.email, admin.name)}>
-                                    <Send className="mr-2 size-3.5" /> Kirim Reset Sandi
+                                    <Send className="mr-2 size-3.5" /> Kirim Pembaruan Sandi / Aktivasi
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(admin)}>
@@ -352,7 +357,7 @@ export default function CompanyAdminManagementPage() {
         employee={selectedAdmin}
         onAdd={handleAddAction}
         onSave={() => {}} 
-        quotaInfo={null}
+        quotaInfo={quotaInfo as any}
       />
 
       <DeleteConfirmationDialog

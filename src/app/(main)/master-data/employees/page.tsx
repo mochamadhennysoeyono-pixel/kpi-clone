@@ -142,8 +142,6 @@ function ModuleAccessDialog({
                 <div className="py-6 space-y-4">
                     {activeModules.length > 0 ? activeModules.map(mod => {
                         const usage = getUsage(mod.id);
-                        const isCurrentlyAccessed = employee?.moduleAccess?.[mod.id];
-                        const isNewlyEnabled = localAccess[mod.id];
                         
                         return (
                             <div key={mod.id} className="flex items-center justify-between p-4 rounded-xl border bg-muted/20">
@@ -429,7 +427,7 @@ export default function EmployeesPage() {
         
         toast({
             title: "Proses Selesai",
-            description: `${successCount} email pembaruan sandi terkirim. ${errorCount} gagal.`,
+            description: `${successCount} email pembaruan sandi / aktivasi terkirim. ${errorCount} gagal.`,
         });
     } finally {
         setIsLoading(false);
@@ -521,7 +519,7 @@ export default function EmployeesPage() {
     try {
         const result = await sendPasswordReset(email, name);
         if (result.success) {
-          toast({ title: 'Undangan Terkirim', description: `Email pembaruan kata sandi telah dikirim ke ${email}.` });
+          toast({ title: 'Undangan Terkirim', description: `Email pembaruan sandi / aktivasi telah dikirim ke ${email}.` });
           await fetchData();
         } else {
           toast({ variant: 'destructive', title: 'Gagal Mengirim Undangan', description: result.error });
@@ -725,7 +723,7 @@ export default function EmployeesPage() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handleBulkSendInvitation}>
                             <Send className="mr-2 h-4 w-4" />
-                            Kirim Pembaruan Sandi
+                            Kirim Pembaruan Sandi / Aktivasi
                         </DropdownMenuItem>
                          <DropdownMenuItem onClick={() => handleBulkStatusChange("Aktif")}>Ubah Status ke Aktif</DropdownMenuItem>
                          <DropdownMenuItem onClick={() => handleBulkStatusChange("Tidak Aktif")}>Ubah Status ke Tidak Aktif</DropdownMenuItem>
@@ -900,7 +898,7 @@ export default function EmployeesPage() {
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={async () => await handleSendInvitation(employee.email, employee.name)}>
                                 <Send className="mr-2 h-4 w-4" />
-                                Kirim Reset Sandi
+                                Kirim Pembaruan Sandi / Aktivasi
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(employee)} disabled={employee.id === currentUser?.id}>

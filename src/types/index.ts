@@ -1056,3 +1056,15 @@ export const CustomSituationalAwarenessOutputSchema = z.object({
   comment: z.string().describe('Komentar singkat, proaktif, dan ramah yang dihasilkan AI dalam format Markdown sederhana.'),
 });
 export type SituationalAwarenessOutput = z.infer<typeof CustomSituationalAwarenessOutputSchema>;
+
+export type Memo = {
+  id: string;
+  senderId: string;
+  senderName: string;
+  recipientId: string;
+  recipientName: string;
+  subject: string;
+  message: string;
+  isRead: boolean;
+  timestamp: any;
+};
