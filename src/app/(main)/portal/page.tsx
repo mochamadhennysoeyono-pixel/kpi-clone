@@ -11,9 +11,8 @@ import {
     LayoutGrid, 
     ArrowRight, 
     Building, 
-    User, 
+    User as LucideUser, 
     Mail, 
-    Phone, 
     ShieldCheck,
     GraduationCap,
     ClipboardCheck,
@@ -27,15 +26,16 @@ import {
     Database,
     Loader2,
     Crown,
-    Shield
+    Shield,
+    Plus,
+    Minus
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, addDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import type { ModuleId, ModuleSubscription, SubscriptionLog, Company } from '@/types';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import type { ModuleId, ModuleSubscription, Company } from '@/types';
 import { ModuleSubscriptionDialog } from '@/components/portal/module-subscription-dialog';
 import { GroupManagementDialog } from '@/components/holding/group-management-dialog';
 import { 
@@ -214,7 +214,7 @@ function AdminDataCard({ label, description, icon: Icon, href, color, onClick }:
 const MGMT_PRICE_PER_USER = 25000;
 
 export default function PortalPage() {
-    const { currentUser, userRole, logout } = useAuth();
+    const { currentUser, userRole, logout, setIsLoading } = useAuth();
     const { companies, subscriptionLogs, updateCompany, addSubscriptionLog, fetchData, companyAdmins } = useMasterData();
     const { toast } = useToast();
 
@@ -257,17 +257,6 @@ export default function PortalPage() {
         }
     }, [company, userRole, isManagement, currentUser?.moduleAccess]);
 
-    const logs = useMemo(() => {
-        if (!company) return [];
-        return subscriptionLogs
-            .filter(l => l.companyId === company.id)
-            .sort((a, b) => {
-                const dateA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(0);
-                const dateB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(0);
-                return dateB.getTime() - dateA.getTime();
-            });
-    }, [subscriptionLogs, company]);
-
     const handleUpgradeToHolding = async () => {
         if (!company) return;
         setIsUpgrading(true);
@@ -289,7 +278,7 @@ export default function PortalPage() {
             const now = new Date();
             const expiry = addDays(now, data.duration);
             
-            const newSubscription: ModuleSubscription = {
+            const newSubscription: any = {
                 status: 'active',
                 type: data.type,
                 quota: data.quota,
@@ -345,7 +334,7 @@ export default function PortalPage() {
         try {
             const currentLimit = company.customManagementUserLimit || 1;
             const newLimit = currentLimit + mgmtAddQuota;
-            const totalPrice = mgmtAddQuota * MGMT_PRICE_PER_USER * 12; // Forced yearly for addon simplify
+            const totalPrice = mgmtAddQuota * MGMT_PRICE_PER_USER * 12;
 
             await updateCompany(company.id, { customManagementUserLimit: newLimit });
 
@@ -376,7 +365,6 @@ export default function PortalPage() {
 
     return (
         <div className="max-w-7xl mx-auto space-y-10 animate-fade-in pb-20">
-            {/* --- TOP SECTION --- */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 <div className="lg:col-span-4 space-y-6">
                     <Card className="shadow-2xl border-none overflow-hidden bg-slate-900 text-white relative">
@@ -442,7 +430,6 @@ export default function PortalPage() {
                         </div>
                     )}
 
-                    {/* --- ADD-ONS SECTION --- */}
                     {isManagement && (
                         <div className="space-y-4">
                              <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2"><Plus size={14} /> Layanan Tambahan (Add-ons)</h3>
@@ -485,7 +472,6 @@ export default function PortalPage() {
 
             {company && <GroupManagementDialog isOpen={isGroupDialogOpen} onOpenChange={setIsGroupDialogOpen} holdingCompany={company} childCompanies={childCompanies} />}
 
-            {/* --- ADMIN MANAGEMENT POPUP --- */}
             <Dialog open={isMgmtDialogOpen} onOpenChange={setIsMgmtDialogOpen}>
                 <DialogContent className="max-w-5xl h-[85vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl bg-white">
                     <DialogHeader className="p-6 pb-2 shrink-0 bg-background border-b sticky top-0 z-10">
@@ -500,7 +486,6 @@ export default function PortalPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* --- MGMT QUOTA ADD-ON DIALOG --- */}
             <Dialog open={isMgmtConfigOpen} onOpenChange={setIsMgmtConfigOpen}>
                 <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden">
                     <DialogHeader className="p-6 pb-2 bg-indigo-50 border-b">
