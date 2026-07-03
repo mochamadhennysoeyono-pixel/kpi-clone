@@ -28,7 +28,8 @@ import {
     Crown,
     Shield,
     Plus,
-    Minus
+    Minus,
+    Info
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, addDays } from 'date-fns';
@@ -51,6 +52,7 @@ import { useToast } from '@/hooks/use-toast';
 import { serverTimestamp } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
 import CompanyAdminManagementPage from '@/app/(main)/company-admin-management/page';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // --- Static Data for Modules ---
 const MODULE_CATALOG = [
@@ -508,7 +510,12 @@ export default function PortalPage() {
                              <div className="flex justify-between items-center opacity-70"><span className="text-[10px] font-black uppercase tracking-widest">Total Biaya (1 Thn)</span><ShoppingCart size={14} /></div>
                              <p className="text-2xl font-black tracking-tighter">Rp {(mgmtAddQuota * MGMT_PRICE_PER_USER * 12).toLocaleString('id-ID')}</p>
                         </div>
-                        <Alert className="bg-blue-50 border-blue-100"><Info className="size-4 text-blue-600"/><AlertDescription className="text-[10px] text-blue-700 font-medium">Add-on ini berlaku selama 1 tahun dan otomatis menambah slot di semua modul operasional Anda.</AlertDescription></Alert>
+                        <Alert className="bg-blue-50 border-blue-100">
+                            <Info className="size-4 text-blue-600"/>
+                            <AlertDescription className="text-[10px] text-blue-700 font-medium">
+                                Add-on ini berlaku selama 1 tahun dan otomatis menambah slot di semua modul operasional Anda.
+                            </AlertDescription>
+                        </Alert>
                     </div>
                     <DialogFooter className="p-6 pt-0 flex gap-2">
                         <DialogClose asChild><Button variant="ghost" className="flex-1 font-bold text-xs">Batal</Button></DialogClose>
