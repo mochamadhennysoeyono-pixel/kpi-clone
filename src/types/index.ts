@@ -53,7 +53,8 @@ export type ModuleId = 'appraisal' | 'lms' | 'collabspace' | 'foundation' | 'hol
 export type ModuleSubscription = {
     status: 'active' | 'inactive' | 'expired';
     type: 'trial' | 'paid' | 'custom';
-    quota: number; // User limit specifically for this module
+    quota: number; // Staff limit
+    mgmtQuota?: number; // Management limit
     expiryDate: string; // ISO Date
     activatedAt?: string;
     addons?: string[];
@@ -1068,3 +1069,4 @@ export type Memo = {
   isRead: boolean;
   timestamp: any;
 };
+

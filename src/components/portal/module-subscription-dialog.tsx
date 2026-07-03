@@ -22,7 +22,9 @@ import {
     Users,
     Timer,
     ShoppingCart,
-    ArrowRight
+    ArrowRight,
+    ShieldCheck,
+    Shield
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import type { ModuleId, Company } from '@/types';
@@ -35,11 +37,12 @@ interface ModuleSubscriptionDialogProps {
   onOpenChange: (open: boolean) => void;
   module: { id: ModuleId; name: string; icon: any; color: string; bg: string } | null;
   company: Company | null;
-  onConfirm: (data: { type: 'trial' | 'paid', quota: number, duration: number, totalPrice: number }) => Promise<void>;
+  onConfirm: (data: { type: 'trial' | 'paid', quota: number, mgmtQuota: number, duration: number, totalPrice: number }) => Promise<void>;
 }
 
-// Pricing configuration (Price per user per month)
-const BASE_PRICE = 12500; 
+// Pricing configuration
+const STAFF_PRICE = 12500; 
+const MGMT_PRICE = 25000; // Management accounts are more expensive
 
 export function ModuleSubscriptionDialog({ 
     isOpen, 
@@ -48,44 +51,44 @@ export function ModuleSubscriptionDialog({
     company, 
     onConfirm 
 }: ModuleSubscriptionDialogProps) {
-    const [quota, setQuota] = useState(10);
+    const [staffQuota, setStaffQuota] = useState(10);
+    const [mgmtQuota, setMgmtQuota] = useState(1);
     const [durationMonths, setDurationMonths] = useState<1 | 6 | 12>(12);
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
-            setQuota(10);
+            setStaffQuota(10);
+            setMgmtQuota(1);
             setDurationMonths(12);
         }
     }, [isOpen, module?.id]);
 
     const isTrialAvailable = useMemo(() => {
         if (!company || !module) return false;
-        
-        // 1. Check if trial already used for this specific module
         const hasUsedTrial = company.usedTrials?.includes(module.id);
         if (hasUsedTrial) return false;
-
-        // 2. Check if currently has an active subscription (trial or paid)
         const currentSub = company.moduleSubscriptions?.[module.id];
         if (currentSub && currentSub.status === 'active') return false;
-
         return true;
     }, [company, module]);
 
     const pricing = useMemo(() => {
-        const monthlyBase = quota * BASE_PRICE;
-        const rawMonthlyTotal = monthlyBase;
+        const staffBase = staffQuota * STAFF_PRICE;
+        const mgmtBase = mgmtQuota * MGMT_PRICE;
+        const monthlyBase = staffBase + mgmtBase;
         
         let discountPercent = 0;
-        if (durationMonths === 6) discountPercent = 0.03; // 3%
-        if (durationMonths === 12) discountPercent = 0.05; // 5%
+        if (durationMonths === 6) discountPercent = 0.03; 
+        if (durationMonths === 12) discountPercent = 0.05; 
 
         const monthlyDiscount = monthlyBase * discountPercent;
-        const finalMonthly = rawMonthlyTotal - monthlyDiscount;
+        const finalMonthly = monthlyBase - monthlyDiscount;
         const totalBill = finalMonthly * durationMonths;
 
         return {
+            staffBase,
+            mgmtBase,
             monthlyBase,
             monthlyDiscount,
             finalMonthly,
@@ -93,14 +96,15 @@ export function ModuleSubscriptionDialog({
             discountPercent: discountPercent * 100,
             savingTotal: (monthlyBase * discountPercent) * durationMonths
         };
-    }, [quota, durationMonths]);
+    }, [staffQuota, mgmtQuota, durationMonths]);
 
     const handleAction = async (type: 'trial' | 'paid') => {
         setIsLoading(true);
         try {
             await onConfirm({
                 type,
-                quota: type === 'trial' ? 10 : quota,
+                quota: type === 'trial' ? 10 : staffQuota,
+                mgmtQuota: type === 'trial' ? 1 : mgmtQuota,
                 duration: type === 'trial' ? 14 : (durationMonths * 30),
                 totalPrice: type === 'trial' ? 0 : pricing.totalBill
             });
@@ -121,55 +125,49 @@ export function ModuleSubscriptionDialog({
                             {React.createElement(module.icon, { size: 14 })}
                         </div>
                         <DialogTitle className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                            {module.name}
+                            Konfigurasi Paket: {module.name}
                         </DialogTitle>
                     </div>
-                    <DialogDescription className="sr-only">
-                        Konfigurasi paket langganan untuk {module.name}.
-                    </DialogDescription>
                 </DialogHeader>
 
                 <ScrollArea className="flex-1 bg-background">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
                         
-                        {/* LEFT COLUMN: CONFIGURATION */}
-                        <div className="p-6 md:p-8 space-y-10 bg-slate-50/50">
-                            {/* Quantity Section */}
+                        <div className="p-6 md:p-8 space-y-8 bg-slate-50/50">
+                            {/* Staff Quota */}
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-1">
-                                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">Jumlah Karyawan</h3>
-                                        <p className="text-[10px] text-muted-foreground font-medium uppercase">Kapasitas akses modul</p>
+                                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">Akun Staff</h3>
+                                        <p className="text-[10px] text-muted-foreground font-medium uppercase">Akses User Operasional</p>
                                     </div>
-                                    <div className="flex items-center bg-white rounded-xl border border-slate-200 overflow-hidden h-12 shadow-sm">
-                                        <button 
-                                            type="button"
-                                            onClick={() => setQuota(Math.max(1, quota - 1))}
-                                            className="px-4 hover:bg-blue-50 transition-colors text-[#2563eb] bg-blue-50/30"
-                                        >
-                                            <Minus size={18} strokeWidth={3} />
-                                        </button>
-                                        <input 
-                                            type="number"
-                                            value={quota}
-                                            onChange={(e) => setQuota(Math.max(1, parseInt(e.target.value) || 1))}
-                                            className="w-16 text-center border-none focus-visible:ring-0 text-lg font-black bg-transparent"
-                                        />
-                                        <button 
-                                            type="button"
-                                            onClick={() => setQuota(quota + 1)}
-                                            className="px-4 hover:bg-blue-50 transition-colors text-[#2563eb] bg-blue-50/30"
-                                        >
-                                            <Plus size={18} strokeWidth={3} />
-                                        </button>
+                                    <div className="flex items-center bg-white rounded-xl border border-slate-200 overflow-hidden h-10 shadow-sm">
+                                        <button onClick={() => setStaffQuota(Math.max(1, staffQuota - 5))} className="px-3 hover:bg-blue-50 text-[#2563eb]"><Minus size={16} strokeWidth={3} /></button>
+                                        <input type="number" value={staffQuota} onChange={(e) => setStaffQuota(Math.max(0, parseInt(e.target.value) || 0))} className="w-12 text-center border-none focus-visible:ring-0 text-sm font-black bg-transparent" />
+                                        <button onClick={() => setStaffQuota(staffQuota + 5)} className="px-3 hover:bg-blue-50 text-[#2563eb]"><Plus size={16} strokeWidth={3} /></button>
                                     </div>
                                 </div>
-                                <p className="text-[10px] text-center font-bold text-muted-foreground uppercase tracking-widest bg-white py-2 rounded-lg border border-dashed border-slate-200">
-                                    Akses untuk <span className="text-[#2563eb] font-black">{quota} Personil</span> aktif
-                                </p>
                             </div>
 
-                            {/* Duration Section */}
+                            {/* Management Quota */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-1">
+                                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">Akun Manajemen</h3>
+                                        <p className="text-[10px] text-muted-foreground font-medium uppercase">Akses Admin & Dashboard</p>
+                                    </div>
+                                    <div className="flex items-center bg-white rounded-xl border border-slate-200 overflow-hidden h-10 shadow-sm">
+                                        <button onClick={() => setMgmtQuota(Math.max(1, mgmtQuota - 1))} className="px-3 hover:bg-blue-50 text-[#2563eb]"><Minus size={16} strokeWidth={3} /></button>
+                                        <input type="number" value={mgmtQuota} onChange={(e) => setMgmtQuota(Math.max(1, parseInt(e.target.value) || 1))} className="w-12 text-center border-none focus-visible:ring-0 text-sm font-black bg-transparent" />
+                                        <button onClick={() => setMgmtQuota(mgmtQuota + 1)} className="px-3 hover:bg-blue-50 text-[#2563eb]"><Plus size={16} strokeWidth={3} /></button>
+                                    </div>
+                                </div>
+                                <p className="text-[9px] text-muted-foreground italic">* Default 1 Akun Manajemen disertakan per perusahaan.</p>
+                            </div>
+
+                            <Separator />
+
+                            {/* Duration */}
                             <div className="space-y-4">
                                 <h3 className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Durasi Berlangganan</h3>
                                 <div className="grid grid-cols-3 gap-3">
@@ -183,53 +181,38 @@ export function ModuleSubscriptionDialog({
                                             type="button"
                                             onClick={() => setDurationMonths(opt.val as any)}
                                             className={cn(
-                                                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all bg-white",
+                                                "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all bg-white",
                                                 durationMonths === opt.val 
-                                                    ? "border-[#2563eb] bg-blue-50/30 ring-4 ring-blue-500/10" 
+                                                    ? "border-[#2563eb] bg-blue-50/30 ring-2 ring-blue-500/10" 
                                                     : "border-slate-100 hover:border-slate-200"
                                             )}
                                         >
-                                            <span className="text-sm font-black text-slate-800">{opt.label}</span>
-                                            <span className={cn("text-[9px] font-black uppercase mt-1", opt.color || "text-slate-400")}>
+                                            <span className="text-xs font-black text-slate-800">{opt.label}</span>
+                                            <span className={cn("text-[8px] font-black uppercase mt-1", opt.color || "text-slate-400")}>
                                                 {opt.sub}
                                             </span>
                                         </button>
                                     ))}
                                 </div>
-                                {pricing.savingTotal > 0 && (
-                                    <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                                        <div className="p-1 bg-[#2563eb] rounded-full text-white"><Check size={10} strokeWidth={4} /></div>
-                                        <p className="text-[11px] font-bold text-[#2563eb]">
-                                            Hemat Rp {pricing.savingTotal.toLocaleString('id-ID')} dengan paket {durationMonths} bulan
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="p-4 bg-white border border-slate-100 rounded-2xl space-y-3">
-                                <div className="flex items-center gap-2 text-[#2563eb]">
-                                    <Info size={14} />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Bantuan</span>
-                                </div>
-                                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                    Pilih jumlah karyawan dan durasi yang sesuai untuk mendapatkan penawaran terbaik dari sistem PERFOM.
-                                </p>
                             </div>
                         </div>
 
-                        {/* RIGHT COLUMN: SUMMARY */}
-                        <div className="p-6 md:p-8 space-y-8 flex flex-col bg-white border-l">
+                        <div className="p-6 md:p-8 space-y-6 flex flex-col bg-white border-l">
                             <h3 className="text-xs font-black uppercase tracking-widest text-slate-800">Ringkasan Tagihan</h3>
 
-                            <div className="space-y-5 text-sm">
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-muted-foreground font-bold text-xs uppercase tracking-tight">Harga Dasar ({quota} Karyawan)</span>
-                                        <span className="font-bold text-slate-700">Rp {pricing.monthlyBase.toLocaleString('id-ID')}</span>
+                            <div className="space-y-4 text-sm">
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center text-xs">
+                                        <span className="text-muted-foreground font-medium uppercase tracking-tight">Staff ({staffQuota} User)</span>
+                                        <span className="font-bold text-slate-700">Rp {pricing.staffBase.toLocaleString('id-ID')}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-xs">
+                                        <span className="text-muted-foreground font-medium uppercase tracking-tight">Manajemen ({mgmtQuota} Admin)</span>
+                                        <span className="font-bold text-slate-700">Rp {pricing.mgmtBase.toLocaleString('id-ID')}</span>
                                     </div>
                                     {pricing.monthlyDiscount > 0 && (
-                                        <div className="flex justify-between items-center text-[#2563eb]">
-                                            <span className="font-bold text-xs italic uppercase tracking-tight">Diskon Durasi {pricing.discountPercent}%</span>
+                                        <div className="flex justify-between items-center text-[#2563eb] text-xs">
+                                            <span className="font-bold italic uppercase tracking-tight">Diskon Durasi {pricing.discountPercent}%</span>
                                             <span className="font-bold">-Rp {pricing.monthlyDiscount.toLocaleString('id-ID')}</span>
                                         </div>
                                     )}
@@ -252,32 +235,28 @@ export function ModuleSubscriptionDialog({
                                             Rp {pricing.totalBill.toLocaleString('id-ID')}
                                         </span>
                                     </div>
-                                    <p className="text-[9px] font-bold text-white/50 italic text-right">* Nilai ini belum termasuk PPN</p>
                                 </div>
                             </div>
 
                             <div className="flex flex-col gap-3 pt-6 mt-auto">
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    {isTrialAvailable && (
-                                        <Button 
-                                            variant="outline" 
-                                            className="flex-1 font-black text-[10px] uppercase tracking-widest h-12 border-blue-200 bg-blue-50/30 hover:bg-blue-100 text-[#2563eb] rounded-xl"
-                                            onClick={() => handleAction('trial')}
-                                        >
-                                            Coba Gratis 14 Hari
-                                        </Button>
-                                    )}
+                                <div className="flex flex-col gap-3">
                                     <Button 
                                         onClick={() => handleAction('paid')}
                                         disabled={isLoading}
-                                        className="flex-1 font-black text-[10px] uppercase tracking-widest h-12 bg-[#2563eb] hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20"
+                                        className="w-full font-black text-[10px] uppercase tracking-widest h-12 bg-[#2563eb] hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20"
                                     >
                                         {isLoading ? <Loader2 className="animate-spin size-4" /> : <><Zap size={14} className="mr-2" /> Bayar Sekarang</>}
                                     </Button>
-                                </div>
-                                <div className="flex items-center justify-center gap-1.5 opacity-60">
-                                    <ArrowRight size={10} />
-                                    <p className="text-[9px] font-black uppercase tracking-[0.2em]">Sistem Aktif Seketika</p>
+                                    
+                                    {isTrialAvailable && (
+                                        <Button 
+                                            variant="ghost" 
+                                            className="w-full font-black text-[10px] uppercase tracking-widest h-10 text-muted-foreground hover:text-primary"
+                                            onClick={() => handleAction('trial')}
+                                        >
+                                            Coba Gratis 14 Hari (Kuota Terbatas)
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         </div>

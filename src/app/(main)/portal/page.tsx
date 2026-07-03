@@ -103,7 +103,10 @@ function ModuleCard({
                     <config.icon size={24} />
                 </div>
                 {(isActive && isManagement) && (
-                    <Badge className="absolute top-6 right-6 bg-green-500 hover:bg-green-600 font-bold border-none text-[10px] uppercase">
+                    <Badge className={cn(
+                        "absolute top-6 right-6 font-bold border-none text-[10px] uppercase",
+                        isTrial ? "bg-slate-200 text-slate-600" : "bg-primary text-white"
+                    )}>
                         {isTrial ? 'Trial' : 'Aktif'}
                     </Badge>
                 )}
@@ -124,8 +127,11 @@ function ModuleCard({
                                 </Badge>
                             </div>
                             <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground uppercase tracking-tight">Kuota User</span>
-                                <span className="font-bold">{subscription.quota === -1 ? 'Unlimited' : subscription.quota} User</span>
+                                <span className="text-muted-foreground uppercase tracking-tight">Kapasitas</span>
+                                <div className="flex flex-col items-end gap-1">
+                                    <span className="font-bold text-slate-700">{subscription.quota === -1 ? 'Unlimited' : subscription.quota} Staff</span>
+                                    {subscription.mgmtQuota && <span className="font-bold text-primary">{subscription.mgmtQuota} Admin</span>}
+                                </div>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground uppercase tracking-tight">Masa Berlaku</span>
@@ -231,13 +237,11 @@ export default function PortalPage() {
     // --- Filter Modules based on Role and Access ---
     const { activeModules, availableModules } = useMemo(() => {
         if (userRole === 'superadmin' || isManagement) {
-            // Management sees everything (Active vs Inactive)
             return {
                 activeModules: MODULE_CATALOG.filter(m => company?.moduleSubscriptions?.[m.id]?.status === 'active'),
                 availableModules: MODULE_CATALOG.filter(m => company?.moduleSubscriptions?.[m.id]?.status !== 'active')
             };
         } else {
-            // Regular user only sees modules they have explicit access to
             const userAccess = currentUser?.moduleAccess || {};
             const accessible = MODULE_CATALOG.filter(m => 
                 userAccess[m.id] === true && 
@@ -245,7 +249,7 @@ export default function PortalPage() {
             );
             return {
                 activeModules: accessible,
-                availableModules: [] // Hide "Available" section for regular users
+                availableModules: [] 
             };
         }
     }, [company, userRole, isManagement, currentUser?.moduleAccess]);
@@ -275,7 +279,7 @@ export default function PortalPage() {
         }
     };
 
-    const handleActivateModule = async (data: { type: 'trial' | 'paid', quota: number, duration: number, totalPrice: number }) => {
+    const handleActivateModule = async (data: { type: 'trial' | 'paid', quota: number, mgmtQuota: number, duration: number, totalPrice: number }) => {
         if (!company || !selectedModule) return;
 
         try {
@@ -286,6 +290,7 @@ export default function PortalPage() {
                 status: 'active',
                 type: data.type,
                 quota: data.quota,
+                mgmtQuota: data.mgmtQuota,
                 expiryDate: expiry.toISOString(),
                 activatedAt: now.toISOString()
             };
@@ -300,10 +305,18 @@ export default function PortalPage() {
                 updatedUsedTrials.push(selectedModule.id);
             }
 
-            await updateCompany(company.id, {
+            // Also update global limits if paid
+            const updatePayload: Partial<Company> = {
                 moduleSubscriptions: updatedModuleSubscriptions,
                 usedTrials: updatedUsedTrials
-            });
+            };
+
+            if (data.type === 'paid') {
+                updatePayload.customUserLimit = data.quota;
+                updatePayload.customManagementUserLimit = data.mgmtQuota;
+            }
+
+            await updateCompany(company.id, updatePayload);
 
             // Log activity
             await addSubscriptionLog({
@@ -324,8 +337,6 @@ export default function PortalPage() {
             await fetchData(true);
         } catch (error: any) {
             toast({ variant: 'destructive', title: "Gagal", description: error.message });
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -474,6 +485,7 @@ export default function PortalPage() {
                                     <ModuleCard 
                                         key={m.id} 
                                         config={m} 
+                                        subscription={company?.moduleSubscriptions?.[m.id]} 
                                         isManagement={isManagement} 
                                         onActivateRequest={(mod) => { setSelectedModule(mod); setIsSubDialogOpen(true); }}
                                     />
