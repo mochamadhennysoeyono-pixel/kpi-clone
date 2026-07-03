@@ -30,7 +30,7 @@ export type Employee = {
   role: 'user' | 'manajemen' | 'superadmin'; 
   loginStatus: LoginStatus;
   fcmTokens?: string[]; 
-  moduleAccess?: Record<string, boolean>; // New field for Assignment Slot
+  moduleAccess?: Record<string, boolean>;
 };
 
 // Akun Admin Perusahaan (Manajemen)
@@ -60,6 +60,24 @@ export type ModuleSubscription = {
     addons?: string[];
 };
 
+// --- NEW: Pricing Configuration Types ---
+export type ModulePricing = {
+    id: ModuleId;
+    name: string;
+    pricePerUser: number;
+    discount6Months: number; // e.g., 3 for 3%
+    discount12Months: number; // e.g., 5 for 5%
+    updatedAt?: any;
+};
+
+export type AddonPricing = {
+    id: string; // e.g., 'mgmt_account'
+    name: string;
+    pricePerUnit: number;
+    type: 'lifetime' | 'periodic';
+    updatedAt?: any;
+};
+
 // --- Subscription History Logs ---
 export type SubscriptionLogAction = 'TRIAL' | 'UPGRADE' | 'RENEW' | 'EXPIRED' | 'MANUAL_CHANGE';
 
@@ -68,8 +86,8 @@ export type SubscriptionLog = {
   companyId: string;
   companyName: string;
   company: string; 
-  moduleId?: ModuleId; // Log specific module actions
-  planId?: string; // Legacy support
+  moduleId?: ModuleId;
+  planId?: string;
   planName: string;
   action: SubscriptionLogAction;
   amount: number;
@@ -501,7 +519,7 @@ export type Company = {
   customCompanyLimit?: number;
   // --- New Modular Subscriptions ---
   moduleSubscriptions?: Record<ModuleId, ModuleSubscription>;
-  usedTrials?: ModuleId[]; // Track modules already trialed
+  usedTrials?: ModuleId[]; 
   features?: {
     hasAiKpiWizard?: boolean;
     hasPageAssistant?: boolean;
@@ -518,11 +536,6 @@ export type Department = {
 };
 
 export type UserOption = {
-    id: string;
-    name: string;
-};
-
-export type UserOptionValue = {
     id: string;
     name: string;
 };
@@ -604,22 +617,18 @@ export type AppraisalSetup = {
   periodEnd?: string; 
   cycle: 'Bulanan' | 'Triwulan' | 'Semesteran' | 'Tahunan';
   status: 'Aktif' | 'Tidak Aktif';
-  
   activeLevels: (keyof Employee['level'])[];
-
   componentsByLevel: {
     Direktur: AppraisalComponents;
     Manager: AppraisalComponents;
     Supervisor: AppraisalComponents;
     Staff: AppraisalComponents;
   };
-
   customRaterMappings?: {
     [kboSetupId: string]: {
       [subjectId: string]: AppraisalRaterMapping;
     }
   };
-
   individualWeightOverrides?: {
     [employeeId: string]: IndividualWeightOverride;
   };
@@ -1069,4 +1078,3 @@ export type Memo = {
   isRead: boolean;
   timestamp: any;
 };
-

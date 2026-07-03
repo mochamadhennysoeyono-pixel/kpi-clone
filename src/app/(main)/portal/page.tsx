@@ -1,3 +1,4 @@
+
 // src/app/(main)/portal/page.tsx
 "use client";
 
@@ -53,7 +54,7 @@ import { serverTimestamp } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
 import CompanyAdminManagementPage from '@/app/(main)/company-admin-management/page';
 
-// --- Static Data for Modules ---
+// --- Static Meta for Modules ---
 const MODULE_CATALOG = [
     {
         id: 'appraisal' as ModuleId,
@@ -212,11 +213,9 @@ function AdminDataCard({ label, description, icon: Icon, href, color, onClick }:
     );
 }
 
-const MGMT_PRICE_PER_USER = 75000; // Harga investasi lifetime
-
 export default function PortalPage() {
     const { currentUser, userRole, logout, setIsLoading } = useAuth();
-    const { companies, subscriptionLogs, updateCompany, addSubscriptionLog, fetchData, companyAdmins } = useMasterData();
+    const { companies, updateCompany, addSubscriptionLog, fetchData, companyAdmins, addonPricing } = useMasterData();
     const { toast } = useToast();
 
     const [isSubDialogOpen, setIsSubDialogOpen] = useState(false);
@@ -235,7 +234,10 @@ export default function PortalPage() {
         return companies.filter(c => c.parentId === company.id);
     }, [company, companies]);
 
-    // Management Quota Logic: Force 1 if undefined, strictly consistent with CompanyAdminManagementPage
+    // Live Add-on Pricing from DB
+    const mgmtAddonPricing = useMemo(() => addonPricing.find(p => p.id === 'mgmt_account'), [addonPricing]);
+    const mgmtPricePerUser = mgmtAddonPricing?.pricePerUnit || 75000;
+
     const mgmtLimit = useMemo(() => company?.customManagementUserLimit || 1, [company]);
     const currentMgmtCount = useMemo(() => company ? companyAdmins.filter(a => a.company === company.name).length : 0, [companyAdmins, company]);
 
@@ -335,7 +337,7 @@ export default function PortalPage() {
         try {
             const currentLimit = company.customManagementUserLimit || 1;
             const newLimit = currentLimit + mgmtAddQuota;
-            const totalPrice = mgmtAddQuota * MGMT_PRICE_PER_USER;
+            const totalPrice = mgmtAddQuota * mgmtPricePerUser;
 
             await updateCompany(company.id, { customManagementUserLimit: newLimit });
 
@@ -507,7 +509,7 @@ export default function PortalPage() {
                         </div>
                         <div className="p-5 rounded-2xl bg-slate-900 text-white shadow-xl shadow-indigo-500/10 space-y-2">
                              <div className="flex justify-between items-center opacity-70"><span className="text-[10px] font-black uppercase tracking-widest">Total Investasi (Sekali Bayar)</span><ShoppingCart size={14} /></div>
-                             <p className="text-2xl font-black tracking-tighter">Rp {(mgmtAddQuota * MGMT_PRICE_PER_USER).toLocaleString('id-ID')}</p>
+                             <p className="text-2xl font-black tracking-tighter">Rp {(mgmtAddQuota * mgmtPricePerUser).toLocaleString('id-ID')}</p>
                         </div>
                         <Alert className="bg-blue-50 border-blue-100">
                             <Info className="size-4 text-blue-600"/>
