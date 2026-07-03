@@ -33,13 +33,15 @@ const DATABASE_ID = "performance";
 let db: any;
 
 try {
-  // Coba inisialisasi dengan pengaturan khusus
+  /**
+   * PENTING: experimentalForceLongPolling dipasang guna mengatasi masalah "Backend didn't respond within 10 seconds".
+   * useFetchStreams: false membantu stabilitas di lingkungan Cloud Workstations (seperti Firebase Studio).
+   */
   db = initializeFirestore(app, {
     experimentalForceLongPolling: true,
-    experimentalAutoDetectLongPolling: true,
-    useFetchStreams: false, // Membantu stabilitas di lingkungan proxy/restricted network
+    useFetchStreams: false, 
   }, DATABASE_ID);
-  console.log(`[Firestore] Initialized ${DATABASE_ID} with Long Polling.`);
+  console.log(`[Firestore] Initialized ${DATABASE_ID} with forced Long Polling for stability.`);
 } catch (e: any) {
   // Jika error (misal karena sudah diinisialisasi), ambil instance yang sudah ada
   db = getFirestore(app, DATABASE_ID);
