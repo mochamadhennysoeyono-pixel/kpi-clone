@@ -1,4 +1,3 @@
-
 // src/components/ui/sidebar.tsx
 "use client";
 
@@ -304,9 +303,11 @@ export function SidebarTrigger() {
   const { isOpen, setIsOpen } = useSidebar();
   const isMobile = useIsMobile();
 
+  // On mobile, we don't show the sidebar trigger anymore because the header shows the logo
+  if (isMobile) return null;
+
   // On desktop, we hide the trigger if the sidebar is already open
-  // since the sidebar has its own internal close (X) button.
-  if (isOpen && !isMobile) return null;
+  if (isOpen) return null;
 
   return (
     <Button

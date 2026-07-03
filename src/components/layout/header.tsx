@@ -1,4 +1,3 @@
-
 // src/components/layout/header.tsx
 'use client';
 
@@ -91,13 +90,14 @@ export default function Header() {
         "no-print"
     )}>
         <div className="flex items-center gap-3">
-          {isPortal ? (
+          {isPortal || isMobile ? (
             <div className="flex items-center gap-3">
                 <Image 
                     src="/logo.png" 
                     alt="Logo"
-                    width={120}
+                    width={isMobile ? 100 : 120}
                     height={32}
+                    priority
                 />
             </div>
           ) : (
