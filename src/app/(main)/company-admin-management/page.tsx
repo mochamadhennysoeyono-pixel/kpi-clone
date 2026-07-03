@@ -122,16 +122,17 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
     if (!company) return null;
 
     const plan = subscriptionPlans.find(p => p.id === company.subscriptionPlanId);
-    // SINKRONISASI: Pakai 1 sebagai default jika tidak ada custom limit atau plan limit
+    
+    // PERBAIKAN: Gunakan managementUserLimit, bukan userLimit (staff)
+    // Default tetap 1 jika tidak ada konfigurasi lain
     const limit = company.customManagementUserLimit ?? plan?.managementUserLimit ?? 1;
     const currentUsage = companyAdmins.filter(a => a.company === company.name).length;
 
     return {
         limit,
         currentUsage,
-        userLimitReached: false, 
         managementLimitReached: limit !== -1 && currentUsage >= limit,
-        message: limit !== -1 && currentUsage >= limit ? "Kuota Manajemen penuh. Silakan tambah kuota investasi." : "",
+        message: limit !== -1 && currentUsage >= limit ? "Kuota Manajemen penuh. Silakan investasi tambah kuota." : "",
         companyName: company.name,
         limits: { user: 0, mgmt: limit }
     };
@@ -143,10 +144,10 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
         return;
     }
     
-    // STRICT QUOTA CHECK: Jika penuh, panggil popup beli
+    // STRICT CHECK: Jika kuota penuh, panggil fungsi onQuotaFull untuk buka popup beli
     if (quotaInfo?.managementLimitReached) {
         if (onQuotaFull) {
-            onQuotaFull(); // Pemicu popup pembelian di PortalPage
+            onQuotaFull(); 
         } else {
             toast({ variant: "destructive", title: "Kuota Penuh", description: quotaInfo.message });
         }
@@ -155,7 +156,7 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
     
     setSelectedAdmin({
         role: 'manajemen',
-        company: isSuperadmin ? '' : (userCompany?.name || ''),
+        company: isSuperadmin ? '' : (manageableCompanies.find(c => c.id === selectedCompanyId)?.name || ''),
         status: 'Aktif'
     });
     setSheetOpen(true);
@@ -371,7 +372,7 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
         onOpenChange={setSheetOpen}
         employee={selectedAdmin}
         onAdd={handleAddAction}
-        onSave={(id, data) => handleAddAction({ ...data, id })} // Re-use add logic for simplicity in management context
+        onSave={(id, data) => handleAddAction({ ...data, id })} 
         quotaInfo={quotaInfo as any}
       />
 
