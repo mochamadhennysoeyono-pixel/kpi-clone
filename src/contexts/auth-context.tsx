@@ -126,9 +126,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             if (userProfile) {
-                // SINKRONISASI STATUS LOGIN KE "ACTIVE"
+                // SINKRONISASI STATUS LOGIN KE "Active" SAAT BERHASIL MASUK
                 if (userProfile.loginStatus !== 'Active') {
-                    console.log(`[Auth] First login detected for ${userProfile.name}, updating status to Active.`);
+                    console.log(`[Auth] User ${userProfile.name} logged in, changing status from ${userProfile.loginStatus} to Active.`);
                     const userRef = doc(db, collectionName, user.uid);
                     await updateDoc(userRef, { loginStatus: 'Active' });
                     userProfile.loginStatus = 'Active';
@@ -379,6 +379,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!result.success) {
             return { success: false, error: result.error };
         }
+
+        // SINKRONISASI STATUS 'Invited' DI FIRESTORE SETELAH EMAIL BERHASIL TERKIRIM
+        const collectionsToCheck = ['employees', 'companyAdmins', 'superadmins'];
+        let userFound = false;
+
+        for (const collName of collectionsToCheck) {
+            if (userFound) break;
+            const q = query(collection(db, collName), where("email", "==", cleanEmail));
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+                const userDoc = snap.docs[0];
+                const userRef = doc(db, collName, userDoc.id);
+                
+                // Update status di Firestore menjadi 'Invited'
+                await updateDoc(userRef, { loginStatus: 'Invited' });
+                userFound = true;
+                console.log(`[Auth] User status updated to 'Invited' in collection: ${collName}`);
+            }
+        }
+
         return { success: true };
     } catch(e: any) {
         console.error(`[AUTH_CONTEXT_ERROR]`, e.message);
