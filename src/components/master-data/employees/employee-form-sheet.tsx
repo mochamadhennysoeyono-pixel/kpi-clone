@@ -1,4 +1,3 @@
-
 // src/components/master-data/employees/employee-form-sheet.tsx
 "use client";
 
@@ -42,7 +41,7 @@ const employeeSchema = z.object({
   reportsTo: z.string().optional().nullable(),
   joinDate: z.string().optional(),
   status: z.enum(['Aktif', 'Tidak Aktif']),
-  role: z.enum(['user']).default('user'), // Default to user, fixed
+  role: z.enum(['user', 'manajemen']).default('user'),
 });
 
 type EmployeeFormValues = z.infer<typeof employeeSchema>;
@@ -50,7 +49,7 @@ type EmployeeFormValues = z.infer<typeof employeeSchema>;
 interface EmployeeFormSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  employee?: Employee;
+  employee?: Partial<Employee>;
   onSave: (id: string, data: Omit<Employee, 'id' | 'loginStatus' | 'password'>) => void;
   onAdd: (data: Omit<Employee, 'id' | 'loginStatus'>) => void;
   quotaInfo: { 
@@ -91,9 +90,12 @@ export function EmployeeFormSheet({
     },
   });
 
+  const watchedRole = form.watch('role');
   const companyForForm = form.watch('company');
   const departmentForForm = form.watch('department');
   const levelForForm = form.watch('level');
+
+  const isManagementForm = watchedRole === 'manajemen';
 
   const userCompany = useMemo(() => {
     return companies.find(c => c.name === currentUser?.company);
@@ -134,7 +136,7 @@ export function EmployeeFormSheet({
   }, [positions, companyForForm, departmentForForm]);
 
   const supervisorOptions = useMemo(() => {
-    if (!companyForForm) return [];
+    if (!companyForForm || isManagementForm) return [];
     
     let superiorLevels: Array<Employee['level']> = [];
     if (levelForForm === 'Staff') {
@@ -160,7 +162,7 @@ export function EmployeeFormSheet({
             return isSameCompany && isSameDepartment && isSuperior && isActive && isNotSelf;
         }
     });
-  }, [employees, companyForForm, departmentForForm, levelForForm, employee]);
+  }, [employees, companyForForm, departmentForForm, levelForForm, employee, isManagementForm]);
   
   useEffect(() => {
     const defaultCompany = (userRole !== 'superadmin' && currentUser) ? currentUser?.company || '' : '';
@@ -170,8 +172,8 @@ export function EmployeeFormSheet({
         form.reset({
           ...employee,
           phone: employee.phone || '',
-          role: 'user', // Forced role
-        });
+          role: employee.role || 'user',
+        } as any);
       } else {
         form.reset({
           id: undefined,
@@ -185,7 +187,7 @@ export function EmployeeFormSheet({
           reportsTo: '',
           joinDate: new Date().toISOString().split('T')[0],
           status: 'Aktif',
-          role: 'user', // Forced role
+          role: 'user',
         });
       }
     }
@@ -207,7 +209,6 @@ export function EmployeeFormSheet({
   const onSubmit = (data: EmployeeFormValues) => {
     const dataToSave = { 
         ...data,
-        role: 'user' as const, // Hardcoded to user role for Master Data
         reportsTo: data.reportsTo || '',
     } as Omit<Employee, 'id' | 'loginStatus'> & { id?: string };
     
@@ -220,18 +221,25 @@ export function EmployeeFormSheet({
     onOpenChange(false);
   };
   
-  const isEditingExistingUser = !!employee;
   const isCompanyDropdownDisabled = !canChangeCompany;
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-lg w-full flex flex-col h-full">
+      <SheetContent className="sm:max-w-lg w-full flex flex-col h-full z-[250]">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
             <SheetHeader>
-              <SheetTitle>{employee ? 'Ubah Data Karyawan' : 'Tambah Karyawan Baru'}</SheetTitle>
+              <SheetTitle>
+                  {isManagementForm 
+                    ? (employee?.id ? 'Ubah Akun Manajemen' : 'Tambah Admin Baru')
+                    : (employee?.id ? 'Ubah Data Karyawan' : 'Tambah Karyawan Baru')
+                  }
+              </SheetTitle>
               <SheetDescription>
-                Lengkapi formulir di bawah ini. Akun yang dibuat melalui menu ini otomatis memiliki peran <strong>Staff (User)</strong>.
+                {isManagementForm 
+                    ? "Lengkapi formulir ini untuk menambahkan rekan tim Manajemen yang akan membantu mengelola dashboard perusahaan."
+                    : "Lengkapi formulir di bawah ini. Akun yang dibuat melalui menu ini otomatis memiliki peran Staff (User)."
+                }
               </SheetDescription>
             </SheetHeader>
             <ScrollArea className="flex-1 py-4 px-1 -mx-1">
@@ -261,8 +269,8 @@ export function EmployeeFormSheet({
                               type="email" 
                               placeholder="cth., budi@contoh.com" 
                               {...field} 
-                              disabled={!!employee}
-                              className={!!employee ? "bg-muted/50 cursor-not-allowed" : ""}
+                              disabled={!!employee?.id}
+                              className={!!employee?.id ? "bg-muted/50 cursor-not-allowed" : ""}
                             />
                           </FormControl>
                           <FormMessage />
@@ -284,7 +292,7 @@ export function EmployeeFormSheet({
                     />
                 </div>
                 
-                 <FormField
+                <FormField
                   control={form.control}
                   name="company"
                   render={({ field }) => (
@@ -293,10 +301,10 @@ export function EmployeeFormSheet({
                        <Select 
                           onValueChange={handleCompanyChange} 
                           value={field.value} 
-                          disabled={isCompanyDropdownDisabled && !!employee}
+                          disabled={isCompanyDropdownDisabled && !!employee?.id}
                        >
                           <FormControl>
-                            <SelectTrigger className={(isCompanyDropdownDisabled && !!employee) ? "bg-muted/50 cursor-not-allowed" : ""}>
+                            <SelectTrigger className={(isCompanyDropdownDisabled && !!employee?.id) ? "bg-muted/50 cursor-not-allowed" : ""}>
                               <SelectValue placeholder="Pilih perusahaan" />
                             </SelectTrigger>
                           </FormControl>
@@ -310,120 +318,126 @@ export function EmployeeFormSheet({
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="department"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Departemen</FormLabel>
-                          <Select 
-                            onValueChange={(value) => handleDepartmentChange(value)}
-                            value={field.value}
-                            disabled={!companyForForm}
-                          >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Pilih departemen" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {departmentOptions.map(d => (
-                                    <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="position"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Jabatan</FormLabel>
-                           <Select 
-                              onValueChange={field.onChange} 
-                              value={field.value}
-                              disabled={!departmentForForm}
-                           >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Pilih jabatan" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {positionOptions.map(p => (
-                                    <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                </div>
-                <FormField
-                  control={form.control}
-                  name="level"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Level Jabatan</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih level jabatan" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Staff">Staff</SelectItem>
-                          <SelectItem value="Supervisor">Supervisor</SelectItem>
-                          <SelectItem value="Manager">Manager</SelectItem>
-                          <SelectItem value="Direktur">Direktur</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                {(levelForForm === 'Staff' || levelForForm === 'Supervisor' || levelForForm === 'Manager') && (
-                     <FormField
+
+                {!isManagementForm && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
                         control={form.control}
-                        name="reportsTo"
+                        name="department"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Melapor Kepada (Atasan)</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={supervisorOptions.length === 0}>
+                            <FormLabel>Departemen</FormLabel>
+                            <Select 
+                                onValueChange={(value) => handleDepartmentChange(value)}
+                                value={field.value}
+                                disabled={!companyForForm}
+                            >
                                 <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder={supervisorOptions.length > 0 ? "Pilih atasan" : "Tidak ada atasan tersedia"} />
-                                </SelectTrigger>
+                                    <SelectTrigger>
+                                    <SelectValue placeholder="Pilih departemen" />
+                                    </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {supervisorOptions.map(sup => (
-                                        <SelectItem key={sup.id} value={sup.id}>{sup.name} ({sup.level})</SelectItem>
+                                    {departmentOptions.map(d => (
+                                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
                                     ))}
                                 </SelectContent>
-                            </Select>
+                                </Select>
                             <FormMessage />
                             </FormItem>
                         )}
+                        />
+                        <FormField
+                        control={form.control}
+                        name="position"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Jabatan</FormLabel>
+                            <Select 
+                                onValueChange={field.onChange} 
+                                value={field.value}
+                                disabled={!departmentForForm}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                    <SelectValue placeholder="Pilih jabatan" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {positionOptions.map(p => (
+                                        <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                                </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                    </div>
+                    <FormField
+                    control={form.control}
+                    name="level"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Level Jabatan</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Pilih level jabatan" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            <SelectItem value="Staff">Staff</SelectItem>
+                            <SelectItem value="Supervisor">Supervisor</SelectItem>
+                            <SelectItem value="Manager">Manager</SelectItem>
+                            <SelectItem value="Direktur">Direktur</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
                     />
+                    {(levelForForm === 'Staff' || levelForForm === 'Supervisor' || levelForForm === 'Manager') && (
+                        <FormField
+                            control={form.control}
+                            name="reportsTo"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Melapor Kepada (Atasan)</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={supervisorOptions.length === 0}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder={supervisorOptions.length > 0 ? "Pilih atasan" : "Tidak ada atasan tersedia"} />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {supervisorOptions.map(sup => (
+                                            <SelectItem key={sup.id} value={sup.id}>{sup.name} ({sup.level})</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    )}
+                    <FormField
+                    control={form.control}
+                    name="joinDate"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Tanggal Bergabung</FormLabel>
+                        <FormControl>
+                            <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                  </>
                 )}
-                 <FormField
-                  control={form.control}
-                  name="joinDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tanggal Bergabung</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
                  <FormField
                       control={form.control}
                       name="status"
@@ -453,7 +467,9 @@ export function EmployeeFormSheet({
                   Batal
                 </Button>
               </SheetClose>
-              <Button type="submit">Simpan Data Karyawan</Button>
+              <Button type="submit">
+                  {employee?.id ? 'Simpan Perubahan' : 'Simpan Data'}
+              </Button>
             </SheetFooter>
           </form>
         </Form>

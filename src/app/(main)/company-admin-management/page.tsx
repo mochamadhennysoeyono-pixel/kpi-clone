@@ -46,7 +46,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import type { CompanyAdmin, Company } from "@/types";
+import type { CompanyAdmin, Company, Employee } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useMasterData } from "@/contexts/master-data-context";
 import { useAuth } from "@/contexts/auth-context";
@@ -60,9 +60,9 @@ interface CompanyAdminManagementPageProps {
 
 export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdminManagementPageProps) {
   const { currentUser, userRole, addCompanyAdmin, sendPasswordReset } = useAuth();
-  const { companyAdmins, deleteCompanyAdmins, companies, subscriptionPlans, employees, fetchData } = useMasterData();
+  const { companyAdmins, deleteCompanyAdmins, companies, subscriptionPlans, fetchData } = useMasterData();
   const [isSheetOpen, setSheetOpen] = useState(false);
-  const [selectedAdmin, setSelectedAdmin] = useState<any | undefined>(undefined);
+  const [selectedAdmin, setSelectedAdmin] = useState<Partial<Employee> | undefined>(undefined);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [adminToDelete, setAdminToDelete] = useState<CompanyAdmin | null>(null);
   const [isSendingInvitation, setIsSendingInvitation] = useState<string | null>(null);
@@ -141,6 +141,8 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
         toast({ variant: "destructive", title: "Pilih Perusahaan", description: "Harap pilih perusahaan spesifik terlebih dahulu untuk menambah admin." });
         return;
     }
+    
+    // STRICT QUOTA CHECK
     if (quotaInfo?.managementLimitReached) {
         if (onQuotaFull) {
             onQuotaFull(); // Trigger purchase dialog in parent (Portal)
@@ -149,19 +151,25 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
         }
         return;
     }
-    setSelectedAdmin(undefined);
+    
+    setSelectedAdmin({
+        role: 'manajemen',
+        company: isSuperadmin ? '' : (userCompany?.name || ''),
+        status: 'Aktif'
+    });
     setSheetOpen(true);
   };
   
   const handleEditAdmin = (admin: CompanyAdmin) => {
-    setSelectedAdmin(admin);
+    setSelectedAdmin({
+        ...admin,
+        role: 'manajemen'
+    } as any);
     setSheetOpen(true);
   };
 
   const handleAddAction = async (data: any) => {
-    const targetCompanyName = isSuperadmin 
-        ? companies.find(c => c.id === selectedCompanyId)?.name 
-        : (data.company || currentUser.company);
+    const targetCompanyName = data.company || (isSuperadmin ? companies.find(c => c.id === selectedCompanyId)?.name : currentUser.company);
 
     const result = await addCompanyAdmin({
         name: data.name,
@@ -224,7 +232,7 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
                 <ShieldCheck className="size-6 text-primary" />
               </div>
               <div>
-                <CardTitle className="font-headline text-2xl">
+                <CardTitle className="font-headline text-2xl text-foreground">
                     {isSuperadmin ? "Manajemen Admin Klien" : "Manajemen Tim Admin"}
                 </CardTitle>
                 <CardDescription>

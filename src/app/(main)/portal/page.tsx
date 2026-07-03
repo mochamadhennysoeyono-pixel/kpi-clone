@@ -17,7 +17,6 @@ import {
     ClipboardCheck,
     Lock,
     Zap,
-    ShoppingCart,
     Users,
     GitMerge,
     ChevronRight,
@@ -28,7 +27,8 @@ import {
     Shield,
     Plus,
     Minus,
-    Info
+    Info,
+    ShoppingCart
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, addDays } from 'date-fns';
@@ -474,7 +474,7 @@ export default function PortalPage() {
             {company && <GroupManagementDialog isOpen={isGroupDialogOpen} onOpenChange={setIsGroupDialogOpen} holdingCompany={company} childCompanies={childCompanies} />}
 
             <Dialog open={isMgmtDialogOpen} onOpenChange={setIsMgmtDialogOpen}>
-                <DialogContent className="max-w-5xl h-[85vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl bg-white">
+                <DialogContent className="max-w-5xl h-[85vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl bg-white z-[200]">
                     <DialogHeader className="p-6 pb-2 shrink-0 bg-background border-b sticky top-0 z-10">
                         <DialogTitle className="font-headline font-black text-xl uppercase tracking-tighter">Manajemen Tim Admin</DialogTitle>
                         <DialogDescription className="text-xs font-bold text-primary">Kapasitas Maksimal: {mgmtLimit} Akun Admin</DialogDescription>
@@ -488,7 +488,7 @@ export default function PortalPage() {
             </Dialog>
 
             <Dialog open={isMgmtConfigOpen} onOpenChange={setIsMgmtConfigOpen}>
-                <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden">
+                <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden z-[300]">
                     <DialogHeader className="p-6 pb-2 bg-indigo-50 border-b">
                         <DialogTitle className="font-black text-indigo-900 flex items-center gap-2"><Shield className="size-5" /> Tambah Kuota Admin</DialogTitle>
                         <DialogDescription className="text-indigo-700/70 text-xs font-bold uppercase tracking-wider">Investasi Add-on Lifetime</DialogDescription>
