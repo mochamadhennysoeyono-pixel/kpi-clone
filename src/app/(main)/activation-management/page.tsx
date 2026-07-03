@@ -1,3 +1,4 @@
+
 // src/app/(main)/activation-management/page.tsx
 "use client";
 
@@ -21,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Check, Clock, Trash2 } from "lucide-react";
 import type { Company, Employee } from "@/types";
 import { useMasterData } from "@/contexts/master-data-context";
+import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -30,7 +32,8 @@ import { runTransaction, doc, collection, deleteDoc } from "firebase/firestore";
 
 
 export default function ActivationManagementPage() {
-  const { companies, employees, deleteCompany, fetchData } = useMasterData();
+  const { companies, employees, fetchData } = useMasterData();
+  const { userRole } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -123,6 +126,10 @@ export default function ActivationManagementPage() {
         setDeleteDialogOpen(false);
         setItemToDelete(null);
     }
+  }
+
+  if (userRole !== 'superadmin') {
+    return <div className="p-20 text-center font-bold">Akses Ditolak.</div>;
   }
 
   return (

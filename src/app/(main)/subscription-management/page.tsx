@@ -25,7 +25,9 @@ import {
   Save,
   Loader2,
   Tags,
-  Zap
+  Zap,
+  Edit,
+  Info
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { ModulePricing, AddonPricing, ModuleId } from "@/types";
@@ -33,6 +35,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const MODULES: { id: ModuleId, name: string, icon: any, color: string }[] = [
     { id: 'appraisal', name: 'Modul Appraisal', icon: ClipboardCheck, color: 'text-blue-600' },
@@ -193,7 +197,7 @@ function AddonPricingCard({
                              {isLoading ? <Loader2 className="size-3 animate-spin" /> : <Save className="size-3" />}
                         </Button>
                     ) : (
-                        <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)}><Pencil className="size-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)}><Edit className="size-4" /></Button>
                     )}
                 </div>
             </CardContent>
@@ -202,7 +206,8 @@ function AddonPricingCard({
 }
 
 export default function SubscriptionManagementPage() {
-  const { modulePricing, addonPricing, updateModulePricing, updateAddonPricing, userRole } = useMasterData();
+  const { modulePricing, addonPricing, updateModulePricing, updateAddonPricing } = useMasterData();
+  const { userRole } = useAuth();
   const { toast } = useToast();
 
   if (userRole !== 'superadmin') {
@@ -277,8 +282,4 @@ export default function SubscriptionManagementPage() {
       </Alert>
     </div>
   );
-}
-
-function Pencil({ className }: { className?: string }) {
-    return <Edit className={className} />;
 }

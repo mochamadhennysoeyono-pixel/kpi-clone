@@ -24,6 +24,7 @@ import { Switch } from '@/components/ui/switch';
 
 export default function GroupManagementPage() {
   const { companies, updateCompany } = useMasterData();
+  const { userRole } = useAuth();
   const { toast } = useToast();
 
   const handleToggleHoldingStatus = async (company: Company) => {
@@ -57,6 +58,10 @@ export default function GroupManagementPage() {
         });
     }
   };
+
+  if (userRole !== 'superadmin') {
+    return <div className="p-20 text-center font-bold">Akses Ditolak.</div>;
+  }
 
   return (
     <div className="space-y-6">
