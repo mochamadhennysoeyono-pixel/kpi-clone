@@ -8,25 +8,16 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { 
     Plus, 
     Minus, 
-    Check, 
     Zap, 
-    Info, 
     Loader2,
-    Building,
     Users,
-    Timer,
-    ShoppingCart,
-    ArrowRight,
-    ShieldCheck,
-    Shield
+    ShoppingCart
 } from 'lucide-react';
-import { Badge } from "@/components/ui/badge";
 import type { ModuleId, Company } from '@/types';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -40,9 +31,8 @@ interface ModuleSubscriptionDialogProps {
   onConfirm: (data: { type: 'trial' | 'paid', quota: number, mgmtQuota: number, duration: number, totalPrice: number }) => Promise<void>;
 }
 
-// Pricing configuration
+// Pricing configuration (Staff only)
 const STAFF_PRICE = 12500; 
-const MGMT_PRICE = 25000; // Management accounts are more expensive
 
 export function ModuleSubscriptionDialog({ 
     isOpen, 
@@ -52,14 +42,12 @@ export function ModuleSubscriptionDialog({
     onConfirm 
 }: ModuleSubscriptionDialogProps) {
     const [staffQuota, setStaffQuota] = useState(10);
-    const [mgmtQuota, setMgmtQuota] = useState(1);
     const [durationMonths, setDurationMonths] = useState<1 | 6 | 12>(12);
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             setStaffQuota(10);
-            setMgmtQuota(1);
             setDurationMonths(12);
         }
     }, [isOpen, module?.id]);
@@ -75,8 +63,7 @@ export function ModuleSubscriptionDialog({
 
     const pricing = useMemo(() => {
         const staffBase = staffQuota * STAFF_PRICE;
-        const mgmtBase = mgmtQuota * MGMT_PRICE;
-        const monthlyBase = staffBase + mgmtBase;
+        const monthlyBase = staffBase;
         
         let discountPercent = 0;
         if (durationMonths === 6) discountPercent = 0.03; 
@@ -88,7 +75,6 @@ export function ModuleSubscriptionDialog({
 
         return {
             staffBase,
-            mgmtBase,
             monthlyBase,
             monthlyDiscount,
             finalMonthly,
@@ -96,7 +82,7 @@ export function ModuleSubscriptionDialog({
             discountPercent: discountPercent * 100,
             savingTotal: (monthlyBase * discountPercent) * durationMonths
         };
-    }, [staffQuota, mgmtQuota, durationMonths]);
+    }, [staffQuota, durationMonths]);
 
     const handleAction = async (type: 'trial' | 'paid') => {
         setIsLoading(true);
@@ -104,7 +90,7 @@ export function ModuleSubscriptionDialog({
             await onConfirm({
                 type,
                 quota: type === 'trial' ? 10 : staffQuota,
-                mgmtQuota: type === 'trial' ? 1 : mgmtQuota,
+                mgmtQuota: type === 'trial' ? 1 : (company?.customManagementUserLimit || 1),
                 duration: type === 'trial' ? 14 : (durationMonths * 30),
                 totalPrice: type === 'trial' ? 0 : pricing.totalBill
             });
@@ -132,37 +118,20 @@ export function ModuleSubscriptionDialog({
 
                 <ScrollArea className="flex-1 bg-background">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-                        
                         <div className="p-6 md:p-8 space-y-8 bg-slate-50/50">
                             {/* Staff Quota */}
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-1">
-                                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">Akun Staff</h3>
-                                        <p className="text-[10px] text-muted-foreground font-medium uppercase">Akses User Operasional</p>
+                                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">Kapasitas Akun Staff</h3>
+                                        <p className="text-[10px] text-muted-foreground font-medium uppercase text-balance">Berapa banyak karyawan yang akan menggunakan modul ini?</p>
                                     </div>
                                     <div className="flex items-center bg-white rounded-xl border border-slate-200 overflow-hidden h-10 shadow-sm">
-                                        <button onClick={() => setStaffQuota(Math.max(1, staffQuota - 5))} className="px-3 hover:bg-blue-50 text-[#2563eb]"><Minus size={16} strokeWidth={3} /></button>
+                                        <button type="button" onClick={() => setStaffQuota(Math.max(1, staffQuota - 5))} className="px-3 hover:bg-blue-50 text-[#2563eb]"><Minus size={16} strokeWidth={3} /></button>
                                         <input type="number" value={staffQuota} onChange={(e) => setStaffQuota(Math.max(0, parseInt(e.target.value) || 0))} className="w-12 text-center border-none focus-visible:ring-0 text-sm font-black bg-transparent" />
-                                        <button onClick={() => setStaffQuota(staffQuota + 5)} className="px-3 hover:bg-blue-50 text-[#2563eb]"><Plus size={16} strokeWidth={3} /></button>
+                                        <button type="button" onClick={() => setStaffQuota(staffQuota + 5)} className="px-3 hover:bg-blue-50 text-[#2563eb]"><Plus size={16} strokeWidth={3} /></button>
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* Management Quota */}
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-1">
-                                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">Akun Manajemen</h3>
-                                        <p className="text-[10px] text-muted-foreground font-medium uppercase">Akses Admin & Dashboard</p>
-                                    </div>
-                                    <div className="flex items-center bg-white rounded-xl border border-slate-200 overflow-hidden h-10 shadow-sm">
-                                        <button onClick={() => setMgmtQuota(Math.max(1, mgmtQuota - 1))} className="px-3 hover:bg-blue-50 text-[#2563eb]"><Minus size={16} strokeWidth={3} /></button>
-                                        <input type="number" value={mgmtQuota} onChange={(e) => setMgmtQuota(Math.max(1, parseInt(e.target.value) || 1))} className="w-12 text-center border-none focus-visible:ring-0 text-sm font-black bg-transparent" />
-                                        <button onClick={() => setMgmtQuota(mgmtQuota + 1)} className="px-3 hover:bg-blue-50 text-[#2563eb]"><Plus size={16} strokeWidth={3} /></button>
-                                    </div>
-                                </div>
-                                <p className="text-[9px] text-muted-foreground italic">* Default 1 Akun Manajemen disertakan per perusahaan.</p>
                             </div>
 
                             <Separator />
@@ -206,10 +175,6 @@ export function ModuleSubscriptionDialog({
                                         <span className="text-muted-foreground font-medium uppercase tracking-tight">Staff ({staffQuota} User)</span>
                                         <span className="font-bold text-slate-700">Rp {pricing.staffBase.toLocaleString('id-ID')}</span>
                                     </div>
-                                    <div className="flex justify-between items-center text-xs">
-                                        <span className="text-muted-foreground font-medium uppercase tracking-tight">Manajemen ({mgmtQuota} Admin)</span>
-                                        <span className="font-bold text-slate-700">Rp {pricing.mgmtBase.toLocaleString('id-ID')}</span>
-                                    </div>
                                     {pricing.monthlyDiscount > 0 && (
                                         <div className="flex justify-between items-center text-[#2563eb] text-xs">
                                             <span className="font-bold italic uppercase tracking-tight">Diskon Durasi {pricing.discountPercent}%</span>
@@ -239,28 +204,25 @@ export function ModuleSubscriptionDialog({
                             </div>
 
                             <div className="flex flex-col gap-3 pt-6 mt-auto">
-                                <div className="flex flex-col gap-3">
+                                <Button 
+                                    onClick={() => handleAction('paid')}
+                                    disabled={isLoading}
+                                    className="w-full font-black text-[10px] uppercase tracking-widest h-12 bg-[#2563eb] hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20"
+                                >
+                                    {isLoading ? <Loader2 className="animate-spin size-4" /> : <><ShoppingCart size={14} className="mr-2" /> Beli Paket</>}
+                                </Button>
+                                
+                                {isTrialAvailable && (
                                     <Button 
-                                        onClick={() => handleAction('paid')}
-                                        disabled={isLoading}
-                                        className="w-full font-black text-[10px] uppercase tracking-widest h-12 bg-[#2563eb] hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20"
+                                        variant="ghost" 
+                                        className="w-full font-black text-[10px] uppercase tracking-widest h-10 text-muted-foreground hover:text-primary"
+                                        onClick={() => handleAction('trial')}
                                     >
-                                        {isLoading ? <Loader2 className="animate-spin size-4" /> : <><Zap size={14} className="mr-2" /> Bayar Sekarang</>}
+                                        Coba Gratis 14 Hari (10 Staff)
                                     </Button>
-                                    
-                                    {isTrialAvailable && (
-                                        <Button 
-                                            variant="ghost" 
-                                            className="w-full font-black text-[10px] uppercase tracking-widest h-10 text-muted-foreground hover:text-primary"
-                                            onClick={() => handleAction('trial')}
-                                        >
-                                            Coba Gratis 14 Hari (Kuota Terbatas)
-                                        </Button>
-                                    )}
-                                </div>
+                                )}
                             </div>
                         </div>
-
                     </div>
                 </ScrollArea>
             </DialogContent>

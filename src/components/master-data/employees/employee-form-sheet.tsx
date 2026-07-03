@@ -42,7 +42,7 @@ const employeeSchema = z.object({
   reportsTo: z.string().optional().nullable(),
   joinDate: z.string().optional(),
   status: z.enum(['Aktif', 'Tidak Aktif']),
-  role: z.enum(['superadmin', 'manajemen', 'user']),
+  role: z.enum(['user']).default('user'), // Default to user, fixed
 });
 
 type EmployeeFormValues = z.infer<typeof employeeSchema>;
@@ -94,9 +94,6 @@ export function EmployeeFormSheet({
   const companyForForm = form.watch('company');
   const departmentForForm = form.watch('department');
   const levelForForm = form.watch('level');
-  const roleForForm = form.watch('role');
-  
-  const isSuperadminForm = roleForForm === 'superadmin';
 
   const userCompany = useMemo(() => {
     return companies.find(c => c.name === currentUser?.company);
@@ -125,14 +122,6 @@ export function EmployeeFormSheet({
     if (userRole === 'manajemen' && isHoldingAdmin) return true;
     return false;
   }, [userRole, isHoldingAdmin]);
-
-
-  const canEditRole = useMemo(() => {
-    if (userRole === 'superadmin') return true;
-    if (userRole === 'manajemen') return true;
-    return false;
-  }, [userRole]);
-
 
   const departmentOptions = useMemo(() => {
     if (!companyForForm) return [];
@@ -175,13 +164,13 @@ export function EmployeeFormSheet({
   
   useEffect(() => {
     const defaultCompany = (userRole !== 'superadmin' && currentUser) ? currentUser?.company || '' : '';
-    const isAddingFromAdminPage = !employee && typeof window !== 'undefined' && window.location.pathname.includes('admin-management');
-
+    
     if (isOpen) {
       if (employee) {
         form.reset({
           ...employee,
           phone: employee.phone || '',
+          role: 'user', // Forced role
         });
       } else {
         form.reset({
@@ -189,14 +178,14 @@ export function EmployeeFormSheet({
           name: '',
           email: '',
           phone: '',
-          company: isAddingFromAdminPage ? 'Internal' : defaultCompany,
-          position: isAddingFromAdminPage ? 'Superadmin' : '',
-          department: isAddingFromAdminPage ? 'System' : '',
-          level: isAddingFromAdminPage ? 'Direktur' : 'Staff',
+          company: defaultCompany,
+          position: '',
+          department: '',
+          level: 'Staff',
           reportsTo: '',
           joinDate: new Date().toISOString().split('T')[0],
           status: 'Aktif',
-          role: isAddingFromAdminPage ? 'superadmin' : 'user',
+          role: 'user', // Forced role
         });
       }
     }
@@ -215,10 +204,10 @@ export function EmployeeFormSheet({
     form.setValue('reportsTo', '');
   }
 
-
   const onSubmit = (data: EmployeeFormValues) => {
     const dataToSave = { 
         ...data,
+        role: 'user' as const, // Hardcoded to user role for Master Data
         reportsTo: data.reportsTo || '',
     } as Omit<Employee, 'id' | 'loginStatus'> & { id?: string };
     
@@ -232,12 +221,7 @@ export function EmployeeFormSheet({
   };
   
   const isEditingExistingUser = !!employee;
-  const isUneditable = employee?.role === 'superadmin' && employee?.id !== currentUser?.id;
   const isCompanyDropdownDisabled = !canChangeCompany;
-
-  // Quota enforcement logic inside the form
-  const isRoleUserDisabled = !isEditingExistingUser && quotaInfo?.userLimitReached;
-  const isRoleMgmtDisabled = !isEditingExistingUser && quotaInfo?.managementLimitReached && employee?.role !== 'manajemen';
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -245,9 +229,9 @@ export function EmployeeFormSheet({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
             <SheetHeader>
-              <SheetTitle>{employee ? 'Ubah Data Pengguna' : (isSuperadminForm ? 'Tambah Superadmin Baru' : 'Tambah Pengguna Baru')}</SheetTitle>
+              <SheetTitle>{employee ? 'Ubah Data Karyawan' : 'Tambah Karyawan Baru'}</SheetTitle>
               <SheetDescription>
-                {employee ? 'Perbarui detail pengguna di bawah ini.' : 'Isi formulir di bawah ini untuk menambahkan pengguna baru.'}
+                Lengkapi formulir di bawah ini. Akun yang dibuat melalui menu ini otomatis memiliki peran <strong>Staff (User)</strong>.
               </SheetDescription>
             </SheetHeader>
             <ScrollArea className="flex-1 py-4 px-1 -mx-1">
@@ -281,11 +265,6 @@ export function EmployeeFormSheet({
                               className={!!employee ? "bg-muted/50 cursor-not-allowed" : ""}
                             />
                           </FormControl>
-                          {!!employee && (
-                            <FormDescription className="text-xs">
-                              Email tidak dapat diubah.
-                            </FormDescription>
-                          )}
                           <FormMessage />
                         </FormItem>
                       )}
@@ -295,7 +274,7 @@ export function EmployeeFormSheet({
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Nomor Telepon</FormLabel>
+                          <FormLabel>Nomor WhatsApp</FormLabel>
                           <FormControl>
                             <Input placeholder="cth., 08123456789" {...field} />
                           </FormControl>
@@ -305,8 +284,6 @@ export function EmployeeFormSheet({
                     />
                 </div>
                 
-                {!isSuperadminForm && (
-                <>
                  <FormField
                   control={form.control}
                   name="company"
@@ -447,10 +424,7 @@ export function EmployeeFormSheet({
                     </FormItem>
                   )}
                 />
-                </>
-                )}
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
+                 <FormField
                       control={form.control}
                       name="status"
                       render={({ field }) => (
@@ -471,41 +445,6 @@ export function EmployeeFormSheet({
                         </FormItem>
                       )}
                     />
-                    
-                      <FormItem>
-                        <FormLabel>Peran</FormLabel>
-                        {(isUneditable) ? (
-                           <FormControl>
-                              <Input value={(employee?.role === 'superadmin' ? 'Super Admin' : employee?.role === 'manajemen' ? 'Manajemen' : 'User')} disabled />
-                           </FormControl>
-                        ) : (
-                           <FormField
-                            control={form.control}
-                            name="role"
-                            render={({ field }) => (
-                              <Select onValueChange={field.onChange} value={field.value} disabled={!canEditRole}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Pilih peran" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="user" disabled={isRoleUserDisabled}>
-                                      Staff {isRoleUserDisabled && '(Kuota Penuh)'}
-                                  </SelectItem>
-                                  <SelectItem value="manajemen" disabled={isRoleMgmtDisabled}>
-                                      Manajemen {isRoleMgmtDisabled && '(Kuota Penuh)'}
-                                  </SelectItem>
-                                  {userRole === 'superadmin' && <SelectItem value="superadmin">Super Admin</SelectItem>}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-                        )}
-                         <FormMessage />
-                      </FormItem>
-                    
-                </div>
               </div>
             </ScrollArea>
             <SheetFooter className="mt-auto pt-6">
@@ -514,7 +453,7 @@ export function EmployeeFormSheet({
                   Batal
                 </Button>
               </SheetClose>
-              <Button type="submit" disabled={isUneditable}>Simpan</Button>
+              <Button type="submit">Simpan Data Karyawan</Button>
             </SheetFooter>
           </form>
         </Form>

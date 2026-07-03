@@ -14,25 +14,20 @@ import {
     User, 
     Mail, 
     Phone, 
-    History,
     ShieldCheck,
     GraduationCap,
     ClipboardCheck,
     Lock,
     Zap,
-    Crown,
-    CheckCircle2,
-    XCircle,
-    Info,
     ShoppingCart,
     Users,
-    Network,
-    Briefcase,
     GitMerge,
     ChevronRight,
     Settings,
     Database,
-    Loader2
+    Loader2,
+    Crown,
+    Shield
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, addDays } from 'date-fns';
@@ -43,9 +38,19 @@ import type { ModuleId, ModuleSubscription, SubscriptionLog, Company } from '@/t
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ModuleSubscriptionDialog } from '@/components/portal/module-subscription-dialog';
 import { GroupManagementDialog } from '@/components/holding/group-management-dialog';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter,
+  DialogClose
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { serverTimestamp } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
+import CompanyAdminManagementPage from '@/app/(main)/company-admin-management/page';
 
 // --- Static Data for Modules ---
 const MODULE_CATALOG = [
@@ -121,17 +126,8 @@ function ModuleCard({
                     {isActive ? (
                         <div className="space-y-3 bg-muted/30 p-3 rounded-xl border border-dashed text-[11px] font-medium">
                             <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground uppercase tracking-tight">Tipe Paket</span>
-                                <Badge variant={isTrial ? "secondary" : "default"} className={cn("h-5 px-1.5 font-bold uppercase text-[9px]", !isTrial && "bg-blue-600")}>
-                                    {subscription.type}
-                                </Badge>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground uppercase tracking-tight">Kapasitas</span>
-                                <div className="flex flex-col items-end gap-1">
-                                    <span className="font-bold text-slate-700">{subscription.quota === -1 ? 'Unlimited' : subscription.quota} Staff</span>
-                                    {subscription.mgmtQuota && <span className="font-bold text-primary">{subscription.mgmtQuota} Admin</span>}
-                                </div>
+                                <span className="text-muted-foreground uppercase tracking-tight">Kapasitas Staff</span>
+                                <span className="font-bold text-slate-700">{subscription.quota === -1 ? 'Unlimited' : subscription.quota} User</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground uppercase tracking-tight">Masa Berlaku</span>
@@ -166,7 +162,6 @@ function ModuleCard({
                                     size="icon"
                                     className="size-11 rounded-xl border-2 border-primary text-primary hover:bg-primary/5 shrink-0"
                                     onClick={() => onActivateRequest(config)}
-                                    title="Upgrade ke Paket Berbayar"
                                 >
                                     <ShoppingCart size={18} />
                                 </Button>
@@ -179,7 +174,7 @@ function ModuleCard({
                                 variant="outline" 
                                 className="w-full font-bold border-primary text-primary hover:bg-primary/5 rounded-xl h-11 border-2"
                             >
-                                 <Zap className="mr-2 size-4" /> Mulai Berlangganan
+                                 <Zap className="mr-2 size-4" /> Beli Modul
                             </Button>
                         )
                     )}
@@ -216,14 +211,19 @@ function AdminDataCard({ label, description, icon: Icon, href, color, onClick }:
     );
 }
 
+const MGMT_PRICE_PER_USER = 25000;
+
 export default function PortalPage() {
     const { currentUser, userRole, logout } = useAuth();
-    const { companies, subscriptionLogs, updateCompany, addSubscriptionLog, fetchData } = useMasterData();
+    const { companies, subscriptionLogs, updateCompany, addSubscriptionLog, fetchData, companyAdmins } = useMasterData();
     const { toast } = useToast();
 
     const [isSubDialogOpen, setIsSubDialogOpen] = useState(false);
     const [selectedModule, setSelectedModule] = useState<any>(null);
     const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
+    const [isMgmtDialogOpen, setIsMgmtDialogOpen] = useState(false);
+    const [isMgmtConfigOpen, setIsMgmtConfigOpen] = useState(false);
+    const [mgmtAddQuota, setMgmtAddQuota] = useState(2);
     const [isUpgrading, setIsUpgrading] = useState(false);
 
     const company = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
@@ -234,7 +234,10 @@ export default function PortalPage() {
         return companies.filter(c => c.parentId === company.id);
     }, [company, companies]);
 
-    // --- Filter Modules based on Role and Access ---
+    // Management Quota Logic
+    const mgmtLimit = useMemo(() => company?.customManagementUserLimit || 1, [company]);
+    const currentMgmtCount = useMemo(() => company ? companyAdmins.filter(a => a.company === company.name).length : 0, [companyAdmins, company]);
+
     const { activeModules, availableModules } = useMemo(() => {
         if (userRole === 'superadmin' || isManagement) {
             return {
@@ -270,7 +273,7 @@ export default function PortalPage() {
         setIsUpgrading(true);
         try {
             await updateCompany(company.id, { isHolding: true });
-            toast({ title: "Upgrade Berhasil!", description: "Mode Holding Company kini aktif. Anda dapat mulai menambah anak perusahaan." });
+            toast({ title: "Upgrade Berhasil!", description: "Mode Holding Company kini aktif." });
             await fetchData(true);
         } catch (error: any) {
             toast({ variant: 'destructive', title: "Gagal Upgrade", description: error.message });
@@ -290,7 +293,6 @@ export default function PortalPage() {
                 status: 'active',
                 type: data.type,
                 quota: data.quota,
-                mgmtQuota: data.mgmtQuota,
                 expiryDate: expiry.toISOString(),
                 activatedAt: now.toISOString()
             };
@@ -305,7 +307,6 @@ export default function PortalPage() {
                 updatedUsedTrials.push(selectedModule.id);
             }
 
-            // Also update global limits if paid
             const updatePayload: Partial<Company> = {
                 moduleSubscriptions: updatedModuleSubscriptions,
                 usedTrials: updatedUsedTrials
@@ -313,12 +314,10 @@ export default function PortalPage() {
 
             if (data.type === 'paid') {
                 updatePayload.customUserLimit = data.quota;
-                updatePayload.customManagementUserLimit = data.mgmtQuota;
             }
 
             await updateCompany(company.id, updatePayload);
 
-            // Log activity
             await addSubscriptionLog({
                 companyId: company.id,
                 companyName: company.name,
@@ -333,10 +332,43 @@ export default function PortalPage() {
                 timestamp: serverTimestamp()
             });
 
-            toast({ title: "Berhasil!", description: data.type === 'trial' ? `Masa trial Modul ${selectedModule.name} kini aktif.` : `Paket Modul ${selectedModule.name} berhasil dibeli.` });
+            toast({ title: "Berhasil!", description: data.type === 'trial' ? `Masa trial Modul ${selectedModule.name} aktif.` : `Modul ${selectedModule.name} berhasil dibeli.` });
             await fetchData(true);
         } catch (error: any) {
             toast({ variant: 'destructive', title: "Gagal", description: error.message });
+        }
+    };
+
+    const handleBuyMgmtAddon = async () => {
+        if (!company || mgmtAddQuota <= 0) return;
+        setIsLoading(true);
+        try {
+            const currentLimit = company.customManagementUserLimit || 1;
+            const newLimit = currentLimit + mgmtAddQuota;
+            const totalPrice = mgmtAddQuota * MGMT_PRICE_PER_USER * 12; // Forced yearly for addon simplify
+
+            await updateCompany(company.id, { customManagementUserLimit: newLimit });
+
+            await addSubscriptionLog({
+                companyId: company.id,
+                companyName: company.name,
+                company: company.name,
+                planName: `Add-on: +${mgmtAddQuota} Akun Manajemen`,
+                action: 'UPGRADE',
+                amount: totalPrice,
+                startDate: new Date().toISOString(),
+                endDate: addDays(new Date(), 365).toISOString(),
+                performedBy: currentUser!.name,
+                timestamp: serverTimestamp()
+            });
+
+            toast({ title: "Berhasil!", description: `Kuota manajemen Anda telah ditambah menjadi ${newLimit}.` });
+            setIsMgmtConfigOpen(false);
+            await fetchData(true);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Gagal", description: error.message });
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -344,103 +376,47 @@ export default function PortalPage() {
 
     return (
         <div className="max-w-7xl mx-auto space-y-10 animate-fade-in pb-20">
-            {/* --- TOP SECTION: Welcome & Info --- */}
+            {/* --- TOP SECTION --- */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 <div className="lg:col-span-4 space-y-6">
                     <Card className="shadow-2xl border-none overflow-hidden bg-slate-900 text-white relative">
-                        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-                            <Building size={150} />
-                        </div>
+                        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none"><Building size={150} /></div>
                         <CardHeader className="relative z-10 p-8">
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="size-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
-                                    <Building size={32} className="text-white" />
-                                </div>
+                                <div className="size-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center"><Building size={32} className="text-white" /></div>
                                 <div className="space-y-1 min-w-0">
                                     <h2 className="text-xl font-black truncate">{company?.name || 'N/A'}</h2>
-                                    <Badge variant="outline" className="text-white/60 border-white/20 text-[9px] font-black uppercase tracking-widest">
-                                        {company?.businessField}
-                                    </Badge>
+                                    <Badge variant="outline" className="text-white/60 border-white/20 text-[9px] font-black uppercase tracking-widest">{company?.businessField}</Badge>
                                 </div>
                             </div>
                             <Separator className="bg-white/10 mb-6" />
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3 text-sm">
-                                    <User className="size-4 text-white/50" />
-                                    <span className="font-bold opacity-90">{currentUser.name}</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-sm">
-                                    <Mail className="size-4 text-white/50" />
-                                    <span className="opacity-70 truncate">{currentUser.email}</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-sm">
-                                    <Phone className="size-4 text-white/50" />
-                                    <span className="opacity-70">{currentUser.phone || '-'}</span>
-                                </div>
+                            <div className="space-y-4 text-sm">
+                                <div className="flex items-center gap-3"><LucideUser className="size-4 text-white/50" /><span className="font-bold opacity-90">{currentUser.name}</span></div>
+                                <div className="flex items-center gap-3"><Mail className="size-4 text-white/50" /><span className="opacity-70 truncate">{currentUser.email}</span></div>
                             </div>
                         </CardHeader>
-                        <CardFooter className="bg-black/20 p-4">
-                            <Button variant="ghost" className="w-full text-white/60 hover:text-white hover:bg-white/10 font-bold text-xs" onClick={logout}>
-                                Keluar Akun
-                            </Button>
-                        </CardFooter>
+                        <CardFooter className="bg-black/20 p-4"><Button variant="ghost" className="w-full text-white/60 hover:text-white hover:bg-white/10 font-bold text-xs" onClick={logout}>Keluar Akun</Button></CardFooter>
                     </Card>
 
-                    {/* --- ADMIN TOOLS (ONLY FOR MANAGEMENT) --- */}
                     {isManagement && (
                         <div className="space-y-4">
-                             <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 ml-1">
-                                <Database size={12} /> Pondasi Data & Organisasi
-                            </h3>
-                            <div className="grid grid-cols-1 gap-3">
-                                <AdminDataCard 
-                                    label="Setup Master Data" 
-                                    description="Kelola personil, departemen, dan hierarki" 
-                                    icon={Settings} 
-                                    href="/master-data/employees"
-                                    color="bg-indigo-600"
-                                />
-                            </div>
+                             <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 ml-1"><Database size={12} /> Pondasi Data</h3>
+                             <AdminDataCard label="Setup Master Data" description="Kelola personil, departemen, dan hierarki" icon={Settings} href="/master-data/employees" color="bg-indigo-600" />
                         </div>
                     )}
 
-                    {/* --- HOLDING TOOLS --- */}
                     {isManagement && (
                         <div className="space-y-4">
-                            <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 ml-1">
-                                <Building size={12} /> Manajemen Grup
-                            </h3>
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 ml-1"><GitMerge size={12} /> Manajemen Grup</h3>
                             {company?.isHolding ? (
-                                <AdminDataCard 
-                                    label="Manajemen Grup" 
-                                    description="Kelola anak perusahaan dan unit bisnis" 
-                                    icon={Building} 
-                                    onClick={() => setIsGroupDialogOpen(true)}
-                                    color="bg-rose-500"
-                                />
+                                <AdminDataCard label="Manajemen Grup" description="Kelola anak perusahaan dan unit bisnis" icon={Building} onClick={() => setIsGroupDialogOpen(true)} color="bg-rose-500" />
                             ) : (
                                 company?.canBecomeHolding && (
                                     <Card className="border-dashed bg-primary/5">
                                         <CardContent className="p-6 text-center space-y-4">
-                                            <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary">
-                                                <GitMerge size={24} />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <p className="text-xs font-bold">Aktifkan Mode Holding</p>
-                                                <p className="text-[10px] text-muted-foreground leading-relaxed">
-                                                    Punya lebih dari 1 cabang? Kelola semuanya dalam satu pintu PERFOM.
-                                                </p>
-                                            </div>
-                                            <Button 
-                                                onClick={handleUpgradeToHolding}
-                                                disabled={isUpgrading}
-                                                variant="outline" 
-                                                size="sm" 
-                                                className="w-full text-[10px] font-black uppercase border-primary/20 h-9"
-                                            >
-                                                {isUpgrading ? <Loader2 className="size-3 animate-spin mr-2" /> : null}
-                                                Upgrade Ke Holding
-                                            </Button>
+                                            <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary"><GitMerge size={24} /></div>
+                                            <div className="space-y-1"><p className="text-xs font-bold uppercase">Upgrade ke Holding</p><p className="text-[10px] text-muted-foreground leading-relaxed">Kelola banyak cabang dalam satu pintu.</p></div>
+                                            <Button onClick={handleUpgradeToHolding} disabled={isUpgrading} variant="outline" size="sm" className="w-full text-[10px] font-black uppercase border-primary/20 h-9">{isUpgrading ? <Loader2 className="size-3 animate-spin mr-2" /> : null}Upgrade Sekarang</Button>
                                         </CardContent>
                                     </Card>
                                 )
@@ -449,117 +425,112 @@ export default function PortalPage() {
                     )}
                 </div>
 
-                {/* --- MODULAR SECTION --- */}
                 <div className="lg:col-span-8 space-y-8">
                     <div className="space-y-1">
                         <h1 className="text-4xl font-black tracking-tighter text-slate-900">Halo, {currentUser.name.split(' ')[0]} 👋</h1>
-                        <p className="text-slate-500 text-lg">Pilih modul operasional yang ingin Anda gunakan.</p>
+                        <p className="text-slate-500 text-lg">Silakan pilih modul yang ingin Anda akses.</p>
                     </div>
 
                     {activeModules.length > 0 && (
                         <div className="space-y-4">
-                            <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                                <ShieldCheck className="size-4" /> Modul Aktif
-                            </h3>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2"><ShieldCheck className="size-4" /> Modul Aktif</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {activeModules.map(m => (
-                                    <ModuleCard 
-                                        key={m.id} 
-                                        config={m} 
-                                        subscription={company?.moduleSubscriptions?.[m.id]} 
-                                        isManagement={isManagement} 
-                                        onActivateRequest={(mod) => { setSelectedModule(mod); setIsSubDialogOpen(true); }}
-                                    />
+                                    <ModuleCard key={m.id} config={m} subscription={company?.moduleSubscriptions?.[m.id]} isManagement={isManagement} onActivateRequest={(mod) => { setSelectedModule(mod); setIsSubDialogOpen(true); }} />
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    {availableModules.length > 0 && (
+                    {/* --- ADD-ONS SECTION --- */}
+                    {isManagement && (
                         <div className="space-y-4">
-                            <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                <LayoutGrid size={4} /> Modul Tersedia
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {availableModules.map(m => (
-                                    <ModuleCard 
-                                        key={m.id} 
-                                        config={m} 
-                                        subscription={company?.moduleSubscriptions?.[m.id]} 
-                                        isManagement={isManagement} 
-                                        onActivateRequest={(mod) => { setSelectedModule(mod); setIsSubDialogOpen(true); }}
-                                    />
-                                ))}
-                            </div>
+                             <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2"><Plus size={14} /> Layanan Tambahan (Add-ons)</h3>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <Card className="border-2 border-primary/10 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group">
+                                    <CardHeader>
+                                        <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 w-fit mb-4 group-hover:scale-110 transition-transform"><Shield size={24} /></div>
+                                        <CardTitle className="text-xl font-bold font-headline">Tim Manajemen</CardTitle>
+                                        <CardDescription className="text-xs">Kelola personil dengan hak akses Admin. Tambahkan lebih banyak slot jika diperlukan.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow pt-0">
+                                        <div className="bg-muted/30 p-3 rounded-xl border border-dashed text-[11px] font-medium flex justify-between items-center">
+                                            <span className="text-muted-foreground uppercase">Kapasitas Admin</span>
+                                            <span className="font-bold text-primary">{mgmtLimit} Akun Aktif (Terpakai {currentMgmtCount})</span>
+                                        </div>
+                                    </CardContent>
+                                    <CardFooter className="p-4 bg-muted/5 border-t gap-2">
+                                        <Button className="flex-1 font-bold rounded-xl h-11" onClick={() => setIsMgmtDialogOpen(true)}>Kelola Tim <ArrowRight className="ml-2 size-4" /></Button>
+                                        <Button variant="outline" size="icon" className="size-11 rounded-xl border-primary/20 text-primary hover:bg-primary/5" onClick={() => setIsMgmtConfigOpen(true)} title="Tambah Kuota Admin"><Users size={18}/></Button>
+                                    </CardFooter>
+                                </Card>
+                             </div>
                         </div>
                     )}
-                    
-                    {/* --- SYSTEM LOGS (Only for Management) --- */}
-                    {isManagement && (
-                        <div className="space-y-4 pt-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                    <History className="size-4" /> Riwayat Aktivitas & Billing
-                                </h3>
-                                <Link href="/subscription-status" className="text-[10px] font-black uppercase text-primary hover:underline">
-                                    Lihat Semua Detail
-                                </Link>
+
+                    {availableModules.length > 0 && isManagement && (
+                        <div className="space-y-4">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2"><LayoutGrid size={14} /> Modul Tersedia</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {availableModules.map(m => (
+                                    <ModuleCard key={m.id} config={m} subscription={company?.moduleSubscriptions?.[m.id]} isManagement={isManagement} onActivateRequest={(mod) => { setSelectedModule(mod); setIsSubDialogOpen(true); }} />
+                                ))}
                             </div>
-                            <Card className="border-none shadow-sm overflow-hidden rounded-2xl">
-                                <Table>
-                                    <TableBody>
-                                        {logs.slice(0, 5).map(log => (
-                                            <TableRow key={log.id} className="hover:bg-muted/5 border-border/40">
-                                                <TableCell className="py-4 pl-6">
-                                                    <p className="text-xs font-bold uppercase">{log.planName}</p>
-                                                    <p className="text-[10px] text-muted-foreground">{log.timestamp?.toDate ? format(log.timestamp.toDate(), 'd MMM yyyy') : 'Baru saja'}</p>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant="outline" className={cn(
-                                                        "text-[8px] font-bold px-1.5 h-4 border-none",
-                                                        log.action === 'UPGRADE' ? "bg-green-100 text-green-700" : 
-                                                        log.action === 'TRIAL' ? "bg-amber-100 text-amber-700" :
-                                                        "bg-blue-100 text-blue-700"
-                                                    )}>
-                                                        {log.action}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-right pr-6 font-bold text-xs">
-                                                    {log.amount > 0 ? `Rp ${log.amount.toLocaleString('id-ID')}` : 'FREE'}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                        {logs.length === 0 && (
-                                            <TableRow>
-                                                <TableCell colSpan={3} className="h-24 text-center text-[10px] text-muted-foreground uppercase font-bold opacity-30 italic">
-                                                    Belum ada catatan aktivitas.
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </Card>
                         </div>
                     )}
                 </div>
             </div>
 
-            <ModuleSubscriptionDialog 
-                isOpen={isSubDialogOpen}
-                onOpenChange={setIsSubDialogOpen}
-                module={selectedModule}
-                company={company || null}
-                onConfirm={handleActivateModule}
-            />
+            <ModuleSubscriptionDialog isOpen={isSubDialogOpen} onOpenChange={setIsSubDialogOpen} module={selectedModule} company={company || null} onConfirm={handleActivateModule} />
 
-            {company && (
-                <GroupManagementDialog 
-                    isOpen={isGroupDialogOpen}
-                    onOpenChange={setIsGroupDialogOpen}
-                    holdingCompany={company}
-                    childCompanies={childCompanies}
-                />
-            )}
+            {company && <GroupManagementDialog isOpen={isGroupDialogOpen} onOpenChange={setIsGroupDialogOpen} holdingCompany={company} childCompanies={childCompanies} />}
+
+            {/* --- ADMIN MANAGEMENT POPUP --- */}
+            <Dialog open={isMgmtDialogOpen} onOpenChange={setIsMgmtDialogOpen}>
+                <DialogContent className="max-w-5xl h-[85vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl bg-white">
+                    <DialogHeader className="p-6 pb-2 shrink-0 bg-background border-b sticky top-0 z-10">
+                        <DialogTitle className="font-headline font-black text-xl uppercase tracking-tighter">Manajemen Tim Admin</DialogTitle>
+                        <DialogDescription className="text-xs font-bold text-primary">Kapasitas Maksimal: {mgmtLimit} Akun Admin</DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-y-auto no-scrollbar">
+                         <div className="p-4">
+                            <CompanyAdminManagementPage />
+                         </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* --- MGMT QUOTA ADD-ON DIALOG --- */}
+            <Dialog open={isMgmtConfigOpen} onOpenChange={setIsMgmtConfigOpen}>
+                <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden">
+                    <DialogHeader className="p-6 pb-2 bg-indigo-50 border-b">
+                        <DialogTitle className="font-black text-indigo-900 flex items-center gap-2"><Shield className="size-5" /> Tambah Kuota Admin</DialogTitle>
+                        <DialogDescription className="text-indigo-700/70 text-xs font-bold uppercase tracking-wider">Layanan Add-on Premium</DialogDescription>
+                    </DialogHeader>
+                    <div className="p-6 space-y-6">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Jumlah Akun Baru</h4>
+                                <p className="text-[10px] text-muted-foreground uppercase font-medium">Berapa banyak admin tambahan?</p>
+                            </div>
+                            <div className="flex items-center bg-white rounded-xl border border-slate-200 overflow-hidden h-10 shadow-sm">
+                                <button type="button" onClick={() => setMgmtAddQuota(Math.max(1, mgmtAddQuota - 1))} className="px-3 hover:bg-indigo-50 text-indigo-600"><Minus size={16} strokeWidth={3} /></button>
+                                <input type="number" value={mgmtAddQuota} onChange={(e) => setMgmtAddQuota(Math.max(1, parseInt(e.target.value) || 1))} className="w-12 text-center border-none focus-visible:ring-0 text-sm font-black bg-transparent" />
+                                <button type="button" onClick={() => setMgmtAddQuota(mgmtAddQuota + 1)} className="px-3 hover:bg-indigo-50 text-indigo-600"><Plus size={16} strokeWidth={3} /></button>
+                            </div>
+                        </div>
+                        <div className="p-5 rounded-2xl bg-slate-900 text-white shadow-xl shadow-indigo-500/10 space-y-2">
+                             <div className="flex justify-between items-center opacity-70"><span className="text-[10px] font-black uppercase tracking-widest">Total Biaya (1 Thn)</span><ShoppingCart size={14} /></div>
+                             <p className="text-2xl font-black tracking-tighter">Rp {(mgmtAddQuota * MGMT_PRICE_PER_USER * 12).toLocaleString('id-ID')}</p>
+                        </div>
+                        <Alert className="bg-blue-50 border-blue-100"><Info className="size-4 text-blue-600"/><AlertDescription className="text-[10px] text-blue-700 font-medium">Add-on ini berlaku selama 1 tahun dan otomatis menambah slot di semua modul operasional Anda.</AlertDescription></Alert>
+                    </div>
+                    <DialogFooter className="p-6 pt-0 flex gap-2">
+                        <DialogClose asChild><Button variant="ghost" className="flex-1 font-bold text-xs">Batal</Button></DialogClose>
+                        <Button className="flex-1 font-black uppercase tracking-widest text-[10px] h-11 bg-indigo-600 hover:bg-indigo-700" onClick={handleBuyMgmtAddon}>Beli Sekarang</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
