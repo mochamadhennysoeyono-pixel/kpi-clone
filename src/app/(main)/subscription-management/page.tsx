@@ -1,3 +1,4 @@
+
 // src/app/(main)/subscription-management/page.tsx
 "use client";
 
@@ -99,8 +100,8 @@ export default function SubscriptionManagementPage() {
             description: "Paket uji coba gratis untuk eksplorasi seluruh fitur utama KIPIAI.",
             price: 0,
             userLimit: 5,
-            managementUserLimit: 1, // Default to 1
-            companyLimit: 0,
+            managementUserLimit: 1,
+            companyLimit: 2, // Allow small testing group
             durationDays: 14,
             status: 'Active',
             benefitList: ["Akses KPI & KBO", "Akses CollabSpace", "Fitur AI (KIPI) Aktif", "Analisis Laporan Standar"],
@@ -116,7 +117,7 @@ export default function SubscriptionManagementPage() {
             description: "Solusi terjangkau untuk UKM yang fokus pada manajemen KPI & KBO.",
             price: 2500000,
             userLimit: 25,
-            managementUserLimit: 1, // Default to 1
+            managementUserLimit: 1,
             companyLimit: 0,
             durationDays: 365,
             status: 'Active',
@@ -133,13 +134,13 @@ export default function SubscriptionManagementPage() {
             description: "Paket lengkap untuk perusahaan yang ingin akselerasi performa dengan OKR & AI.",
             price: 7500000,
             userLimit: 100,
-            managementUserLimit: 1, // Default to 1
-            companyLimit: 0,
+            managementUserLimit: 2,
+            companyLimit: 2, // Enable small holding by default for PRO
             durationDays: 365,
             status: 'Active',
             benefitList: ["Semua Fitur Basic", "Manajemen OKR", "CollabSpace Aktif", "AI KPI Wizard", "Prioritas Support"],
             features: {
-                allowHolding: false, allowKpi: true, allowKbo: true, allowOkr: true, 
+                allowHolding: true, allowKpi: true, allowKbo: true, allowOkr: true, 
                 allowReporting: true, allowLms: true, allowCollabSpace: true, 
                 allowAiFeatures: true, allowDocumentManagement: true
             }
@@ -150,8 +151,8 @@ export default function SubscriptionManagementPage() {
             description: "Solusi korporasi untuk manajemen grup perusahaan (Holding) dengan kendali penuh.",
             price: 15000000,
             userLimit: -1,
-            managementUserLimit: 1, // Default to 1 (add-ons are purchased separately)
-            companyLimit: 5,
+            managementUserLimit: 5,
+            companyLimit: 10,
             durationDays: 365,
             status: 'Active',
             benefitList: ["Akses Holding/Grup", "Unlimited User", "Full AI Capabilities", "Manajemen Dokumen Lanjutan", "Dedicated Account Manager"],
@@ -167,7 +168,8 @@ export default function SubscriptionManagementPage() {
         for (const plan of defaults) {
             await addSubscriptionPlan(plan);
         }
-        toast({ title: "Inisialisasi Berhasil", description: "4 Paket standar telah ditambahkan ke database." });
+        toast({ title: "Inisialisasi Berhasil", description: "Paket telah diperbarui dengan kuota grup yang lebih baik." });
+        await fetchData(true);
     } catch (e: any) {
         toast({ variant: 'destructive', title: "Gagal Inisialisasi", description: e.message });
     } finally {
@@ -212,7 +214,7 @@ export default function SubscriptionManagementPage() {
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={handleInitializeDefaultPlans} disabled={isInitializing}>
                     {isInitializing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4 text-primary" />}
-                    Gunakan Paket Standar
+                    Update Paket Standar
                 </Button>
                 <Button onClick={handleAddPlan} className="font-bold shadow-md">
                     <PlusCircle className="mr-2 h-4 w-4" />

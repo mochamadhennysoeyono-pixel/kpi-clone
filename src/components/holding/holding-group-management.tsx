@@ -47,10 +47,16 @@ export default function HoldingGroupManagement({ holdingCompany, childCompanies 
     return subscriptionPlans.find(p => p.id === holdingCompany.subscriptionPlanId);
   }, [subscriptionPlans, holdingCompany]);
   
+  // LOGIC: Priority order for limit -> Custom Limit (Superadmin) > Plan Limit > Default 0
+  const groupLimit = useMemo(() => {
+      if (holdingCompany.customCompanyLimit != null) return holdingCompany.customCompanyLimit;
+      return currentPlan?.companyLimit ?? 0;
+  }, [holdingCompany, currentPlan]);
+
   const isLimitReached = useMemo(() => {
-    if (!currentPlan || currentPlan.companyLimit === -1) return false;
-    return childCompanies.length >= currentPlan.companyLimit;
-  }, [currentPlan, childCompanies]);
+    if (groupLimit === -1) return false; // Unlimited
+    return childCompanies.length >= groupLimit;
+  }, [groupLimit, childCompanies.length]);
 
   const handleSelectAll = (checked: boolean | "indeterminate") => {
     setSelectedRowIds(checked ? childCompanies.map(c => c.id) : []);
@@ -66,8 +72,8 @@ export default function HoldingGroupManagement({ holdingCompany, childCompanies 
     if (!company && isLimitReached) {
         toast({
             variant: "destructive",
-            title: "Kuota Penuh",
-            description: `Anda telah mencapai batas ${currentPlan?.companyLimit} anak perusahaan untuk paket ${currentPlan?.name}.`,
+            title: "Kuota Cabang Penuh",
+            description: `Batas maksimal anak perusahaan Anda adalah ${groupLimit}. Silakan hubungi admin untuk upgrade kuota.`,
         });
         return;
     }
@@ -102,104 +108,133 @@ export default function HoldingGroupManagement({ holdingCompany, childCompanies 
 
   return (
     <>
-        {isLimitReached && (
-            <Alert variant="destructive" className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                    Kuota anak perusahaan untuk paket <strong>{currentPlan?.name}</strong> telah tercapai ({childCompanies.length}/{currentPlan?.companyLimit}). Anda tidak dapat menambah grup baru.
-                </AlertDescription>
-            </Alert>
-        )}
-        <div className="flex items-center justify-end gap-2 mb-4">
-            {selectedRowIds.length > 0 && (
-                <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="bg-background/20 text-primary-foreground hover:bg-background/30 dark:bg-muted dark:text-foreground dark:hover:bg-muted/80">
-                        Aksi Massal ({selectedRowIds.length})
-                        <ChevronDown className="ml-2 h-4 w-4" />
+        <div className="space-y-4 mb-6">
+            {isLimitReached && (
+                <Alert variant="destructive" className="bg-red-50 border-red-200">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <AlertDescription className="text-red-800 font-medium">
+                        Kuota anak perusahaan untuk paket <strong>{currentPlan?.name || 'CUSTOM'}</strong> telah tercapai ({childCompanies.length}/{groupLimit === -1 ? '∞' : groupLimit}). Anda tidak dapat menambah grup baru.
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border bg-background shadow-sm">
+                <div className="flex items-center gap-4">
+                    <div className="text-center border-r pr-6">
+                        <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Kapasitas Grup</p>
+                        <p className={cn("text-2xl font-black", isLimitReached ? "text-destructive" : "text-primary")}>
+                            {childCompanies.length} <span className="text-sm font-bold text-muted-foreground">/ {groupLimit === -1 ? '∞' : groupLimit}</span>
+                        </p>
+                    </div>
+                    <div className="hidden sm:block">
+                        <p className="text-xs font-bold text-slate-700">Status Lisensi Cabang</p>
+                        <p className="text-[10px] text-muted-foreground uppercase font-medium">Paket: {currentPlan?.name || 'Kustom'}</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    {selectedRowIds.length > 0 && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-9 gap-1 font-bold">
+                                    Aksi Massal ({selectedRowIds.length})
+                                    <ChevronDown className="ml-2 h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel className="text-[10px] uppercase opacity-60">Pilih Aksi</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(childCompanies.filter(c => selectedRowIds.includes(c.id)))}>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Hapus Pilihan
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
+                    <Button 
+                        size="sm" 
+                        className="h-9 gap-1 font-bold shadow-md" 
+                        onClick={() => handleOpenSheet()} 
+                        disabled={isLimitReached}
+                    >
+                        <PlusCircle className="h-4 w-4" />
+                        Tambah Grup Baru
                     </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Pilih Aksi</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(childCompanies.filter(c => selectedRowIds.includes(c.id)))}>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Hapus Pilihan
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-            )}
-            <Button size="sm" className="h-9 gap-1" onClick={() => handleOpenSheet()} disabled={isLimitReached}>
-            <PlusCircle className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Tambah Grup Baru
-            </span>
-            </Button>
+                </div>
+            </div>
         </div>
-        <Table>
-            <TableHeader>
-            <TableRow>
-                <TableHead className="w-[40px]">
-                <Checkbox
-                    checked={selectedRowIds.length > 0 && selectedRowIds.length === childCompanies.length}
-                    onCheckedChange={(checked) => handleSelectAll(checked)}
-                    aria-label="Pilih semua"
-                />
-                </TableHead>
-                <TableHead>Nama Anak Perusahaan</TableHead>
-                <TableHead>Bidang Usaha</TableHead>
-                <TableHead>Alamat</TableHead>
-                <TableHead>
-                <span className="sr-only">Aksi</span>
-                </TableHead>
-            </TableRow>
-            </TableHeader>
-            <TableBody>
-            {childCompanies.length > 0 ? childCompanies.map((company) => (
-                <TableRow key={company.id} data-state={selectedRowIds.includes(company.id) && "selected"}>
-                <TableCell>
-                    <Checkbox
-                        checked={selectedRowIds.includes(company.id)}
-                        onCheckedChange={() => handleRowSelect(company.id)}
-                        aria-label={`Pilih ${company.name}`}
-                    />
-                </TableCell>
-                <TableCell className="font-medium">
-                    <div className="flex items-center gap-3">
-                    <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-full bg-muted">
-                        <Building className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <span>{company.name}</span>
-                    </div>
-                </TableCell>
-                <TableCell>{company.businessField}</TableCell>
-                <TableCell>{company.address}</TableCell>
-                <TableCell className="text-right">
-                    <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Buka menu</span>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleOpenSheet(company)}>Ubah</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog([company])}>Hapus</DropdownMenuItem>
-                    </DropdownMenuContent>
-                    </DropdownMenu>
-                </TableCell>
-                </TableRow>
-            )) : (
-                <TableRow>
-                    <TableCell colSpan={5} className="text-center h-24">
-                        Belum ada anak perusahaan.
+
+        <div className="rounded-xl border shadow-sm overflow-hidden bg-background">
+            <Table>
+                <TableHeader className="bg-muted/50">
+                    <TableRow>
+                        <TableHead className="w-[40px]">
+                            <Checkbox
+                                checked={selectedRowIds.length > 0 && selectedRowIds.length === childCompanies.length}
+                                onCheckedChange={(checked) => handleSelectAll(checked)}
+                                aria-label="Pilih semua"
+                            />
+                        </TableHead>
+                        <TableHead>Nama Anak Perusahaan</TableHead>
+                        <TableHead>Bidang Usaha</TableHead>
+                        <TableHead>Alamat</TableHead>
+                        <TableHead className="text-right">Aksi</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                {childCompanies.length > 0 ? childCompanies.map((company) => (
+                    <TableRow key={company.id} data-state={selectedRowIds.includes(company.id) && "selected"} className="hover:bg-muted/5 group">
+                    <TableCell>
+                        <Checkbox
+                            checked={selectedRowIds.includes(company.id)}
+                            onCheckedChange={() => handleRowSelect(company.id)}
+                            aria-label={`Pilih ${company.name}`}
+                        />
                     </TableCell>
-                </TableRow>
-            )}
-            </TableBody>
-        </Table>
+                    <TableCell className="font-bold">
+                        <div className="flex items-center gap-3">
+                            <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-xl bg-primary/5 text-primary border border-primary/10">
+                                <Building className="h-5 w-5" />
+                            </div>
+                            <span>{company.name}</span>
+                        </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{company.businessField}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-xs truncate">{company.address}</TableCell>
+                    <TableCell className="text-right">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="rounded-full">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Buka menu</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel className="text-[10px] uppercase opacity-60 font-black">Kelola Cabang</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => handleOpenSheet(company)}>
+                                    <Pencil className="mr-2 size-3.5" /> Ubah Rincian
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog([company])}>
+                                    <Trash2 className="mr-2 size-3.5" /> Hapus Cabang
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </TableCell>
+                    </TableRow>
+                )) : (
+                    <TableRow>
+                        <TableCell colSpan={5} className="h-40 text-center text-muted-foreground italic">
+                            <div className="flex flex-col items-center gap-2 opacity-30">
+                                <Building size={48} />
+                                <p className="font-bold uppercase text-xs">Belum ada anak perusahaan yang terdaftar.</p>
+                            </div>
+                        </TableCell>
+                    </TableRow>
+                )}
+                </TableBody>
+            </Table>
+        </div>
         
         <CompanyFormSheet 
             isOpen={isSheetOpen}
@@ -211,7 +246,7 @@ export default function HoldingGroupManagement({ holdingCompany, childCompanies 
             isOpen={isDeleteDialogOpen}
             onOpenChange={setDeleteDialogOpen}
             onConfirm={handleDelete}
-            itemName={companiesToDelete?.length === 1 ? companiesToDelete[0].name : `${companiesToDelete?.length} perusahaan`}
+            itemName={companiesToDelete?.length === 1 ? companiesToDelete[0].name : `${companiesToDelete?.length || 0} perusahaan`}
             itemType="perusahaan"
         />
     </>
