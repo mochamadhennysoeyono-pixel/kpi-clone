@@ -99,7 +99,7 @@ export default function SubscriptionManagementPage() {
             description: "Paket uji coba gratis untuk eksplorasi seluruh fitur utama KIPIAI.",
             price: 0,
             userLimit: 5,
-            managementUserLimit: 2,
+            managementUserLimit: 1, // Default to 1
             companyLimit: 0,
             durationDays: 14,
             status: 'Active',
@@ -116,7 +116,7 @@ export default function SubscriptionManagementPage() {
             description: "Solusi terjangkau untuk UKM yang fokus pada manajemen KPI & KBO.",
             price: 2500000,
             userLimit: 25,
-            managementUserLimit: 3,
+            managementUserLimit: 1, // Default to 1
             companyLimit: 0,
             durationDays: 365,
             status: 'Active',
@@ -133,7 +133,7 @@ export default function SubscriptionManagementPage() {
             description: "Paket lengkap untuk perusahaan yang ingin akselerasi performa dengan OKR & AI.",
             price: 7500000,
             userLimit: 100,
-            managementUserLimit: 10,
+            managementUserLimit: 1, // Default to 1
             companyLimit: 0,
             durationDays: 365,
             status: 'Active',
@@ -150,7 +150,7 @@ export default function SubscriptionManagementPage() {
             description: "Solusi korporasi untuk manajemen grup perusahaan (Holding) dengan kendali penuh.",
             price: 15000000,
             userLimit: -1,
-            managementUserLimit: -1,
+            managementUserLimit: 1, // Default to 1 (add-ons are purchased separately)
             companyLimit: 5,
             durationDays: 365,
             status: 'Active',
@@ -250,6 +250,10 @@ export default function SubscriptionManagementPage() {
                       <div className="flex items-center gap-3 text-xs font-bold text-foreground/70">
                         <Users className="size-4 text-muted-foreground" />
                         <span>Limit: {plan.userLimit === -1 ? "Tak Terbatas" : `${plan.userLimit} Staff`}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs font-bold text-foreground/70">
+                        <Shield className="size-4 text-muted-foreground" />
+                        <span>Limit: {plan.managementUserLimit === -1 ? "Tak Terbatas" : `${plan.managementUserLimit} Admin`}</span>
                       </div>
                       <div className="flex items-center gap-3 text-xs font-bold text-foreground/70">
                         <Building className="size-4 text-muted-foreground" />

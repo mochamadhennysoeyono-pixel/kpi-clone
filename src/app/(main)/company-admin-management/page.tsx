@@ -122,7 +122,8 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
     if (!company) return null;
 
     const plan = subscriptionPlans.find(p => p.id === company.subscriptionPlanId);
-    const limit = company.customManagementUserLimit ?? plan?.managementUserLimit ?? 2;
+    // SINKRONISASI: Pakai 1 sebagai default jika tidak ada custom limit atau plan limit
+    const limit = company.customManagementUserLimit ?? plan?.managementUserLimit ?? 1;
     const currentUsage = companyAdmins.filter(a => a.company === company.name).length;
 
     return {
@@ -142,10 +143,10 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
         return;
     }
     
-    // STRICT QUOTA CHECK
+    // STRICT QUOTA CHECK: Jika penuh, panggil popup beli
     if (quotaInfo?.managementLimitReached) {
         if (onQuotaFull) {
-            onQuotaFull(); // Trigger purchase dialog in parent (Portal)
+            onQuotaFull(); // Pemicu popup pembelian di PortalPage
         } else {
             toast({ variant: "destructive", title: "Kuota Penuh", description: quotaInfo.message });
         }
@@ -370,7 +371,7 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
         onOpenChange={setSheetOpen}
         employee={selectedAdmin}
         onAdd={handleAddAction}
-        onSave={() => {}} 
+        onSave={(id, data) => handleAddAction({ ...data, id })} // Re-use add logic for simplicity in management context
         quotaInfo={quotaInfo as any}
       />
 
