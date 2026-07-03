@@ -14,7 +14,7 @@ export async function sendEmail(
 ): Promise<void> {
   try {
     console.log(`[SMTP_ATTEMPT] Queueing email to: ${to.join(', ')}`);
-    const fromAddress = process.env.SMTP_FROM_EMAIL || "noreply@kipiai.id";
+    const fromAddress = process.env.SMTP_FROM_EMAIL || "noreply@perfom.id";
 
     // Menambahkan dokumen ke koleksi 'mail' di database 'performance'
     const docRef = await db.collection('mail').add({
@@ -108,8 +108,10 @@ export async function sendPasswordResetEmailWithSmtp(email: string, userName: st
     try {
         console.log(`[AUTH_SERVICE] Reset link request for: ${email}`);
         
-        const projectId = "studio-2326395113-859ef";
-        const baseUrl = `https://${projectId}.firebaseapp.com`;
+        // MOD: Gunakan domain aplikasi PERFOM yang spesifik, jangan gunakan domain default Firebase Project
+        // karena dalam satu project bisa ada banyak aplikasi (multi-site).
+        // Kita prioritaskan variabel lingkungan NEXT_PUBLIC_BASE_URL.
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://app.perfom.id"; 
         
         const actionCodeSettings = { 
             url: `${baseUrl}/login`,
