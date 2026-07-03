@@ -90,40 +90,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const superadminDocRef = doc(db, 'superadmins', user.uid);
-        const superadminDoc = await getDoc(superadminDocRef);
+        try {
+            const superadminDocRef = doc(db, 'superadmins', user.uid);
+            const superadminDoc = await getDoc(superadminDocRef);
 
-        if (superadminDoc.exists()) {
-            const userProfile = { ...superadminDoc.data(), id: superadminDoc.id } as any;
-            userProfile.role = 'superadmin';
-            setCurrentUser(userProfile);
-            setUserRole('superadmin'); 
-            setFirebaseUser(user);
-        } else {
-            const companyAdminDocRef = doc(db, 'companyAdmins', user.uid);
-            const companyAdminDoc = await getDoc(companyAdminDocRef);
-
-            if (companyAdminDoc.exists()) {
-                const userProfile = { ...companyAdminDoc.data(), id: companyAdminDoc.id } as any;
+            if (superadminDoc.exists()) {
+                const userProfile = { ...superadminDoc.data(), id: superadminDoc.id } as any;
+                userProfile.role = 'superadmin';
                 setCurrentUser(userProfile);
-                setUserRole('manajemen');
+                setUserRole('superadmin'); 
                 setFirebaseUser(user);
             } else {
-                const employeeDocRef = doc(db, 'employees', user.uid);
-                const employeeDoc = await getDoc(employeeDocRef);
+                const companyAdminDocRef = doc(db, 'companyAdmins', user.uid);
+                const companyAdminDoc = await getDoc(companyAdminDocRef);
 
-                if (employeeDoc.exists()) {
-                  const userProfile = { ...employeeDoc.data(), id: employeeDoc.id } as any;
-                  setCurrentUser(userProfile);
-                  setUserRole(userProfile.role || 'user');
-                  setFirebaseUser(user);
+                if (companyAdminDoc.exists()) {
+                    const userProfile = { ...companyAdminDoc.data(), id: companyAdminDoc.id } as any;
+                    setCurrentUser(userProfile);
+                    setUserRole('manajemen');
+                    setFirebaseUser(user);
                 } else {
-                    console.warn(`[Auth] No profile found for ${user.uid}`);
-                    setCurrentUser(null);
-                    setFirebaseUser(null);
-                    setUserRole(null);
+                    const employeeDocRef = doc(db, 'employees', user.uid);
+                    const employeeDoc = await getDoc(employeeDocRef);
+
+                    if (employeeDoc.exists()) {
+                      const userProfile = { ...employeeDoc.data(), id: employeeDoc.id } as any;
+                      setCurrentUser(userProfile);
+                      setUserRole(userProfile.role || 'user');
+                      setFirebaseUser(user);
+                    } else {
+                        console.warn(`[Auth] No profile found for ${user.uid}`);
+                        setCurrentUser(null);
+                        setFirebaseUser(null);
+                        setUserRole(null);
+                    }
                 }
             }
+        } catch (err) {
+            console.error("[Auth] Error fetching user profile:", err);
+            setCurrentUser(null);
+            setFirebaseUser(null);
+            setUserRole(null);
         }
       } else {
         setCurrentUser(null);
@@ -143,9 +150,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signInWithEmailAndPassword(auth, email.toLowerCase().trim(), pass);
       return { success: true };
     } catch (e: any) {
-      console.error("Login error:", e);
+      // Specifically handle invalid credentials to return a clean error without crashing
+      const errorMsg = (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found')
+        ? 'Email atau kata sandi salah.'
+        : 'Terjadi kesalahan saat masuk. Silakan coba lagi.';
+      
+      console.warn(`[Auth] Login attempt failed: ${e.code}`);
       setIsLoading(false);
-      return { success: false, error: 'Email atau kata sandi salah.' };
+      return { success: false, error: errorMsg };
     }
   };
 
