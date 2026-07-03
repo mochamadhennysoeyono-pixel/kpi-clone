@@ -1,4 +1,3 @@
-
 // src/app/(main)/lms/user/course/[courseId]/page.tsx
 "use client";
 
@@ -56,6 +55,7 @@ import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import { VideoPlayer } from "@/components/lms/video-player";
 import { toast } from "@/hooks/use-toast";
+import { usePageContext } from "@/contexts/page-context";
 
 
 const TopicContent = React.memo(({ topic }: { topic: LmsTopic }) => {
@@ -546,6 +546,7 @@ export default function CoursePage() {
     const { courses, quizzes, enrollments, enrollToCourse, updateEnrollment, fetchData } = useMasterData();
     const { currentUser } = useAuth();
     const isMobile = useIsMobile();
+    const { setHideBottomNav } = usePageContext(); // Access page context to hide bottom nav
     
     const courseId = params.courseId as string;
     const isReviewMode = searchParams.get('review') === 'true';
@@ -557,6 +558,14 @@ export default function CoursePage() {
     const [isClient, setIsClient] = React.useState(false);
     const [isResultView, setIsResultView] = React.useState(false);
     const [viewerData, setViewerData] = React.useState<{enrollment: Enrollment, employee: Employee} | null>(null);
+
+    // Hide bottom nav on mobile when in course player
+    React.useEffect(() => {
+        if (isMobile) {
+            setHideBottomNav(true);
+        }
+        return () => setHideBottomNav(false);
+    }, [isMobile, setHideBottomNav]);
 
     // Variabel progress harus di atas Hook yang memanggilnya
     const enrollmentToUse = !!viewerData ? viewerData?.enrollment : enrollments.find(e => e.courseId === courseId && e.employeeId === currentUser?.id);

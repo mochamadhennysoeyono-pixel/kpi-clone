@@ -1,4 +1,3 @@
-
 // src/app/(main)/main-layout-content.tsx
 "use client";
 
@@ -78,6 +77,8 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
                 <main className="w-full min-w-0">
                     <div className={cn(
                         "p-4 sm:p-6 lg:p-10 w-full min-w-0 overflow-hidden",
+                        // Menambahkan padding bawah pada mobile agar tidak tertutup bottom nav
+                        !isPortal && "pb-24 md:pb-6", 
                         isPortal && "lg:p-12 max-w-7xl mx-auto"
                     )}>
                         {contentToRender}
