@@ -6,7 +6,7 @@ import { useState, useMemo } from 'react';
 import type { Company, SubscriptionPlan } from '@/types';
 import { useMasterData } from '@/contexts/master-data-context';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, MoreHorizontal, ChevronDown, Trash2, Building, AlertCircle } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, ChevronDown, Trash2, Building, AlertCircle, Pencil } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -28,6 +28,7 @@ import { CompanyFormSheet } from '@/components/master-data/company/company-form-
 import { DeleteConfirmationDialog } from '@/components/master-data/delete-confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '../ui/alert';
+import { cn } from '@/lib/utils';
 
 interface HoldingGroupManagementProps {
     holdingCompany: Company;
