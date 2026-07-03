@@ -109,16 +109,30 @@ export async function sendPasswordResetEmailWithSmtp(email: string, userName: st
     try {
         console.log(`[AUTH_SERVICE] Reset link request for: ${email}`);
         
-        // Prioritaskan domain saat ini (origin) agar selalu valid di allowlist project.
-        // Jika tidak ada, gunakan default app.perfom.id
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || origin || "https://app.perfom.id"; 
+        // Bersihkan origin dari trailing slash
+        let baseUrl = process.env.NEXT_PUBLIC_BASE_URL || origin || "https://app.perfom.id";
+        if (baseUrl.endsWith('/')) {
+            baseUrl = baseUrl.slice(0, -1);
+        }
         
         const actionCodeSettings = { 
             url: `${baseUrl}/login`,
             handleCodeInApp: true 
         };
 
-        const resetLink = await auth.generatePasswordResetLink(email, actionCodeSettings);
+        let resetLink;
+        try {
+            resetLink = await auth.generatePasswordResetLink(email, actionCodeSettings);
+        } catch (authError: any) {
+            if (authError.code === 'auth/unauthorized-continue-uri') {
+                console.error(`[AUTH_SERVICE_ERROR] Domain "${baseUrl}" is not allowlisted in Firebase Console.`);
+                return { 
+                    success: false, 
+                    error: `Domain aplikasi (${baseUrl}) belum didaftarkan di Authorized Domains pada Firebase Console. Harap hubungi Admin.` 
+                };
+            }
+            throw authError;
+        }
         
         await sendTemplatedEmail(email, 'password_reset', {
             nama_pengguna: userName,
@@ -130,9 +144,7 @@ export async function sendPasswordResetEmailWithSmtp(email: string, userName: st
         console.error("[AUTH_SERVICE_ERROR] Email:", email, "Error:", error.message);
         let friendlyError = error.message;
         
-        if (error.code === 'auth/unauthorized-continue-uri') {
-            friendlyError = "Domain aplikasi ini belum terdaftar di allowlist proyek. Harap hubungi pengembang.";
-        } else if (error.code === 'auth/user-not-found') {
+        if (error.code === 'auth/user-not-found') {
             friendlyError = "Email ini belum terdaftar di sistem otentikasi login.";
         }
         

@@ -91,39 +91,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
+            let userProfile: any = null;
+            let role: UserRole = null;
+            let collectionName: 'superadmins' | 'companyAdmins' | 'employees' = 'employees';
+
+            // 1. Cek di Superadmins
             const superadminDocRef = doc(db, 'superadmins', user.uid);
             const superadminDoc = await getDoc(superadminDocRef);
 
             if (superadminDoc.exists()) {
-                const userProfile = { ...superadminDoc.data(), id: superadminDoc.id } as any;
-                userProfile.role = 'superadmin';
-                setCurrentUser(userProfile);
-                setUserRole('superadmin'); 
-                setFirebaseUser(user);
+                userProfile = { ...superadminDoc.data(), id: superadminDoc.id };
+                role = 'superadmin';
+                collectionName = 'superadmins';
             } else {
+                // 2. Cek di CompanyAdmins
                 const companyAdminDocRef = doc(db, 'companyAdmins', user.uid);
                 const companyAdminDoc = await getDoc(companyAdminDocRef);
 
                 if (companyAdminDoc.exists()) {
-                    const userProfile = { ...companyAdminDoc.data(), id: companyAdminDoc.id } as any;
-                    setCurrentUser(userProfile);
-                    setUserRole('manajemen');
-                    setFirebaseUser(user);
+                    userProfile = { ...companyAdminDoc.data(), id: companyAdminDoc.id };
+                    role = 'manajemen';
+                    collectionName = 'companyAdmins';
                 } else {
+                    // 3. Cek di Employees
                     const employeeDocRef = doc(db, 'employees', user.uid);
                     const employeeDoc = await getDoc(employeeDocRef);
 
                     if (employeeDoc.exists()) {
-                      const userProfile = { ...employeeDoc.data(), id: employeeDoc.id } as any;
-                      setCurrentUser(userProfile);
-                      setUserRole(userProfile.role || 'user');
-                      setFirebaseUser(user);
-                    } else {
-                        setCurrentUser(null);
-                        setFirebaseUser(null);
-                        setUserRole(null);
+                      userProfile = { ...employeeDoc.data(), id: employeeDoc.id };
+                      role = userProfile.role || 'user';
+                      collectionName = 'employees';
                     }
                 }
+            }
+
+            if (userProfile) {
+                // SINKRONISASI STATUS LOGIN KE "ACTIVE"
+                if (userProfile.loginStatus !== 'Active') {
+                    console.log(`[Auth] First login detected for ${userProfile.name}, updating status to Active.`);
+                    const userRef = doc(db, collectionName, user.uid);
+                    await updateDoc(userRef, { loginStatus: 'Active' });
+                    userProfile.loginStatus = 'Active';
+                }
+                
+                setCurrentUser(userProfile);
+                setUserRole(role);
+                setFirebaseUser(user);
+            } else {
+                setCurrentUser(null);
+                setFirebaseUser(null);
+                setUserRole(null);
             }
         } catch (err) {
             console.error("[Auth] Error fetching user profile:", err);
@@ -141,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, []);
 
   const loginWithEmail = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
@@ -364,7 +381,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         return { success: true };
     } catch(e: any) {
-        return { success: false, error: "Terjadi kesalahan saat memproses permintaan reset kata sandi." };
+        console.error(`[AUTH_CONTEXT_ERROR]`, e.message);
+        return { success: false, error: e.message };
     } finally {
         if (!isSilent) setIsLoading(false);
     }
