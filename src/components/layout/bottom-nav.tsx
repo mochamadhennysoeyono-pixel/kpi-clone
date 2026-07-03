@@ -86,7 +86,10 @@ export function BottomNav() {
   }, [userRole]);
 
 
-  if (!isMobile || hideBottomNav) {
+  // HIDE BOTTOM NAV ON PORTAL PAGE FOR MOBILE
+  const isPortal = pathname === '/portal';
+
+  if (!isMobile || hideBottomNav || isPortal) {
     return null;
   }
   
