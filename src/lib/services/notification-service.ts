@@ -1,3 +1,4 @@
+
 // src/lib/services/notification-service.ts
 'use server';
 
@@ -104,14 +105,13 @@ function replacePlaceholders(text: string, context: Record<string, string>): str
 /**
  * Generate Link Reset dan kirim via SMTP.
  */
-export async function sendPasswordResetEmailWithSmtp(email: string, userName: string): Promise<{ success: boolean; error?: string }> {
+export async function sendPasswordResetEmailWithSmtp(email: string, userName: string, origin?: string | null): Promise<{ success: boolean; error?: string }> {
     try {
         console.log(`[AUTH_SERVICE] Reset link request for: ${email}`);
         
-        // MOD: Gunakan domain aplikasi PERFOM yang spesifik, jangan gunakan domain default Firebase Project
-        // karena dalam satu project bisa ada banyak aplikasi (multi-site).
-        // Kita prioritaskan variabel lingkungan NEXT_PUBLIC_BASE_URL.
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://app.perfom.id"; 
+        // Prioritaskan domain saat ini (origin) agar selalu valid di allowlist project.
+        // Jika tidak ada, gunakan default app.perfom.id
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || origin || "https://app.perfom.id"; 
         
         const actionCodeSettings = { 
             url: `${baseUrl}/login`,
@@ -129,9 +129,13 @@ export async function sendPasswordResetEmailWithSmtp(email: string, userName: st
     } catch (error: any) {
         console.error("[AUTH_SERVICE_ERROR] Email:", email, "Error:", error.message);
         let friendlyError = error.message;
-        if (error.code === 'auth/user-not-found') {
+        
+        if (error.code === 'auth/unauthorized-continue-uri') {
+            friendlyError = "Domain aplikasi ini belum terdaftar di allowlist proyek. Harap hubungi pengembang.";
+        } else if (error.code === 'auth/user-not-found') {
             friendlyError = "Email ini belum terdaftar di sistem otentikasi login.";
         }
+        
         return { success: false, error: friendlyError };
     }
 }

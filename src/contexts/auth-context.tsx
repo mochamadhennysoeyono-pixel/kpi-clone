@@ -119,7 +119,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                       setUserRole(userProfile.role || 'user');
                       setFirebaseUser(user);
                     } else {
-                        console.warn(`[Auth] No profile found for ${user.uid}`);
                         setCurrentUser(null);
                         setFirebaseUser(null);
                         setUserRole(null);
@@ -150,12 +149,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signInWithEmailAndPassword(auth, email.toLowerCase().trim(), pass);
       return { success: true };
     } catch (e: any) {
-      // Specifically handle invalid credentials to return a clean error without crashing
       const errorMsg = (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found')
         ? 'Email atau kata sandi salah.'
         : 'Terjadi kesalahan saat masuk. Silakan coba lagi.';
       
-      console.warn(`[Auth] Login attempt failed: ${e.code}`);
       setIsLoading(false);
       return { success: false, error: errorMsg };
     }
@@ -359,13 +356,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isSilent) setIsLoading(true);
     
     try {
-        console.log(`[AUTH_CONTEXT] Requesting reset for: ${cleanEmail} (${userName})`);
-        const result = await sendPasswordResetEmailWithSmtp(cleanEmail, userName);
-        if (!result.success) throw new Error(result.error);
+        const origin = typeof window !== 'undefined' ? window.location.origin : null;
+        const result = await sendPasswordResetEmailWithSmtp(cleanEmail, userName, origin);
+        
+        if (!result.success) {
+            return { success: false, error: result.error };
+        }
         return { success: true };
     } catch(e: any) {
-        console.error(`[AUTH_CONTEXT_ERROR]`, e.message);
-        return { success: false, error: e.message };
+        return { success: false, error: "Terjadi kesalahan saat memproses permintaan reset kata sandi." };
     } finally {
         if (!isSilent) setIsLoading(false);
     }
