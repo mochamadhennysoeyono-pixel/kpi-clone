@@ -1,4 +1,3 @@
-
 // src/app/(main)/portal/page.tsx
 "use client";
 
@@ -48,11 +47,11 @@ import {
   DialogFooter,
   DialogClose
 } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { serverTimestamp } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
 import CompanyAdminManagementPage from '@/app/(main)/company-admin-management/page';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // --- Static Data for Modules ---
 const MODULE_CATALOG = [
@@ -213,7 +212,7 @@ function AdminDataCard({ label, description, icon: Icon, href, color, onClick }:
     );
 }
 
-const MGMT_PRICE_PER_USER = 25000;
+const MGMT_PRICE_PER_USER = 75000; // Harga investasi lifetime
 
 export default function PortalPage() {
     const { currentUser, userRole, logout, setIsLoading } = useAuth();
@@ -225,7 +224,7 @@ export default function PortalPage() {
     const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
     const [isMgmtDialogOpen, setIsMgmtDialogOpen] = useState(false);
     const [isMgmtConfigOpen, setIsMgmtConfigOpen] = useState(false);
-    const [mgmtAddQuota, setMgmtAddQuota] = useState(2);
+    const [mgmtAddQuota, setMgmtAddQuota] = useState(1);
     const [isUpgrading, setIsUpgrading] = useState(false);
 
     const company = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
@@ -336,7 +335,7 @@ export default function PortalPage() {
         try {
             const currentLimit = company.customManagementUserLimit || 1;
             const newLimit = currentLimit + mgmtAddQuota;
-            const totalPrice = mgmtAddQuota * MGMT_PRICE_PER_USER * 12;
+            const totalPrice = mgmtAddQuota * MGMT_PRICE_PER_USER;
 
             await updateCompany(company.id, { customManagementUserLimit: newLimit });
 
@@ -344,11 +343,11 @@ export default function PortalPage() {
                 companyId: company.id,
                 companyName: company.name,
                 company: company.name,
-                planName: `Add-on: +${mgmtAddQuota} Akun Manajemen`,
+                planName: `Add-on: +${mgmtAddQuota} Akun Manajemen (Lifetime)`,
                 action: 'UPGRADE',
                 amount: totalPrice,
                 startDate: new Date().toISOString(),
-                endDate: addDays(new Date(), 365).toISOString(),
+                endDate: addDays(new Date(), 36500).toISOString(), // Far future for lifetime
                 performedBy: currentUser!.name,
                 timestamp: serverTimestamp()
             });
@@ -482,7 +481,7 @@ export default function PortalPage() {
                     </DialogHeader>
                     <div className="flex-1 overflow-y-auto no-scrollbar">
                          <div className="p-4">
-                            <CompanyAdminManagementPage />
+                            <CompanyAdminManagementPage onQuotaFull={() => { setIsMgmtConfigOpen(true); }} />
                          </div>
                     </div>
                 </DialogContent>
@@ -492,7 +491,7 @@ export default function PortalPage() {
                 <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden">
                     <DialogHeader className="p-6 pb-2 bg-indigo-50 border-b">
                         <DialogTitle className="font-black text-indigo-900 flex items-center gap-2"><Shield className="size-5" /> Tambah Kuota Admin</DialogTitle>
-                        <DialogDescription className="text-indigo-700/70 text-xs font-bold uppercase tracking-wider">Layanan Add-on Premium</DialogDescription>
+                        <DialogDescription className="text-indigo-700/70 text-xs font-bold uppercase tracking-wider">Investasi Add-on Lifetime</DialogDescription>
                     </DialogHeader>
                     <div className="p-6 space-y-6">
                         <div className="flex items-center justify-between">
@@ -507,18 +506,18 @@ export default function PortalPage() {
                             </div>
                         </div>
                         <div className="p-5 rounded-2xl bg-slate-900 text-white shadow-xl shadow-indigo-500/10 space-y-2">
-                             <div className="flex justify-between items-center opacity-70"><span className="text-[10px] font-black uppercase tracking-widest">Total Biaya (1 Thn)</span><ShoppingCart size={14} /></div>
-                             <p className="text-2xl font-black tracking-tighter">Rp {(mgmtAddQuota * MGMT_PRICE_PER_USER * 12).toLocaleString('id-ID')}</p>
+                             <div className="flex justify-between items-center opacity-70"><span className="text-[10px] font-black uppercase tracking-widest">Total Investasi (Sekali Bayar)</span><ShoppingCart size={14} /></div>
+                             <p className="text-2xl font-black tracking-tighter">Rp {(mgmtAddQuota * MGMT_PRICE_PER_USER).toLocaleString('id-ID')}</p>
                         </div>
                         <Alert className="bg-blue-50 border-blue-100">
                             <Info className="size-4 text-blue-600"/>
                             <AlertDescription className="text-[10px] text-blue-700 font-medium">
-                                Add-on ini berlaku selama 1 tahun dan otomatis menambah slot di semua modul operasional Anda.
+                                Penambahan kuota ini berlaku selamanya (Lifetime) dan tidak memerlukan biaya perpanjangan tahunan.
                             </AlertDescription>
                         </Alert>
                     </div>
                     <DialogFooter className="p-6 pt-0 flex gap-2">
-                        <DialogClose asChild><Button variant="ghost" className="flex-1 font-bold text-xs">Batal</Button></DialogClose>
+                        <DialogClose asChild><Button variant="outline" className="flex-1 font-bold text-xs">Batal</Button></DialogClose>
                         <Button className="flex-1 font-black uppercase tracking-widest text-[10px] h-11 bg-indigo-600 hover:bg-indigo-700" onClick={handleBuyMgmtAddon}>Beli Sekarang</Button>
                     </DialogFooter>
                 </DialogContent>

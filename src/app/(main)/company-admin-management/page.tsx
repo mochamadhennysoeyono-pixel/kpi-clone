@@ -1,4 +1,3 @@
-
 // src/app/(main)/company-admin-management/page.tsx
 "use client";
 
@@ -55,8 +54,11 @@ import { cn } from "@/lib/utils";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import { EmployeeFormSheet } from "@/components/master-data/employees/employee-form-sheet";
 
+interface CompanyAdminManagementPageProps {
+    onQuotaFull?: () => void;
+}
 
-export default function CompanyAdminManagementPage() {
+export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdminManagementPageProps) {
   const { currentUser, userRole, addCompanyAdmin, sendPasswordReset } = useAuth();
   const { companyAdmins, deleteCompanyAdmins, companies, subscriptionPlans, employees, fetchData } = useMasterData();
   const [isSheetOpen, setSheetOpen] = useState(false);
@@ -126,11 +128,11 @@ export default function CompanyAdminManagementPage() {
     return {
         limit,
         currentUsage,
-        userLimitReached: false, // Not used for admin
+        userLimitReached: false, 
         managementLimitReached: limit !== -1 && currentUsage >= limit,
-        message: limit !== -1 && currentUsage >= limit ? "Kuota Manajemen penuh. Hubungi pusat untuk upgrade." : "",
+        message: limit !== -1 && currentUsage >= limit ? "Kuota Manajemen penuh. Silakan tambah kuota investasi." : "",
         companyName: company.name,
-        limits: { user: 0, mgmt: limit } // For form display
+        limits: { user: 0, mgmt: limit }
     };
   }, [selectedCompanyId, companies, subscriptionPlans, companyAdmins, userCompany]);
 
@@ -140,7 +142,11 @@ export default function CompanyAdminManagementPage() {
         return;
     }
     if (quotaInfo?.managementLimitReached) {
-        toast({ variant: "destructive", title: "Kuota Penuh", description: quotaInfo.message });
+        if (onQuotaFull) {
+            onQuotaFull(); // Trigger purchase dialog in parent (Portal)
+        } else {
+            toast({ variant: "destructive", title: "Kuota Penuh", description: quotaInfo.message });
+        }
         return;
     }
     setSelectedAdmin(undefined);
@@ -275,7 +281,7 @@ export default function CompanyAdminManagementPage() {
                     <TableHeader className="bg-muted/50">
                     <TableRow>
                         <TableHead>Nama Pengguna</TableHead>
-                        {isSuperadmin && <TableHead>Perusahaan</TableHead>}
+                        {(isSuperadmin || isHoldingAdmin) && <TableHead>Perusahaan</TableHead>}
                         <TableHead>Email</TableHead>
                         <TableHead>Status Login</TableHead>
                         <TableHead className="text-right">Aksi</TableHead>
@@ -295,7 +301,7 @@ export default function CompanyAdminManagementPage() {
                             <span className="font-bold text-slate-900">{admin.name}</span>
                             </div>
                         </TableCell>
-                        {isSuperadmin && (
+                        {(isSuperadmin || isHoldingAdmin) && (
                             <TableCell>
                                 <div className="flex items-center gap-1.5 text-xs font-semibold">
                                     <Building className="size-3 text-muted-foreground" />
@@ -340,7 +346,7 @@ export default function CompanyAdminManagementPage() {
                         ))
                     ) : (
                         <TableRow>
-                            <TableCell colSpan={isSuperadmin ? 5 : 4} className="h-32 text-center text-muted-foreground italic">
+                            <TableCell colSpan={(isSuperadmin || isHoldingAdmin) ? 5 : 4} className="h-32 text-center text-muted-foreground italic">
                                 Tidak ada data admin ditemukan.
                             </TableCell>
                         </TableRow>
