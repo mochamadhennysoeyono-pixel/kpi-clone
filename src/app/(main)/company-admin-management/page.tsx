@@ -121,11 +121,9 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
     const company = companies.find(c => c.id === targetId);
     if (!company) return null;
 
-    const plan = subscriptionPlans.find(p => p.id === company.subscriptionPlanId);
-    
-    // PERBAIKAN: Gunakan managementUserLimit, bukan userLimit (staff)
-    // Default tetap 1 jika tidak ada konfigurasi lain
-    const limit = company.customManagementUserLimit ?? plan?.managementUserLimit ?? 1;
+    // FIX: Management quota strictly uses customManagementUserLimit or default 1
+    // Ignore staff limits (userLimit) from plans
+    const limit = company.customManagementUserLimit || 1;
     const currentUsage = companyAdmins.filter(a => a.company === company.name).length;
 
     return {
@@ -136,7 +134,7 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
         companyName: company.name,
         limits: { user: 0, mgmt: limit }
     };
-  }, [selectedCompanyId, companies, subscriptionPlans, companyAdmins, userCompany]);
+  }, [selectedCompanyId, companies, companyAdmins, userCompany]);
 
   const handleAddAdmin = () => {
     if (selectedCompanyId === 'all' && isSuperadmin) {
@@ -144,7 +142,7 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
         return;
     }
     
-    // STRICT CHECK: Jika kuota penuh, panggil fungsi onQuotaFull untuk buka popup beli
+    // STRICT BLOCKING: Check quota before opening sheet
     if (quotaInfo?.managementLimitReached) {
         if (onQuotaFull) {
             onQuotaFull(); 
@@ -253,7 +251,10 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
           </div>
         </CardHeader>
         <CardContent className="pt-2">
-            <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 border rounded-xl bg-muted/30">
+            <div className={cn(
+              "flex flex-col md:flex-row gap-4 mb-6 p-4 border rounded-xl bg-muted/30",
+              !(isSuperadmin || isHoldingAdmin) && "justify-end"
+            )}>
                 {(isSuperadmin || isHoldingAdmin) && (
                     <div className="flex flex-1 items-center gap-2">
                         <Filter className="size-4 text-muted-foreground hidden sm:block" />

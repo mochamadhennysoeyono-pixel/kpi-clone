@@ -235,7 +235,7 @@ export default function PortalPage() {
         return companies.filter(c => c.parentId === company.id);
     }, [company, companies]);
 
-    // Management Quota Logic
+    // Management Quota Logic: Force 1 if undefined, strictly consistent with CompanyAdminManagementPage
     const mgmtLimit = useMemo(() => company?.customManagementUserLimit || 1, [company]);
     const currentMgmtCount = useMemo(() => company ? companyAdmins.filter(a => a.company === company.name).length : 0, [companyAdmins, company]);
 
@@ -347,7 +347,7 @@ export default function PortalPage() {
                 action: 'UPGRADE',
                 amount: totalPrice,
                 startDate: new Date().toISOString(),
-                endDate: addDays(new Date(), 36500).toISOString(), // Far future for lifetime
+                endDate: addDays(new Date(), 36500).toISOString(), 
                 performedBy: currentUser!.name,
                 timestamp: serverTimestamp()
             });
