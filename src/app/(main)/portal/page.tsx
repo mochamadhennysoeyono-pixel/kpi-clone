@@ -102,7 +102,7 @@ function ModuleCard({
                 <div className={cn("p-2.5 rounded-xl w-fit mb-4 transition-transform group-hover:scale-110", config.bg, config.color)}>
                     <config.icon size={24} />
                 </div>
-                {isActive && (
+                {(isActive && isManagement) && (
                     <Badge className="absolute top-6 right-6 bg-green-500 hover:bg-green-600 font-bold border-none text-[10px] uppercase">
                         {isTrial ? 'Trial' : 'Aktif'}
                     </Badge>
@@ -113,39 +113,37 @@ function ModuleCard({
                 </CardDescription>
             </CardHeader>
             
-            <CardContent className="flex-grow pt-0">
-                {isActive ? (
-                    <div className="space-y-3 bg-muted/30 p-3 rounded-xl border border-dashed text-[11px] font-medium">
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground uppercase tracking-tight">Tipe Paket</span>
-                            <Badge variant={isTrial ? "secondary" : "default"} className={cn("h-5 px-1.5 font-bold uppercase text-[9px]", !isTrial && "bg-blue-600")}>
-                                {subscription.type}
-                            </Badge>
+            {isManagement && (
+                <CardContent className="flex-grow pt-0">
+                    {isActive ? (
+                        <div className="space-y-3 bg-muted/30 p-3 rounded-xl border border-dashed text-[11px] font-medium">
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground uppercase tracking-tight">Tipe Paket</span>
+                                <Badge variant={isTrial ? "secondary" : "default"} className={cn("h-5 px-1.5 font-bold uppercase text-[9px]", !isTrial && "bg-blue-600")}>
+                                    {subscription.type}
+                                </Badge>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground uppercase tracking-tight">Kuota User</span>
+                                <span className="font-bold">{subscription.quota === -1 ? 'Unlimited' : subscription.quota} User</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground uppercase tracking-tight">Masa Berlaku</span>
+                                <span className={cn("font-bold", isExpired ? "text-destructive" : "text-primary")}>
+                                    {subscription.expiryDate ? format(new Date(subscription.expiryDate), 'd MMM yyyy') : 'N/A'}
+                                </span>
+                            </div>
                         </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground uppercase tracking-tight">Kuota User</span>
-                            <span className="font-bold">{subscription.quota === -1 ? 'Unlimited' : subscription.quota} User</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground uppercase tracking-tight">Masa Berlaku</span>
-                            <span className={cn("font-bold", isExpired ? "text-destructive" : "text-primary")}>
-                                {subscription.expiryDate ? format(new Date(subscription.expiryDate), 'd MMM yyyy') : 'N/A'}
-                            </span>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="py-4 text-center">
-                        {isManagement ? (
+                    ) : (
+                        <div className="py-4 text-center">
                             <div className="flex flex-col items-center gap-2 opacity-40">
                                 <Lock size={20} className="text-muted-foreground" />
                                 <p className="text-[10px] font-bold uppercase text-muted-foreground">Belum Berlangganan</p>
                             </div>
-                        ) : (
-                            <p className="text-[11px] text-muted-foreground italic">Hubungi Admin untuk akses modul ini.</p>
-                        )}
-                    </div>
-                )}
-            </CardContent>
+                        </div>
+                    )}
+                </CardContent>
+            )}
 
             <CardFooter className="pt-4 border-t bg-muted/5 mt-auto p-4">
                 <div className="flex items-center gap-2 w-full">
@@ -156,7 +154,7 @@ function ModuleCard({
                                     Masuk Modul <ArrowRight className="ml-2 size-4" />
                                 </Link>
                             </Button>
-                            {isTrial && isManagement && (
+                            {(isTrial && isManagement) && (
                                 <Button 
                                     variant="outline" 
                                     size="icon"
@@ -230,13 +228,27 @@ export default function PortalPage() {
         return companies.filter(c => c.parentId === company.id);
     }, [company, companies]);
 
-    const activeModules = useMemo(() => {
-        return MODULE_CATALOG.filter(m => company?.moduleSubscriptions?.[m.id]?.status === 'active');
-    }, [company]);
-
-    const inactiveModules = useMemo(() => {
-        return MODULE_CATALOG.filter(m => company?.moduleSubscriptions?.[m.id]?.status !== 'active');
-    }, [company]);
+    // --- Filter Modules based on Role and Access ---
+    const { activeModules, availableModules } = useMemo(() => {
+        if (userRole === 'superadmin' || isManagement) {
+            // Management sees everything (Active vs Inactive)
+            return {
+                activeModules: MODULE_CATALOG.filter(m => company?.moduleSubscriptions?.[m.id]?.status === 'active'),
+                availableModules: MODULE_CATALOG.filter(m => company?.moduleSubscriptions?.[m.id]?.status !== 'active')
+            };
+        } else {
+            // Regular user only sees modules they have explicit access to
+            const userAccess = currentUser?.moduleAccess || {};
+            const accessible = MODULE_CATALOG.filter(m => 
+                userAccess[m.id] === true && 
+                company?.moduleSubscriptions?.[m.id]?.status === 'active'
+            );
+            return {
+                activeModules: accessible,
+                availableModules: [] // Hide "Available" section for regular users
+            };
+        }
+    }, [company, userRole, isManagement, currentUser?.moduleAccess]);
 
     const logs = useMemo(() => {
         if (!company) return [];
@@ -312,6 +324,8 @@ export default function PortalPage() {
             await fetchData(true);
         } catch (error: any) {
             toast({ variant: 'destructive', title: "Gagal", description: error.message });
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -450,13 +464,13 @@ export default function PortalPage() {
                         </div>
                     )}
 
-                    {inactiveModules.length > 0 && (
+                    {availableModules.length > 0 && (
                         <div className="space-y-4">
                             <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                                 <LayoutGrid size={4} /> Modul Tersedia
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {inactiveModules.map(m => (
+                                {availableModules.map(m => (
                                     <ModuleCard 
                                         key={m.id} 
                                         config={m} 
