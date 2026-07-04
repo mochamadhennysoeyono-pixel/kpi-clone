@@ -1,3 +1,4 @@
+
 // src/app/(main)/calendar/page.tsx
 "use client";
 
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, PlusCircle, Workflow, BookOpenCheck, FilePlus2, ClipboardPen, GraduationCap } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, PlusCircle, Workflow, BookOpenCheck, FilePlus2, ClipboardPen, GraduationCap, CalendarDays } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { cn } from "@/lib/utils";
 import { useMasterData } from "@/contexts/master-data-context";
@@ -16,6 +17,8 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths,
 import { id as localeId } from "date-fns/locale";
 import { usePageContext } from "@/contexts/page-context";
 import { EventDetailDialog } from "@/components/calendar/event-detail-dialog";
+import { ResponsivePage, ResponsiveToolbar } from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
 
 
 type CalendarEventType = 'Appraisal' | 'Learning' | 'KPI' | 'KBO' | 'Meeting';
@@ -119,7 +122,6 @@ export default function UnifiedCalendarPage() {
           )
       );
     }
-    // --- End of filtering logic ---
     
     relevantKpiSetups.forEach(setup => {
       if (setup.status !== 'Aktif' || !setup.kpiInputDeadline) return;
@@ -197,59 +199,69 @@ export default function UnifiedCalendarPage() {
   };
 
   return (
-    <>
-    <div className="space-y-6">
-      <Card className="shadow-lg">
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <CardTitle className="font-headline">Kalender Terpadu</CardTitle>
-              <CardDescription>
-                Jadwal global, perusahaan, dan personal dalam satu tampilan.
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2 self-start sm:self-center">
+    <ResponsivePage>
+      <PageHeader 
+        title="Kalender Terpadu"
+        description="Pantau seluruh jadwal global, siklus perusahaan, dan agenda personal dalam satu tampilan."
+        icon={CalendarDays}
+        actions={
+            (userRole === 'manajemen' || isManager) && (
+                <Button onClick={() => router.push('/calendar/team-schedule')} className="font-bold shadow-lg">
+                    <PlusCircle className="mr-2 h-4 w-4"/>
+                    Buat Agenda Tim
+                </Button>
+            )
+        }
+      />
+
+      <ResponsiveToolbar>
+            <div className="flex flex-1 items-center gap-3">
                 {showCompanyFilter && (
                     <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                        <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="Filter Perusahaan" /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Semua Perusahaan Saya</SelectItem>
+                        <SelectTrigger className="w-full sm:w-[240px] bg-background border-none shadow-sm"><CalendarIcon className="size-4 mr-2 text-primary" /><SelectValue placeholder="Filter Perusahaan" /></SelectTrigger>
+                        <SelectContent className="z-[350]">
+                            <SelectItem value="all">Seluruh Ekosistem</SelectItem>
                             {manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 )}
-                 {(userRole === 'manajemen' || isManager) && (
-                  <Button onClick={() => router.push('/calendar/team-schedule')} >
-                      <PlusCircle className="mr-2 h-4 w-4"/>
-                      Buat Agenda Tim
-                  </Button>
-                 )}
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-             <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon" onClick={() => setCurrentDate(subMonths(currentDate, 1))}><ChevronLeft className="h-4 w-4" /></Button>
-                    <h3 className="text-lg font-semibold text-center w-40 capitalize">{format(currentDate, "MMMM yyyy", { locale: localeId })}</h3>
-                    <Button variant="outline" size="icon" onClick={() => setCurrentDate(addMonths(currentDate, 1))}><ChevronRight className="h-4 w-4" /></Button>
-                </div>
-                 <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>Hari Ini</Button>
+             <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" className="size-9" onClick={() => setCurrentDate(subMonths(currentDate, 1))}><ChevronLeft size={16} /></Button>
+                <h3 className="text-sm font-black uppercase tracking-widest text-center w-40">{format(currentDate, "MMMM yyyy", { locale: localeId })}</h3>
+                <Button variant="outline" size="icon" className="size-9" onClick={() => setCurrentDate(addMonths(currentDate, 1))}><ChevronRight size={16} /></Button>
+                <Button variant="outline" size="sm" className="h-9 font-bold text-[10px] uppercase ml-2" onClick={() => setCurrentDate(new Date())}>HARI INI</Button>
             </div>
+      </ResponsiveToolbar>
 
-            <div className="grid grid-cols-7 border-t border-l rounded-t-lg">
-                {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((day, index) => (
-                    <div key={index} className="text-center font-semibold text-sm py-2 border-b border-r bg-muted/50">{day}</div>
+      <Card className="border-border/40 shadow-sm overflow-hidden bg-background">
+        <CardContent className="p-0">
+            <div className="grid grid-cols-7 border-b bg-muted/10">
+                {['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'].map((day) => (
+                    <div key={day} className="text-center font-black text-[9px] py-3 tracking-widest text-muted-foreground border-r last:border-r-0">{day}</div>
                 ))}
+            </div>
+            <div className="grid grid-cols-7">
                  {emptyStartDays.map((_, index) => (
-                    <div key={`empty-${index}`} className="border-b border-r h-28"></div>
+                    <div key={`empty-${index}`} className="border-r border-b h-24 sm:h-32 bg-muted/5 opacity-50 last:border-r-0"></div>
                 ))}
                 {daysInMonth.map(day => {
                     const dateKey = format(day, "yyyy-MM-dd");
                     const dayEvents = eventsByDate.get(dateKey) || [];
+                    const isTodayDate = isToday(day);
+
                     return (
-                        <div key={day.toString()} className="relative h-28 border-b border-r p-1.5 flex flex-col gap-1 overflow-y-auto">
-                            <span className="font-medium text-xs">{format(day, "d")}</span>
+                        <div key={day.toString()} className={cn(
+                            "relative h-24 sm:h-32 border-r border-b p-1.5 flex flex-col gap-1 overflow-y-auto transition-colors",
+                            isTodayDate ? "bg-primary/5" : "hover:bg-muted/5",
+                            "last:border-r-0"
+                        )}>
+                            <span className={cn(
+                                "font-black text-[10px] size-5 flex items-center justify-center rounded-lg",
+                                isTodayDate ? "bg-primary text-white" : "text-muted-foreground opacity-40"
+                            )}>
+                                {format(day, "d")}
+                            </span>
                             <div className="space-y-1">
                                 {dayEvents.map(event => (
                                     <EventBadge key={event.id} event={event} onClick={handleEventClick} />
@@ -261,12 +273,12 @@ export default function UnifiedCalendarPage() {
             </div>
         </CardContent>
       </Card>
-    </div>
-    <EventDetailDialog
+      
+      <EventDetailDialog
         event={selectedEvent}
         isOpen={!!selectedEvent}
         onOpenChange={() => setSelectedEvent(null)}
-    />
-    </>
+      />
+    </ResponsivePage>
   );
 }

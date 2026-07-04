@@ -1,3 +1,4 @@
+
 // src/app/(main)/ai/knowledge-base/page.tsx
 "use client";
 
@@ -18,6 +19,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { ResponsivePage } from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function AiToolsPage() {
   const { aiTools, addAiTool, updateAiTool, deleteAiTool } = useMasterData();
@@ -65,65 +68,64 @@ export default function AiToolsPage() {
   };
 
   return (
-    <>
-      <Card>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <BrainCircuit />
-              Manajemen Tools AI
-            </CardTitle>
-            <CardDescription>
-              Kelola "kepribadian" dan "peran" untuk setiap tugas yang akan dijalankan oleh AI.
-            </CardDescription>
-          </div>
-          <Button onClick={handleAdd}>
+    <ResponsivePage>
+      <PageHeader 
+        title="Manajemen Tools AI"
+        description="Kelola kepribadian, peran, dan instruksi khusus untuk setiap tugas yang dijalankan oleh AI KIPI."
+        icon={BrainCircuit}
+        actions={
+          <Button onClick={handleAdd} className="font-bold shadow-lg h-9 sm:h-10">
             <PlusCircle className="mr-2 h-4 w-4" />
-            Tambah Tools
+            Tambah Tools Baru
           </Button>
-        </CardHeader>
-        <CardContent>
-          <Accordion type="multiple" className="w-full space-y-2">
+        }
+      />
+
+      <div className="space-y-4 pt-4">
+          <Accordion type="multiple" className="w-full space-y-3">
              {(aiTools || []).map((tool) => (
-                <AccordionItem value={tool.id} key={tool.id} className="border-b-0">
-                    <Card className="bg-muted/30">
-                        <div className="flex items-center">
-                            <AccordionTrigger className="p-4 hover:no-underline flex-1 text-left">
-                                <h3 className="font-semibold">{tool.name}</h3>
-                            </AccordionTrigger>
-                            <div className="pr-4" onClick={(e) => e.stopPropagation()}>
-                                <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2"><MoreHorizontal className="h-4 w-4" /></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleEdit(tool)}><Edit className="mr-2 h-4 w-4"/>Ubah</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => openDeleteDialog(tool)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Hapus</DropdownMenuItem>
-                                </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </div>
-                        <AccordionContent className="p-4 pt-0">
-                            <div className="space-y-3">
-                                {(tool.knowledgeItems || []).map(item => (
-                                <div key={item.id} className="p-3 border rounded-md bg-background text-sm">
-                                    <Badge variant="outline" className="mb-2">{item.type}</Badge>
-                                    <p className="text-muted-foreground whitespace-pre-wrap font-mono text-xs">{item.content}</p>
+                <AccordionItem value={tool.id} key={tool.id} className="border rounded-2xl bg-background shadow-sm overflow-hidden border-border/40">
+                    <div className="flex items-center bg-muted/20">
+                        <AccordionTrigger className="p-5 hover:no-underline flex-1 text-left">
+                            <div className="flex items-center gap-3">
+                                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                    <BrainCircuit size={16} />
                                 </div>
-                                ))}
+                                <h3 className="font-black text-sm uppercase tracking-tight text-slate-900">{tool.name}</h3>
                             </div>
-                        </AccordionContent>
-                    </Card>
+                        </AccordionTrigger>
+                        <div className="pr-5" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><MoreHorizontal className="h-4 w-4" /></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="z-[350]">
+                                    <DropdownMenuItem onClick={() => handleEdit(tool)}><Edit className="mr-2 h-4 w-4"/>Ubah Prompt</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => openDeleteDialog(tool)} className="text-destructive font-bold"><Trash2 className="mr-2 h-4 w-4"/>Hapus Tools</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </div>
+                    <AccordionContent className="p-5 pt-4">
+                        <div className="space-y-3">
+                            {(tool.knowledgeItems || []).map(item => (
+                            <div key={item.id} className="p-4 border rounded-xl bg-muted/5 border-dashed">
+                                <Badge variant="outline" className="mb-2 text-[8px] font-black uppercase border-none bg-primary/5 text-primary">{item.type}</Badge>
+                                <p className="text-muted-foreground whitespace-pre-wrap font-mono text-[11px] leading-relaxed">{item.content}</p>
+                            </div>
+                            ))}
+                        </div>
+                    </AccordionContent>
                 </AccordionItem>
              ))}
           </Accordion>
            {(!aiTools || aiTools.length === 0) && (
-                <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
-                    <p>Belum ada tools AI yang dibuat.</p>
+                <div className="text-center py-20 border-2 border-dashed rounded-3xl bg-muted/10 opacity-30">
+                    <BrainCircuit size={48} className="mx-auto mb-4" />
+                    <p className="font-black uppercase text-[10px] tracking-[0.2em]">Belum Ada Tools AI</p>
                 </div>
            )}
-        </CardContent>
-      </Card>
+      </div>
       
       <AiToolFormSheet 
         isOpen={isSheetOpen}
@@ -139,6 +141,6 @@ export default function AiToolsPage() {
         itemName={toolToDelete?.name || ''}
         itemType="tools AI"
       />
-    </>
+    </ResponsivePage>
   );
 }
