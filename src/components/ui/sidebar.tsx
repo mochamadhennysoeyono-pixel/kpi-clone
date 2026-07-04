@@ -77,7 +77,7 @@ function MotionNav() {
                   exit={{ opacity: 0, x: -5 }}
                   className="flex items-center gap-2"
                 >
-                  <Image src="/logo.png" alt="Logo" width={110} height={28} />
+                  <Image src="/logo.png" alt="Logo" width={110} height={28} priority />
                 </motion.div>
               ) : (
                 <motion.div
@@ -85,9 +85,9 @@ function MotionNav() {
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  className="size-9 rounded-xl bg-primary/5 flex items-center justify-center text-primary border border-primary/10 shadow-sm"
+                  className="size-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-stripe"
                 >
-                  <Layout size={20} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
+                  <Image src="/favicon.png" alt="Logo" width={24} height={24} priority />
                 </motion.div>
               )}
             </AnimatePresence>
