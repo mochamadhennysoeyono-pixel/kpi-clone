@@ -73,7 +73,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm"
+          className="fixed inset-0 z-[200] bg-slate-900/10 backdrop-blur-md"
           onClick={onClose}
         >
           <motion.div
@@ -81,45 +81,45 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
             animate={{ y: "0%" }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className="fixed bottom-0 left-0 right-0 h-[70vh] bg-background/80 backdrop-blur-2xl rounded-t-2xl border-t border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden no-print"
+            className="fixed bottom-0 left-0 right-0 h-[75vh] bg-white rounded-t-2xl border-t border-border shadow-[0_-20px_50px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden no-print"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Padat Header */}
-            <div className="px-5 py-4 flex items-center justify-between shrink-0 bg-background/50 border-b border-white/10">
-                <div className="flex items-center gap-3">
+            {/* Minimalist Premium Header */}
+            <div className="px-6 py-5 flex items-center justify-between shrink-0 border-b border-slate-50">
+                <div className="flex items-center gap-4">
                     {isSubMenuView ? (
                         <button 
                             onClick={handleBack}
-                            className="size-8 rounded-lg bg-white/20 flex items-center justify-center hover:bg-white/40 transition-all active:scale-90 border border-white/20 shadow-sm"
+                            className="size-9 rounded-xl bg-slate-50 flex items-center justify-center hover:bg-slate-100 transition-all active:scale-90 border border-slate-100 shadow-sm"
                         >
-                            <CaretLeft className="size-4" weight="bold" />
+                            <CaretLeft className="size-4 text-slate-900" weight="bold" />
                         </button>
                     ) : (
-                        <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm">
-                            <SquaresFour size={18} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
+                        <div className="size-9 rounded-xl bg-primary/5 flex items-center justify-center text-primary border border-primary/10 shadow-sm">
+                            <SquaresFour size={20} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
                         </div>
                     )}
                     <div className="min-w-0">
-                        <h2 className="text-xs font-black tracking-tight text-foreground uppercase leading-none">
+                        <h2 className="text-sm font-black tracking-tight text-slate-900 uppercase leading-none">
                             {currentView.label}
                         </h2>
-                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 mt-1">
-                            Navigasi Cepat
+                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-60 mt-1.5">
+                            Executive Navigator
                         </p>
                     </div>
                 </div>
                 <button 
                     onClick={onClose}
-                    className="size-8 rounded-lg bg-white/20 flex items-center justify-center hover:bg-white/40 transition-all active:scale-90 border border-white/20 shadow-sm"
+                    className="size-9 rounded-xl bg-slate-50 flex items-center justify-center hover:bg-slate-100 transition-all active:scale-90 border border-slate-100"
                 >
-                    <X className="size-4" weight="bold" />
+                    <X className="size-4 text-slate-400" weight="bold" />
                 </button>
             </div>
 
-            {/* Grid Area */}
-            <div className="flex-1 min-h-0">
+            {/* High-Density Grid Area */}
+            <div className="flex-1 min-h-0 bg-[#fafafa]">
                 <ScrollArea className="h-full">
-                    <div className="p-4 pb-12">
+                    <div className="p-5 pb-16">
                         <AnimatePresence initial={false} custom={direction} mode="wait">
                             <motion.div
                                 key={currentView.label}
@@ -129,7 +129,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                 animate="center"
                                 exit="exit"
                                 transition={{ duration: 0.2 }}
-                                className="grid grid-cols-3 gap-2.5"
+                                className="grid grid-cols-3 gap-3"
                             >
                                 {itemsToShow.map((subItem: any) => {
                                     const IconComponent = (iconMap[subItem.iconName || subItem.href || 'default']) || Folders;
@@ -139,26 +139,26 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                     
                                     const content = (
                                         <div className={cn(
-                                            "flex flex-col items-center justify-center gap-2.5 p-3.5 rounded-xl transition-all duration-200 border group/item active:scale-95",
+                                            "flex flex-col items-center justify-center gap-3 p-4 rounded-xl transition-all duration-300 border group/item active:scale-95",
                                             isActive 
-                                                ? "bg-primary/10 border-primary/30 shadow-md" 
-                                                : "bg-white/40 border-white/60 hover:border-primary/20 hover:bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+                                                ? "bg-white border-primary shadow-lg ring-1 ring-primary/10" 
+                                                : "bg-white border-slate-100 hover:border-primary/20 hover:shadow-stripe"
                                         )}>
                                             <div className={cn(
-                                                "size-9 flex items-center justify-center transition-all duration-300",
+                                                "size-10 flex items-center justify-center transition-all duration-500",
                                                 isActive ? "scale-110" : "group-hover/item:scale-125 group-hover/item:rotate-12"
                                             )}>
                                                 {IconComponent && (
                                                     <IconComponent 
-                                                        size={28} 
+                                                        size={32} 
                                                         weight="fill" 
                                                         style={{ fill: "url(#brand-gradient)" }} 
-                                                        className="opacity-100"
+                                                        className={cn(isActive ? "opacity-100" : "opacity-80")}
                                                     />
                                                 )}
                                             </div>
                                             <span className={cn(
-                                                "text-[10px] text-center font-bold tracking-tight leading-tight px-0.5 min-h-[24px] flex items-start justify-center transition-colors",
+                                                "text-[10px] text-center font-bold tracking-tight leading-tight px-0.5 transition-colors uppercase",
                                                 isActive ? "text-primary" : "text-slate-600 group-hover/item:text-slate-900"
                                             )}>
                                                 {subItem.label}
@@ -182,8 +182,8 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                 </ScrollArea>
             </div>
             
-            {/* Bottom Trim */}
-            <div className="h-4 shrink-0 bg-background/50 border-t border-white/10" />
+            {/* Elegant Bottom Trim */}
+            <div className="h-6 shrink-0 bg-white border-t border-slate-50" />
           </motion.div>
         </motion.div>
       )}

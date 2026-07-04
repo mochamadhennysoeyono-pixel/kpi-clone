@@ -107,7 +107,7 @@ export function BottomNav() {
   // --- RENDER CLASSIC (SUPERADMIN) ---
   if (userRole === 'superadmin') {
     return (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] h-[72px] bg-background/95 backdrop-blur-xl border-t border-border/40 pb-safe shadow-[0_-8px_30px_rgb(0,0,0,0.04)] no-print">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] h-[72px] bg-white/90 backdrop-blur-xl border-t border-slate-100 pb-safe shadow-[0_-8px_30px_rgb(0,0,0,0.04)] no-print">
             <div className="relative grid grid-cols-5 items-center h-full w-full px-2">
                 {classicBottomItems.slice(0, 2).map((item) => {
                     const Icon = item.icon || Folders;
@@ -116,11 +116,11 @@ export function BottomNav() {
                         <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 group">
                             <div className={cn(
                                 "p-1.5 rounded-lg transition-all duration-300",
-                                isActive ? "bg-primary/10 scale-110" : "grayscale opacity-60 group-active:scale-125"
+                                isActive ? "bg-primary/5 scale-110" : "opacity-60 group-active:scale-125"
                             )}>
                                 <Icon size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
                             </div>
-                            <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-primary" : "text-muted-foreground")}>
+                            <span className={cn("text-[9px] font-black uppercase tracking-tight", isActive ? "text-primary" : "text-slate-400")}>
                                 {item.label}
                             </span>
                         </Link>
@@ -130,9 +130,9 @@ export function BottomNav() {
                 <div className="flex justify-center -translate-y-4">
                     <button 
                         onClick={handleMenuClick} 
-                        className="size-14 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20 ring-4 ring-background transition-transform active:scale-90"
+                        className="size-14 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20 ring-4 ring-white transition-transform active:scale-90"
                     >
-                        <SquaresFour size={24} weight="fill" />
+                        <SquaresFour size={26} weight="fill" />
                     </button>
                 </div>
 
@@ -143,11 +143,11 @@ export function BottomNav() {
                         <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 group">
                             <div className={cn(
                                 "p-1.5 rounded-lg transition-all duration-300",
-                                isActive ? "bg-primary/10 scale-110" : "grayscale opacity-60 group-active:scale-125"
+                                isActive ? "bg-primary/5 scale-110" : "opacity-60 group-active:scale-125"
                             )}>
                                 <Icon size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
                             </div>
-                            <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-primary" : "text-muted-foreground")}>
+                            <span className={cn("text-[9px] font-black uppercase tracking-tight", isActive ? "text-primary" : "text-slate-400")}>
                                 {item.label}
                             </span>
                         </Link>
@@ -160,7 +160,7 @@ export function BottomNav() {
 
   // --- RENDER FLAT (MANAJEMEN / USER) ---
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] h-[72px] bg-background/95 backdrop-blur-xl border-t border-border/40 pb-safe shadow-[0_-8px_30px_rgb(0,0,0,0.04)] no-print">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] h-[72px] bg-white/90 backdrop-blur-xl border-t border-slate-100 pb-safe shadow-[0_-8px_30px_rgb(0,0,0,0.04)] no-print">
         <div className="flex items-center justify-around h-full w-full px-2">
             {dynamicItems.map((item, idx) => {
                 if (item.type === 'more') {
@@ -173,7 +173,7 @@ export function BottomNav() {
                             <div className="p-1.5 rounded-lg transition-all duration-300 group-active:scale-125">
                                 <SquaresFour size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} className="opacity-60" />
                             </div>
-                            <span className="text-[9px] font-bold text-muted-foreground">Menu</span>
+                            <span className="text-[9px] font-black uppercase text-slate-400">Menu</span>
                         </button>
                     );
                 }
@@ -189,18 +189,18 @@ export function BottomNav() {
                         href={item.href}
                         className={cn(
                             "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95 group",
-                            isActive ? "text-primary" : "text-muted-foreground"
+                            isActive ? "text-primary" : "text-slate-400"
                         )}
                     >
                         <div className={cn(
                             "p-1.5 rounded-lg transition-all duration-300",
-                            isActive ? "bg-primary/10 scale-110" : "bg-transparent group-active:scale-125",
-                            isPortalLink && "bg-muted/50 border"
+                            isActive ? "bg-primary/5 scale-110" : "bg-transparent group-active:scale-125",
+                            isPortalLink && "bg-slate-50 border border-slate-100"
                         )}>
-                            <Icon size={isPortalLink ? 18 : 22} weight="fill" style={{ fill: isPortalLink ? "#171717" : "url(#brand-gradient)" }} className={cn(isActive ? "opacity-100" : "opacity-60 grayscale")} />
+                            <Icon size={isPortalLink ? 18 : 22} weight="fill" style={{ fill: isPortalLink ? "#171717" : "url(#brand-gradient)" }} className={cn(isActive ? "opacity-100" : "opacity-60")} />
                         </div>
                         <span className={cn(
-                            "text-[9px] font-bold tracking-tight",
+                            "text-[9px] font-black uppercase tracking-tight",
                             isActive ? "text-primary" : "opacity-60"
                         )}>
                             {item.label}

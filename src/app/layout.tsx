@@ -57,11 +57,11 @@ export default function RootLayout({
           strategy="beforeInteractive"
         />
 
-        {/* Global SVG Gradients for Industrial Polish - Crystal to Electric Blue */}
+        {/* Global SVG Gradients for Premium Industrial Polish - Monochromatic Blue Gem */}
         <svg width="0" height="0" className="absolute invisible pointer-events-none">
           <defs>
             <linearGradient id="brand-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="0%" stopColor="#60a5fa" />
               <stop offset="100%" stopColor="#2563eb" />
             </linearGradient>
           </defs>
