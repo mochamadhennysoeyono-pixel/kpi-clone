@@ -45,7 +45,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-[#f7f8f8] antialiased selection:bg-primary/30 selection:text-white;
+    @apply bg-background text-[#f7f8f8] antialiased selection:bg-primary/30 selection:text-white font-sans;
     font-feature-settings: "ss01", "ss02", "cv01", "tnum"; /* Enforce Tabular Numerics & Geometric Alternates */
   }
   

@@ -32,11 +32,11 @@ export default function RootLayout({
 
   return (
     <html lang="en" className={GeistSans.variable} suppressHydrationWarning>
-      <body className="font-sans">
+      <body className="font-sans antialiased">
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="dark"
+          enableSystem={false}
           disableTransitionOnChange
         >
           <AuthProvider>

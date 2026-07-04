@@ -99,7 +99,6 @@ const config: Config = {
             animationTimingFunction: 'cubic-bezier(0,0,0.2,1)',
           },
         },
-        // MOD: Add keyframes for the concentric ring rotation
         'concentric-ring-rotation': {
           from: { transform: 'rotate(0deg)' },
           to: { transform: 'rotate(360deg)' },
@@ -111,7 +110,6 @@ const config: Config = {
         'fade-in': 'fade-in 0.5s ease-in-out forwards',
         'bounce': 'bounce 1s infinite',
         'spin-slow': 'spin 3s linear infinite',
-        // MOD: Add animation utility class for the concentric ring
         'concentric-ring': 'concentric-ring-rotation var(--duration, 1s) linear infinite',
       },
     },
