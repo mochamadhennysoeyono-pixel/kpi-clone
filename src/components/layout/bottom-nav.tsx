@@ -11,7 +11,7 @@ import {
   House,
   ChartBar,
   ClipboardCheck,
-  LayoutGrid,
+  SquaresFour,
   CaretLeft,
   Activity,
   Folders
@@ -132,7 +132,7 @@ export function BottomNav() {
                         onClick={handleMenuClick} 
                         className="size-14 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20 ring-4 ring-background transition-transform active:scale-90"
                     >
-                        <LayoutGrid size={24} weight="fill" />
+                        <SquaresFour size={24} weight="fill" />
                     </button>
                 </div>
 
@@ -171,7 +171,7 @@ export function BottomNav() {
                             className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-90 group"
                         >
                             <div className="p-1.5 rounded-lg transition-all duration-300 group-active:scale-125">
-                                <LayoutGrid size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} className="opacity-60" />
+                                <SquaresFour size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} className="opacity-60" />
                             </div>
                             <span className="text-[9px] font-bold text-muted-foreground">Menu</span>
                         </button>

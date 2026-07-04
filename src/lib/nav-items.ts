@@ -7,12 +7,12 @@ import {
     SquaresFour,
     ShieldCheckered,
     UserPlus,
-    SelectionCheck,
+    CheckCircle,
     Crown,
     ClockCounterClockwise,
     GitMerge,
     Lightning,
-    SlidersHorizontal,
+    Sliders,
     Database,
     Buildings,
     ChartLineUp,
@@ -36,7 +36,7 @@ import {
     Flag,
     GraduationCap,
     BookOpen,
-    RoadHorizon,
+    Road,
     Books,
     Exam,
     Files,
@@ -64,12 +64,12 @@ export const iconMap: { [key: string]: React.ElementType } = {
     // --- Manajemen Sistem (Superadmin) ---
     '/admin-management': ShieldCheckered,
     '/company-admin-management': IdentificationBadge,
-    '/activation-management': SelectionCheck,
+    '/activation-management': CheckCircle,
     '/subscription-management': Crown,
     '/subscription-logs': ClockCounterClockwise,
     '/group-management': GitMerge,
     '/feature-management': Lightning,
-    'manajemen-sistem': SlidersHorizontal,
+    'manajemen-sistem': Sliders,
     'manajemen-fitur': Lightning,
 
     // --- Pondasi Data ---
@@ -103,16 +103,16 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/reports': ChartPie,
     '/cycle-reports': Activity,
     '/appraisal-dashboard': ChartBar,
-    '/kbo-appraisal': SelectionCheck,
+    '/kbo-appraisal': CheckCircle,
 
     // --- Manajemen KPI ---
-    'manajemen-kpi': SelectionCheck,
+    'manajemen-kpi': CheckCircle,
     '/my-performance': UserGear,
     '/input-achievement': FilePlus,
     '/setup-kpi': Gear,
 
     // --- Manajemen KBO ---
-    'manajemen-kbo': SelectionCheck,
+    'manajemen-kbo': CheckCircle,
     '/appraisal-settings': Gear,
 
     // --- OKR ---
@@ -127,7 +127,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
     'manajemen-pembelajaran': GraduationCap,
     '/lms/admin/dashboard': Speedometer,
     '/lms/admin/courses': BookOpen,
-    '/lms/admin/programs': RoadHorizon,
+    '/lms/admin/programs': Road,
     '/lms/admin/global-catalog': Books,
     '/lms/admin/quizzes': Exam,
     '/lms/admin/reports': ChartBar,

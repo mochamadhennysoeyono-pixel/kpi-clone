@@ -113,7 +113,7 @@ function MotionNav() {
                                             )}
                                         >
                                             <div className="flex size-5 items-center justify-center shrink-0 transition-transform group-hover:scale-125 group-hover:rotate-6">
-                                              <Icon size={20} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
+                                              {Icon && <Icon size={20} weight="fill" style={{ fill: "url(#brand-gradient)" }} />}
                                             </div>
                                             {(isOpen || isMobile) && (
                                                 <span className="flex-1 font-medium tracking-tight text-sm">
@@ -157,7 +157,7 @@ function MotionNav() {
                                 )}
                             >
                                 <div className="flex size-5 items-center justify-center shrink-0 transition-transform group-hover:scale-125 group-hover:rotate-6">
-                                    <Icon size={20} weight="fill" style={{ fill: isActive ? "white" : "url(#brand-gradient)" }} />
+                                    {Icon && <Icon size={20} weight="fill" style={{ fill: isActive ? "white" : "url(#brand-gradient)" }} />}
                                 </div>
                                 {(isOpen || isMobile) && (
                                     <span className="font-medium tracking-tight text-sm">
