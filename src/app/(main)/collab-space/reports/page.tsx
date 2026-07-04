@@ -4,7 +4,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useMasterData } from '@/contexts/master-data-context';
 import { useAuth } from '@/contexts/auth-context';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -46,13 +45,14 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { format, isBefore, startOfDay, subDays, eachDayOfInterval, isSameDay, getYear, getMonth } from 'date-fns';
+import { format, isBefore, startOfDay, subDays, eachDayOfInterval, isSameDay, getYear, getMonth, isValid, addDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { ResponsivePage, ResponsiveToolbar } from '@/components/ui/adaptive-layout';
 import { PageHeader } from '@/components/ui/page-header';
 import { AdaptiveCardGrid, AdaptiveMetricCard, AdaptiveInsightCard } from '@/components/ui/adaptive-card';
 import { AdaptiveTable } from '@/components/ui/adaptive-table';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function CollabTaskReportPage() {
     const { collabSpaces, collabTasks, employees, companies } = useMasterData();
@@ -252,6 +252,7 @@ export default function CollabTaskReportPage() {
                             <div className="flex items-center gap-1.5 text-[8px] font-black uppercase"><div className="size-2 rounded-full bg-blue-500"/> Aktif</div>
                             <div className="flex items-center gap-1.5 text-[8px] font-black uppercase"><div className="size-2 rounded-full bg-green-500"/> Selesai</div>
                         </div>
+                    </div>
                 </AdaptiveInsightCard>
             </AdaptiveCardGrid>
 

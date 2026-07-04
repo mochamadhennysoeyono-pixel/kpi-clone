@@ -4,10 +4,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useMasterData } from '@/contexts/master-data-context';
 import { useAuth } from '@/contexts/auth-context';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, Target, ListChecks, Calendar, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Target, ListChecks, Calendar, MoreHorizontal, Edit, Trash2, Building, Search, ArrowRight } from 'lucide-react';
 import type { OKR, Company } from '@/types';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +18,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { DeleteConfirmationDialog } from '@/components/master-data/delete-confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-
+import { ResponsivePage, ResponsiveToolbar } from '@/components/ui/adaptive-layout';
+import { PageHeader } from '@/components/ui/page-header';
+import { AdaptiveCardGrid } from '@/components/ui/adaptive-card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 const OkrCard = ({ okr, onEdit, onDelete }: { okr: OKR, onEdit: (okr: OKR) => void, onDelete: (okr: OKR) => void }) => {
     const getStatusVariant = (status: OKR['status']) => {
@@ -34,75 +37,52 @@ const OkrCard = ({ okr, onEdit, onDelete }: { okr: OKR, onEdit: (okr: OKR) => vo
 
     const formatDate = (date: any): Date | null => {
         if (!date) return null;
-        if (date && typeof date.toDate === 'function') {
-            return date.toDate();
-        }
-        try {
-            const parsedDate = new Date(date);
-            if (isNaN(parsedDate.getTime())) return null;
-            return parsedDate;
-        } catch (e) {
-            return null;
-        }
+        if (date && typeof date.toDate === 'function') return date.toDate();
+        try { const parsedDate = new Date(date); return isNaN(parsedDate.getTime()) ? null : parsedDate; } catch (e) { return null; }
     };
 
-    const startDate = formatDate(okr.startDate);
     const endDate = formatDate(okr.endDate);
     const progressValue = okr.progress ?? 0;
 
     return (
-        <Card className="hover:shadow-md transition-shadow h-full flex flex-col">
-            <CardHeader>
+        <Card className="hover:shadow-md transition-all h-full flex flex-col border-l-4 border-primary group">
+            <CardHeader className="pb-3">
                 <div className="flex justify-between items-start gap-2">
-                    <div className="flex-1 space-y-1">
-                        <Link href={`/okr/${okr.id}`} className="hover:underline">
-                            <CardTitle className="text-base font-semibold">{okr.objective}</CardTitle>
+                    <div className="flex-1 space-y-1 min-w-0">
+                        <Link href={`/okr/${okr.id}`} className="hover:underline block truncate">
+                            <CardTitle className="text-sm font-black uppercase tracking-tight">{okr.objective}</CardTitle>
                         </Link>
-                        <CardDescription className="text-xs !mt-2">
-                            {okr.ownerName}
-                        </CardDescription>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">{okr.ownerName}</p>
                     </div>
                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Aksi</span>
-                            </Button>
-                        </DropdownMenuTrigger>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 rounded-full"><MoreHorizontal size={14} /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onEdit(okr)}>
-                                <Edit className="mr-2 h-4 w-4"/> Ubah
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onDelete(okr)} className="text-destructive">
-                                <Trash2 className="mr-2 h-4 w-4"/> Hapus
-                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onEdit(okr)}><Edit className="mr-2 h-4 w-4"/> Ubah</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onDelete(okr)} className="text-destructive font-bold"><Trash2 className="mr-2 h-4 w-4"/> Hapus</DropdownMenuItem>
                         </DropdownMenuContent>
                      </DropdownMenu>
                 </div>
             </CardHeader>
             <Link href={`/okr/${okr.id}`} className="flex-grow flex flex-col">
-                 <CardContent className="flex-grow">
+                 <CardContent className="flex-grow pb-4">
                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>Progres</span>
-                            <span className="font-bold text-primary">{progressValue.toFixed(0)}%</span>
+                        <div className="flex items-center justify-between text-[10px] font-black uppercase">
+                            <span className="text-muted-foreground">Progres</span>
+                            <span className="text-primary">{progressValue.toFixed(0)}%</span>
                         </div>
-                        <Progress value={progressValue} />
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <ListChecks className="h-4 w-4" />
-                            <span>{okr.keyResults.length} Key Results</span>
+                        <Progress value={progressValue} className="h-1.5" />
+                        <div className="flex items-center gap-1.5 text-[9px] font-bold text-muted-foreground uppercase bg-muted/50 w-fit px-2 py-0.5 rounded-full">
+                            <ListChecks size={10} /> {okr.keyResults.length} KR
                         </div>
                      </div>
                 </CardContent>
-                <CardFooter className="text-xs text-muted-foreground border-t pt-3 mt-auto">
+                <CardFooter className="text-[9px] font-black uppercase text-muted-foreground border-t bg-muted/5 pt-3 mt-auto p-4">
                     <div className="flex items-center justify-between w-full">
-                         <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
-                            <span>
-                                {endDate ? format(endDate, "d MMM yyyy", { locale: localeId }) : 'N/A'}
-                            </span>
+                         <div className="flex items-center gap-1.5">
+                            <Calendar size={12} className="opacity-40" />
+                            <span>{endDate ? format(endDate, "d MMM yyyy") : 'N/A'}</span>
                         </div>
-                        <Badge variant={getStatusVariant(okr.status)}>{okr.status}</Badge>
+                        <Badge variant={getStatusVariant(okr.status)} className="text-[8px] h-4 font-black">{okr.status.toUpperCase()}</Badge>
                     </div>
                 </CardFooter>
             </Link>
@@ -118,6 +98,7 @@ export default function OkrListPage() {
   
   const [activeTab, setActiveTab] = useState("all");
   const [selectedCompany, setSelectedCompany] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState("");
   const [okrToDelete, setOkrToDelete] = useState<OKR | null>(null);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
@@ -134,148 +115,57 @@ export default function OkrListPage() {
       };
       return [userCompany, ...getChildCompanies(userCompany.id)];
     }
-    if (userCompany) return [userCompany];
-    return [];
+    if (userCompany) return [userCompany]; return [];
   }, [userRole, isHoldingAdmin, userCompany, companies]);
 
-  useEffect(() => {
-    if (showCompanyFilter && manageableCompanies.length > 0) {
-    } else if (!showCompanyFilter && currentUser?.company) {
-      setSelectedCompany(currentUser.company);
-    }
-  }, [showCompanyFilter, manageableCompanies, currentUser]);
-
-  const myOkrs = useMemo(() => {
-    if (!currentUser || !okrs || !employees) return [];
-  
-    let companyFilteredOkrs = okrs;
-    if (showCompanyFilter) {
-      if (selectedCompany !== 'all') {
-        companyFilteredOkrs = okrs.filter(okr => okr.company === selectedCompany);
-      } else {
-        const manageableCompanyNames = manageableCompanies.map(c => c.name);
-        companyFilteredOkrs = okrs.filter(okr => manageableCompanyNames.includes(okr.company));
-      }
-    } else {
-      companyFilteredOkrs = okrs.filter(okr => okr.company === currentUser.company);
-    }
-  
-    if (userRole === 'superadmin' || userRole === 'manajemen') {
-        return companyFilteredOkrs;
-    }
-  
-    if (userRole === 'user') {
-      const isManager = employees.some(e => e.reportsTo === currentUser.id);
-
-      if (isManager) {
-        const getSubordinateIdsRecursive = (managerId: string): string[] => {
-            const directReports = employees.filter(e => e.reportsTo === managerId).map(e => e.id);
-            if (directReports.length === 0) return [];
-            return [...directReports, ...directReports.flatMap(id => getSubordinateIdsRecursive(id))];
-        };
-        const teamIds = [currentUser.id, ...getSubordinateIdsRecursive(currentUser.id)];
-        return companyFilteredOkrs.filter(okr => teamIds.includes(okr.ownerId));
-      } else {
-         return companyFilteredOkrs.filter(okr => okr.ownerId === currentUser.id);
-      }
-    }
-  
-    return [];
-  }, [okrs, currentUser, userRole, employees, selectedCompany, showCompanyFilter, manageableCompanies]);
-
-  
   const filteredOkrs = useMemo(() => {
-    if (activeTab === 'all') return myOkrs;
-    return myOkrs.filter(okr => okr.status === activeTab);
-  }, [myOkrs, activeTab]);
+    if (!currentUser || !okrs) return [];
+    let result = okrs;
 
-  const handleEdit = (okr: OKR) => {
-    router.push(`/okr/${okr.id}?edit=true`);
-  };
+    if (showCompanyFilter && selectedCompany !== 'all') result = result.filter(o => o.company === selectedCompany);
+    else if (!showCompanyFilter) result = result.filter(o => o.company === currentUser.company);
 
-  const openDeleteDialog = (okr: OKR) => {
-    setOkrToDelete(okr);
-    setDeleteDialogOpen(true);
-  };
-  
-  const handleDelete = async () => {
-    if (okrToDelete) {
-        await deleteOkr(okrToDelete.id);
-        toast({ title: "Objective Dihapus", description: `Objective "${okrToDelete.objective}" telah dihapus.` });
-        setOkrToDelete(null);
-    }
-  };
+    if (activeTab !== 'all') result = result.filter(o => o.status === activeTab);
+    if (searchTerm) result = result.filter(o => o.objective.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    return result.sort((a,b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));
+  }, [okrs, currentUser, showCompanyFilter, selectedCompany, activeTab, searchTerm]);
 
   return (
-    <>
-        <div className="space-y-6">
-        <Card className="shadow-lg border-t-4 border-primary">
-            <CardHeader className="flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                        <Target className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                        <CardTitle className="font-headline text-2xl">Workspace OKR</CardTitle>
-                        <CardDescription>
-                            Tinjau dan kelola semua Objectives and Key Results (OKR) Anda dan tim Anda.
-                        </CardDescription>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2 self-end sm:self-center">
-                    {showCompanyFilter && (
-                        <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-                            <SelectTrigger className="w-[200px]">
-                                <SelectValue placeholder="Filter Perusahaan" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua Perusahaan</SelectItem>
-                                {manageableCompanies.map(c => (
-                                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    )}
-                    <Link href="/okr/new">
-                        <Button className="shadow-md"><PlusCircle className="mr-2 h-4 w-4"/>Buat OKR Baru</Button>
-                    </Link>
-                </div>
-            </CardHeader>
-        </Card>
+    <ResponsivePage>
+        <PageHeader title="Workspace OKR" description="Definisikan sasaran strategis dan hasil utama yang terukur untuk Anda dan tim." icon={Target} actions={<Button asChild className="font-bold shadow-lg h-9 sm:h-10"><Link href="/okr/new"><PlusCircle className="mr-2 size-4"/>Buat OKR Baru</Link></Button>} />
         
+        <ResponsiveToolbar>
+            <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input placeholder="Cari objective..." className="pl-9 h-10 border-none bg-background/50 shadow-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            </div>
+            {showCompanyFilter && (
+                <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                    <SelectTrigger className="w-full sm:w-[200px] h-10 bg-background border-none"><Building className="size-4 mr-2 text-primary" /><SelectValue placeholder="Semua Perusahaan" /></SelectTrigger>
+                    <SelectContent className="z-[350]"><SelectItem value="all">Semua Grup</SelectItem>{manageableCompanies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent>
+                </Select>
+            )}
+        </ResponsiveToolbar>
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="all">Semua</TabsTrigger>
-            <TabsTrigger value="Draft">Draf</TabsTrigger>
-            <TabsTrigger value="Active">Aktif</TabsTrigger>
-            <TabsTrigger value="Completed">Selesai</TabsTrigger>
-            <TabsTrigger value="Overdue">Terlambat</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5 max-w-[600px] bg-muted/30 p-1 rounded-xl mb-8">
+                <TabsTrigger value="all" className="text-[10px] font-bold uppercase">Semua</TabsTrigger>
+                <TabsTrigger value="Active" className="text-[10px] font-bold uppercase">Aktif</TabsTrigger>
+                <TabsTrigger value="Draft" className="text-[10px] font-bold uppercase">Draf</TabsTrigger>
+                <TabsTrigger value="Completed" className="text-[10px] font-bold uppercase">Selesai</TabsTrigger>
+                <TabsTrigger value="Overdue" className="text-[10px] font-bold uppercase">Telat</TabsTrigger>
             </TabsList>
 
-            <TabsContent value={activeTab} className="mt-6">
-                {filteredOkrs.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {filteredOkrs.map(okr => (
-                            <OkrCard key={okr.id} okr={okr} onEdit={handleEdit} onDelete={openDeleteDialog} />
-                        ))}
-                    </div>
-                ) : (
-                    <Card className="col-span-full border-dashed">
-                        <CardContent className="p-10 text-center text-muted-foreground">
-                            Tidak ada OKR dengan status "{activeTab.toLowerCase()}" yang ditemukan.
-                        </CardContent>
-                    </Card>
-                )}
-            </TabsContent>
+            {filteredOkrs.length > 0 ? (
+                <AdaptiveCardGrid complexity="medium">
+                    {filteredOkrs.map(okr => <OkrCard key={okr.id} okr={okr} onEdit={(o) => router.push(`/okr/${o.id}?edit=true`)} onDelete={(o) => { setOkrToDelete(o); setIsDeleteDialogOpen(true); }} />)}
+                </AdaptiveCardGrid>
+            ) : (
+                <div className="py-24 text-center border-2 border-dashed rounded-3xl bg-muted/5 opacity-40"><Target size={48} className="mx-auto mb-4" /><p className="font-bold uppercase text-[10px] tracking-widest">Tidak ada project OKR ditemukan</p></div>
+            )}
         </Tabs>
-        </div>
-         <DeleteConfirmationDialog
-            isOpen={isDeleteDialogOpen}
-            onOpenChange={setDeleteDialogOpen}
-            onConfirm={handleDelete}
-            itemName={okrToDelete?.objective || ''}
-            itemType="Objective"
-        />
-    </>
+        <DeleteConfirmationDialog isOpen={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen} onConfirm={async () => { if(okrToDelete) await deleteOkr(okrToDelete.id); setOkrToDelete(null); }} itemName={okrToDelete?.objective || ''} itemType="Objective" />
+    </ResponsivePage>
   );
 }

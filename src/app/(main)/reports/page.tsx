@@ -1,4 +1,3 @@
-
 // src/app/(main)/reports/page.tsx
 "use client";
 
@@ -21,6 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import {
   Select,
@@ -50,6 +50,7 @@ import {
   Briefcase,
   Network,
   Zap,
+  FilePieChart
 } from "lucide-react";
 import { useMasterData } from "@/contexts/master-data-context";
 import type { KpiData, Company, Employee } from "@/types";
@@ -61,33 +62,18 @@ import { cn } from "@/lib/utils";
 import { format, parse, isBefore, addMonths, subMonths, startOfMonth, isValid } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import Link from "next/link";
-import { usePageContext } from "@/contexts/page-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { DonutChart } from "@/components/reports/donut-chart";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-
-const PageHeader = ({ title, description }: { title: string, description: string | null }) => (
-    <div className="mb-5">
-        <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
-        {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
-    </div>
-);
-
-const StatBlock = ({ title, value, description, icon: Icon, iconColor }: { title: string, value: string, description: string, icon: any, iconColor?: string }) => (
-    <div className="p-4">
-        <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{title}</p>
-            <Icon className={`size-4 ${iconColor || 'text-slate-400'}`} />
-        </div>
-        <p className="text-2xl font-bold text-slate-900">{value}</p>
-        <p className="text-xs text-slate-500 mt-1">{description}</p>
-    </div>
-);
+import { ResponsivePage, ResponsiveToolbar } from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { AdaptiveCardGrid, AdaptiveMetricCard, AdaptiveInsightCard } from "@/components/ui/adaptive-card";
+import { AdaptiveTable } from "@/components/ui/adaptive-table";
 
 function TeamReportView() {
     const { currentUser, userRole } = useAuth();
@@ -202,7 +188,7 @@ function TeamReportView() {
             const allData = periodData.filter(d => d.employeeId === id);
             return {
                 ...data.latestData, id, score: data.latestData.score, averageScore: parseFloat(avg.toFixed(1)),
-                approvalStatus: `${allData.filter(d => d.approvalStatus === 'Disetujui').length}/${allData.length}`,
+                approvalStatusSummary: `${allData.filter(d => d.approvalStatus === 'Disetujui').length}/${allData.length}`,
                 personalTrend: parseFloat(trend.toFixed(1)), employee: employees.find(e => e.id === id),
             };
         });
@@ -242,7 +228,6 @@ function TeamReportView() {
         await updateKpiData(data.id, { approvalStatus: 'Disetujui', approvedBy: currentUser.name, approvedAt: new Date().toISOString() });
         toast({ title: 'KPI Disetujui', description: `Pencapaian KPI untuk ${data.employeeName} telah disetujui.` });
     };
-    useEffect(() => { setSelectedKpiDataForDetail(null); }, [selectedCompanyId, selectedDepartment, setSelectedPosition, singlePeriod, trendStartPeriod, trendEndPeriod, mode]);
 
     const manageableCompanies = useMemo(() => {
         if (userRole === 'superadmin') return companies.filter(c => c.status === 'Aktif');
@@ -278,96 +263,91 @@ function TeamReportView() {
     const getTrendIcon = (trend: number) => trend > 0.1 ? <TrendingUp className="size-4 text-green-500" /> : trend < -0.1 ? <TrendingDown className="size-4 text-red-500" /> : <ArrowRight className="size-4 text-slate-400" />;
 
     return (
-        <div className="space-y-4">
-            <div className="p-4 border border-slate-200 rounded-lg">
-                <div className="flex justify-between items-start mb-4">
-                    <Label htmlFor="mode-switch" className="space-y-1">
-                        <span className="font-semibold text-slate-800">Mode Analisis</span>
-                        <span className="text-sm text-slate-500">{mode === 'single' ? 'Laporan periode tunggal.' : 'Tren perbandingan antar periode.'}</span>
+        <div className="space-y-6">
+            <ResponsiveToolbar>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+                    <Label htmlFor="mode-switch" className="space-y-0.5">
+                        <span className="font-bold text-slate-800 text-sm">Mode Analisis</span>
+                        <p className="text-[10px] text-slate-500 uppercase font-black">{mode === 'single' ? 'Periode Tunggal' : 'Tren Perbandingan'}</p>
                     </Label>
                     <Switch id="mode-switch" checked={mode === 'trend'} onCheckedChange={(c) => setMode(c ? 'trend' : 'single')} />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-center gap-2">
-                    {(userRole === 'superadmin' || isHoldingAdmin) && <Select onValueChange={(v) => { setSelectedCompanyId(v); setSelectedDepartment('all'); setSelectedPosition('all'); }} value={selectedCompanyId ?? ""}><SelectTrigger className="h-10 min-w-[180px]"><SelectValue placeholder="Pilih Perusahaan" /></SelectTrigger><SelectContent>{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select>}
-                    <Select value={selectedDepartment} onValueChange={(v) => { setSelectedDepartment(v); setSelectedPosition('all'); }} disabled={!selectedCompanyId}><SelectTrigger className="h-10 min-w-[180px]"><SelectValue placeholder="Semua Departemen" /></SelectTrigger><SelectContent><SelectItem value="all">Semua Departemen</SelectItem>{uniqueCompanyDepartments.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}</SelectContent></Select>
-                    <Select value={selectedPosition} onValueChange={setSelectedPosition} disabled={!selectedDepartment}><SelectTrigger className="h-10 min-w-[180px]"><SelectValue placeholder="Semua Jabatan" /></SelectTrigger><SelectContent><SelectItem value="all">Semua Jabatan</SelectItem>{uniqueCompanyPositions.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}</SelectContent></Select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-center gap-2 w-full">
+                    {(userRole === 'superadmin' || isHoldingAdmin) && <Select onValueChange={(v) => { setSelectedCompanyId(v); setSelectedDepartment('all'); setSelectedPosition('all'); }} value={selectedCompanyId ?? ""}><SelectTrigger className="h-10 min-w-[180px] bg-background"><Building className="size-3.5 mr-2 text-primary" /><SelectValue placeholder="Perusahaan" /></SelectTrigger><SelectContent className="z-[350]">{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select>}
+                    <Select value={selectedDepartment} onValueChange={(v) => { setSelectedDepartment(v); setSelectedPosition('all'); }} disabled={!selectedCompanyId}><SelectTrigger className="h-10 min-w-[180px] bg-background"><Network className="size-3.5 mr-2 text-primary" /><SelectValue placeholder="Semua Departemen" /></SelectTrigger><SelectContent className="z-[350]"><SelectItem value="all">Semua Departemen</SelectItem>{uniqueCompanyDepartments.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}</SelectContent></Select>
                     {mode === 'single' ? 
-                        <Select value={singlePeriod ?? ""} onValueChange={setSinglePeriod} disabled={!availablePeriods.length}><SelectTrigger className="h-10 min-w-[180px]"><SelectValue placeholder="Periode" /></SelectTrigger><SelectContent>{availablePeriods.map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'LLLL yyyy', { locale: localeId })}</SelectItem>)}</SelectContent></Select> : 
-                        <><Select value={trendStartPeriod ?? ""} onValueChange={setTrendStartPeriod}><SelectTrigger className="h-10 min-w-[180px]"><SelectValue placeholder="Periode Mulai" /></SelectTrigger><SelectContent>{[...availablePeriods].sort().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'LLLL yyyy', { locale: localeId })}</SelectItem>)}</SelectContent></Select><Select value={trendEndPeriod ?? ""} onValueChange={setTrendEndPeriod}><SelectTrigger className="h-10 min-w-[180px]"><SelectValue placeholder="Periode Selesai" /></SelectTrigger><SelectContent>{[...availablePeriods].sort().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'LLLL yyyy', { locale: localeId })}</SelectItem>)}</SelectContent></Select></>}
+                        <Select value={singlePeriod ?? ""} onValueChange={setSinglePeriod} disabled={!availablePeriods.length}><SelectTrigger className="h-10 min-w-[180px] bg-background"><Calendar className="size-3.5 mr-2 text-primary" /><SelectValue placeholder="Pilih Periode" /></SelectTrigger><SelectContent className="z-[350]">{availablePeriods.map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'LLLL yyyy', { locale: localeId })}</SelectItem>)}</SelectContent></Select> : 
+                        <><Select value={trendStartPeriod ?? ""} onValueChange={setTrendStartPeriod}><SelectTrigger className="h-10 min-w-[150px] bg-background"><Calendar className="size-3.5 mr-2 text-primary" /><SelectValue placeholder="Mulai" /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].sort().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId })}</SelectItem>)}</SelectContent></Select><Select value={trendEndPeriod ?? ""} onValueChange={setTrendEndPeriod}><SelectTrigger className="h-10 min-w-[150px] bg-background"><Calendar className="size-3.5 mr-2 text-primary" /><SelectValue placeholder="Selesai" /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].sort().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId })}</SelectItem>)}</SelectContent></Select></>}
                 </div>
-            </div>
+            </ResponsiveToolbar>
 
             {selectedCompanyName ? (
-                <div className="space-y-4 pt-4 border-t border-slate-200">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border border-slate-200 rounded-lg divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
-                        <StatBlock title="Rata-Rata Skor Tim" value={teamStats.averageScore.toString()} icon={BarChart3} description="Selama periode terpilih" />
-                        <StatBlock title="Performa Tertinggi" value={teamStats.topPerformer.name} icon={TrendingUp} description={`Skor: ${teamStats.topPerformer.score}`} iconColor="text-emerald-500" />
-                        <StatBlock title="Performa Terendah" value={teamStats.lowestPerformer.name} icon={TrendingDown} description={`Skor: ${teamStats.lowestPerformer.score}`} iconColor="text-rose-500" />
-                        <StatBlock title="Jumlah Karyawan" value={sortedReportData.length.toString()} icon={Users} description="Dalam filter terpilih" />
-                    </div>
+                <>
+                    <AdaptiveCardGrid complexity="simple">
+                        <AdaptiveMetricCard title="Rata-Rata Tim" value={teamStats.averageScore} icon={BarChart3} description="Seluruh personil terpilih" />
+                        <AdaptiveMetricCard title="Capaian Tertinggi" value={teamStats.topPerformer.score} icon={TrendingUp} badge={teamStats.topPerformer.name} color="bg-emerald-500/10 text-emerald-600" />
+                        <AdaptiveMetricCard title="Capaian Terendah" value={teamStats.lowestPerformer.score} icon={TrendingDown} badge={teamStats.lowestPerformer.name} color="bg-rose-500/10 text-rose-600" />
+                        <AdaptiveMetricCard title="Total Personil" value={sortedReportData.length} icon={Users} description="Dalam filter saat ini" />
+                    </AdaptiveCardGrid>
                     
-                    <div className={cn("grid grid-cols-1 gap-4", mode === 'trend' ? "lg:grid-cols-5" : "lg:grid-cols-1")}>
-                        <div className={cn("h-[300px]", mode === 'trend' ? "lg:col-span-3" : "lg:col-span-1")}>
-                           <h3 className="text-sm font-semibold text-slate-600 mb-2">Perjalanan Kinerja Tim</h3>
-                           <TeamPerformanceTrendChart key={`${selectedCompanyId}-${selectedDepartment}-${selectedPosition}`} chartData={chartData} />
-                        </div>
+                    <AdaptiveCardGrid complexity="complex">
+                        <AdaptiveInsightCard title="Visualisasi Tren Kinerja" icon={TrendingUp} description="Perjalanan skor rata-rata bulanan">
+                            <div className="h-[300px] pt-4"><TeamPerformanceTrendChart chartData={chartData} /></div>
+                        </AdaptiveInsightCard>
                          {mode === 'trend' && (
-                            <div className="lg:col-span-2 h-[300px]">
-                                <h3 className="text-sm font-semibold text-slate-600 mb-2">Distribusi Status</h3>
-                                <p className="text-xs text-slate-500 mb-3">Berdasarkan status terakhir karyawan.</p>
-                                <DonutChart data={trendStats?.distribution as any} />
-                            </div>
+                            <AdaptiveInsightCard title="Distribusi Kelayakan" icon={LayoutGrid} description="Berdasarkan status terakhir">
+                                <div className="h-[300px] pt-4"><DonutChart data={trendStats?.distribution as any} /></div>
+                            </AdaptiveInsightCard>
                         )}
-                    </div>
+                    </AdaptiveCardGrid>
                     
-                    <div className="pt-4 border-t border-slate-200">
-                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                            <div>
-                                <h2 className="text-base font-bold text-slate-800">Detail Kinerja Karyawan</h2>
-                                <p className="text-sm text-slate-500">Menampilkan {sortedReportData.length} hasil untuk periode terpilih.</p>
-                            </div>
-                            <div className="flex items-center gap-2 self-end sm:self-center">
-                                {isManager && (<Button asChild variant="outline" size="sm" className="border-slate-300"><Link href="/my-performance"><UserCog className="mr-2 h-4 w-4" />Performa Saya</Link></Button>)}
-                            </div>
-                        </div>
-                        <div className="border border-slate-200 rounded-lg overflow-hidden">
-                            <Table>
-                                <TableHeader className="bg-slate-50"><TableRow>
-                                    <TableHead className="pl-4">Karyawan</TableHead>
-                                    <TableHead className="hidden md:table-cell">Jabatan</TableHead>
-                                    {mode === 'trend' ? (<><TableHead>Skor Rata-Rata</TableHead><TableHead className="hidden xl:table-cell">Tren</TableHead><TableHead className="hidden sm:table-cell">Persetujuan</TableHead></>) : (<><TableHead>Skor</TableHead><TableHead>Status</TableHead><TableHead className="hidden sm:table-cell">Persetujuan</TableHead></>)}
-                                    <TableHead><span className="sr-only">Aksi</span></TableHead>
-                                </TableRow></TableHeader>
-                                <TableBody>{sortedReportData.length > 0 ? (sortedReportData.map((data: any) => (
-                                    <TableRow key={data.id} onClick={() => handleViewDetails(data)} className="cursor-pointer hover:bg-slate-50">
-                                        <TableCell className="pl-4"><div className="flex items-center gap-3">
-                                            <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-full bg-slate-200"><User className="size-5 text-slate-500" /></div>
-                                            <div><div className="font-medium text-sm text-slate-900">{data.employeeName || data.name}</div><div className="text-xs text-slate-500 sm:hidden">{data.position}</div></div>
-                                        </div></TableCell>
-                                        <TableCell className="hidden md:table-cell text-sm text-slate-600">{data.position}</TableCell>
-                                        {mode === 'trend' ? (<>
-                                            <TableCell className="font-semibold text-sm">{data.averageScore.toFixed(1)}</TableCell>
-                                            <TableCell className="hidden xl:table-cell"><div className="flex items-center gap-1 font-medium text-xs">{getTrendIcon(data.personalTrend)} {data.personalTrend.toFixed(1)}%</div></TableCell>
-                                            <TableCell className="hidden sm:table-cell"><Badge variant="secondary">{data.approvalStatus}</Badge></TableCell>
-                                        </>) : (<>
-                                            <TableCell className="font-semibold text-sm">{data.score.toFixed(1)}</TableCell>
-                                            <TableCell><Badge variant={getStatusBadgeVariant(data.status)}>{data.status}</Badge></TableCell>
-                                            <TableCell className="hidden sm:table-cell"><Badge variant={data.approvalStatus === 'Disetujui' ? 'outline' : 'destructive'} className="flex items-center gap-1.5 w-fit">{data.approvalStatus === 'Disetujui' ? <ShieldCheck className="h-3.5 w-3.5" /> : <ShieldAlert className="h-3.5 w-3.5" />}{data.approvalStatus}</Badge></TableCell>
-                                        </>)}
-                                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                                            <DropdownMenu><DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Buka</span></Button></DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end"><DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                                {mode === 'single' && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleApproveAchievement(data); }} disabled={data.approvalStatus === 'Disetujui'}><ShieldCheck className="mr-2 h-4 w-4" />Setujui</DropdownMenuItem>}
-                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleViewDetails(data); }}>Lihat {mode === 'trend' ? 'Analisis' : 'Rincian'}</DropdownMenuItem>
-                                            </DropdownMenuContent></DropdownMenu></TableCell>
-                                    </TableRow>
-                                ))) : (<TableRow><TableCell colSpan={7} className="text-center h-24 text-slate-500 text-sm">Tidak ada data yang ditemukan.</TableCell></TableRow>)}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </div>
+                    <AdaptiveTable 
+                        data={sortedReportData}
+                        keyExtractor={(d: any) => d.id}
+                        columns={[
+                            { header: "Karyawan", cell: (d: any) => (
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="size-9 border"><AvatarFallback className="text-[10px] font-black bg-primary/10 text-primary">{d.employeeName?.substring(0,2).toUpperCase()}</AvatarFallback></Avatar>
+                                    <div className="min-w-0"><p className="font-bold text-slate-900 truncate">{d.employeeName}</p><p className="text-[10px] text-muted-foreground uppercase font-black">{d.position}</p></div>
+                                </div>
+                            )},
+                            { header: mode === 'trend' ? "Skor Rata-Rata" : "Skor Periode", cell: (d: any) => <span className="text-lg font-black text-primary">{(d.averageScore ?? d.score).toFixed(1)}</span> },
+                            { header: "Status / Tren", cell: (d: any) => (
+                                mode === 'trend' ? <div className="flex items-center gap-2 font-bold text-xs">{getTrendIcon(d.personalTrend)} {d.personalTrend.toFixed(1)}%</div> : <Badge variant={getStatusBadgeVariant(d.status)} className="text-[9px] font-black uppercase h-5">{d.status}</Badge>
+                            )},
+                            { header: "Persetujuan", hideOnTablet: true, cell: (d: any) => <Badge variant="outline" className="text-[8px] font-bold border-none bg-muted/50">{mode === 'trend' ? `App: ${d.approvalStatusSummary}` : d.approvalStatus}</Badge> },
+                            { header: "", className: "text-right", cell: (d: any) => (
+                                <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal className="size-4" /></Button></DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="z-[350]">
+                                    <DropdownMenuItem onClick={() => handleViewDetails(d)}><ArrowRight className="size-3.5 mr-2" /> Lihat Analisis</DropdownMenuItem>
+                                    {mode === 'single' && <DropdownMenuItem onClick={() => handleApproveAchievement(d)} disabled={d.approvalStatus === 'Disetujui'}><ShieldCheck className="size-3.5 mr-2" /> Setujui KPI</DropdownMenuItem>}
+                                </DropdownMenuContent></DropdownMenu>
+                            )}
+                        ]}
+                        renderMobileCard={(d: any) => (
+                            <Card className="border-border/40 shadow-sm overflow-hidden" onClick={() => handleViewDetails(d)}>
+                                <CardContent className="p-4 space-y-4">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="size-10 border-2 border-primary/10"><AvatarFallback className="font-black text-xs">{d.employeeName?.substring(0,2).toUpperCase()}</AvatarFallback></Avatar>
+                                            <div className="min-w-0"><h3 className="font-black text-sm truncate uppercase">{d.employeeName}</h3><p className="text-[10px] font-bold text-muted-foreground">{d.position}</p></div>
+                                        </div>
+                                        <div className="text-right"><p className="text-xl font-black text-primary leading-none">{(d.averageScore ?? d.score).toFixed(1)}</p><p className="text-[8px] font-black uppercase text-muted-foreground mt-1">SKOR</p></div>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-3 border-t">
+                                        <Badge variant={getStatusBadgeVariant(d.status || 'todo')} className="text-[8px] font-black uppercase h-5">{mode === 'trend' ? `TREN: ${d.personalTrend}%` : d.status}</Badge>
+                                        <div className="flex items-center gap-1.5 text-[9px] font-bold text-muted-foreground uppercase">LIHAT DETAIL <ArrowRight size={10} /></div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+                    />
+                </>
+            ) : (
+                <div className="text-center text-slate-500 py-32 border-2 border-dashed rounded-3xl bg-muted/5">
+                    <PageHeader title="Pilih Unit Bisnis" description="Silakan pilih perusahaan terlebih dahulu untuk menampilkan laporan agregat." icon={Search} />
                 </div>
-            ) : (<div className="text-center text-slate-500 py-20 border border-dashed rounded-lg"><p>Silakan pilih perusahaan untuk menampilkan laporan.</p></div>)}
+            )}
             {selectedKpiDataForDetail && (<ReportDetailView kpiData={selectedKpiDataForDetail} onClose={() => setSelectedKpiDataForDetail(null)} />)}
         </div>
     );
@@ -385,13 +365,10 @@ function IndividualAnalysisView() {
     const [startPeriod, setStartPeriod] = useState<string>("");
     const [endPeriod, setEndPeriod] = useState<string>("");
 
-    const userCompany = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
-    const isHoldingAdmin = useMemo(() => userRole === 'manajemen' && !!userCompany?.isHolding, [userRole, userCompany]);
-    const isManager = useMemo(() => (userRole === 'manajemen' || userRole === 'user') && employees.some(e => e.reportsTo === currentUser?.id), [userRole, currentUser, employees]);
-
     const manageableCompanies = useMemo(() => {
         if (userRole === 'superadmin') return companies.filter(c => c.status === 'Aktif');
-        if (isHoldingAdmin && userCompany) {
+        const userCompany = companies.find(c => c.name === currentUser?.company);
+        if (userRole === 'manajemen' && userCompany?.isHolding) {
             const getDescendantCompanies = (parentId: string): any[] => {
                 const children = companies.filter(c => c.parentId === parentId);
                 return children.flatMap(c => [c, ...getDescendantCompanies(c.id)]);
@@ -399,7 +376,7 @@ function IndividualAnalysisView() {
             return [userCompany, ...getDescendantCompanies(userCompany.id)];
         }
         if (userCompany) return [userCompany]; return [];
-    }, [userRole, isHoldingAdmin, userCompany, companies]);
+    }, [userRole, currentUser, companies]);
 
     useEffect(() => {
         if (userRole === 'superadmin' && companies.length > 0) {
@@ -412,189 +389,44 @@ function IndividualAnalysisView() {
     }, [userRole, currentUser, companies]);
 
     const selectedCompanyName = useMemo(() => companies.find(c => c.id === selectedCompanyId)?.name, [selectedCompanyId, companies]);
-
-    const uniqueCompanyDepartments = useMemo(() => !selectedCompanyName ? [] : [...new Map(departments.filter(d => d.company === selectedCompanyName).map(d => [d.name, d])).values()], [selectedCompanyName, departments]);
-    const uniqueCompanyPositions = useMemo(() => !selectedCompanyName ? [] : [...new Map(positions.filter(p => p.company === selectedCompanyName && (selectedDepartment === 'all' || p.department === selectedDepartment)).map(p => [p.name, p])).values()], [selectedCompanyName, selectedDepartment, positions]);
-
     const filteredEmployees = useMemo(() => {
         if (!selectedCompanyName) return [];
         let base = employees.filter(e => e.company === selectedCompanyName && e.status === 'Aktif' && e.role !== 'superadmin');
-
-        if (isManager && !isHoldingAdmin && currentUser) {
-            const getSubordinateIds = (managerId: string): string[] => [managerId, ...employees.filter(e => e.reportsTo === managerId).flatMap(e => getSubordinateIds(e.id))];
-            const teamIds = new Set(getSubordinateIds(currentUser.id));
-            base = base.filter(e => teamIds.has(e.id));
-        }
-
         if (selectedDepartment !== "all") base = base.filter(e => e.department === selectedDepartment);
         if (selectedPosition !== "all") base = base.filter(e => e.position === selectedPosition);
-
         return base.sort((a, b) => a.name.localeCompare(b.name));
-    }, [employees, selectedCompanyName, selectedDepartment, selectedPosition, isManager, isHoldingAdmin, currentUser]);
+    }, [employees, selectedCompanyName, selectedDepartment, selectedPosition]);
 
     const availablePeriods = useMemo(() => {
         if (!kpiData || !selectedCompanyName) return [];
         return [...new Set(kpiData.filter(d => d.company === selectedCompanyName && d.period).map(d => d.period))].sort().reverse();
     }, [kpiData, selectedCompanyName]);
 
-    useEffect(() => {
-        if (availablePeriods.length > 0 && !startPeriod) {
-            const sorted = [...availablePeriods].sort();
-            setStartPeriod(sorted[Math.max(0, sorted.length - 6)]);
-            setEndPeriod(sorted[sorted.length - 1]);
-        }
-    }, [availablePeriods, startPeriod]);
-
     const handleRunAnalysis = () => {
         if (selectedEmployeeId === 'all' || !startPeriod || !endPeriod) return;
         const employee = employees.find(e => e.id === selectedEmployeeId);
         if (employee) {
-            sessionStorage.setItem('selectedEmployeeAnalysis', JSON.stringify({
-                employee,
-                startPeriod,
-                endPeriod
-            }));
+            sessionStorage.setItem('selectedEmployeeAnalysis', JSON.stringify({ employee, startPeriod, endPeriod }));
             router.push(`/reports/${employee.id}`);
         }
     };
 
     return (
-        <Card className="border-2 border-primary/20 shadow-xl overflow-hidden rounded-2xl animate-fade-in">
-            <CardHeader className="bg-primary/5 p-5 sm:p-8 border-b border-primary/10">
+        <Card className="border-2 border-primary/10 shadow-xl overflow-hidden rounded-2xl bg-background">
+            <CardHeader className="bg-primary/5 p-8 border-b">
                 <div className="flex items-center gap-4">
-                    <div className="size-10 sm:size-12 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm shrink-0">
-                        <UserSearch size={20} className="sm:size-6" />
-                    </div>
-                    <div className="space-y-1">
-                        <CardTitle className="text-xl sm:text-2xl font-black tracking-tight text-slate-800">Filter Analisis Kinerja Individu</CardTitle>
-                        <CardDescription className="text-slate-500 font-medium text-xs sm:text-sm">Pilih karyawan dan rentang waktu untuk melihat analisis kinerja.</CardDescription>
-                    </div>
+                    <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm"><UserSearch size={24} /></div>
+                    <div className="space-y-1"><CardTitle className="text-2xl font-black tracking-tight">Analis Performa Personal</CardTitle><CardDescription className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Pilih karyawan dan rentang waktu untuk simulasi data.</CardDescription></div>
                 </div>
             </CardHeader>
-
-            <CardContent className="p-5 sm:p-8 space-y-6 sm:space-y-10 bg-background">
-                {/* Row 1: The Selects */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                    <div className="space-y-2">
-                        <Label className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                            <Building size={12} /> Perusahaan
-                        </Label>
-                        <Select 
-                            onValueChange={(v) => { setSelectedCompanyId(v); setSelectedDepartment('all'); setSelectedPosition('all'); setSelectedEmployeeId('all'); }} 
-                            value={selectedCompanyId ?? ""}
-                        >
-                            <SelectTrigger className="h-10 sm:h-12 border-slate-200 bg-slate-50/50 font-bold focus:ring-primary/20 text-xs sm:text-sm">
-                                <SelectValue placeholder="Pilih Perusahaan" />
-                            </SelectTrigger>
-                            <SelectContent className="z-[300]">
-                                {manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                            <Network size={12} /> Departemen
-                        </Label>
-                        <Select 
-                            value={selectedDepartment} 
-                            onValueChange={(v) => { setSelectedDepartment(v); setSelectedPosition('all'); setSelectedEmployeeId('all'); }} 
-                            disabled={!selectedCompanyId}
-                        >
-                            <SelectTrigger className="h-10 sm:h-12 border-slate-200 bg-slate-50/50 font-bold focus:ring-primary/20 text-xs sm:text-sm">
-                                <SelectValue placeholder="Pilih Departemen" />
-                            </SelectTrigger>
-                            <SelectContent className="z-[300]">
-                                <SelectItem value="all">Semua Departemen</SelectItem>
-                                {uniqueCompanyDepartments.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                            <Briefcase size={12} /> Jabatan
-                        </Label>
-                        <Select 
-                            value={selectedPosition} 
-                            onValueChange={(v) => { setSelectedPosition(v); setSelectedEmployeeId('all'); }} 
-                            disabled={selectedDepartment === 'all'}
-                        >
-                            <SelectTrigger className="h-10 sm:h-12 border-slate-200 bg-slate-50/50 font-bold focus:ring-primary/20 text-xs sm:text-sm">
-                                <SelectValue placeholder="Pilih Jabatan" />
-                            </SelectTrigger>
-                            <SelectContent className="z-[300]">
-                                <SelectItem value="all">Semua Jabatan</SelectItem>
-                                {uniqueCompanyPositions.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                            <User size={12} /> Karyawan
-                        </Label>
-                        <Select 
-                            value={selectedEmployeeId} 
-                            onValueChange={setSelectedEmployeeId} 
-                            disabled={filteredEmployees.length === 0}
-                        >
-                            <SelectTrigger className="h-10 sm:h-12 border-slate-200 bg-slate-50/50 font-bold focus:ring-primary/20 text-xs sm:text-sm">
-                                <SelectValue placeholder="Pilih Karyawan" />
-                            </SelectTrigger>
-                            <SelectContent className="z-[300]">
-                                <SelectItem value="all">Pilih Karyawan</SelectItem>
-                                {filteredEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
+            <CardContent className="p-8 space-y-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Unit Bisnis</Label><Select onValueChange={(v) => { setSelectedCompanyId(v); setSelectedDepartment('all'); setSelectedEmployeeId('all'); }} value={selectedCompanyId ?? ""}><SelectTrigger className="h-12 font-bold"><SelectValue /></SelectTrigger><SelectContent className="z-[350]">{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Karyawan</Label><Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId} disabled={filteredEmployees.length === 0}><SelectTrigger className="h-12 font-bold"><SelectValue placeholder="Pilih Karyawan..." /></SelectTrigger><SelectContent className="z-[350]">{filteredEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Periode Mulai</Label><Select value={startPeriod} onValueChange={setStartPeriod}><SelectTrigger className="h-12 font-bold"><SelectValue placeholder="Pilih Bulan..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Periode Selesai</Label><Select value={endPeriod} onValueChange={setEndPeriod}><SelectTrigger className="h-12 font-bold"><SelectValue placeholder="Pilih Bulan..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
                 </div>
-
-                {/* Row 2: Periods & Action */}
-                <div className="p-5 sm:p-8 rounded-2xl bg-muted/20 border border-dashed border-primary/20 relative group">
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-end">
-                        <div className="md:col-span-4 space-y-2">
-                            <Label className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-primary ml-1">Periode Mulai</Label>
-                            <Select value={startPeriod} onValueChange={setStartPeriod} disabled={availablePeriods.length === 0}>
-                                <SelectTrigger className="h-10 sm:h-12 bg-background border-slate-200 font-bold text-xs sm:text-sm">
-                                    <Calendar className="size-4 mr-2 text-slate-400" />
-                                    <SelectValue placeholder="Pilih Bulan..." />
-                                </SelectTrigger>
-                                <SelectContent className="z-[300]">
-                                    {[...availablePeriods].reverse().map(p => (
-                                        <SelectItem key={`start-${p}`} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMMM yyyy', { locale: localeId })}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="md:col-span-4 space-y-2">
-                            <Label className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-primary ml-1">Periode Selesai</Label>
-                            <Select value={endPeriod} onValueChange={setEndPeriod} disabled={availablePeriods.length === 0}>
-                                <SelectTrigger className="h-10 sm:h-12 bg-background border-slate-200 font-bold text-xs sm:text-sm">
-                                    <Calendar className="size-4 mr-2 text-slate-400" />
-                                    <SelectValue placeholder="Pilih Bulan..." />
-                                </SelectTrigger>
-                                <SelectContent className="z-[300]">
-                                    {[...availablePeriods].reverse().map(p => (
-                                        <SelectItem key={`end-${p}`} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMMM yyyy', { locale: localeId })}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="md:col-span-4">
-                            <Button 
-                                onClick={handleRunAnalysis}
-                                disabled={selectedEmployeeId === 'all' || !startPeriod || !endPeriod}
-                                className="w-full h-10 sm:h-12 font-black uppercase tracking-widest text-[10px] sm:text-xs shadow-xl shadow-primary/20 group-hover:scale-[1.01] transition-all duration-300"
-                            >
-                                <TrendingUp className="mr-2 size-4" />
-                                Jalankan Analisis
-                            </Button>
-                        </div>
-                    </div>
-                </div>
+                <Button onClick={handleRunAnalysis} disabled={selectedEmployeeId === 'all' || !startPeriod || !endPeriod} className="w-full h-12 font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20"><TrendingUp size={16} className="mr-2" /> Jalankan Analisis Performa</Button>
             </CardContent>
         </Card>
     );
@@ -604,12 +436,12 @@ export function ReportDetailView({ kpiData, onClose }: { kpiData: KpiData, onClo
     const [isExpanded, setIsExpanded] = useState(false);
     useEffect(() => { const body = document.body; body.style.overflow = 'hidden'; return () => { body.style.overflow = 'auto' }; }, []);
     return createPortal(
-        <div className="fixed inset-0 z-[100] flex justify-end bg-black/60 backdrop-blur-sm">
-            <div className={cn("relative flex flex-col bg-background text-foreground shadow-2xl h-full max-h-screen transition-all duration-300", isExpanded ? "w-full" : "w-full sm:w-[550px] lg:w-[40%]")}>
+        <div className="fixed inset-0 z-[500] flex justify-end bg-black/60 backdrop-blur-sm">
+            <div className={cn("relative flex flex-col bg-background text-foreground shadow-2xl h-full max-h-screen transition-all duration-300", isExpanded ? "w-full" : "w-full sm:w-[600px] lg:w-[45%]")}>
                 <div className="flex items-center justify-between p-4 border-b bg-slate-50 sticky top-0 z-10">
-                    <h2 className="font-semibold text-slate-800">Detail Pencapaian</h2>
+                    <h2 className="font-bold text-slate-800">Pratinjau Laporan Kinerja</h2>
                     <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} title={isExpanded ? "Kecilkan" : "Perlebar"} className="hidden sm:inline-flex">{isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</Button>
+                        <Button variant="ghost" size="icon" className="hidden sm:flex" onClick={() => setIsExpanded(!isExpanded)}>{isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</Button>
                         <Button variant="ghost" size="icon" onClick={onClose}><X size={18} /></Button>
                     </div>
                 </div>
@@ -623,27 +455,19 @@ export function ReportDetailView({ kpiData, onClose }: { kpiData: KpiData, onClo
 export default function ReportsPage() {
     const { setPageContext } = usePageContext();
     const [activeTab, setActiveTab] = useState("team");
-    const pageTitleText = 'Laporan Kinerja';
-    const pageDescription = 'Analisis kinerja tim dan individu berdasarkan KPI.';
-
-    useEffect(() => { setPageContext(pageTitleText, null); }, [setPageContext, pageTitleText]);
+    useEffect(() => { setPageContext('Laporan Kinerja', null); }, [setPageContext]);
 
     return (
-      <div className="space-y-4">
-        <PageHeader title={pageTitleText} description={pageDescription} />
-        
+      <ResponsivePage>
+        <PageHeader title="Pusat Laporan & Analitik" description="Monitor pencapaian target dan analisis tren pertumbuhan kinerja seluruh tim." icon={FilePieChart} />
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-[400px] gap-1 bg-slate-100 p-1 rounded-full">
-                <TabsTrigger value="team" className={cn("font-semibold rounded-full transition-all text-sm duration-300 h-9", activeTab === 'team' ? 'bg-white text-slate-900 shadow-sm' : 'bg-transparent text-slate-600 hover:text-slate-900')}>Laporan Tim</TabsTrigger>
-                <TabsTrigger value="individual" className={cn("font-semibold rounded-full transition-all text-sm duration-300 h-9", activeTab === 'individual' ? 'bg-white text-slate-900 shadow-sm' : 'bg-transparent text-slate-600 hover:text-slate-900')}>Analisis Individu</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 max-w-[400px] bg-muted/30 p-1 rounded-xl mb-6">
+                <TabsTrigger value="team" className="font-bold text-xs rounded-lg">Laporan Agregat Tim</TabsTrigger>
+                <TabsTrigger value="individual" className="font-bold text-xs rounded-lg">Analisis Individu</TabsTrigger>
             </TabsList>
-            <TabsContent value="team" className="mt-4 animate-in fade-in slide-in-from-bottom-1 duration-200">
-                <TeamReportView />
-            </TabsContent>
-            <TabsContent value="individual" className="mt-4 animate-in fade-in slide-in-from-bottom-1 duration-200">
-                <IndividualAnalysisView />
-            </TabsContent>
+            <TabsContent value="team" className="m-0 border-none space-y-6"><TeamReportView /></TabsContent>
+            <TabsContent value="individual" className="m-0 border-none"><IndividualAnalysisView /></TabsContent>
         </Tabs>
-      </div>
+      </ResponsivePage>
     );
 }
