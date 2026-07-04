@@ -1,4 +1,3 @@
-
 // src/app/(main)/portal/page.tsx
 "use client";
 
@@ -102,7 +101,7 @@ function ModuleCard({
     
     return (
         <Card className={cn(
-            "flex flex-col h-full border-2 transition-all group overflow-hidden",
+            "flex flex-col h-full border-2 transition-all group overflow-hidden min-w-0",
             isActive ? "border-primary shadow-lg scale-[1.01]" : "border-transparent hover:border-muted-foreground/20 hover:shadow-md"
         )}>
             <CardHeader className="pb-4 relative">
@@ -117,23 +116,23 @@ function ModuleCard({
                         {isTrial ? 'Trial' : 'Aktif'}
                     </Badge>
                 )}
-                <CardTitle className="text-xl font-headline font-bold">{config.name}</CardTitle>
-                <CardDescription className="text-xs leading-relaxed min-h-[40px]">
+                <CardTitle className="text-xl font-headline font-bold truncate">{config.name}</CardTitle>
+                <CardDescription className="text-xs leading-relaxed min-h-[40px] break-words">
                     {config.description}
                 </CardDescription>
             </CardHeader>
             
             {isManagement && (
-                <CardContent className="flex-grow pt-0">
+                <CardContent className="flex-grow pt-0 min-w-0">
                     {isActive ? (
-                        <div className="space-y-3 bg-muted/30 p-3 rounded-xl border border-dashed text-[11px] font-medium">
-                            <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground uppercase tracking-tight">Kapasitas Staff</span>
-                                <span className="font-bold text-slate-700">{subscription.quota === -1 ? 'Unlimited' : subscription.quota} User</span>
+                        <div className="space-y-3 bg-muted/30 p-3 rounded-xl border border-dashed text-[11px] font-medium overflow-hidden">
+                            <div className="flex justify-between items-center gap-2">
+                                <span className="text-muted-foreground uppercase tracking-tight shrink-0">Kapasitas Staff</span>
+                                <span className="font-bold text-slate-700 truncate">{subscription.quota === -1 ? 'Unlimited' : subscription.quota} User</span>
                             </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground uppercase tracking-tight">Masa Berlaku</span>
-                                <span className={cn("font-bold", isExpired ? "text-destructive" : "text-primary")}>
+                            <div className="flex justify-between items-center gap-2">
+                                <span className="text-muted-foreground uppercase tracking-tight shrink-0">Masa Berlaku</span>
+                                <span className={cn("font-bold truncate", isExpired ? "text-destructive" : "text-primary")}>
                                     {subscription.expiryDate ? format(new Date(subscription.expiryDate), 'd MMM yyyy') : 'N/A'}
                                 </span>
                             </div>
@@ -188,7 +187,7 @@ function ModuleCard({
 
 function AdminDataCard({ label, description, icon: Icon, href, color, onClick }: { label: string, description: string, icon: any, href?: string, color: string, onClick?: () => void }) {
     const content = (
-        <Card className="h-full border-none shadow-sm hover:shadow-md transition-all bg-background cursor-pointer">
+        <Card className="h-full border-none shadow-sm hover:shadow-md transition-all bg-background cursor-pointer min-w-0">
             <CardContent className="p-4 flex items-center gap-4">
                 <div className={cn("p-3 rounded-2xl shrink-0 transition-transform group-hover:scale-110", color)}>
                     <Icon size={20} className="text-white" />
@@ -197,17 +196,17 @@ function AdminDataCard({ label, description, icon: Icon, href, color, onClick }:
                     <h4 className="text-sm font-bold text-slate-800 truncate">{label}</h4>
                     <p className="text-[10px] text-muted-foreground line-clamp-1">{description}</p>
                 </div>
-                <ChevronRight size={14} className="text-muted-foreground opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                <ChevronRight size={14} className="text-muted-foreground opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all shrink-0" />
             </CardContent>
         </Card>
     );
 
     if (onClick) {
-        return <div onClick={onClick} className="block group">{content}</div>;
+        return <div onClick={onClick} className="block group w-full min-w-0">{content}</div>;
     }
 
     return (
-        <Link href={href || '#'} className="block group">
+        <Link href={href || '#'} className="block group w-full min-w-0">
             {content}
         </Link>
     );
@@ -367,11 +366,11 @@ export default function PortalPage() {
     if (!currentUser) return null;
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6 sm:space-y-10 animate-fade-in pb-20">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
-                <div className="lg:col-span-4 space-y-6">
+        <div className="max-w-7xl mx-auto space-y-6 sm:space-y-10 animate-fade-in pb-20 overflow-hidden min-w-0">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start min-w-0">
+                <div className="lg:col-span-4 space-y-6 min-w-0">
                     <Card className="shadow-2xl border-none overflow-hidden bg-slate-900 text-white relative">
-                        <div className="absolute top-0 right-0 p-4 sm:p-8 opacity-10 pointer-events-none"><Building size={150} /></div>
+                        <div className="absolute top-0 right-0 p-4 sm:p-8 opacity-10 pointer-events-none shrink-0"><Building size={150} /></div>
                         <CardHeader className="relative z-10 p-6 sm:p-8">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="size-12 sm:size-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shrink-0">
@@ -384,27 +383,27 @@ export default function PortalPage() {
                             </div>
                             <Separator className="bg-white/10 mb-6" />
                             <div className="space-y-4 text-sm">
-                                <div className="flex items-center gap-3"><LucideUser className="size-4 text-white/50" /><span className="font-bold opacity-90 truncate">{currentUser.name}</span></div>
-                                <div className="flex items-center gap-3"><Mail className="size-4 text-white/50" /><span className="opacity-70 truncate">{currentUser.email}</span></div>
+                                <div className="flex items-center gap-3"><LucideUser className="size-4 text-white/50 shrink-0" /><span className="font-bold opacity-90 truncate">{currentUser.name}</span></div>
+                                <div className="flex items-center gap-3"><Mail className="size-4 text-white/50 shrink-0" /><span className="opacity-70 truncate">{currentUser.email}</span></div>
                             </div>
                         </CardHeader>
-                        <CardFooter className="bg-black/20 p-4"><Button variant="ghost" className="w-full text-white/60 hover:text-white hover:bg-white/10 font-bold text-xs" onClick={logout}>Keluar Akun</Button></CardFooter>
+                        <CardFooter className="bg-black/20 p-4 shrink-0"><Button variant="ghost" className="w-full text-white/60 hover:text-white hover:bg-white/10 font-bold text-xs" onClick={logout}>Keluar Akun</Button></CardFooter>
                     </Card>
 
                     {isManagement && (
-                        <div className="space-y-4">
+                        <div className="space-y-4 min-w-0">
                              <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 ml-1"><Database size={12} /> Pondasi Data</h3>
-                             <div className="grid grid-cols-1 gap-3">
+                             <div className="grid grid-cols-1 gap-3 w-full">
                                 <AdminDataCard label="Setup Master Data" description="Kelola personil, departemen, dan hierarki" icon={Settings} href="/master-data/employees" color="bg-indigo-600" />
                                 {company?.isHolding ? (
                                     <AdminDataCard label="Manajemen Grup" description="Kelola anak perusahaan dan unit bisnis" icon={Building} onClick={() => setIsGroupDialogOpen(true)} color="bg-rose-500" />
                                 ) : (
                                     company?.canBecomeHolding && (
-                                        <Card className="border-dashed bg-primary/5">
-                                            <CardContent className="p-6 text-center space-y-4">
-                                                <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary"><GitMerge size={24} /></div>
-                                                <div className="space-y-1"><p className="text-xs font-bold uppercase">Upgrade ke Holding</p><p className="text-[10px] text-muted-foreground leading-relaxed">Kelola banyak cabang dalam satu pintu.</p></div>
-                                                <Button onClick={handleUpgradeToHolding} disabled={isUpgrading} variant="outline" size="sm" className="w-full text-[10px] font-black uppercase border-primary/20 h-9">{isUpgrading ? <Loader2 className="size-3 animate-spin mr-2" /> : null}Upgrade Sekarang</Button>
+                                        <Card className="border-dashed bg-primary/5 min-w-0">
+                                            <CardContent className="p-6 text-center space-y-4 min-w-0">
+                                                <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary shrink-0"><GitMerge size={24} /></div>
+                                                <div className="space-y-1"><p className="text-xs font-bold uppercase truncate">Upgrade ke Holding</p><p className="text-[10px] text-muted-foreground leading-relaxed break-words">Kelola banyak cabang dalam satu pintu.</p></div>
+                                                <Button onClick={handleUpgradeToHolding} disabled={isUpgrading} variant="outline" size="sm" className="w-full text-[10px] font-black uppercase border-primary/20 h-9 shrink-0">{isUpgrading ? <Loader2 className="size-3 animate-spin mr-2" /> : null}Upgrade Sekarang</Button>
                                             </CardContent>
                                         </Card>
                                     )
@@ -414,10 +413,10 @@ export default function PortalPage() {
                     )}
                 </div>
 
-                <div className="lg:col-span-8 space-y-8">
+                <div className="lg:col-span-8 space-y-8 min-w-0 overflow-hidden">
                     <div className="space-y-1">
-                        <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-slate-900">Halo, {currentUser.name.split(' ')[0]} 👋</h1>
-                        <p className="text-slate-500 text-base sm:text-lg">Silakan pilih modul yang ingin Anda akses.</p>
+                        <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-slate-900 truncate">Halo, {currentUser.name.split(' ')[0]} 👋</h1>
+                        <p className="text-slate-500 text-base sm:text-lg break-words">Silakan pilih modul yang ingin Anda akses.</p>
                     </div>
 
                     {activeModules.length > 0 && (
@@ -435,19 +434,19 @@ export default function PortalPage() {
                         <div className="space-y-4">
                              <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2"><Plus size={14} /> Layanan Tambahan (Add-ons)</h3>
                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                                <Card className="border-2 border-primary/10 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group">
+                                <Card className="border-2 border-primary/10 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group min-w-0">
                                     <CardHeader>
                                         <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 w-fit mb-4 group-hover:scale-110 transition-transform"><Shield size={24} /></div>
-                                        <CardTitle className="text-xl font-bold font-headline">Tim Manajemen</CardTitle>
-                                        <CardDescription className="text-xs">Kelola personil dengan hak akses Admin. Tambahkan lebih banyak slot jika diperlukan.</CardDescription>
+                                        <CardTitle className="text-xl font-bold font-headline truncate">Tim Manajemen</CardTitle>
+                                        <CardDescription className="text-xs break-words">Kelola personil dengan hak akses Admin. Tambahkan lebih banyak slot jika diperlukan.</CardDescription>
                                     </CardHeader>
-                                    <CardContent className="flex-grow pt-0">
-                                        <div className="bg-muted/30 p-3 rounded-xl border border-dashed text-[11px] font-medium flex justify-between items-center">
-                                            <span className="text-muted-foreground uppercase">Kapasitas Admin</span>
-                                            <span className="font-bold text-primary">{mgmtLimit} Akun Aktif (Terpakai {currentMgmtCount})</span>
+                                    <CardContent className="flex-grow pt-0 min-w-0">
+                                        <div className="bg-muted/30 p-3 rounded-xl border border-dashed text-[11px] font-medium flex justify-between items-center gap-2">
+                                            <span className="text-muted-foreground uppercase shrink-0">Kapasitas Admin</span>
+                                            <span className="font-bold text-primary truncate">{mgmtLimit} Akun (Terpakai {currentMgmtCount})</span>
                                         </div>
                                     </CardContent>
-                                    <CardFooter className="p-4 bg-muted/5 border-t gap-2">
+                                    <CardFooter className="p-4 bg-muted/5 border-t gap-2 shrink-0">
                                         <Button className="flex-1 font-bold rounded-xl h-11" onClick={() => setIsMgmtDialogOpen(true)}>Kelola Tim <ArrowRight className="ml-2 size-4" /></Button>
                                         <Button variant="outline" size="icon" className="size-11 rounded-xl border-primary/20 text-primary hover:bg-primary/5" onClick={() => setIsMgmtConfigOpen(true)} title="Tambah Kuota Admin"><Users size={18}/></Button>
                                     </CardFooter>
@@ -479,8 +478,8 @@ export default function PortalPage() {
                         <DialogTitle className="font-headline font-black text-xl uppercase tracking-tighter">Manajemen Tim Admin</DialogTitle>
                         <DialogDescription className="text-xs font-bold text-primary">Kapasitas Maksimal: {mgmtLimit} Akun Admin</DialogDescription>
                     </DialogHeader>
-                    <div className="flex-1 overflow-y-auto no-scrollbar">
-                         <div className="p-2 sm:p-4">
+                    <div className="flex-1 overflow-y-auto no-scrollbar min-w-0">
+                         <div className="p-2 sm:p-4 w-full min-w-0">
                             <CompanyAdminManagementPage onQuotaFull={() => { setIsMgmtConfigOpen(true); }} />
                          </div>
                     </div>
@@ -494,12 +493,12 @@ export default function PortalPage() {
                         <DialogDescription className="text-indigo-700/70 text-xs font-bold uppercase tracking-wider">Investasi Add-on Lifetime</DialogDescription>
                     </DialogHeader>
                     <div className="p-6 space-y-6">
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                                <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Jumlah Akun Baru</h4>
-                                <p className="text-[10px] text-muted-foreground uppercase font-medium">Berapa banyak admin tambahan?</p>
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="space-y-1 min-w-0">
+                                <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight truncate">Jumlah Akun Baru</h4>
+                                <p className="text-[10px] text-muted-foreground uppercase font-medium line-clamp-1">Berapa banyak admin tambahan?</p>
                             </div>
-                            <div className="flex items-center bg-white rounded-xl border border-slate-200 overflow-hidden h-10 shadow-sm">
+                            <div className="flex items-center bg-white rounded-xl border border-slate-200 overflow-hidden h-10 shadow-sm shrink-0">
                                 <button type="button" onClick={() => setMgmtAddQuota(Math.max(1, mgmtAddQuota - 1))} className="px-3 hover:bg-indigo-50 text-indigo-600"><Minus size={16} strokeWidth={3} /></button>
                                 <input type="number" value={mgmtAddQuota} onChange={(e) => setMgmtAddQuota(Math.max(1, parseInt(e.target.value) || 1))} className="w-12 text-center border-none focus-visible:ring-0 text-sm font-black bg-transparent" />
                                 <button type="button" onClick={() => setMgmtAddQuota(mgmtAddQuota + 1)} className="px-3 hover:bg-indigo-50 text-indigo-600"><Plus size={16} strokeWidth={3} /></button>
@@ -525,4 +524,3 @@ export default function PortalPage() {
         </div>
     );
 }
-

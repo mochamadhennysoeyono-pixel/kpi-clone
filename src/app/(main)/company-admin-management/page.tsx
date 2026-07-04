@@ -37,7 +37,6 @@ import {
 import {
   PlusCircle,
   MoreHorizontal,
-  User,
   ShieldCheck,
   Send,
   Loader2,
@@ -221,9 +220,9 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <Card className="shadow-lg border-t-4 border-primary overflow-hidden">
+      <Card className="shadow-lg border-t-4 border-primary overflow-hidden min-w-0">
         <CardHeader className="px-4 sm:px-6">
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+          <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6">
             <div className="flex items-start gap-3 flex-1 min-w-0">
               <div className="p-2 bg-primary/10 rounded-lg shrink-0">
                 <ShieldCheck className="size-6 text-primary" />
@@ -232,7 +231,7 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
                 <CardTitle className="font-headline text-xl sm:text-2xl text-foreground">
                     {isSuperadmin ? "Manajemen Admin Klien" : "Manajemen Tim Admin"}
                 </CardTitle>
-                <CardDescription className="text-sm leading-relaxed max-w-full">
+                <CardDescription className="text-sm leading-relaxed max-w-full break-words">
                    {isSuperadmin 
                     ? "Kelola seluruh akun admin dari semua perusahaan klien di satu tempat."
                     : "Kelola rekan tim Manajemen Anda. Akun di sini tidak akan muncul di daftar KPI karyawan."}
@@ -247,7 +246,7 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
              </div>
           </div>
         </CardHeader>
-        <CardContent className="px-4 sm:px-6 pt-2">
+        <CardContent className="px-4 sm:px-6 pt-2 min-w-0">
             <div className={cn(
               "flex flex-col md:flex-row gap-4 mb-6 p-4 border rounded-xl bg-muted/30",
               !(isSuperadmin || isHoldingAdmin) && "justify-end"
@@ -284,83 +283,85 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
                 )}
             </div>
 
-            <div className="rounded-xl border overflow-x-auto shadow-sm">
-                <Table className="min-w-[800px]">
-                    <TableHeader className="bg-muted/50">
-                    <TableRow>
-                        <TableHead>Nama Pengguna</TableHead>
-                        {(isSuperadmin || isHoldingAdmin) && <TableHead>Perusahaan</TableHead>}
-                        <TableHead>Email</TableHead>
-                        <TableHead>Status Login</TableHead>
-                        <TableHead className="text-right">Aksi</TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {filteredAdmins.length > 0 ? (
-                        filteredAdmins.map((admin) => (
-                        <TableRow key={admin.id} className="hover:bg-muted/5 group">
-                        <TableCell className="font-medium py-4">
-                            <div className="flex items-center gap-3">
-                            <Avatar className="size-9 border shadow-sm">
-                                <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-black">
-                                    {admin.name.substring(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                            </Avatar>
-                            <span className="font-bold text-slate-900">{admin.name}</span>
-                            </div>
-                        </TableCell>
-                        {(isSuperadmin || isHoldingAdmin) && (
-                            <TableCell>
-                                <div className="flex items-center gap-1.5 text-xs font-semibold">
-                                    <Building className="size-3 text-muted-foreground" />
-                                    {admin.company}
+            <div className="w-full overflow-hidden min-w-0 rounded-xl border shadow-sm">
+                <div className="overflow-x-auto w-full">
+                    <Table className="min-w-[800px]">
+                        <TableHeader className="bg-muted/50">
+                        <TableRow>
+                            <TableHead>Nama Pengguna</TableHead>
+                            {(isSuperadmin || isHoldingAdmin) && <TableHead>Perusahaan</TableHead>}
+                            <TableHead>Email</TableHead>
+                            <TableHead>Status Login</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {filteredAdmins.length > 0 ? (
+                            filteredAdmins.map((admin) => (
+                            <TableRow key={admin.id} className="hover:bg-muted/5 group">
+                            <TableCell className="font-medium py-4">
+                                <div className="flex items-center gap-3">
+                                <Avatar className="size-9 border shadow-sm">
+                                    <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-black">
+                                        {admin.name.substring(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <span className="font-bold text-slate-900">{admin.name}</span>
                                 </div>
                             </TableCell>
+                            {(isSuperadmin || isHoldingAdmin) && (
+                                <TableCell>
+                                    <div className="flex items-center gap-1.5 text-xs font-semibold">
+                                        <Building className="size-3 text-muted-foreground" />
+                                        {admin.company}
+                                    </div>
+                                </TableCell>
+                            )}
+                            <TableCell className="text-sm text-slate-600">{admin.email}</TableCell>
+                            <TableCell>
+                                <Badge variant="outline" className={cn(
+                                    "font-bold text-[10px] uppercase",
+                                    admin.loginStatus === 'Active' ? "bg-green-50 text-green-700 border-green-200" :
+                                    admin.loginStatus === 'Invited' ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                    "bg-slate-100 text-slate-600 border-slate-200"
+                                )}>
+                                    {admin.loginStatus}
+                                </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
+                                        {isSendingInvitation === admin.email ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
+                                    </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="z-[350]">
+                                    <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Aksi Admin</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => handleEditAdmin(admin)}>
+                                        Ubah Profil
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleSendInvitation(admin.email, admin.name)}>
+                                        <Send className="mr-2 size-3.5" /> Kirim Pembaruan Sandi / Aktivasi
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(admin)}>
+                                        <Trash2 className="mr-2 size-3.5" /> Hapus Akses
+                                    </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={(isSuperadmin || isHoldingAdmin) ? 5 : 4} className="h-32 text-center text-muted-foreground italic">
+                                    Tidak ada data admin ditemukan.
+                                </TableCell>
+                            </TableRow>
                         )}
-                        <TableCell className="text-sm text-slate-600">{admin.email}</TableCell>
-                        <TableCell>
-                            <Badge variant="outline" className={cn(
-                                "font-bold text-[10px] uppercase",
-                                admin.loginStatus === 'Active' ? "bg-green-50 text-green-700 border-green-200" :
-                                admin.loginStatus === 'Invited' ? "bg-amber-50 text-amber-700 border-amber-200" :
-                                "bg-slate-100 text-slate-600 border-slate-200"
-                            )}>
-                                {admin.loginStatus}
-                            </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
-                                    {isSendingInvitation === admin.email ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
-                                </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="z-[350]">
-                                <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Aksi Admin</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => handleEditAdmin(admin)}>
-                                    Ubah Profil
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleSendInvitation(admin.email, admin.name)}>
-                                    <Send className="mr-2 size-3.5" /> Kirim Pembaruan Sandi / Aktivasi
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(admin)}>
-                                    <Trash2 className="mr-2 size-3.5" /> Hapus Akses
-                                </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            </TableCell>
-                        </TableRow>
-                        ))
-                    ) : (
-                        <TableRow>
-                            <TableCell colSpan={(isSuperadmin || isHoldingAdmin) ? 5 : 4} className="h-32 text-center text-muted-foreground italic">
-                                Tidak ada data admin ditemukan.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                    </TableBody>
-                </Table>
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
         </CardContent>
       </Card>

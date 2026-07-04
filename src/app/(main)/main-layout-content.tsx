@@ -12,14 +12,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePageContext } from '@/contexts/page-context';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Ripple } from '@/components/ui/ripple';
 import { getActiveModuleFromPath } from '@/lib/nav-items';
-import { AlertCircle } from 'lucide-react';
 
 export default function MainLayoutContent({ children }: { children: React.ReactNode }) {
   const { currentUser, isLoading: isAuthLoading, userRole } = useAuth();
-  const { companies, isLoading: isMasterDataLoading } = useMasterData();
+  const { isLoading: isMasterDataLoading } = useMasterData();
   const { hideBottomNav } = usePageContext();
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -33,10 +31,8 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
   
   const totalIsLoading = isAuthLoading || isMasterDataLoading;
 
-  const isSuperAdmin = userRole === 'superadmin';
   const isPortal = pathname === '/portal';
   const isDocEditor = pathname.startsWith('/document-management/templates/');
-  const activeModule = getActiveModuleFromPath(pathname);
   
   // Sidebar is hidden on the Portal and for the Document Editor
   const hideSidebar = isPortal || isDocEditor;
@@ -58,22 +54,23 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
     return null;
   }
 
-  // Final content check logic
-  let contentToRender = children;
-
   if (isDocEditor) {
-    return <div className="h-screen flex flex-col bg-white">{contentToRender}</div>;
+    return <div className="h-screen flex flex-col bg-white overflow-hidden">{children}</div>;
   }
 
   return (
     <div className="flex h-screen bg-white text-foreground overflow-hidden relative">
       {!hideSidebar && <AppSidebar />}
       
-      <div className="flex flex-1 flex-col min-w-0 overflow-hidden relative">
+      {/* 
+          PENTING: 'min-w-0' pada container flex-1 adalah kunci 
+          agar layout tidak pecah saat sidebar terbuka.
+      */}
+      <div className="flex flex-1 flex-col min-w-0 overflow-hidden relative h-full">
         <Header />
         
-        <div className="flex-1 min-h-0 flex flex-col relative">
-            <ScrollArea className="flex-1 w-full">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col relative overflow-hidden">
+            <ScrollArea className="flex-1 w-full h-full">
                 <main className="w-full min-w-0">
                     <div className={cn(
                         "p-4 sm:p-6 lg:p-10 w-full min-w-0",
@@ -81,7 +78,7 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
                         isMobile && !isPortal && "pb-24", 
                         isPortal && "lg:p-12 max-w-7xl mx-auto"
                     )}>
-                        {contentToRender}
+                        {children}
                     </div>
                 </main>
             </ScrollArea>

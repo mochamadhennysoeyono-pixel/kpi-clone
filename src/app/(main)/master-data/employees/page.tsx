@@ -40,7 +40,6 @@ import {
   MoreHorizontal,
   Upload,
   Download,
-  User,
   ChevronDown,
   Trash2,
   Send,
@@ -49,7 +48,6 @@ import {
   Users,
   Loader2,
   ShieldCheck,
-  ShieldAlert,
   Zap,
   Pencil,
   Filter,
@@ -827,104 +825,108 @@ export default function EmployeesPage() {
                 </Select>
               </div>
             </div>
-          <div className="overflow-x-auto rounded-xl border shadow-sm">
-            <Table className="min-w-[1000px]">
-              <TableHeader className="bg-muted/50">
-                <TableRow>
-                  <TableHead className="w-[40px]">
-                      <Checkbox
-                          checked={selectedRowIds.length > 0 && selectedRowIds.length === filteredEmployees.filter(e => e.id !== currentUser?.id).length && filteredEmployees.length > 1}
-                          onCheckedChange={(checked) => handleSelectAll(checked)}
-                          aria-label="Pilih semua"
-                      />
-                  </TableHead>
-                  <TableHead>Karyawan</TableHead>
-                  <TableHead>Jabatan</TableHead>
-                  <TableHead>Akses Modul</TableHead>
-                  <TableHead>Status Akun</TableHead>
-                  <TableHead>Status Login</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEmployees.map((employee) => {
-                  const accessedModules = Object.entries(employee.moduleAccess || {})
-                      .filter(([_, enabled]) => enabled)
-                      .map(([id]) => id);
+          
+          {/* WRAPPER TABEL UNTUK MENCEGAH OVERFLOW HORIZONTAL */}
+          <div className="w-full overflow-hidden min-w-0 rounded-xl border shadow-sm">
+            <div className="overflow-x-auto w-full">
+              <Table className="min-w-[1000px]">
+                <TableHeader className="bg-muted/50">
+                  <TableRow>
+                    <TableHead className="w-[40px]">
+                        <Checkbox
+                            checked={selectedRowIds.length > 0 && selectedRowIds.length === filteredEmployees.filter(e => e.id !== currentUser?.id).length && filteredEmployees.length > 1}
+                            onCheckedChange={(checked) => handleSelectAll(checked)}
+                            aria-label="Pilih semua"
+                        />
+                    </TableHead>
+                    <TableHead>Karyawan</TableHead>
+                    <TableHead>Jabatan</TableHead>
+                    <TableHead>Akses Modul</TableHead>
+                    <TableHead>Status Akun</TableHead>
+                    <TableHead>Status Login</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEmployees.map((employee) => {
+                    const accessedModules = Object.entries(employee.moduleAccess || {})
+                        .filter(([_, enabled]) => enabled)
+                        .map(([id]) => id);
 
-                  return (
-                    <TableRow key={employee.id} data-state={selectedRowIds.includes(employee.id) && "selected"} className="hover:bg-muted/5 group">
-                        <TableCell>
-                            <Checkbox
-                                checked={selectedRowIds.includes(employee.id)}
-                                onCheckedChange={() => handleRowSelect(employee.id)}
-                                aria-label={`Pilih ${employee.name}`}
-                                disabled={employee.id === currentUser?.id}
-                            />
-                        </TableCell>
-                        <TableCell className="font-medium py-4">
-                        <div className="flex items-center gap-3">
-                            <Avatar className="size-9 border shadow-sm">
-                                <AvatarFallback className="bg-muted text-muted-foreground text-[10px] font-black uppercase">
-                                    {employee.name.substring(0, 2)}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="grid gap-0.5 min-w-0 flex-1">
-                                <span className="font-bold text-slate-900 truncate">{employee.name}</span>
-                                <span className="text-[10px] text-muted-foreground font-bold tracking-tight uppercase truncate">{employee.email}</span>
-                            </div>
-                        </div>
-                        </TableCell>
-                        <TableCell className="text-sm text-slate-600 font-medium">{employee.position}</TableCell>
-                        <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                                {accessedModules.length > 0 ? accessedModules.map(m => (
-                                    <Badge key={m} variant="secondary" className="text-[8px] h-4 uppercase font-bold px-1">{m}</Badge>
-                                )) : <span className="text-[10px] text-muted-foreground italic">No Access</span>}
-                            </div>
-                        </TableCell>
-                        <TableCell>
-                        <Badge variant={employee.status === "Aktif" ? "default" : "outline"} className="text-[10px] uppercase font-black border-none">
-                            {employee.status}
-                        </Badge>
-                        </TableCell>
-                        <TableCell>
-                        <Badge variant="outline" className={cn("font-bold text-[10px] uppercase", getLoginStatusBadge(employee.loginStatus))}>
-                            {employee.loginStatus}
-                        </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full" disabled={isSendingInvitation === employee.email}>
-                                {isSendingInvitation === employee.email ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
-                                <span className="sr-only">Buka menu</span>
-                            </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="z-[350]">
-                            <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Aksi Karyawan</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => { setEmployeeForAccess(employee); setIsAccessDialogOpen(true); }}>
-                                <Zap className="mr-2 h-4 w-4" /> Kelola Akses Modul
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditEmployee(employee)}>
-                                <Pencil size={16} className="mr-2" /> Ubah Profil
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={async () => await handleSendInvitation(employee.email, employee.name)}>
-                                <Send className="mr-2 h-4 w-4" />
-                                Kirim Pembaruan Sandi / Aktivasi
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(employee)} disabled={employee.id === currentUser?.id}>
-                                <Trash2 size={16} className="mr-2" /> Hapus Akun
-                            </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                    return (
+                      <TableRow key={employee.id} data-state={selectedRowIds.includes(employee.id) && "selected"} className="hover:bg-muted/5 group">
+                          <TableCell>
+                              <Checkbox
+                                  checked={selectedRowIds.includes(employee.id)}
+                                  onCheckedChange={() => handleRowSelect(employee.id)}
+                                  aria-label={`Pilih ${employee.name}`}
+                                  disabled={employee.id === currentUser?.id}
+                              />
+                          </TableCell>
+                          <TableCell className="font-medium py-4">
+                          <div className="flex items-center gap-3">
+                              <Avatar className="size-9 border shadow-sm">
+                                  <AvatarFallback className="bg-muted text-muted-foreground text-[10px] font-black uppercase">
+                                      {employee.name.substring(0, 2)}
+                                  </AvatarFallback>
+                              </Avatar>
+                              <div className="grid gap-0.5 min-w-0 flex-1">
+                                  <span className="font-bold text-slate-900 truncate">{employee.name}</span>
+                                  <span className="text-[10px] text-muted-foreground font-bold tracking-tight uppercase truncate">{employee.email}</span>
+                              </div>
+                          </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-slate-600 font-medium">{employee.position}</TableCell>
+                          <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                  {accessedModules.length > 0 ? accessedModules.map(m => (
+                                      <Badge key={m} variant="secondary" className="text-[8px] h-4 uppercase font-bold px-1">{m}</Badge>
+                                  )) : <span className="text-[10px] text-muted-foreground italic">No Access</span>}
+                              </div>
+                          </TableCell>
+                          <TableCell>
+                          <Badge variant={employee.status === "Aktif" ? "default" : "outline"} className="text-[10px] uppercase font-black border-none">
+                              {employee.status}
+                          </Badge>
+                          </TableCell>
+                          <TableCell>
+                          <Badge variant="outline" className={cn("font-bold text-[10px] uppercase", getLoginStatusBadge(employee.loginStatus))}>
+                              {employee.loginStatus}
+                          </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                          <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                              <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full" disabled={isSendingInvitation === employee.email}>
+                                  {isSendingInvitation === employee.email ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
+                                  <span className="sr-only">Buka menu</span>
+                              </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="z-[350]">
+                              <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Aksi Karyawan</DropdownMenuLabel>
+                              <DropdownMenuItem onClick={() => { setEmployeeForAccess(employee); setIsAccessDialogOpen(true); }}>
+                                  <Zap className="mr-2 h-4 w-4" /> Kelola Akses Modul
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditEmployee(employee)}>
+                                  <Pencil size={16} className="mr-2" /> Ubah Profil
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={async () => await handleSendInvitation(employee.email, employee.name)}>
+                                  <Send className="mr-2 h-4 w-4" />
+                                  Kirim Pembaruan Sandi / Aktivasi
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(employee)} disabled={employee.id === currentUser?.id}>
+                                  <Trash2 size={16} className="mr-2" /> Hapus Akun
+                              </DropdownMenuItem>
+                              </DropdownMenuContent>
+                          </DropdownMenu>
+                          </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </CardContent>
       </Card>
