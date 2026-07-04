@@ -3,7 +3,8 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "./card";
+import { Badge } from "./badge";
 
 /**
  * AdaptiveCardGrid: Mengatur jumlah kolom berdasarkan kompleksitas isi.
