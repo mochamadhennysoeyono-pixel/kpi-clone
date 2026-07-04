@@ -1,9 +1,7 @@
-
-// src/components/layout/SubMenuOverlay.tsx
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, LayoutGrid, CaretLeft } from "@phosphor-icons/react";
+import { X, SquaresFour, CaretLeft } from "@phosphor-icons/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
@@ -97,7 +95,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                         </button>
                     ) : (
                         <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm">
-                            <LayoutGrid size={18} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
+                            <SquaresFour size={18} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
                         </div>
                     )}
                     <div className="min-w-0">
