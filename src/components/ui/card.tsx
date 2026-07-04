@@ -1,6 +1,5 @@
-
+// src/components/ui/card.tsx
 import * as React from "react"
-
 import { cn } from "@/lib/utils"
 
 const Card = React.forwardRef<
@@ -10,7 +9,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-xl border border-[#23252a] bg-[#0f1011] text-card-foreground transition-all duration-300",
+      "rounded-xl border border-border bg-card text-card-foreground transition-all duration-300",
       className
     )}
     {...props}
@@ -37,7 +36,7 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-sm font-black uppercase tracking-tight leading-none text-[#f7f8f8]",
+      "text-sm font-black uppercase tracking-widest leading-none text-foreground",
       className
     )}
     {...props}
@@ -45,14 +44,13 @@ const CardTitle = React.forwardRef<
 ));
 CardTitle.displayName = "CardTitle";
 
-
 const CardDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-[11px] font-medium text-[#8a8f98] leading-relaxed", className)}
+    className={cn("text-[10px] font-bold uppercase tracking-tight text-muted-foreground leading-relaxed", className)}
     {...props}
   />
 ))

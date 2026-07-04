@@ -1,4 +1,3 @@
-
 // src/components/layout/header.tsx
 'use client';
 
@@ -10,7 +9,8 @@ import {
   LogOut,
   Settings,
   LayoutGrid,
-  ChevronLeft
+  ChevronLeft,
+  Menu
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {
@@ -27,11 +27,10 @@ import { useAuth, type Employee } from '@/contexts/auth-context';
 import Image from 'next/image';
 import { NotificationBell } from './notification-bell';
 import { cn } from '@/lib/utils';
-import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useSidebar } from '@/contexts/sidebar-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-
 
 function LiveClock() {
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
@@ -44,124 +43,101 @@ function LiveClock() {
 
   if (!currentTime) {
     return (
-      <div className="w-48 h-5 bg-muted rounded animate-pulse" />
+      <div className="w-48 h-5 bg-white/5 rounded animate-pulse" />
     );
   }
 
   return (
-    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-      <span>
+    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+      <span className="text-foreground/80">
         {format(currentTime, 'eeee,', {locale: id})}
       </span>
-      <span className="text-muted-foreground">
+      <span className="tabular-nums">
         {format(currentTime, 'd MMMM yyyy, HH:mm:ss')}
       </span>
     </div>
   );
 }
 
-function DropdownLabel({ user }: { user: Employee | null }) {
-    if (!user) return null;
-
-    return (
-      <DropdownMenuLabel className='font-normal'>
-        <div className='flex flex-col space-y-1'>
-            <p className='text-sm font-medium leading-none'>{user.name}</p>
-            <p className='text-xs leading-none text-muted-foreground'>{user.email}</p>
-        </div>
-      </DropdownMenuLabel>
-    );
-}
-
 export default function Header() {
   const { currentUser, userRole, logout } = useAuth();
   const isMobile = useIsMobile();
+  const { isOpen, setIsOpen } = useSidebar();
   const pathname = usePathname();
   const router = useRouter();
   const isPortal = pathname === '/portal';
   
-  const handleLogout = () => {
-    logout();
-  };
-  
   return (
     <header className={cn(
-        "flex h-[65px] items-center justify-between gap-4 border-b px-4 sm:px-6 sticky top-0 z-50",
-        "bg-background/80 backdrop-blur-lg",
+        "flex h-[65px] items-center justify-between gap-4 border-b px-4 sm:px-8 sticky top-0 z-50",
+        "bg-background/80 backdrop-blur-xl",
         "no-print"
     )}>
         <div className="flex items-center gap-3">
-          {isPortal || isMobile ? (
+          {isMobile ? (
             <div className="flex items-center gap-3">
-                <Image 
-                    src="/logo.png" 
-                    alt="Logo"
-                    width={isMobile ? 100 : 120}
-                    height={32}
-                    priority
-                />
+                <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)}>
+                    <Menu className="size-5" />
+                </Button>
+                <Image src="/logo.png" alt="Logo" width={90} height={24} className="brightness-200" priority />
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-                {userRole !== 'superadmin' && (
-                    <>
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => router.push('/portal')}
-                            className="hidden lg:flex gap-2 font-bold text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary transition-all active:scale-95 px-2"
-                        >
-                            <ChevronLeft size={16} className="stroke-[3px]" />
-                            Portal Utama
-                        </Button>
-                        <div className="hidden lg:block">
-                             <Separator orientation="vertical" className="h-6 mx-2 opacity-40" />
-                        </div>
-                    </>
+            <div className="flex items-center gap-4">
+                {!isOpen && (
+                    <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)} className="hover:bg-white/5">
+                        <Menu className="size-5" />
+                    </Button>
                 )}
-                <SidebarTrigger />
+                {userRole !== 'superadmin' && !isPortal && (
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => router.push('/portal')}
+                        className="gap-2 font-black text-[10px] uppercase tracking-widest text-primary hover:text-white hover:bg-primary transition-all px-3 h-8 border border-primary/20 rounded-lg"
+                    >
+                        <ChevronLeft size={14} className="stroke-[3px]" />
+                        Portal
+                    </Button>
+                )}
             </div>
           )}
         </div>
 
       <div className="hidden md:flex">
         {isPortal ? (
-            <Badge variant="outline" className="h-9 px-4 rounded-xl gap-2 font-bold uppercase tracking-widest bg-primary/5 border-primary/20 text-primary">
-                <LayoutGrid size={16} />
+            <Badge variant="outline" className="h-7 px-3 rounded-lg gap-2 font-black text-[9px] uppercase tracking-[0.2em] bg-primary/5 border-primary/20 text-primary">
+                <LayoutGrid size={12} />
                 Portal Utama PERFOM
             </Badge>
         ) : <LiveClock />}
       </div>
 
-      <div className='flex items-center gap-2'>
+      <div className='flex items-center gap-3'>
         <NotificationBell />
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "rounded-full w-10 h-10 hover:bg-muted",
-              )}
-            >
-              <CircleUser className="h-6 w-6" />
-              <span className="sr-only">Buka menu pengguna</span>
+            <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 hover:bg-white/5 border border-white/5">
+              <CircleUser className="h-5 w-5 opacity-70" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownLabel user={currentUser} />
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-                <Link href="/settings" className="cursor-pointer">
-                  <Settings className="mr-2 h-4 w-4"/>
-                  {userRole === 'superadmin' ? 'Pengaturan' : 'Profil'}
+          <DropdownMenuContent align="end" className="w-56 bg-card border-border shadow-2xl">
+            <DropdownMenuLabel className="p-3">
+                <p className="text-[10px] font-black uppercase text-primary tracking-widest mb-1">Akun Saya</p>
+                <p className="text-sm font-bold truncate">{currentUser?.name}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{currentUser?.email}</p>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-white/5" />
+            <DropdownMenuItem asChild className="p-3 cursor-pointer">
+                <Link href="/settings" className="flex items-center gap-3">
+                  <Settings size={14} className="opacity-60"/>
+                  <span className="text-xs font-bold uppercase tracking-tight">Pengaturan</span>
                 </Link>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Keluar</span>
+            <DropdownMenuSeparator className="bg-white/5" />
+            <DropdownMenuItem onClick={() => logout()} className="p-3 cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive">
+                  <LogOut size={14} className="mr-3" />
+                  <span className="text-xs font-bold uppercase tracking-tight">Keluar</span>
               </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

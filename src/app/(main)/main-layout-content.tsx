@@ -1,4 +1,3 @@
-
 // src/app/(main)/main-layout-content.tsx
 "use client";
 
@@ -20,7 +19,7 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
   const { isLoading: isMasterDataLoading } = useMasterData();
   const { hideBottomNav } = usePageContext();
   const router = useRouter();
-  const { isMobile, breakpoint } = useBreakpoint();
+  const { isMobile } = useBreakpoint();
   const pathname = usePathname();
 
   React.useEffect(() => {
@@ -37,11 +36,11 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
 
   if (totalIsLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-white">
+      <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-6">
           <Ripple className="w-16 h-16 text-primary" />
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">
-            Sinkronisasi Arsitektur Adaptif...
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground animate-pulse">
+            PERFOM INDUSTRIAL UTILITY
           </p>
         </div>
       </div>
@@ -51,11 +50,11 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
   if (!currentUser) return null;
 
   if (isDocEditor) {
-    return <div className="h-screen flex flex-col bg-white overflow-hidden">{children}</div>;
+    return <div className="h-screen flex flex-col bg-background overflow-hidden">{children}</div>;
   }
 
   return (
-    <div className="flex h-screen bg-slate-50/50 text-foreground overflow-hidden relative">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden relative">
       {!hideSidebar && <AppSidebar />}
       
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden relative h-full">
@@ -67,7 +66,6 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
                     "w-full min-w-0 mx-auto",
                     isPortal ? "max-w-[1920px]" : "max-w-7xl"
                 )}>
-                    {/* Padding dinamis berdasarkan Breakpoint */}
                     <div className={cn(
                         "transition-all duration-500",
                         isMobile ? "pb-24" : "pb-10",

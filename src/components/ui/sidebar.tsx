@@ -1,10 +1,9 @@
-
 // src/components/ui/sidebar.tsx
 "use client";
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, X, ChevronDown, Menu, ChevronLeft } from "lucide-react";
+import { LogOut, X, ChevronDown, Menu, ChevronLeft, LayoutGrid } from "lucide-react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -24,7 +23,7 @@ import { ScrollArea } from "./scroll-area";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { Avatar, AvatarFallback } from "./avatar";
 
-/** AppSidebar component - mini expandable sidebar with Seamless White Aesthetic */
+/** AppSidebar component - Optimized for Modern Industrial Utility */
 function MotionNav() {
   const { isOpen, setIsOpen } = useSidebar();
   const pathname = usePathname();
@@ -59,97 +58,49 @@ function MotionNav() {
   return (
      <motion.nav
         initial={false}
-        animate={isMobile ? { x: isOpen ? 0 : "-100%" } : { width: isOpen ? 280 : 88 }}
-        transition={{ type: "spring", stiffness: 300, damping: 35 }}
+        animate={isMobile ? { x: isOpen ? 0 : "-100%" } : { width: isOpen ? 260 : 80 }}
+        transition={{ type: "spring", stiffness: 400, damping: 40 }}
         className={cn(
-          "flex flex-col h-[calc(100vh-2rem)] sticky left-0 top-4 z-50 ml-4 mb-4",
-          "bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[1.5rem] overflow-hidden",
-          isMobile ? "fixed h-[calc(100vh-1rem)] top-2 ml-2" : "relative"
+          "flex flex-col h-screen sticky left-0 top-0 z-50 border-r bg-card", // Matches Surface-1
+          isMobile ? "fixed h-full border-none shadow-2xl" : ""
         )}
         onMouseEnter={() => !isMobile && setIsOpen(true)}
+        onMouseLeave={() => !isMobile && setIsOpen(false)}
       >
-        {/* Top Header Section */}
-        <div className="flex items-center justify-between px-6 pt-7 pb-6 flex-shrink-0">
-          <div className="flex items-center justify-center min-h-[40px]">
+        <div className="flex items-center justify-between px-6 py-8 flex-shrink-0 h-[65px]">
+          <div className="flex items-center justify-center min-h-[32px]">
             <AnimatePresence mode="wait">
               {isOpen || isMobile ? (
                 <motion.div
                   key="full-logo"
-                  initial={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 0, x: -5 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.2 }}
+                  exit={{ opacity: 0, x: -5 }}
+                  className="flex items-center gap-2"
                 >
-                  <Image 
-                    src="/logo.png" 
-                    alt="Logo" 
-                    width={120} 
-                    height={32} 
-                    className="object-contain"
-                  />
+                  <Image src="/logo.png" alt="Logo" width={110} height={28} className="brightness-200" />
                 </motion.div>
               ) : (
                 <motion.div
-                  key="favicon-logo"
+                  key="mini-logo"
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.2 }}
+                  className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary"
                 >
-                  <Image 
-                    src="/favicon.png" 
-                    alt="Favicon" 
-                    width={32} 
-                    height={32} 
-                    className="object-contain"
-                  />
+                  <LayoutGrid size={18} />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-          
-          <AnimatePresence>
-            {(isOpen || isMobile) && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsOpen(false);
-                }}
-                className="size-8 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-colors"
-              >
-                <X size={14} />
-              </motion.button>
-            )}
-          </AnimatePresence>
         </div>
 
-        <ScrollArea className="flex-1 px-4">
-             <ul className="space-y-1.5 pb-10">
-                {/* MOD: Portal link is only for non-superadmins */}
-                {activeModule && userRole !== 'superadmin' && (isOpen || isMobile) && (
-                    <li className="mb-6 px-2">
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => router.push('/portal')}
-                            className="w-full justify-start gap-3 font-black text-[10px] uppercase tracking-widest text-primary bg-slate-50 hover:bg-slate-100 h-11 rounded-2xl border border-slate-100"
-                        >
-                            <ChevronLeft size={16} className="stroke-[3px]" />
-                            <span>PORTAL UTAMA</span>
-                        </Button>
-                    </li>
-                )}
-
+        <ScrollArea className="flex-1 px-3">
+             <ul className="space-y-1 mt-4">
                 {navItems.map((item) => {
                     const Icon = iconMap[item.iconName || 'default'];
                     const isGroupActive = item.subItems ? item.subItems.some(sub => pathname.startsWith(sub.href)) : false;
                     const isActive = item.href ? pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)) : isGroupActive;
-
-                    const activeClasses = "bg-primary text-white shadow-md";
-                    const inactiveClasses = "text-slate-500 hover:bg-slate-50 hover:text-slate-900";
 
                     if (item.subItems && item.subItems.length > 0) {
                         return (
@@ -158,53 +109,39 @@ function MotionNav() {
                                     <CollapsibleTrigger asChild>
                                         <button
                                             className={cn(
-                                                "group flex items-center gap-4 rounded-xl px-4 py-3 text-xs w-full text-left transition-all duration-300",
-                                                isGroupActive ? "text-primary bg-slate-50 font-bold" : inactiveClasses
+                                                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs w-full text-left transition-all",
+                                                isGroupActive ? "text-primary bg-primary/5 font-bold" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                                             )}
                                         >
                                             <div className="flex size-5 items-center justify-center shrink-0">
-                                              <Icon size={20} className={cn("transition-colors", isGroupActive ? "text-primary" : "opacity-70")} />
+                                              <Icon size={18} />
                                             </div>
-                                            <AnimatePresence>
-                                                {(isOpen || isMobile) && (
-                                                    <motion.span 
-                                                      initial={{ opacity: 0, x: -10 }} 
-                                                      animate={{ opacity: 1, x: 0 }} 
-                                                      exit={{ opacity: 0, x: -10 }} 
-                                                      className="flex-1 font-bold tracking-tight"
-                                                    >
-                                                        {item.label}
-                                                    </motion.span>
-                                                )}
-                                            </AnimatePresence>
-                                             {(isOpen || isMobile) && <ChevronDown size={14} className="shrink-0 transition-transform duration-300 group-data-[state=open]:rotate-180 opacity-30" />}
+                                            {(isOpen || isMobile) && (
+                                                <span className="flex-1 font-bold tracking-tight uppercase text-[10px]">
+                                                    {item.label}
+                                                </span>
+                                            )}
+                                             {(isOpen || isMobile) && <ChevronDown size={12} className="opacity-30 group-data-[state=open]:rotate-180 transition-transform" />}
                                         </button>
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>
-                                      <AnimatePresence>
                                         {(isOpen || isMobile) && (
-                                          <motion.ul 
-                                            initial={{ opacity: 0, y: -5 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -5 }}
-                                            className="ml-6 my-1 border-l border-slate-100"
-                                          >
+                                          <ul className="ml-7 my-1 border-l border-white/10 space-y-0.5">
                                               {item.subItems.map(subItem => {
                                                   const isSubActive = pathname.startsWith(subItem.href);
                                                   return (
                                                       <li key={subItem.href}>
                                                           <Link href={subItem.href} className={cn(
-                                                              "block pl-6 pr-3 py-2 text-[11px] rounded-r-xl border-l-2 transition-all duration-300",
-                                                              isSubActive ? "text-primary border-primary font-black bg-slate-50" : "text-slate-400 border-transparent hover:text-slate-900"
+                                                              "block pl-4 pr-3 py-2 text-[10px] font-bold uppercase tracking-tight transition-all",
+                                                              isSubActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                                                           )}>
-                                                              {subItem.label.toUpperCase()}
+                                                              {subItem.label}
                                                           </Link>
                                                       </li>
                                                   )
                                               })}
-                                          </motion.ul>
+                                          </ul>
                                         )}
-                                      </AnimatePresence>
                                     </CollapsibleContent>
                                 </Collapsible>
                             </li>
@@ -216,65 +153,48 @@ function MotionNav() {
                             <Link
                                 href={item.href || '#'}
                                 className={cn(
-                                    `group flex items-center gap-4 rounded-xl px-4 py-3 text-xs transition-all duration-300 font-bold`,
-                                    isActive ? activeClasses : inactiveClasses
+                                    `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs transition-all`,
+                                    isActive ? "bg-primary text-white shadow-lg shadow-primary/20 font-bold" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                                 )}
                             >
                                 <div className="flex size-5 items-center justify-center shrink-0">
-                                    <Icon size={20} className={cn(!isActive && "opacity-70")} />
+                                    <Icon size={18} />
                                 </div>
-                                <AnimatePresence>
                                 {(isOpen || isMobile) && (
-                                    <motion.span 
-                                      initial={{ opacity: 0, x: -10 }} 
-                                      animate={{ opacity: 1, x: 0 }} 
-                                      exit={{ opacity: 0, x: -10 }}
-                                      className="font-bold tracking-tight"
-                                    >
+                                    <span className="font-bold tracking-tight uppercase text-[10px]">
                                     {item.label}
-                                    </motion.span>
+                                    </span>
                                 )}
-                                </AnimatePresence>
                             </Link>
                         </li>
                     );
                 })}
              </ul>
-          </ScrollArea>
-          
-          {/* Bottom Section: Integrated Profile & Logout */}
-          {currentUser && (
-            <div className="p-4 flex-shrink-0">
-                <button
-                    onClick={() => logout()}
-                    className={cn(
-                      "flex items-center gap-3 w-full rounded-2xl transition-all active:scale-95 border border-slate-100 shadow-sm group overflow-hidden",
-                      isOpen || isMobile ? "p-2 bg-slate-50 hover:bg-red-50 hover:border-red-100" : "p-1 bg-transparent border-transparent justify-center"
-                    )}
-                >
-                    <Avatar className={cn("size-10 border-2 border-white shadow-sm shrink-0", !isOpen && !isMobile && "size-12")}>
-                      <AvatarFallback className="bg-primary text-white font-black text-sm">{userInitial}</AvatarFallback>
-                    </Avatar>
-                    
-                    <AnimatePresence>
-                        {(isOpen || isMobile) && (
-                          <motion.div 
-                            initial={{ opacity: 0, width: 0 }} 
-                            animate={{ opacity: 1, width: "auto" }} 
-                            exit={{ opacity: 0, width: 0 }}
-                            className="flex-1 text-left min-w-0"
-                          >
-                            <p className="text-xs font-black text-slate-900 truncate leading-tight uppercase tracking-tight">{currentUser.name}</p>
-                            <div className="flex items-center gap-1.5 mt-0.5 text-slate-400 group-hover:text-red-500 transition-colors">
-                                <LogOut size={10} className="shrink-0" />
-                                <span className="text-[9px] font-black uppercase tracking-widest">LOG OUT</span>
-                            </div>
-                          </motion.div>
-                        )}
-                    </AnimatePresence>
-                </button>
-            </div>
-          )}
+        </ScrollArea>
+        
+        <div className="p-4 border-t border-white/5 flex-shrink-0">
+            <button
+                onClick={() => logout()}
+                className={cn(
+                  "flex items-center gap-3 w-full rounded-xl transition-all active:scale-95 group",
+                  isOpen || isMobile ? "p-2 hover:bg-white/5" : "justify-center"
+                )}
+            >
+                <Avatar className="size-9 border border-white/10 shrink-0">
+                  <AvatarFallback className="bg-primary text-white font-black text-xs">{userInitial}</AvatarFallback>
+                </Avatar>
+                
+                {(isOpen || isMobile) && (
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="text-[11px] font-black text-foreground truncate uppercase tracking-tighter">{currentUser?.name}</p>
+                    <div className="flex items-center gap-1.5 text-[9px] font-black text-muted-foreground uppercase group-hover:text-destructive transition-colors">
+                        <LogOut size={10} />
+                        <span>Log Out</span>
+                    </div>
+                  </div>
+                )}
+            </button>
+        </div>
     </motion.nav>
   )
 }
@@ -289,7 +209,7 @@ export function AppSidebar() {
         <AnimatePresence>
             {isOpen && (
                 <React.Fragment key="sidebar-mobile">
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={toggleSidebar} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]" />
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={toggleSidebar} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]" />
                     <MotionNav />
                 </React.Fragment>
             )}
@@ -300,25 +220,10 @@ export function AppSidebar() {
   return <MotionNav />;
 }
 
-/** SidebarTrigger - small clickable menu icon shown in header */
 export function SidebarTrigger() {
   const { isOpen, setIsOpen } = useSidebar();
-  const isMobile = useIsMobile();
-
-  // On mobile, we don't show the sidebar trigger anymore because the header shows the logo
-  if (isMobile) return null;
-
-  // On desktop, we hide the trigger if the sidebar is already open
-  if (isOpen) return null;
-
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => setIsOpen(!isOpen)}
-      className="rounded-xl hover:bg-slate-100 transition-colors duration-300"
-      aria-label="Toggle Sidebar"
-    >
+    <Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)} className="hover:bg-white/5">
       <Menu className="h-5 w-5" />
     </Button>
   );
