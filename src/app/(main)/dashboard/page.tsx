@@ -7,7 +7,6 @@ import {
     Crown, 
     Wallet,
     AlertCircle, 
-    ArrowUpRight,
     Clock,
     TrendingUp,
     Building,
@@ -33,21 +32,23 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { 
     ResponsivePage, 
-    ResponsiveGrid 
 } from "@/components/ui/adaptive-layout";
 import { PageHeader } from "@/components/ui/page-header";
 import { AdaptiveTable } from "@/components/ui/adaptive-table";
-import { ResponsiveStatCard } from "@/components/ui/responsive-stat-card";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+    AdaptiveCardGrid, 
+    AdaptiveMetricCard, 
+    AdaptiveInsightCard 
+} from "@/components/ui/adaptive-card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 
-// --- CHART CONFIG --- //
 const CHART_COLORS = ["#1e293b", "#475569", "#64748b", "#94a3b8", "#cbd5e1"];
 const BAR_CHART_FILL = "#1e293b";
 
 export default function AdminDashboardPage() {
   const { companies, employees, subscriptionPlans, subscriptionLogs } = useMasterData();
-  const { isMobile, isTablet, isLaptop } = useBreakpoint();
+  const { isMobile } = useBreakpoint();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -117,96 +118,89 @@ export default function AdminDashboardPage() {
         description="Monitoring pendapatan, utilitas klien, dan kesehatan langganan global."
         icon={LayoutDashboard}
         actions={
-            <Button asChild className="font-bold shadow-lg h-10 px-6 active:scale-95">
+            <Button asChild className="font-bold shadow-lg h-9 sm:h-10 px-6 active:scale-95 transition-all">
                 <Link href="/subscription-logs">
                     <Activity className="mr-2 size-4" />
-                    Lihat Audit Log
+                    Audit Log
                 </Link>
             </Button>
         }
       />
 
-      {/* --- HERO STATS: Adaptive Grid --- */}
-      <ResponsiveGrid cols={{ xs: 1, sm: 2, md: 2, lg: 4, xl: 4 }}>
-        <ResponsiveStatCard
+      <AdaptiveCardGrid complexity="simple">
+        <AdaptiveMetricCard
           title="Estimasi Revenue"
           value={`Rp ${(stats.totalRevenue / 1000000).toFixed(1)}jt`}
           icon={Wallet}
           description="Total nilai paket aktif"
           color="bg-emerald-500/10 text-emerald-600"
+          trend={{ value: 12, isUp: true }}
         />
-        <ResponsiveStatCard
-          title="Langganan Berbayar"
+        <AdaptiveMetricCard
+          title="Berbayar"
           value={stats.activePaidSubscribers.toString()}
           icon={Crown}
           description="Perusahaan Non-Trial"
           color="bg-amber-500/10 text-amber-600"
         />
-        <ResponsiveStatCard
-          title="Total User Sistem"
+        <AdaptiveMetricCard
+          title="Total User"
           value={stats.totalUsers.toString()}
           icon={Users}
           description="Akun karyawan aktif"
         />
-        <ResponsiveStatCard
-          title="Pending Aktivasi"
+        <AdaptiveMetricCard
+          title="Pending"
           value={stats.pendingCount.toString()}
           icon={AlertCircle}
           description="Butuh persetujuan"
           color={stats.pendingCount > 0 ? "bg-rose-500/10 text-rose-600" : "bg-slate-100 text-slate-400"}
         />
-      </ResponsiveGrid>
+      </AdaptiveCardGrid>
 
-      {/* --- ANALYTICS SECTION --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8">
-        {/* Plan Distribution */}
-        <Card className="lg:col-span-5 shadow-sm border-border/40 overflow-hidden">
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <TrendingUp size={14} className="text-primary" /> Sebaran Paket Aktif
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="flex flex-col sm:flex-row items-center h-full min-h-[300px]">
-                    <div className="w-full sm:w-1/2 h-[250px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie 
-                                    data={planDistributionData} 
-                                    innerRadius={isMobile ? 50 : 60} 
-                                    outerRadius={isMobile ? 80 : 90} 
-                                    paddingAngle={3} 
-                                    dataKey="value"
-                                >
-                                    {planDistributionData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}
-                                </Pie>
-                                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '11px' }} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                    <div className="w-full sm:w-1/2 flex flex-col gap-2.5 pl-0 sm:pl-6 mt-4 sm:mt-0">
-                        {planDistributionData.map((item, i) => (
-                            <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
-                                <div className="flex items-center gap-2">
-                                    <div className="size-2 rounded-full" style={{ backgroundColor: item.fill }} />
-                                    <span className="text-[10px] font-black uppercase text-slate-600">{item.name}</span>
-                                </div>
-                                <span className="text-xs font-black text-slate-900">{item.value} Klien</span>
-                            </div>
-                        ))}
-                    </div>
+      <AdaptiveCardGrid complexity="complex" className="mt-8">
+        <AdaptiveInsightCard 
+            title="Sebaran Paket Aktif" 
+            description="Perbandingan jenis paket langganan"
+            icon={TrendingUp}
+        >
+            <div className="flex flex-col sm:flex-row items-center h-full min-h-[300px]">
+                <div className="w-full sm:w-1/2 h-[250px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie 
+                                data={planDistributionData} 
+                                innerRadius={isMobile ? 50 : 60} 
+                                outerRadius={isMobile ? 80 : 90} 
+                                paddingAngle={3} 
+                                dataKey="value"
+                            >
+                                {planDistributionData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}
+                            </Pie>
+                            <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '11px' }} />
+                        </PieChart>
+                    </ResponsiveContainer>
                 </div>
-            </CardContent>
-        </Card>
+                <div className="w-full sm:w-1/2 flex flex-col gap-2.5 pl-0 sm:pl-6 mt-4 sm:mt-0">
+                    {planDistributionData.map((item, i) => (
+                        <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+                            <div className="flex items-center gap-2">
+                                <div className="size-2 rounded-full" style={{ backgroundColor: item.fill }} />
+                                <span className="text-[10px] font-black uppercase text-slate-600">{item.name}</span>
+                            </div>
+                            <span className="text-xs font-black text-slate-900">{item.value} Klien</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </AdaptiveInsightCard>
 
-        {/* Quota Consumers */}
-        <Card className="lg:col-span-7 shadow-sm border-border/40 overflow-hidden">
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <Users size={14} className="text-primary" /> Utilisasi Kuota User Tertinggi (%)
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="h-[300px] pt-4">
+        <AdaptiveInsightCard 
+            title="Utilisasi Kuota User (%)" 
+            description="Klien dengan penggunaan tertinggi"
+            icon={Users}
+        >
+            <div className="h-[300px] pt-4">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={quotaUsageData} layout="vertical" margin={{ left: -10, right: 30, top: 0, bottom: 0 }}>
                         <XAxis type="number" domain={[0, 100]} hide />
@@ -222,11 +216,10 @@ export default function AdminDashboardPage() {
                         <Bar dataKey="usage" fill={BAR_CHART_FILL} radius={[0, 4, 4, 0]} barSize={16} />
                     </BarChart>
                 </ResponsiveContainer>
-            </CardContent>
-        </Card>
-      </div>
+            </div>
+        </AdaptiveInsightCard>
+      </AdaptiveCardGrid>
 
-      {/* --- TABLES SECTION: Adaptive Tables --- */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-8">
         <div className="space-y-4">
             <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1 flex items-center gap-2">
