@@ -56,6 +56,11 @@ import {
   ClipboardList,
   Target,
   ClipboardPen,
+  Filter,
+  Building,
+  Calendar,
+  Settings,
+  Pencil
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/auth-context";
@@ -92,10 +97,12 @@ import { AppraisalMappingDialog } from '@/components/appraisal/appraisal-mapping
 import { OkrWeightMappingDialog } from '@/components/appraisal/okr-weight-mapping-dialog';
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ResponsivePage, ResponsiveToolbar } from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { cn } from "@/lib/utils";
 
 
 // --- Zod Schema ---
-
 const kboComponentSchema = z.object({
     kboSetupIds: z.array(z.string()).optional(),
     weight: z.coerce.number().min(0).max(100).optional(),
@@ -244,20 +251,20 @@ function LevelWeightingForm({ level, form, kboSetups, selectedCompany }: { level
     return (
          <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-                <FormField control={control} name={`componentsByLevel.${level}.kpiWeight`} render={({ field }) => (<FormItem><FormLabel>Bobot KPI (%)</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted/50" /></FormControl><FormMessage /></FormItem>)}/>
+                <FormField control={control} name={`componentsByLevel.${level}.kpiWeight`} render={({ field }) => (<FormItem><FormLabel className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Bobot KPI (%)</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted/50 font-bold" /></FormControl><FormMessage /></FormItem>)}/>
                 <FormField control={control} name={`componentsByLevel.${level}.kboWeight`} render={({ field }) => (
                     <FormItem>
                          <div className="flex items-center justify-between">
-                            <FormLabel>Bobot KBO (%)</FormLabel>
-                            {kboContributionSummary && <Badge variant="outline">{kboContributionSummary}</Badge>}
+                            <FormLabel className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Bobot KBO (%)</FormLabel>
+                            {kboContributionSummary && <Badge variant="outline" className="text-[8px] font-black border-none bg-primary/5 text-primary">{kboContributionSummary}</Badge>}
                          </div>
-                         <FormControl><Input type="number" {...field} /></FormControl><FormMessage />
+                         <FormControl><Input type="number" {...field} className="font-bold" /></FormControl><FormMessage />
                     </FormItem>
                 )}/>
             </div>
              {kboWeight > 0 && activeKboCategories.length > 0 && (
-                <div className="space-y-4 pt-4 border-t">
-                    <Label>Bobot Kontribusi Kategori KBO</Label>
+                <div className="space-y-4 pt-4 border-t border-dashed">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-primary/70">Pembagian Kontribusi Kategori KBO</Label>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                          {activeKboCategories.map(categoryName => (
                             <FormField
@@ -266,13 +273,14 @@ function LevelWeightingForm({ level, form, kboSetups, selectedCompany }: { level
                                 name={`componentsByLevel.${level}.kbo.${categoryName}.weight`}
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-xs text-primary font-semibold">{categoryName}</FormLabel>
+                                        <FormLabel className="text-[10px] font-bold text-slate-500 uppercase">{categoryName}</FormLabel>
                                         <FormControl>
                                             <Input
                                                 type="number"
                                                 {...field}
                                                 value={field.value ?? ''}
                                                 onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                                className="h-9 font-bold"
                                             />
                                         </FormControl>
                                     </FormItem>
@@ -288,23 +296,23 @@ function LevelWeightingForm({ level, form, kboSetups, selectedCompany }: { level
                 </div>
             )}
             {kboWeight > 0 && (
-                 <div className="space-y-4 rounded-lg border p-4">
-                    <h4 className="font-medium text-center">Pilih Kompetensi (KBO) yang akan dinilai</h4>
+                 <div className="space-y-4 rounded-xl border p-4 sm:p-6 bg-muted/20">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-center text-muted-foreground">Pilih Kompetensi yang Dinilai</h4>
                     <Accordion type="multiple" className="w-full space-y-2">
                     {groupedKboSetups.map(([categoryName, setups]) => (
-                        <AccordionItem value={categoryName} key={categoryName} className="border rounded-md px-4 bg-background">
-                            <AccordionTrigger className="py-3">{categoryName}</AccordionTrigger>
-                            <AccordionContent className="pb-4 space-y-6">
+                        <AccordionItem value={categoryName} key={categoryName} className="border rounded-xl px-4 bg-background shadow-sm">
+                            <AccordionTrigger className="py-4 font-black uppercase text-[10px] tracking-widest text-slate-800">{categoryName}</AccordionTrigger>
+                            <AccordionContent className="pb-4 space-y-4">
                                <FormField
                                   control={control}
                                   name={`componentsByLevel.${level}.kbo.${categoryName}.kboSetupIds`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <div className="space-y-3">
+                                      <div className="space-y-2">
                                         {setups.map(kbo => (
                                           <FormItem
                                             key={kbo.id}
-                                            className="flex flex-row items-start space-x-3 space-y-0"
+                                            className="flex flex-row items-center space-x-3 space-y-0 p-3 rounded-lg border hover:bg-muted/5 transition-colors cursor-pointer"
                                           >
                                             <FormControl>
                                               <Checkbox
@@ -318,7 +326,7 @@ function LevelWeightingForm({ level, form, kboSetups, selectedCompany }: { level
                                                 }}
                                               />
                                             </FormControl>
-                                            <FormLabel className="text-sm font-normal">
+                                            <FormLabel className="text-xs font-bold uppercase tracking-tight text-foreground/80 cursor-pointer flex-1">
                                               {getContextName(kbo)}
                                             </FormLabel>
                                           </FormItem>
@@ -422,65 +430,68 @@ function AppraisalSetupSheet({ isOpen, onOpenChange, onSave, setup, companies, k
     
     return (
         <Sheet open={isOpen} onOpenChange={onOpenChange}>
-            <SheetContent className="w-full sm:max-w-4xl flex flex-col h-full">
+            <SheetContent className="w-full sm:max-w-4xl flex flex-col h-full p-0 overflow-hidden border-none shadow-2xl">
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-                        <SheetHeader className="p-6">
-                            <SheetTitle>{setup ? "Ubah Pengaturan Appraisal" : "Buat Pengaturan Appraisal Baru"}</SheetTitle>
-                            <SheetDescription>Atur seluruh konfigurasi penilaian kinerja sebelum periode appraisal dimulai.</SheetDescription>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
+                        <SheetHeader className="p-6 sm:p-10 pb-4 shrink-0 bg-background border-b">
+                            <SheetTitle className="font-black text-2xl uppercase tracking-tighter">{setup ? "Ubah Konfigurasi Appraisal" : "Buat Konfigurasi Appraisal Baru"}</SheetTitle>
+                            <SheetDescription className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Atur seluruh parameter penilaian kinerja (KPI + KBO).</SheetDescription>
                         </SheetHeader>
-                        <ScrollArea className="flex-1 min-h-0">
-                            <div className="space-y-8 p-6">
-                                <Card>
-                                    <CardHeader><CardTitle className="flex items-center gap-2"><SlidersHorizontal className="h-5 w-5"/>Pengaturan Umum</CardTitle></CardHeader>
-                                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <ScrollArea className="flex-1 min-h-0 bg-muted/5">
+                            <div className="space-y-8 p-6 sm:p-10">
+                                <Card className="border-border/40 shadow-sm overflow-hidden bg-background">
+                                    <CardHeader className="bg-muted/20 border-b p-5">
+                                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2"><SlidersHorizontal className="size-4 text-primary"/>Parameter Umum</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
                                         <FormField control={form.control} name="company" render={({ field }) => (
-                                            <FormItem><FormLabel>Perusahaan</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{manageableCompanies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                                            <FormItem><FormLabel className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Perusahaan</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="h-11 font-bold"><SelectValue/></SelectTrigger></FormControl><SelectContent>{manageableCompanies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
                                         )}/>
                                         <FormField control={form.control} name="cycle" render={({ field }) => (
-                                            <FormItem><FormLabel>Siklus Penilaian</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Pilih Siklus" /></SelectTrigger></FormControl><SelectContent>
+                                            <FormItem><FormLabel className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Siklus Penilaian</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="h-11 font-bold"><SelectValue placeholder="Pilih Siklus" /></SelectTrigger></FormControl><SelectContent>
                                                 <SelectItem value="Bulanan">Bulanan</SelectItem><SelectItem value="Triwulan">Triwulan (3 Bulan)</SelectItem>
                                                 <SelectItem value="Semesteran">Semesteran (6 Bulan)</SelectItem><SelectItem value="Tahunan">Tahunan (12 Bulan)</SelectItem>
                                             </SelectContent></Select><FormMessage /></FormItem>
                                         )}/>
                                         {selectedCycle === 'Bulanan' ? (
                                             <FormField control={form.control} name="period" render={({ field }) => (
-                                                <FormItem><FormLabel>Periode</FormLabel><FormControl><Input type="month" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Periode Bulan</FormLabel><FormControl><Input type="month" {...field} value={field.value || ''} className="h-11 font-bold" /></FormControl><FormMessage /></FormItem>
                                             )}/>
                                         ) : (
                                             <>
                                                 <FormField control={form.control} name="periodStart" render={({ field }) => (
-                                                    <FormItem><FormLabel>Periode Mulai</FormLabel><FormControl><Input type="month" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Mulai Periode</FormLabel><FormControl><Input type="month" {...field} value={field.value || ''} className="h-11 font-bold" /></FormControl><FormMessage /></FormItem>
                                                 )}/>
                                                 <FormField control={form.control} name="periodEnd" render={({ field }) => (
-                                                    <FormItem><FormLabel>Periode Selesai</FormLabel><FormControl><Input type="month" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Selesai Periode</FormLabel><FormControl><Input type="month" {...field} value={field.value || ''} className="h-11 font-bold" /></FormControl><FormMessage /></FormItem>
                                                 )}/>
                                             </>
                                         )}
                                          <FormField control={form.control} name="status" render={({ field }) => (
-                                            <FormItem><FormLabel>Status</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
+                                            <FormItem><FormLabel className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Status Aktivasi</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="h-11 font-bold"><SelectValue/></SelectTrigger></FormControl><SelectContent>
                                                 <SelectItem value="Aktif">Aktif</SelectItem><SelectItem value="Tidak Aktif">Tidak Aktif</SelectItem>
                                             </SelectContent></Select><FormMessage /></FormItem>
                                         )}/>
                                     </CardContent>
                                 </Card>
-                                <Card>
-                                     <CardHeader>
-                                        <CardTitle className="flex items-center gap-2"><BarChart4 className="h-5 w-5"/>Bobot per Level Jabatan</CardTitle>
-                                        <CardDescription>Pilih level jabatan yang akan dinilai, lalu atur bobot KPI dan KBO secara spesifik.</CardDescription>
+
+                                <Card className="border-border/40 shadow-sm overflow-hidden bg-background">
+                                     <CardHeader className="bg-muted/20 border-b p-5">
+                                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2"><BarChart4 className="size-4 text-primary"/>Matriks Bobot & Kompetensi</CardTitle>
+                                        <CardDescription className="text-[10px] font-bold uppercase text-primary/60">Tentukan bobot kontribusi untuk setiap level jabatan.</CardDescription>
                                     </CardHeader>
-                                    <CardContent>
+                                    <CardContent className="p-6">
                                         <FormField
                                             control={form.control}
                                             name="activeLevels"
                                             render={({ field }) => (
-                                            <FormItem className="space-y-3 mb-6">
-                                                <FormLabel>Pilih Level Jabatan untuk Dinilai</FormLabel>
-                                                <div className="flex flex-wrap gap-x-6 gap-y-3">
+                                            <FormItem className="space-y-4 mb-8 p-4 rounded-2xl bg-muted/20 border-border/40 border">
+                                                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block text-center">Pilih Level Jabatan untuk Dinilai</FormLabel>
+                                                <div className="flex flex-wrap justify-center gap-4">
                                                 {levelKeys.map((level) => (
                                                     <FormItem
                                                         key={level}
-                                                        className="flex flex-row items-start space-x-3 space-y-0"
+                                                        className="flex flex-row items-center space-x-2 space-y-0 px-4 py-2 rounded-xl bg-background border shadow-sm cursor-pointer"
                                                     >
                                                         <FormControl>
                                                         <Checkbox
@@ -496,7 +507,7 @@ function AppraisalSetupSheet({ isOpen, onOpenChange, onSave, setup, companies, k
                                                             }}
                                                         />
                                                         </FormControl>
-                                                        <FormLabel className="font-normal">
+                                                        <FormLabel className="font-bold text-xs uppercase cursor-pointer">
                                                         {level}
                                                         </FormLabel>
                                                     </FormItem>
@@ -509,29 +520,30 @@ function AppraisalSetupSheet({ isOpen, onOpenChange, onSave, setup, companies, k
 
                                         {activeLevels && activeLevels.length > 0 ? (
                                              <Tabs defaultValue={activeLevels[0]} className="w-full flex flex-col items-center">
-                                                <TabsList className="justify-center">
+                                                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-muted/50 p-1 rounded-xl h-auto gap-1">
                                                     {levelKeys.map(level => (
-                                                        activeLevels.includes(level) && <TabsTrigger key={level} value={level}>{level}</TabsTrigger>
+                                                        activeLevels.includes(level) && <TabsTrigger key={level} value={level} className="text-[10px] font-bold uppercase rounded-lg h-9">{level}</TabsTrigger>
                                                     ))}
                                                 </TabsList>
                                                 {activeLevels.map(level => (
-                                                    <TabsContent key={level} value={level} className="pt-6 w-full">
+                                                    <TabsContent key={level} value={level} className="pt-8 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
                                                         <LevelWeightingForm level={level as keyof Employee['level']} form={form} kboSetups={kboSetups} selectedCompany={selectedCompany} />
                                                     </TabsContent>
                                                 ))}
                                             </Tabs>
                                         ) : (
-                                            <div className="text-center text-muted-foreground p-6 border-2 border-dashed rounded-lg">
-                                                Pilih setidaknya satu level jabatan untuk mulai mengatur bobot.
+                                            <div className="py-20 text-center border-2 border-dashed rounded-3xl bg-muted/10 opacity-30">
+                                                <Users size={48} className="mx-auto mb-4" />
+                                                <p className="font-black uppercase text-[10px] tracking-[0.2em]">Pilih Level Jabatan</p>
                                             </div>
                                         )}
                                     </CardContent>
                                 </Card>
                             </div>
                         </ScrollArea>
-                        <SheetFooter className="p-6 border-t">
-                            <SheetClose asChild><Button type="button" variant="outline">Batal</Button></SheetClose>
-                            <Button type="submit">Simpan Konfigurasi</Button>
+                        <SheetFooter className="p-6 border-t bg-background shrink-0 flex flex-row justify-end gap-2">
+                            <SheetClose asChild><Button type="button" variant="ghost" className="font-bold">Batal</Button></SheetClose>
+                            <Button type="submit" className="font-black uppercase tracking-widest text-[10px] h-11 px-8 shadow-lg shadow-primary/10">Simpan Seluruh Konfigurasi</Button>
                         </SheetFooter>
                     </form>
                 </Form>
@@ -676,189 +688,197 @@ export default function AppraisalSettingsPage() {
     };
 
     return (
-        <>
-        <div className="space-y-6">
-            <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
-                <CardHeader>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-primary/10 rounded-lg">
-                                <ClipboardPen className="h-6 w-6 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle className="font-headline text-2xl">Pengaturan Appraisal</CardTitle>
-                                <CardDescription>
-                                    Kelola seluruh konfigurasi penilaian kinerja sebelum periode appraisal dimulai.
-                                </CardDescription>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 self-end sm:self-center">
-                            {showCompanyFilter && (
-                                <Select value={selectedCompanyFilter} onValueChange={setSelectedCompanyFilter}>
-                                    <SelectTrigger className="w-full sm:w-[200px]">
-                                        <SelectValue placeholder="Filter Perusahaan" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">Semua Perusahaan</SelectItem>
-                                        {manageableCompanies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            )}
-                             <Button size="sm" className="h-9 gap-1 shadow-md" onClick={() => { setSelectedSetup(undefined); setSheetOpen(true); }}>
-                                <PlusCircle className="h-3.5 w-3.5" />
-                                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                                    Buat Pengaturan
-                                </span>
-                            </Button>
-                        </div>
-                    </div>
-                </CardHeader>
-            </Card>
+        <ResponsivePage>
+            <PageHeader 
+                title="Pengaturan Appraisal"
+                description="Kelola seluruh bobot penilaian kinerja (KPI + KBO) dan pemetaan penilai untuk setiap unit bisnis."
+                icon={ClipboardPen}
+                actions={
+                    <Button onClick={() => { setSelectedSetup(undefined); setSheetOpen(true); }} className="font-bold shadow-lg h-9 sm:h-10 active:scale-95 transition-all">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Buat Pengaturan Baru
+                    </Button>
+                }
+            />
 
-            {filteredSetups && filteredSetups.length > 0 ? (
-                 <Accordion type="single" collapsible className="w-full">
-                    {filteredSetups.map((setup) => {
-                        const activeKboContexts = new Map<string, { kboSetup: KboSetup, levels: Set<keyof Employee['level']> }>();
-                        const activeLevels = setup.activeLevels || levelKeys;
-                        const hasOkrOption = checkHasSubjectsWithOkrs(setup);
-                        
-                        activeLevels.forEach(level => {
-                            const levelComponents = setup.componentsByLevel?.[level as keyof typeof setup.componentsByLevel];
-                            if (levelComponents?.kboWeight > 0 && levelComponents.kbo) {
-                                Object.values(levelComponents.kbo).forEach(kboComp => {
-                                    kboComp.kboSetupIds?.forEach(kboSetupId => {
-                                        const kboSetup = kboSetups.find(ks => ks.id === kboSetupId);
-                                        if (kboSetup) {
-                                            if (!activeKboContexts.has(kboSetup.id)) {
-                                                activeKboContexts.set(kboSetup.id, { kboSetup, levels: new Set() });
+            <ResponsiveToolbar>
+                <div className="flex flex-1 items-center gap-2 min-w-0">
+                    <Filter className="size-4 text-muted-foreground hidden sm:block shrink-0" />
+                    {showCompanyFilter && (
+                        <Select value={selectedCompanyFilter} onValueChange={setSelectedCompanyFilter}>
+                            <SelectTrigger className="w-full sm:w-[240px] bg-background border-none h-10 shadow-sm text-[11px] font-black uppercase">
+                                <Building className="size-3.5 mr-2 text-primary" />
+                                <SelectValue placeholder="Pilih Perusahaan" />
+                            </SelectTrigger>
+                            <SelectContent className="z-[350]">
+                                <SelectItem value="all">Semua Klien Saya</SelectItem>
+                                {manageableCompanies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    )}
+                </div>
+            </ResponsiveToolbar>
+
+            <div className="pt-4">
+                {filteredSetups && filteredSetups.length > 0 ? (
+                    <Accordion type="single" collapsible className="w-full space-y-4">
+                        {filteredSetups.map((setup) => {
+                            const activeKboContexts = new Map<string, { kboSetup: KboSetup, levels: Set<keyof Employee['level']> }>();
+                            const activeLevels = setup.activeLevels || levelKeys;
+                            const hasOkrOption = checkHasSubjectsWithOkrs(setup);
+                            
+                            activeLevels.forEach(level => {
+                                const levelComponents = setup.componentsByLevel?.[level as keyof typeof setup.componentsByLevel];
+                                if (levelComponents?.kboWeight > 0 && levelComponents.kbo) {
+                                    Object.values(levelComponents.kbo).forEach(kboComp => {
+                                        kboComp.kboSetupIds?.forEach(kboSetupId => {
+                                            const kboSetup = kboSetups.find(ks => ks.id === kboSetupId);
+                                            if (kboSetup) {
+                                                if (!activeKboContexts.has(kboSetup.id)) {
+                                                    activeKboContexts.set(kboSetup.id, { kboSetup, levels: new Set() });
+                                                }
+                                                activeKboContexts.get(kboSetup.id)?.levels.add(level as keyof Employee['level']);
                                             }
-                                            activeKboContexts.get(kboSetup.id)?.levels.add(level as keyof Employee['level']);
-                                        }
+                                        });
                                     });
-                                });
-                            }
-                        });
+                                }
+                            });
 
-                        return (
-                        <AccordionItem value={setup.id} key={setup.id}>
-                            <AccordionTrigger className="p-4 bg-muted/30 rounded-t-lg">
-                                <div className="flex items-center justify-between w-full pr-4">
-                                    <div className="text-left grid gap-1">
-                                        <p className="font-semibold">{setup.company}</p>
-                                        <p className="text-sm text-muted-foreground">{setup.period || `${setup.periodStart} - ${setup.periodEnd}`} ({setup.cycle})</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {hasOkrOption && <Badge variant="secondary" className="gap-1"><Target className="h-3 w-3"/> OKR Aktif</Badge>}
-                                        <Badge variant={setup.status === "Aktif" ? "default" : "outline"}>
-                                            {setup.status}
-                                        </Badge>
-                                    </div>
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="p-4 border border-t-0 rounded-b-lg space-y-4">
-                                <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                                    <span className="font-medium">Level Aktif:</span>
-                                    {setup.activeLevels.length > 0 ? setup.activeLevels.map(lvl => <Badge key={lvl} variant="outline">{lvl}</Badge>) : 'Tidak ada'}
-                                </div>
-                                
-                                {activeKboContexts.size > 0 && (
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <span className="text-muted-foreground">Kompetensi Aktif:</span>
-                                        <div className="flex flex-wrap gap-1">
-                                            {Array.from(activeKboContexts.values()).map(({ kboSetup, levels }) => (
-                                                <Badge key={kboSetup.id} variant="outline">
-                                                    {kboSetup.categoryName} ({getContextName(kboSetup)})
-                                                </Badge>
-                                            ))}
+                            return (
+                            <AccordionItem value={setup.id} key={setup.id} className="border rounded-2xl overflow-hidden bg-background shadow-sm border-border/40">
+                                <AccordionTrigger className="px-4 sm:px-6 py-5 hover:no-underline group">
+                                    <div className="flex items-center justify-between w-full pr-4">
+                                        <div className="text-left grid gap-0.5 min-w-0 flex-1">
+                                            <p className="font-black text-slate-900 uppercase tracking-tight truncate">{setup.company}</p>
+                                            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground tracking-widest pt-1">
+                                                <Calendar size={12} className="opacity-40" />
+                                                <span>{setup.period || `${setup.periodStart} - ${setup.periodEnd}`}</span>
+                                                <span className="opacity-30">•</span>
+                                                <span className="text-primary/70">{setup.cycle}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                            {hasOkrOption && <Badge variant="secondary" className="h-5 px-1.5 font-black text-[8px] uppercase gap-1 bg-purple-50 text-purple-700 border-none"><Target className="size-2.5"/> OKR</Badge>}
+                                            <Badge variant={setup.status === "Aktif" ? "default" : "outline"} className="h-5 px-1.5 font-black text-[8px] uppercase border-none">
+                                                {setup.status}
+                                            </Badge>
                                         </div>
                                     </div>
-                                )}
-                                <div className="flex justify-end items-center gap-2 mt-4">
-                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button aria-haspopup="true" size="sm" variant="ghost">
-                                            <MoreHorizontal className="mr-2 h-4 w-4" />
-                                            Aksi Lainnya
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                          <DropdownMenuLabel>Aksi Dasar</DropdownMenuLabel>
-                                          <DropdownMenuItem onClick={() => { setSelectedSetup(setup); setSheetOpen(true);}}>Ubah Konfigurasi</DropdownMenuItem>
-                                           <DropdownMenuSeparator />
-                                          <DropdownMenuLabel>Pemetaan Penilai</DropdownMenuLabel>
-                                          {Array.from(activeKboContexts.values()).map(({ kboSetup, levels }) => (
-                                            <DropdownMenuItem key={kboSetup.id} onClick={() => handleOpenMappingDialog(setup, kboSetup, levels)}>
-                                                Pemetaan: {kboSetup.categoryName} ({getContextName(kboSetup)})
-                                            </DropdownMenuItem>
-                                          ))}
-                                          {hasOkrOption && (
-                                              <>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuLabel>Integrasi OKR</DropdownMenuLabel>
-                                                <DropdownMenuItem onClick={() => handleOpenOkrMappingDialog(setup)} className="text-primary font-bold">
-                                                    <Target className="mr-2 h-4 w-4" /> Penyesuaian Bobot OKR
-                                                </DropdownMenuItem>
-                                              </>
-                                          )}
-                                          <DropdownMenuSeparator />
-                                          <DropdownMenuItem asChild>
-                                            <Link href={`/kbo-appraisal?setupId=${setup.id}`}>Lihat Laporan KBO</Link>
-                                          </DropdownMenuItem>
-                                          <DropdownMenuSeparator />
-                                          <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(setup)}>
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Hapus Pengaturan
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                        )
-                    })}
-                 </Accordion>
-            ) : (
-                <Card>
-                    <CardContent className="p-10 text-center text-muted-foreground">
-                        Tidak ada pengaturan appraisal yang ditemukan.
-                    </CardContent>
-                </Card>
+                                </AccordionTrigger>
+                                <AccordionContent className="p-0 border-t border-border/40">
+                                    <div className="p-5 sm:p-8 space-y-6">
+                                        <div className="flex flex-wrap gap-x-6 gap-y-3">
+                                            <div className="space-y-1.5">
+                                                <p className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em]">Target Penilaian</p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {setup.activeLevels.length > 0 ? setup.activeLevels.map(lvl => <Badge key={lvl} variant="outline" className="text-[9px] font-bold h-5 border-border/60">{lvl}</Badge>) : <span className="text-xs text-muted-foreground italic">Tidak ada level aktif</span>}
+                                                </div>
+                                            </div>
+                                            
+                                            {activeKboContexts.size > 0 && (
+                                                <div className="space-y-1.5">
+                                                    <p className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em]">Pustaka KBO Aktif</p>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {Array.from(activeKboContexts.values()).map(({ kboSetup, levels }) => (
+                                                            <Badge key={kboSetup.id} variant="secondary" className="text-[9px] font-bold h-5 bg-primary/5 text-primary border-none">
+                                                                {kboSetup.categoryName} ({getContextName(kboSetup)})
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex justify-end pt-4 border-t border-dashed gap-2">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="outline" size="sm" className="h-9 gap-2 font-black text-[10px] uppercase shadow-sm">
+                                                        <Settings className="size-3.5" /> Konfigurasi Penilai
+                                                        <ChevronDown className="size-3" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="z-[350] w-64">
+                                                    <DropdownMenuLabel className="text-[10px] uppercase opacity-60">Mapping Per Kategori</DropdownMenuLabel>
+                                                    {Array.from(activeKboContexts.values()).map(({ kboSetup, levels }) => (
+                                                        <DropdownMenuItem key={kboSetup.id} onClick={() => handleOpenMappingDialog(setup, kboSetup, levels)} className="text-xs">
+                                                            <Users className="size-3.5 mr-2 opacity-60" /> {kboSetup.categoryName}
+                                                        </DropdownMenuItem>
+                                                    ))}
+                                                    {hasOkrOption && (
+                                                        <>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuLabel className="text-[10px] uppercase opacity-60">Deep Integration</DropdownMenuLabel>
+                                                            <DropdownMenuItem onClick={() => handleOpenOkrMappingDialog(setup)} className="text-primary font-bold text-xs">
+                                                                <Target className="mr-2 h-3.5 w-3.5" /> Penyesuaian Bobot OKR
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-muted">
+                                                        <MoreHorizontal className="size-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="z-[350]">
+                                                    <DropdownMenuLabel className="text-[10px] uppercase opacity-60 font-black">Opsi Lanjutan</DropdownMenuLabel>
+                                                    <DropdownMenuItem onClick={() => { setSelectedSetup(setup); setSheetOpen(true);}} className="text-xs"><Pencil className="size-3.5 mr-2" />Ubah Dasar Setup</DropdownMenuItem>
+                                                    <DropdownMenuItem asChild className="text-xs"><Link href={`/kbo-appraisal?setupId=${setup.id}`}><AreaChart className="size-3.5 mr-2" />Lihat Progres Laporan</Link></DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem className="text-destructive font-bold text-xs" onClick={() => openDeleteDialog(setup)}><Trash2 className="size-3.5 mr-2" />Hapus Permanen</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                            )
+                        })}
+                    </Accordion>
+                ) : (
+                    <div className="py-32 text-center border-2 border-dashed rounded-[2rem] bg-muted/10 opacity-30">
+                        <ClipboardPen size={48} className="mx-auto mb-4" />
+                        <p className="font-black uppercase text-[10px] tracking-[0.2em]">Belum Ada Konfigurasi</p>
+                    </div>
+                )}
+            </div>
+
+            <AppraisalSetupSheet
+                isOpen={isSheetOpen}
+                onOpenChange={setSheetOpen}
+                setup={selectedSetup}
+                onSave={handleSave}
+                companies={companies}
+                kboSetups={kboSetups}
+                manageableCompanies={manageableCompanies}
+            />
+            {setupForMapping && selectedKboSetupForMapping && (
+                <AppraisalMappingDialog
+                    isOpen={mappingDialogOpen}
+                    onOpenChange={setMappingDialogOpen}
+                    setup={setupForMapping}
+                    kboSetup={selectedKboSetupForMapping}
+                    activeLevels={activeLevelsForMapping}
+                />
             )}
-        </div>
-        <AppraisalSetupSheet
-            isOpen={isSheetOpen}
-            onOpenChange={setSheetOpen}
-            setup={selectedSetup}
-            onSave={handleSave}
-            companies={companies}
-            kboSetups={kboSetups}
-            manageableCompanies={manageableCompanies}
-        />
-        {setupForMapping && selectedKboSetupForMapping && (
-            <AppraisalMappingDialog
-                isOpen={mappingDialogOpen}
-                onOpenChange={setMappingDialogOpen}
-                setup={setupForMapping}
-                kboSetup={selectedKboSetupForMapping}
-                activeLevels={activeLevelsForMapping}
-            />
-        )}
-        {setupForMapping && (
-            <OkrWeightMappingDialog 
-                isOpen={okrMappingDialogOpen}
-                onOpenChange={setOkrMappingDialogOpen}
-                setup={setupForMapping}
-            />
-        )}
-        {setupToDelete && (
-            <DeleteConfirmationDialog
-                isOpen={isDeleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
-                onConfirm={handleDelete}
-                itemName={`pengaturan appraisal untuk ${setupToDelete.company} (${setupToDelete.period || setupToDelete.periodStart})`}
-                itemType="pengaturan appraisal"
-            />
-        )}
-        </>
+            {setupForMapping && (
+                <OkrWeightMappingDialog 
+                    isOpen={okrMappingDialogOpen}
+                    onOpenChange={setOkrMappingDialogOpen}
+                    setup={setupForMapping}
+                />
+            )}
+            {setupToDelete && (
+                <DeleteConfirmationDialog
+                    isOpen={isDeleteDialogOpen}
+                    onOpenChange={setDeleteDialogOpen}
+                    onConfirm={handleDelete}
+                    itemName={`pengaturan appraisal untuk ${setupToDelete.company} (${setupToDelete.period || setupToDelete.periodStart})`}
+                    itemType="pengaturan appraisal"
+                />
+            )}
+        </ResponsivePage>
     );
 }

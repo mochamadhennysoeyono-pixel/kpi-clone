@@ -11,9 +11,9 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, User, UserCheck } from 'lucide-react';
+import { Button } from '@/button';
+import { Badge } from '@/badge';
+import { Loader2, User, UserCheck, BrainCircuit, ClipboardList, Timer, CheckCircle2, ChevronRight, XCircle } from 'lucide-react';
 import { useMasterData } from '@/contexts/master-data-context';
 import type { Employee, AppraisalSetup, KboSetup, KboDimension, KboAssessment } from '@/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -23,6 +23,12 @@ import { serverTimestamp } from 'firebase/firestore';
 import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import { ResponsivePage } from '@/components/ui/adaptive-layout';
+import { PageHeader } from '@/components/ui/page-header';
+import { AdaptiveCardGrid } from '@/components/ui/adaptive-card';
+import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
 const getContextName = (setup: KboSetup): string => {
     if (setup.categoryName === 'Generic Competency') return `Level: ${setup.level || 'N/A'}`;
@@ -34,7 +40,7 @@ const getContextName = (setup: KboSetup): string => {
 function KboAssessmentForm() {
     const searchParams = useSearchParams();
     const { toast } = useToast();
-    const { appraisalSetups, kboSetups, employees, addKboAssessment, kboAssessments, fetchData } = useMasterData();
+    const { appraisalSetups, kboSetups, employees, addKboAssessment, kboAssessments } = useMasterData();
 
     const [loading, setLoading] = useState(false);
     const [selections, setSelections] = useState<Record<string, string>>({});
@@ -46,10 +52,8 @@ function KboAssessmentForm() {
     const raterId = searchParams.get('raterId');
     const kboSetupIdsParam = searchParams.get('kboSetupIds');
     
-    // Source of Truth: The IDs from the URL parameter.
     const kboSetupIdsFromUrl = useMemo(() => kboSetupIdsParam ? kboSetupIdsParam.split(',') : [], [kboSetupIdsParam]);
 
-    // Strict filtering: Only get setups that are explicitly requested in the URL.
     const relevantKboSetups = useMemo(() => {
         if (!kboSetupIdsFromUrl.length) return [];
         return kboSetups.filter(ks => kboSetupIdsFromUrl.includes(ks.id));
@@ -66,7 +70,6 @@ function KboAssessmentForm() {
         return { setup: currentSetup, subject: currentSubject, rater: currentRater };
     }, [setupId, subjectId, raterId, appraisalSetups, employees]);
 
-    // This derives dimensions ONLY from the already-filtered relevantKboSetups.
     const allDimensions = useMemo(() => {
         return relevantKboSetups.flatMap(ks => ks.dimensions);
     }, [relevantKboSetups]);
@@ -82,7 +85,6 @@ function KboAssessmentForm() {
       return kboAssessments.find(a => a.id === assessmentId);
     }, [assessmentId, kboAssessments]);
     
-    // Correctly load data only for the relevant kboSetupIds
     useEffect(() => {
         if (!assessmentId || !existingAssessmentDoc || !kboSetupIdsFromUrl.length) {
              setSelections({});
@@ -98,7 +100,6 @@ function KboAssessmentForm() {
         for (const kboId of kboSetupIdsFromUrl) {
             const assessmentPart = existingAssessmentDoc.assessments?.[kboId];
             if (assessmentPart) {
-                // Only load selections for the current relevant kboId
                 Object.assign(mergedSelections, assessmentPart.selections);
                 if (assessmentPart.notes && !noteFound) {
                     noteFound = assessmentPart.notes;
@@ -150,7 +151,6 @@ function KboAssessmentForm() {
             totalWeightedScore += setupScore;
         });
 
-        // Average the scores if there are multiple setups being assessed at once
         const finalScore = relevantKboSetups.length > 0 ? totalWeightedScore / relevantKboSetups.length : 0;
         return finalScore;
     }, [selections, relevantKboSetups]);
@@ -161,7 +161,6 @@ function KboAssessmentForm() {
         setLoading(true);
 
         try {
-            // This loop ensures that data is saved distinctly for each kboSetupId from the URL
             for (const kboSetup of relevantKboSetups) {
                 const relevantSelections: Record<string, string> = {};
                 kboSetup.dimensions.forEach(dim => {
@@ -204,12 +203,6 @@ function KboAssessmentForm() {
     const totalKeyBehaviors = allDimensions.reduce((sum, dim) => sum + dim.keyBehaviors.length, 0);
     const isAllSelected = totalKeyBehaviors > 0 && Object.keys(selections).length === totalKeyBehaviors;
     
-    const categoryNames = useMemo(() => {
-        if (!relevantKboSetups || relevantKboSetups.length === 0) return 'Kompetensi';
-        const names = relevantKboSetups.map(s => `${s.categoryName} (${getContextName(s)})`).join(', ');
-        return names;
-    }, [relevantKboSetups]);
-
     const periodLabel = useMemo(() => {
         if (!setup) return 'N/A';
         if (setup.cycle === 'Bulanan' && setup.period) {
@@ -223,147 +216,196 @@ function KboAssessmentForm() {
 
     if (!setup || !subject || !rater) {
         return (
-            <Card className="max-w-4xl mx-auto my-10">
-                <CardHeader>
-                    <CardTitle className="text-destructive">Link Penilaian Tidak Valid</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p>Link yang Anda gunakan tidak valid atau periode penilaian telah berakhir. Silakan hubungi administrator.</p>
-                </CardContent>
-            </Card>
-        )
+            <ResponsivePage className="flex items-center justify-center min-h-[80vh]">
+                <Card className="max-w-md w-full border-none shadow-2xl overflow-hidden bg-background">
+                    <CardHeader className="bg-rose-50 text-center pb-8">
+                        <XCircle size={48} className="text-rose-500 mx-auto mb-4" />
+                        <CardTitle className="font-black text-rose-900 uppercase tracking-tighter">Akses Ditolak</CardTitle>
+                        <CardDescription className="text-rose-700 font-bold uppercase text-[10px]">Tautan Tidak Valid atau Kadaluwarsa</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-8 text-center text-sm font-medium text-muted-foreground leading-relaxed">
+                        Mohon pastikan Anda menggunakan tautan penilaian resmi yang dikirimkan oleh sistem. Jika masalah berlanjut, hubungi administrator HR.
+                    </CardContent>
+                </Card>
+            </ResponsivePage>
+        );
     }
 
     return (
-        <div className="max-w-4xl mx-auto my-10 space-y-6">
-            <Card className="shadow-lg">
-                <CardHeader className="text-center">
-                    <CardTitle className="font-headline text-3xl tracking-tight">KBO</CardTitle>
-                    <CardDescription className="text-xs tracking-widest font-medium">
-                        (PERFORMANCE APPRAISAL BASED ON BEHAVIOR)
-                    </CardDescription>
-                    <p className="text-sm text-muted-foreground pt-2">Periode Penilaian: <span className="font-semibold text-foreground">{periodLabel}</span></p>
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start text-sm pt-4 gap-4 border-t mt-4">
-                        <div className='flex items-start gap-2 text-left'>
-                            <User className="h-5 w-5 mt-0.5 text-muted-foreground" />
-                            <div>
-                                <p className="text-muted-foreground">Subjek:</p>
-                                <p className='font-semibold text-foreground'>{subject.name}</p>
-                                <p className="text-xs text-muted-foreground">{subject.position} / {subject.department}</p>
-                            </div>
-                        </div>
-                         <div className='flex items-start gap-2 text-left'>
-                            <UserCheck className="h-5 w-5 mt-0.5 text-muted-foreground" />
-                            <div>
-                                <p className="text-muted-foreground">Penilai:</p>
-                                <p className='font-semibold text-foreground'>{rater.name}</p>
-                                <p className="text-xs text-muted-foreground">{rater.position} / {rater.department}</p>
-                            </div>
-                        </div>
-                    </div>
-                </CardHeader>
-            </Card>
-            
-            <div className="grid grid-cols-1 gap-6">
-                 <Card className="sticky top-4 z-20 shadow-xl backdrop-blur-lg bg-background/80">
-                    <CardContent className="p-4 flex flex-col sm:flex-row justify-between items-center h-full gap-4">
-                        <div className="text-center p-2 border rounded-lg bg-muted/50 w-full sm:w-auto">
-                            <p className="text-sm font-semibold">Skala Penilaian</p>
-                            <div className="flex justify-center items-center gap-2 text-xs text-muted-foreground mt-1">
-                                <span>Tidak Kompeten</span>
-                                <span className="font-mono">&lt;--</span>
-                                <span className="font-mono">1</span>
-                                <span className="font-mono">2</span>
-                                <span className="font-mono">3</span>
-                                <span className="font-mono">4</span>
-                                <span className="font-mono">--&gt;</span>
-                                <span>Sangat Kompeten</span>
-                            </div>
-                        </div>
-                         <div className="text-center p-2 mt-2 sm:mt-0">
-                            <p className="text-xs font-medium text-muted-foreground">Kompetensi Dinilai</p>
-                            <div className="flex flex-wrap gap-1 justify-center">
-                                {relevantKboSetups.map(s => <Badge key={s.id} variant="secondary">{s.categoryName}</Badge>)}
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+        <ResponsivePage>
+            <PageHeader 
+                title="Penilaian Kompetensi"
+                description={`Silakan berikan penilaian objektif berdasarkan perilaku kerja nyata dari subjek bersangkutan.`}
+                icon={ClipboardList}
+            />
 
-            <div className="space-y-6">
-                {allDimensions.map((dim, dimIndex) => (
-                <div key={`${dim.id}-${dimIndex}`} className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg">{dim.dimension}</CardTitle>
-                            <CardDescription>{dim.definition}</CardDescription>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                {/* Left Column: Context & Subject (4 cols) */}
+                <div className="lg:col-span-4 space-y-6">
+                    <Card className="border-border/40 shadow-sm overflow-hidden bg-background">
+                        <CardHeader className="bg-muted/30 border-b p-5">
+                            <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
+                                <UserCheck size={14} className="text-primary" /> Subjek & Penilai
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            {dim.keyBehaviors.map((kb, index) => {
-                                const kbId = `${dim.id}-${index}`;
-                                return (
-                                    <div key={kbId} className="p-3 border rounded-md bg-muted/20">
-                                        <p className="font-medium text-sm mb-3">{kb.value}</p>
-                                        <RadioGroup
-                                            onValueChange={(value) => handleSelectionChange(kbId, value)}
-                                            value={selections[kbId]}
-                                            className="flex flex-wrap items-center gap-x-6 gap-y-2"
-                                            disabled={isSubmitted || loading}
-                                        >
-                                            {[1, 2, 3, 4].map(level => (
-                                                <div className="flex items-center space-x-2" key={level}>
-                                                    <RadioGroupItem value={String(level)} id={`${kbId}-${level}`} />
-                                                    <Label htmlFor={`${kbId}-${level}`} className="text-sm font-medium cursor-pointer">
-                                                        {level}
-                                                    </Label>
-                                                </div>
-                                            ))}
-                                        </RadioGroup>
-                                    </div>
-                                )
-                            })}
+                        <CardContent className="p-6 space-y-6">
+                            <div className="flex items-center gap-4">
+                                <Avatar className="size-12 border-2 border-primary/10 shadow-sm">
+                                    <AvatarFallback className="bg-primary/5 text-primary text-xs font-black uppercase">{subject.name.substring(0, 2)}</AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0">
+                                    <p className="text-[9px] font-black text-primary uppercase tracking-widest">SUBJEK DINILAI</p>
+                                    <p className="text-base font-black text-slate-900 truncate uppercase tracking-tight">{subject.name}</p>
+                                    <p className="text-[10px] font-bold text-muted-foreground">{subject.position}</p>
+                                </div>
+                            </div>
+                            <Separator className="border-dashed" />
+                            <div className="flex items-center gap-4">
+                                <Avatar className="size-10 border shadow-sm">
+                                    <AvatarFallback className="bg-muted text-muted-foreground text-[10px] font-black uppercase">{rater.name.substring(0, 2)}</AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0">
+                                    <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">PENILAI (ANDA)</p>
+                                    <p className="text-sm font-bold text-slate-700 truncate">{rater.name}</p>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
-                </div>
-                ))}
-            </div>
 
-            <Card>
-                <CardContent className="p-4 space-y-4">
-                     <div className="space-y-2">
-                        <Label htmlFor="notes">Catatan untuk {subject.name} (Opsional)</Label>
-                        <Textarea
-                            id="notes"
-                            placeholder="Berikan umpan balik atau contoh spesifik di sini..."
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            disabled={isSubmitted || loading}
-                            className="h-24"
-                        />
+                    <Card className="border-border/40 shadow-sm bg-background">
+                         <CardContent className="p-6 space-y-6">
+                            <div className="space-y-1">
+                                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Periode Penilaian</p>
+                                <p className="text-sm font-black text-slate-800 flex items-center gap-2"><Timer size={14} className="text-primary opacity-40"/> {periodLabel}</p>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Kompetensi Fokus</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {relevantKboSetups.map(s => (
+                                        <Badge key={s.id} variant="outline" className="text-[9px] font-black uppercase h-5 bg-muted/50 border-none">{s.categoryName}</Badge>
+                                    ))}
+                                </div>
+                            </div>
+                         </CardContent>
+                    </Card>
+                </div>
+
+                {/* Right Column: Assessment List (8 cols) */}
+                <div className="lg:col-span-8 space-y-6">
+                    {/* Sticky Scoring Info */}
+                    <Card className="sticky top-4 z-20 shadow-xl border-primary/20 bg-background/95 backdrop-blur-lg">
+                        <CardContent className="p-4 flex items-center justify-between gap-4">
+                            <div className="space-y-0.5">
+                                <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Progres Pengisian</p>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xl font-black text-primary">{Object.keys(selections).length} / {totalKeyBehaviors}</span>
+                                    <span className="text-[10px] font-bold text-muted-foreground">POIN TERISI</span>
+                                </div>
+                            </div>
+                            <div className="text-right space-y-0.5">
+                                <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Skor Sementara</p>
+                                <p className="text-2xl font-black text-slate-900">{totalScore.toFixed(2)}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <div className="space-y-8">
+                        {allDimensions.map((dim, dimIndex) => (
+                            <div key={`${dim.id}-${dimIndex}`} className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${dimIndex * 100}ms` }}>
+                                <div className="flex items-center gap-3 px-1">
+                                    <div className="size-8 rounded-xl bg-primary text-white flex items-center justify-center text-xs font-black shrink-0">{dimIndex + 1}</div>
+                                    <div className="min-w-0">
+                                        <h3 className="font-black text-sm uppercase tracking-tight text-slate-900">{dim.dimension}</h3>
+                                        <p className="text-[11px] text-muted-foreground italic leading-snug line-clamp-1">"{dim.definition}"</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 gap-3">
+                                    {dim.keyBehaviors.map((kb, index) => {
+                                        const kbId = `${dim.id}-${index}`;
+                                        const currentVal = selections[kbId];
+                                        
+                                        return (
+                                            <Card key={kbId} className={cn(
+                                                "border-border/40 shadow-sm transition-all group",
+                                                currentVal ? "bg-primary/[0.02] border-primary/10" : "bg-background"
+                                            )}>
+                                                <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                                                    <p className="text-xs font-bold text-slate-700 leading-relaxed flex-1">{kb.value}</p>
+                                                    <RadioGroup
+                                                        onValueChange={(value) => handleSelectionChange(kbId, value)}
+                                                        value={currentVal}
+                                                        className="flex flex-row items-center gap-2 shrink-0"
+                                                        disabled={isSubmitted || loading}
+                                                    >
+                                                        {[1, 2, 3, 4].map(lvl => (
+                                                            <div className="relative" key={lvl}>
+                                                                <RadioGroupItem value={String(lvl)} id={`${kbId}-${lvl}`} className="peer sr-only" />
+                                                                <Label 
+                                                                    htmlFor={`${kbId}-${lvl}`} 
+                                                                    className={cn(
+                                                                        "size-9 rounded-xl border-2 flex items-center justify-center text-xs font-black transition-all cursor-pointer",
+                                                                        "hover:bg-muted border-border/60 text-muted-foreground",
+                                                                        currentVal === String(lvl) ? "bg-primary border-primary text-white scale-110 shadow-lg" : ""
+                                                                    )}
+                                                                >
+                                                                    {lvl}
+                                                                </Label>
+                                                            </div>
+                                                        ))}
+                                                    </RadioGroup>
+                                                </CardContent>
+                                            </Card>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                </CardContent>
-                <CardFooter className="p-4 pt-0">
-                    {isSubmitted ? (
-                         <div className="text-sm text-center w-full text-green-700 font-medium bg-green-50 p-3 rounded-md border border-green-200">
-                           Anda sudah mengirimkan penilaian ini. Terima kasih!
-                        </div>
-                    ) : (
-                        <Button onClick={handleSubmit} disabled={loading || !isAllSelected} className="w-full">
-                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            {loading ? 'Mengirim...' : 'Kirim Penilaian'}
-                        </Button>
-                    )}
-                </CardFooter>
-            </Card>
-        </div>
+
+                    <Card className="border-border/40 shadow-lg bg-background">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground">Umpan Balik Tambahan (Opsional)</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <Textarea
+                                placeholder={`Berikan saran pengembangan atau contoh perilaku spesifik untuk ${subject.name.split(' ')[0]}...`}
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                disabled={isSubmitted || loading}
+                                className="min-h-[120px] bg-muted/5 border-none resize-none text-sm font-medium"
+                            />
+                        </CardContent>
+                        <CardFooter className="p-6 border-t bg-muted/5">
+                            {isSubmitted ? (
+                                <Alert className="bg-emerald-50 border-emerald-200">
+                                    <CheckCircle2 className="size-4 text-emerald-600" />
+                                    <AlertDescription className="text-xs font-bold text-emerald-800 uppercase">
+                                        Terima kasih, data penilaian telah berhasil tersimpan dalam sistem.
+                                    </AlertDescription>
+                                </Alert>
+                            ) : (
+                                <Button 
+                                    onClick={handleSubmit} 
+                                    disabled={loading || !isAllSelected} 
+                                    className="w-full font-black uppercase tracking-widest text-[11px] h-12 shadow-xl shadow-primary/20 rounded-2xl active:scale-95 transition-all"
+                                >
+                                    {loading ? <Loader2 className="size-4 animate-spin mr-2" /> : <Save className="size-4 mr-2" />}
+                                    Kirim Penilaian Final
+                                </Button>
+                            )}
+                        </CardFooter>
+                    </Card>
+                </div>
+            </div>
+        </ResponsivePage>
     );
 }
 
 export default function KboAssessmentFormPage() {
     return (
         <Suspense fallback={
-            <div className="flex h-screen items-center justify-center">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <div className="flex h-screen w-full items-center justify-center bg-white">
+                <Loader2 className="animate-spin text-primary size-10" />
             </div>
         }>
             <KboAssessmentForm />

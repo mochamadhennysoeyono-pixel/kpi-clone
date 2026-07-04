@@ -4,19 +4,8 @@
 import * as React from "react";
 import { useState, useMemo } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +17,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { PlusCircle, MoreHorizontal, Lock, FolderKanban } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Lock, FolderKanban, Building, Filter, Search, Pencil, Trash2 } from "lucide-react";
 import type { KboCategory, Company } from "@/types";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import { useMasterData } from "@/contexts/master-data-context";
@@ -44,6 +33,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { DEFAULT_KBO_CATEGORIES } from "@/lib/default-data";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ResponsivePage, ResponsiveToolbar } from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { AdaptiveTable } from "@/components/ui/adaptive-table";
 
 
 const categorySchema = z.object({
@@ -158,6 +150,7 @@ export default function KboCategoriesPage() {
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<KboCategory | null>(null);
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState("");
   
   const defaultCategoryIds = useMemo(() => new Set(DEFAULT_KBO_CATEGORIES.map(c => c.id)), []);
 
@@ -170,8 +163,15 @@ export default function KboCategoriesPage() {
     } else if (currentUser) {
       cats = cats.filter(c => c.company === currentUser.company);
     }
-    return [...DEFAULT_KBO_CATEGORIES, ...cats];
-  }, [kboCategories, currentUser, userRole, selectedCompanyFilter, defaultCategoryIds]);
+    
+    let result = [...DEFAULT_KBO_CATEGORIES, ...cats];
+    
+    if (searchTerm) {
+        result = result.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+    
+    return result;
+  }, [kboCategories, currentUser, userRole, selectedCompanyFilter, defaultCategoryIds, searchTerm]);
 
   const handleAddItem = () => {
     setSelectedCategory(undefined);
@@ -243,78 +243,140 @@ export default function KboCategoriesPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <Card className="shadow-lg mb-6">
-        <CardHeader className="bg-primary text-primary-foreground dark:bg-card rounded-t-lg">
-          <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-4">
-            <div>
-              <CardTitle className="font-headline">Kategori Kompetensi (KBO)</CardTitle>
-              <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground">
-                Sistem menggunakan 3 kategori kompetensi global (Core, Generic, Specific) yang tidak dapat diubah.
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          {userRole === 'superadmin' && (
-            <div className="mb-6 p-4 border rounded-lg bg-muted/30 max-w-xs">
-              <Select value={selectedCompanyFilter} onValueChange={setSelectedCompanyFilter}>
-                <SelectTrigger><SelectValue placeholder="Filter Perusahaan" /></SelectTrigger>
+    <ResponsivePage>
+      <PageHeader 
+        title="Kategori Kompetensi (KBO)"
+        description="Kelola kategori kompetensi global dan kustom untuk kerangka penilaian perilaku tim."
+        icon={FolderKanban}
+        actions={
+            <Button onClick={handleAddItem} className="font-bold shadow-lg h-9 sm:h-10">
+                <PlusCircle className="size-4" />
+                Tambah Kategori
+            </Button>
+        }
+      />
+
+      <ResponsiveToolbar>
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input 
+            placeholder="Cari nama kategori..." 
+            className="pl-9 h-10 border-none shadow-none bg-background/50 focus-visible:ring-primary/20"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        {userRole === 'superadmin' && (
+            <Select value={selectedCompanyFilter} onValueChange={setSelectedCompanyFilter}>
+                <SelectTrigger className="w-full sm:w-[220px] h-10 bg-background border-none">
+                    <Building className="size-4 mr-2 text-primary" />
+                    <SelectValue placeholder="Semua Klien" />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Perusahaan & Global</SelectItem>
-                  {companies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                    <SelectItem value="all">Semua Perusahaan & Global</SelectItem>
+                    {companies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
                 </SelectContent>
-              </Select>
-            </div>
-          )}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[120px]">ID</TableHead>
-                <TableHead>Nama Kategori</TableHead>
-                {userRole === 'superadmin' && <TableHead>Konteks</TableHead>}
-                <TableHead>Status</TableHead>
-                <TableHead>Deskripsi</TableHead>
-                <TableHead><span className="sr-only">Aksi</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCategories.map((category) => {
-                const isDefault = defaultCategoryIds.has(category.id);
-                return (
-                  <TableRow key={category.id}>
-                    <TableCell className="font-mono text-xs">{category.id}</TableCell>
-                    <TableCell className="font-medium flex items-center gap-3">
-                        <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-full bg-muted">
-                            <FolderKanban className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                        {category.name}
-                    </TableCell>
-                    {userRole === 'superadmin' && <TableCell>{isDefault ? <Badge variant="secondary">Global</Badge> : category.company}</TableCell>}
-                    <TableCell><Badge variant={category.status === "Aktif" ? "default" : "outline"}>{category.status}</Badge></TableCell>
-                    <TableCell className="text-muted-foreground">{category.description}</TableCell>
-                    <TableCell className="text-right">
-                      {isDefault ? (
-                        <div className="flex justify-end pr-4"><Lock className="h-4 w-4 text-muted-foreground" /></div>
-                      ) : (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Buka menu</span></Button></DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleEditItem(category)}>Ubah</DropdownMenuItem>
+            </Select>
+        )}
+      </ResponsiveToolbar>
+
+      <AdaptiveTable 
+        data={filteredCategories}
+        keyExtractor={(c) => c.id}
+        columns={[
+          {
+            header: "Kategori",
+            cell: (c) => (
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center border shrink-0">
+                  <FolderKanban className="size-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-900 truncate">{c.name}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-tight">{c.id}</p>
+                </div>
+              </div>
+            )
+          },
+          {
+             header: "Konteks",
+             cell: (c) => (
+                defaultCategoryIds.has(c.id) 
+                    ? <Badge variant="secondary" className="text-[8px] font-black uppercase">GLOBAL</Badge> 
+                    : <span className="text-xs font-semibold text-slate-600">{c.company}</span>
+             )
+          },
+          {
+            header: "Status",
+            cell: (c) => (
+              <Badge variant={c.status === 'Aktif' ? 'default' : 'outline'} className="text-[9px] uppercase font-black h-5 border-none">
+                {c.status}
+              </Badge>
+            )
+          },
+          {
+            header: "Deskripsi",
+            accessorKey: "description",
+            className: "text-muted-foreground text-xs leading-relaxed max-w-xs truncate",
+            hideOnTablet: true,
+          },
+          {
+            header: "",
+            className: "text-right",
+            cell: (c) => (
+                defaultCategoryIds.has(c.id) ? (
+                    <div className="flex justify-end pr-4 opacity-20"><Lock className="size-4" /></div>
+                ) : (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal className="size-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditItem(c)}><Pencil className="size-3.5 mr-2" />Ubah</DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(category)}>Hapus</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </TableCell>
-                  </TableRow>
+                            <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(c)}><Trash2 className="size-3.5 mr-2" />Hapus</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 )
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            )
+          }
+        ]}
+        renderMobileCard={(c) => {
+            const isDefault = defaultCategoryIds.has(c.id);
+            return (
+                <Card className="border-border/40 shadow-sm overflow-hidden bg-background">
+                    <CardContent className="p-4 space-y-4">
+                        <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="size-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center border shrink-0">
+                                    <FolderKanban size={20} />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="font-black text-sm uppercase truncate">{c.name}</h3>
+                                    <p className="text-[10px] text-muted-foreground font-bold">{c.id}</p>
+                                </div>
+                            </div>
+                            <Badge variant={c.status === 'Aktif' ? 'default' : 'outline'} className="text-[8px] font-black h-4 border-none">{c.status}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2 italic">{c.description}</p>
+                        <div className="flex items-center justify-between pt-3 border-t">
+                            <div className="text-[9px] font-black uppercase text-muted-foreground">Konteks: {isDefault ? "Global" : c.company}</div>
+                            <div className="flex gap-2">
+                                {isDefault ? (
+                                    <Badge variant="outline" className="text-[8px] font-black gap-1.5 border-none bg-muted/50"><Lock size={10}/> TERKUNCI</Badge>
+                                ) : (
+                                    <>
+                                        <Button variant="ghost" size="sm" className="h-8 font-bold text-[9px] uppercase" onClick={() => handleEditItem(c)}>EDIT</Button>
+                                        <Button variant="ghost" size="sm" className="h-8 font-bold text-[9px] uppercase text-destructive" onClick={() => openDeleteDialog(c)}>HAPUS</Button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            );
+        }}
+      />
       
       <CategoryFormDialog
         isOpen={isDialogOpen}
@@ -332,6 +394,6 @@ export default function KboCategoriesPage() {
         itemName={categoryToDelete?.name || ''}
         itemType="kategori"
       />
-    </div>
+    </ResponsivePage>
   );
 }
