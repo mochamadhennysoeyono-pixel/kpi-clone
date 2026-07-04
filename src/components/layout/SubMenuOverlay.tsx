@@ -6,9 +6,9 @@ import { X, SquaresFour, CaretLeft, Folders } from "@phosphor-icons/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
-import { useSubMenu } from './submenu-context';
 import React from "react";
 import { ScrollArea } from "../ui/scroll-area";
+import { useSubMenu } from './submenu-context';
 
 interface SubMenuOverlayProps {
   activeGroup: any;
@@ -99,10 +99,10 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                         </div>
                     )}
                     <div className="min-w-0">
-                        <h2 className="text-sm font-black tracking-tight text-slate-900 uppercase leading-none">
+                        <h2 className="text-sm font-black tracking-tight text-slate-900 leading-none">
                             {currentView.label}
                         </h2>
-                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-60 mt-1.5">
+                        <p className="text-[9px] font-bold text-muted-foreground tracking-[0.1em] opacity-60 mt-1.5 uppercase">
                             Navigator
                         </p>
                     </div>
@@ -144,8 +144,8 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                                 : "bg-white border-slate-100 hover:border-slate-300 hover:shadow-stripe"
                                         )}>
                                             <div className={cn(
-                                                "size-10 flex items-center justify-center transition-all duration-500",
-                                                isActive ? "scale-110" : "group-hover/item:scale-125"
+                                                "size-10 flex items-center justify-center transition-all duration-300",
+                                                "group-hover/item:scale-125"
                                             )}>
                                                 {IconComponent && (
                                                     <IconComponent 
@@ -157,7 +157,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                                 )}
                                             </div>
                                             <span className={cn(
-                                                "text-[10px] text-center font-black tracking-tight leading-tight px-0.5 transition-colors uppercase",
+                                                "text-[11px] text-center font-bold tracking-tight leading-tight px-0.5 transition-colors",
                                                 isActive ? "text-primary" : "text-slate-500 group-hover/item:text-slate-900"
                                             )}>
                                                 {subItem.label}

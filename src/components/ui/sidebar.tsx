@@ -116,7 +116,7 @@ function MotionNav() {
                                               {Icon && <Icon size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} className={cn(isGroupActive ? "opacity-100" : "opacity-80 group-hover:opacity-100")} />}
                                             </div>
                                             {(isOpen || isMobile) && (
-                                                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 font-bold tracking-tight text-[11px] uppercase">
+                                                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 font-bold tracking-tight text-[11px]">
                                                     {item.label}
                                                 </motion.span>
                                             )}
@@ -131,7 +131,7 @@ function MotionNav() {
                                                   return (
                                                       <li key={subItem.href}>
                                                           <Link href={subItem.href} className={cn(
-                                                              "block pl-4 pr-3 py-2 text-[11px] font-bold tracking-tight transition-all uppercase",
+                                                              "block pl-4 pr-3 py-2 text-[11px] font-bold tracking-tight transition-all",
                                                               isSubActive ? "text-primary bg-primary/5 font-black" : "text-slate-400 hover:text-slate-800 hover:bg-slate-50"
                                                           )}>
                                                               {subItem.label}
@@ -160,7 +160,7 @@ function MotionNav() {
                                     {Icon && <Icon size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} className={cn(isActive ? "opacity-100" : "opacity-80 group-hover:opacity-100")} />}
                                 </div>
                                 {(isOpen || isMobile) && (
-                                    <span className="font-bold tracking-tight text-[11px] uppercase">
+                                    <span className="font-bold tracking-tight text-[11px]">
                                     {item.label}
                                     </span>
                                 )}
@@ -185,7 +185,7 @@ function MotionNav() {
                 
                 {(isOpen || isMobile) && (
                   <div className="flex-1 text-left min-w-0">
-                    <p className="text-[11px] font-black text-slate-900 truncate uppercase tracking-tight">{currentUser?.name}</p>
+                    <p className="text-[11px] font-black text-slate-900 truncate tracking-tight">{currentUser?.name}</p>
                     <div className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 uppercase group-hover:text-destructive transition-colors tracking-widest">
                         <SignOut size={10} weight="bold" />
                         <span>Log Out</span>

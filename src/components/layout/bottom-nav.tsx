@@ -120,7 +120,7 @@ export function BottomNav() {
                             )}>
                                 <Icon size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
                             </div>
-                            <span className={cn("text-[9px] font-black uppercase tracking-tight", isActive ? "text-primary" : "text-slate-400")}>
+                            <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-primary" : "text-slate-400")}>
                                 {item.label}
                             </span>
                         </Link>
@@ -147,7 +147,7 @@ export function BottomNav() {
                             )}>
                                 <Icon size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
                             </div>
-                            <span className={cn("text-[9px] font-black uppercase tracking-tight", isActive ? "text-primary" : "text-slate-400")}>
+                            <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-primary" : "text-slate-400")}>
                                 {item.label}
                             </span>
                         </Link>
@@ -173,7 +173,7 @@ export function BottomNav() {
                             <div className="p-1.5 rounded-lg transition-all duration-300 group-active:scale-125">
                                 <SquaresFour size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} className="opacity-90" />
                             </div>
-                            <span className="text-[9px] font-black uppercase text-slate-400">Menu</span>
+                            <span className="text-[10px] font-bold text-slate-400">Menu</span>
                         </button>
                     );
                 }
@@ -200,7 +200,7 @@ export function BottomNav() {
                             <Icon size={isPortalLink ? 18 : 22} weight="fill" style={{ fill: isPortalLink ? "#171717" : "url(#brand-gradient)" }} className={cn(isActive ? "opacity-100" : "opacity-90")} />
                         </div>
                         <span className={cn(
-                            "text-[9px] font-black uppercase tracking-tight",
+                            "text-[9px] font-bold tracking-tight",
                             isActive ? "text-primary" : "opacity-60"
                         )}>
                             {item.label}
