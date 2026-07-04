@@ -6,16 +6,22 @@ import Link from 'next/link';
 import { useMasterData } from "@/contexts/master-data-context";
 import { useAuth } from '@/contexts/auth-context';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { BookUser, CirclePlay, Award, BookUp, RefreshCw, Workflow } from "lucide-react";
+import { BookUser, CirclePlay, Award, BookUp, RefreshCw, Workflow, GraduationCap, ArrowRight, Clock, Star } from "lucide-react";
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { ResponsivePage } from '@/components/ui/adaptive-layout';
+import { PageHeader } from '@/components/ui/page-header';
+import { AdaptiveCardGrid } from '@/components/ui/adaptive-card';
+import { cn } from '@/lib/utils';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 
 export default function LmsUserMyLearningsPage() {
     const { courses, enrollments, learningPrograms } = useMasterData();
     const { currentUser } = useAuth();
+    const { isMobile } = useBreakpoint();
 
     const { myCourses, myPrograms } = useMemo(() => {
         if (!currentUser || !courses || !learningPrograms) return { myCourses: [], myPrograms: [] };
@@ -23,209 +29,151 @@ export default function LmsUserMyLearningsPage() {
         const targetedCourseIds = new Set<string>();
         const targetedProgramIds = new Set<string>();
 
-        // Find targeted programs
-        learningPrograms.forEach(program => {
-            if (program.status !== 'published') return;
+        const checkAccess = (target: any) => {
+            if (!target || Object.values(target).every(v => !v || (v as any).length === 0)) return currentUser.role === 'user';
+            const { departments, positions, levels, employees: emps } = target;
+            if (emps?.includes(currentUser.id)) return true;
+            const deptMatch = !departments?.length || departments.includes(currentUser.department);
+            const posMatch = !positions?.length || positions.includes(currentUser.position);
+            const levelMatch = !levels?.length || levels.includes(currentUser.level);
+            return deptMatch && posMatch && levelMatch;
+        };
 
-            const userCompany = currentUser.company;
-            if (program.company !== userCompany && program.company !== 'Global') return;
-
-            const { departments, positions, levels, employees: specificEmployees } = program.targetAudience;
-
-            if (!departments?.length && !positions?.length && !levels?.length && !specificEmployees?.length) {
-                if (currentUser.role === 'user') targetedProgramIds.add(program.id!);
-                return;
-            }
-
-            if (specificEmployees?.includes(currentUser.id)) {
-                targetedProgramIds.add(program.id!);
-                return;
-            }
-            
-            if (!specificEmployees || specificEmployees.length === 0) {
-                const departmentMatch = !departments?.length || departments.includes(currentUser.department);
-                const positionMatch = !positions?.length || positions.includes(currentUser.position);
-                const levelMatch = !levels?.length || levels.includes(currentUser.level);
-                if(departmentMatch && positionMatch && levelMatch) targetedProgramIds.add(program.id!);
+        learningPrograms.forEach(p => {
+            if (p.status === 'published' && (p.company === currentUser.company || p.company === 'Global') && checkAccess(p.targetAudience)) {
+                targetedProgramIds.add(p.id!);
             }
         });
         
-        // Find targeted standalone courses
-        courses.forEach(course => {
-            if (course.status !== 'published') return;
-
-            const userCompany = currentUser.company;
-            if (course.company !== userCompany && course.company !== 'Global') return;
-
-            const { departments, positions, levels, employees: specificEmployees } = course.targetAudience;
-
-            if (!departments?.length && !positions?.length && !levels?.length && !specificEmployees?.length) {
-                 if (currentUser.role === 'user') targetedCourseIds.add(course.id);
-                return;
-            }
-            
-            if (specificEmployees?.includes(currentUser.id)) {
-                targetedCourseIds.add(course.id);
-                return;
-            }
-
-            if (!specificEmployees || specificEmployees.length === 0) {
-                const departmentMatch = !departments?.length || departments.includes(currentUser.department);
-                const positionMatch = !positions?.length || positions.includes(currentUser.position);
-                const levelMatch = !levels?.length || levels.includes(currentUser.level);
-                if(departmentMatch && positionMatch && levelMatch) targetedCourseIds.add(course.id);
+        courses.forEach(c => {
+            if (c.status === 'published' && (c.company === currentUser.company || c.company === 'Global') && checkAccess(c.targetAudience)) {
+                targetedCourseIds.add(c.id);
             }
         });
 
-        const mappedCourses = Array.from(targetedCourseIds).map(courseId => {
-            const course = courses.find(c => c.id === courseId)!;
-            const enrollment = enrollments.find(e => e.courseId === courseId && e.employeeId === currentUser.id);
-            return {
-                status: enrollment?.status || 'not-started',
-                progress: enrollment?.progress || 0,
-                courseDetails: course,
-                courseId: course.id,
-            };
+        const mappedCourses = Array.from(targetedCourseIds).map(id => {
+            const c = courses.find(item => item.id === id)!;
+            const e = enrollments.find(item => item.courseId === id && item.employeeId === currentUser.id);
+            return { status: e?.status || 'not-started', progress: e?.progress || 0, courseDetails: c, courseId: c.id };
         });
 
-        const mappedPrograms = Array.from(targetedProgramIds).map(programId => {
-            const program = learningPrograms.find(p => p.id === programId)!;
-            // TODO: Calculate program progress based on its activities and user's enrollments
-            return {
-                programDetails: program,
-                programId: program.id,
-                progress: 0, // Placeholder
-            };
+        const mappedPrograms = Array.from(targetedProgramIds).map(id => {
+            const p = learningPrograms.find(item => item.id === id)!;
+            return { programDetails: p, programId: p.id, progress: 0 };
         });
 
         return { myCourses: mappedCourses, myPrograms: mappedPrograms };
     }, [courses, enrollments, currentUser, learningPrograms]);
 
-    const getStatusBadge = (status: 'not-started' | 'in-progress' | 'completed') => {
+    const getStatusBadge = (status: string) => {
         switch(status) {
-            case 'completed': return <Badge variant="default">Selesai</Badge>;
-            case 'in-progress': return <Badge variant="secondary">Berjalan</Badge>;
-            default: return <Badge variant="outline">Belum Dimulai</Badge>;
+            case 'completed': return <Badge className="bg-green-600 border-none font-black text-[8px] h-4 uppercase">Selesai</Badge>;
+            case 'in-progress': return <Badge variant="secondary" className="bg-blue-500 text-white border-none font-black text-[8px] h-4 uppercase">Aktif</Badge>;
+            default: return <Badge variant="outline" className="font-black text-[8px] h-4 uppercase opacity-40">Belum Mulai</Badge>;
         }
     }
 
-  return (
-    <div className="space-y-8">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-headline text-2xl">
-            <BookUser />
-            Area Pelatihan Saya
-          </CardTitle>
-          <CardDescription>
-            Lihat progres pelatihan yang sedang berjalan dan akses sertifikat yang telah Anda peroleh.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-      
-      {/* Learning Programs Section */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Workflow className="text-primary"/>
-            Program Pembelajaran Saya
-        </h2>
-        {myPrograms.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {myPrograms.map(program => (
-                    <Card key={program.programId} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
-                        <CardHeader>
-                            <CardTitle className="text-base font-semibold">{program.programDetails.title}</CardTitle>
-                            <p className="text-xs text-muted-foreground">{program.programDetails.stages.length} Tahapan</p>
-                        </CardHeader>
-                         <CardContent className="flex-grow">
-                            <p className="text-sm text-muted-foreground line-clamp-3">{program.programDetails.description}</p>
-                        </CardContent>
-                        <CardFooter>
-                            <Button asChild className="w-full">
-                                <Link href={`/lms/user/program/${program.programId}`}>
-                                    Lihat Journey
-                                </Link>
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                ))}
+    return (
+        <ResponsivePage>
+            <PageHeader 
+                title="Akademi Pembelajaran" 
+                description="Tingkatkan kompetensi Anda melalui program terstruktur dan kursus mandiri yang telah ditugaskan."
+                icon={BookUser}
+            />
+            
+            {/* Learning Programs Section */}
+            <div className="space-y-4">
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1 flex items-center gap-2">
+                    <Workflow className="size-4 text-primary" /> Program Pembelajaran Utama
+                </h2>
+                {myPrograms.length > 0 ? (
+                    <AdaptiveCardGrid complexity="medium">
+                        {myPrograms.map(p => (
+                            <Card key={p.programId} className="flex flex-col border-none shadow-sm hover:shadow-md transition-all overflow-hidden bg-background group">
+                                <CardHeader className="bg-primary/5 p-5">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="p-2 bg-background rounded-lg shadow-sm border border-primary/10 text-primary group-hover:scale-110 transition-transform">
+                                            <Star size={18} />
+                                        </div>
+                                        <Badge variant="outline" className="text-[8px] font-black border-primary/20 text-primary uppercase h-5">{p.programDetails.stages.length} TAHAP</Badge>
+                                    </div>
+                                    <CardTitle className="text-sm font-black uppercase tracking-tight line-clamp-1">{p.programDetails.title}</CardTitle>
+                                </CardHeader>
+                                <CardContent className="flex-grow p-5 pt-4">
+                                    <p className="text-[11px] leading-relaxed text-muted-foreground line-clamp-3">{p.programDetails.description}</p>
+                                </CardContent>
+                                <CardFooter className="p-4 pt-0">
+                                    <Button asChild className="w-full font-black uppercase text-[10px] h-10 rounded-xl shadow-md">
+                                        <Link href={`/lms/user/program/${p.programId}`}>LANJUTKAN JOURNEY <ArrowRight size={14} className="ml-2" /></Link>
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        ))}
+                    </AdaptiveCardGrid>
+                ) : (
+                    <Card className="border-dashed"><CardContent className="p-10 text-center text-xs text-muted-foreground font-medium italic">Anda belum memiliki penugasan program terstruktur.</CardContent></Card>
+                )}
             </div>
-        ) : (
-            <Card>
-                <CardContent className="p-10 text-center text-muted-foreground">
-                    Anda tidak terdaftar dalam program pembelajaran apa pun saat ini.
-                </CardContent>
-            </Card>
-        )}
-      </section>
 
-      <Separator />
+            <Separator className="opacity-40" />
 
-      {/* Individual Courses Section */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-            <BookUp className="text-primary"/>
-            Kursus Individual Saya
-        </h2>
-         {myCourses.length > 0 ? (
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {myCourses.map(item => {
-              const isCompleted = item.status === 'completed';
-              return (
-                  <Card key={item.courseId} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
-                     {item.courseDetails?.thumbnailUrl && (
-                       <div className="relative aspect-video w-full">
-                         <Image src={item.courseDetails.thumbnailUrl} alt={item.courseDetails.title} fill className="object-cover" />
-                      </div>
-                    )}
-                    <CardHeader>
-                      <CardTitle className="text-base font-semibold">{item.courseDetails?.title}</CardTitle>
-                      <div className="flex flex-wrap gap-1 pt-1">
-                        {getStatusBadge(item.status)}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="flex-grow space-y-2">
-                      <p className="text-xs text-muted-foreground">Progres</p>
-                      <div className="flex items-center gap-2">
-                          <Progress value={item.progress} className="h-2" />
-                          <span className="text-xs font-semibold">{item.progress}%</span>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="flex-col sm:flex-row gap-2">
-                      {isCompleted ? (
-                          <>
-                              <Button asChild className="w-full" variant="secondary">
-                                  <Link href={`/lms/user/course/${item.courseId}`}>
-                                      <Award className="mr-2 h-4 w-4" /> Lihat Hasil
-                                  </Link>
-                              </Button>
-                              <Button asChild className="w-full" variant="outline">
-                                  <Link href={`/lms/user/course/${item.courseId}?review=true`}>
-                                      <RefreshCw className="mr-2 h-4 w-4" /> Akses Kembali
-                                  </Link>
-                              </Button>
-                          </>
-                      ) : (
-                           <Button asChild className="w-full">
-                              <Link href={`/lms/user/course/${item.courseId}`}>
-                                  {item.status === 'not-started' ? <CirclePlay className="mr-2 h-4 w-4" /> : <BookUp className="mr-2 h-4 w-4" />}
-                                  {item.status === 'not-started' ? 'Mulai Belajar' : 'Lanjutkan Belajar'}
-                              </Link>
-                          </Button>
-                      )}
-                    </CardFooter>
-                  </Card>
-              )
-            })}
-          </div>
-         ) : (
-          <Card>
-            <CardContent className="p-10 text-center text-muted-foreground">
-                Anda tidak ditugaskan kursus individual apa pun saat ini.
-            </CardContent>
-          </Card>
-         )}
-      </section>
-    </div>
-  );
+            {/* Individual Courses Section */}
+            <div className="space-y-4">
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1 flex items-center gap-2">
+                    <GraduationCap className="size-4 text-primary" /> Katalog Kursus Mandiri
+                </h2>
+                {myCourses.length > 0 ? (
+                    <AdaptiveCardGrid complexity="medium">
+                        {myCourses.map(item => {
+                            const isDone = item.status === 'completed';
+                            return (
+                                <Card key={item.courseId} className="flex flex-col border-border/40 shadow-sm hover:shadow-md transition-all overflow-hidden bg-background group">
+                                    <div className="relative aspect-video w-full bg-slate-100 border-b">
+                                        {item.courseDetails?.thumbnailUrl ? (
+                                            <Image src={item.courseDetails.thumbnailUrl} alt={item.courseDetails.title} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                                        ) : (
+                                            <div className="absolute inset-0 flex items-center justify-center text-slate-300"><BookUp size={40} /></div>
+                                        )}
+                                        <div className="absolute top-3 right-3">{getStatusBadge(item.status)}</div>
+                                    </div>
+                                    <CardHeader className="p-4 pb-2">
+                                        <CardTitle className="text-xs font-black uppercase tracking-tight text-slate-900 line-clamp-2 min-h-[32px]">{item.courseDetails?.title}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="px-4 py-2 flex-grow space-y-3">
+                                        <div className="space-y-1.5">
+                                            <div className="flex justify-between items-center text-[9px] font-black uppercase text-muted-foreground">
+                                                <span>Progres Belajar</span>
+                                                <span className="text-primary">{item.progress}%</span>
+                                            </div>
+                                            <Progress value={item.progress} className="h-1" />
+                                        </div>
+                                    </CardContent>
+                                    <CardFooter className="p-4 gap-2">
+                                        {isDone ? (
+                                            <>
+                                                <Button asChild className="flex-1 font-black uppercase text-[9px] h-9 shadow-sm" variant="secondary">
+                                                    <Link href={`/lms/user/course/${item.courseId}`}><Award size={14} className="mr-1.5" /> HASIL</Link>
+                                                </Button>
+                                                <Button asChild className="flex-1 font-black uppercase text-[9px] h-9" variant="outline">
+                                                    <Link href={`/lms/user/course/${item.courseId}?review=true`}><RefreshCw size={12} className="mr-1.5" /> RE-AKSESS</Link>
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <Button asChild className="w-full font-black uppercase text-[9px] h-10 shadow-md rounded-xl">
+                                                <Link href={`/lms/user/course/${item.courseId}`}>
+                                                    {item.status === 'not-started' ? <><CirclePlay size={16} className="mr-2" /> MULAI MATERI</> : <><BookUp size={16} className="mr-2" /> LANJUTKAN</>}
+                                                </Link>
+                                            </Button>
+                                        )}
+                                    </CardFooter>
+                                </Card>
+                            )
+                        })}
+                    </AdaptiveCardGrid>
+                ) : (
+                    <Card className="border-dashed"><CardContent className="p-10 text-center text-xs text-muted-foreground font-medium italic">Belum ada kursus mandiri yang ditugaskan kepada Anda.</CardContent></Card>
+                )}
+            </div>
+        </ResponsivePage>
+    );
 }

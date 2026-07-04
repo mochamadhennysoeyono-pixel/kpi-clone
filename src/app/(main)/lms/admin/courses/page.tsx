@@ -4,10 +4,9 @@
 import { useState, useMemo } from "react";
 import { useMasterData } from "@/contexts/master-data-context";
 import { useAuth } from "@/contexts/auth-context";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookOpenCheck, PlusCircle, MoreHorizontal, Users, Briefcase, GitFork, Eye, Copy, Globe, EyeOff, CheckCircle, Edit, Trash2, ChevronDown } from "lucide-react";
+import { BookOpenCheck, PlusCircle, MoreHorizontal, Users, Briefcase, GitFork, Eye, Copy, Globe, EyeOff, CheckCircle, Edit, Trash2, ChevronDown, Building, Search, ArrowRight } from "lucide-react";
 import { CourseFormSheet } from "@/components/lms/course-form-sheet";
 import type { Course, Company } from "@/types";
 import { Badge } from "@/components/ui/badge";
@@ -17,27 +16,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CourseSimulationSheet } from "@/components/lms/course-simulation-sheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-
+import { ResponsivePage, ResponsiveToolbar } from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { AdaptiveTable } from "@/components/ui/adaptive-table";
+import { Input } from "@/components/ui/input";
+import Image from "next/image";
 
 function TargetAudienceInfo({ target }: { target: Course['targetAudience'] }) {
     if (!target || Object.values(target).every(v => !v || v.length === 0)) {
-        return <p className="text-xs text-green-600 dark:text-green-400">Untuk Semua Karyawan</p>;
+        return <p className="text-[9px] font-black uppercase text-emerald-600">Terbuka Untuk Semua</p>;
     }
-
     return (
-        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-            {target.levels && target.levels.length > 0 && <Badge variant="outline" className="text-xs"><Users className="h-3 w-3 mr-1"/>{target.levels.join(', ')}</Badge>}
-            {target.departments && target.departments.length > 0 && <Badge variant="outline" className="text-xs"><Briefcase className="h-3 w-3 mr-1"/>{target.departments.length} Departemen</Badge>}
-            {target.positions && target.positions.length > 0 && <Badge variant="outline" className="text-xs"><GitFork className="h-3 w-3 mr-1"/>{target.positions.length} Jabatan</Badge>}
-            {target.employees && target.employees.length > 0 && <Badge variant="outline" className="text-xs"><Users className="h-3 w-3 mr-1"/>{target.employees.length} Karyawan</Badge>}
+        <div className="flex flex-wrap items-center gap-1 mt-1">
+            {target.levels && target.levels.length > 0 && <Badge variant="outline" className="text-[7px] font-bold h-3.5 px-1 border-none bg-muted/50">{target.levels.join(', ')}</Badge>}
+            {target.departments && target.departments.length > 0 && <Badge variant="outline" className="text-[7px] font-bold h-3.5 px-1 border-none bg-muted/50">{target.departments.length} DEPT</Badge>}
+            {target.employees && target.employees.length > 0 && <Badge variant="outline" className="text-[7px] font-bold h-3.5 px-1 border-none bg-muted/50">{target.employees.length} USER</Badge>}
         </div>
     );
 }
 
 export default function LmsAdminCoursesPage() {
-  const { courses, addCourse, updateCourse, deleteCourse, companies, duplicateCourseToGlobal } = useMasterData();
-  const { currentUser, userRole } = useAuth();
+  const { courses, addCourse, updateCourse, deleteCourse, companies, duplicateCourseToGlobal, currentUser, userRole } = useMasterData();
   const { toast } = useToast();
+  
   const [isFormSheetOpen, setFormSheetOpen] = useState(false);
   const [isSimulationSheetOpen, setSimulationSheetOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | undefined>(undefined);
@@ -46,14 +47,14 @@ export default function LmsAdminCoursesPage() {
   const [coursesToDelete, setCoursesToDelete] = useState<Course[] | null>(null);
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const userCompany = useMemo(() => {
-    return companies.find(c => c.name === currentUser?.company)
-  }, [currentUser, companies])
+  const userCompany = useMemo(() => companies.find(c => c.name === currentUser?.company), [currentUser, companies]);
+  const isHoldingAdmin = useMemo(() => userRole === 'manajemen' && !!userCompany?.isHolding, [userRole, userCompany]);
 
   const manageableCompanies = useMemo(() => {
     if (userRole === 'superadmin') return companies.filter(c => c.status === 'Aktif');
-    if (userRole === 'manajemen' && userCompany?.isHolding) {
+    if (isHoldingAdmin && userCompany) {
       const getChildCompanies = (parentId: string): Company[] => {
         const children = companies.filter(c => c.parentId === parentId);
         return [...children, ...children.flatMap(c => getChildCompanies(c.id))];
@@ -62,271 +63,134 @@ export default function LmsAdminCoursesPage() {
     }
     if (userCompany) return [userCompany];
     return [];
-  }, [userRole, userCompany, companies]);
+  }, [userRole, isHoldingAdmin, userCompany, companies]);
 
-  const showCompanyFilter = userRole === 'superadmin' || (userRole === 'manajemen' && !!userCompany?.isHolding);
+  const showCompanyFilter = userRole === 'superadmin' || isHoldingAdmin;
 
   const companyCourses = useMemo(() => {
     if (!courses) return [];
+    let filtered = courses;
+    const manageableNames = new Set(manageableCompanies.map(c => c.name));
     
-    const manageableCompanyNames = manageableCompanies.map(c => c.name);
-
-    let filteredCourses = courses.filter(course => {
-        if (userRole === 'superadmin') {
-            return true;
-        }
-        return manageableCompanyNames.includes(course.company);
-    });
+    if (userRole !== 'superadmin') {
+        filtered = filtered.filter(c => c.company === 'Global' || manageableNames.has(c.company));
+    }
 
     if (selectedCompanyFilter !== 'all') {
-        filteredCourses = filteredCourses.filter(c => c.company === selectedCompanyFilter);
+        const companyName = companies.find(c => c.id === selectedCompanyFilter)?.name;
+        filtered = filtered.filter(c => c.company === companyName);
     }
     
-    return filteredCourses;
-  }, [courses, userRole, manageableCompanies, selectedCompanyFilter]);
-  
-  const handleSelectAll = (checked: boolean | "indeterminate") => {
-    setSelectedRowIds(checked ? companyCourses.map(c => c.id) : []);
-  };
-  
-  const handleRowSelect = (id: string) => {
-    setSelectedRowIds(prev =>
-      prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]
-    );
-  };
+    if (searchTerm) {
+        filtered = filtered.filter(c => c.title.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+    
+    return filtered.sort((a,b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));
+  }, [courses, userRole, manageableCompanies, selectedCompanyFilter, searchTerm, companies]);
 
-  const handleAddCourse = () => {
-    setSelectedCourse(undefined);
-    setIsCloning(false);
-    setFormSheetOpen(true);
-  };
-
-  const handleEditCourse = (course: Course) => {
-    setSelectedCourse(course);
-    setIsCloning(false);
-    setFormSheetOpen(true);
-  };
-  
-  const handleDuplicateCourse = (course: Course) => {
-    setSelectedCourse(course);
-    setIsCloning(true);
-    setFormSheetOpen(true);
-  }
-
-  const handleDuplicateToGlobal = async (course: Course) => {
-    await duplicateCourseToGlobal(course);
-  };
-  
-  const handleViewSimulation = (course: Course) => {
-    setSelectedCourse(course);
-    setSimulationSheetOpen(true);
+  const handleSaveCourse = async (data: any) => {
+    if (data.id && !isCloning) await updateCourse(data.id, data);
+    else await addCourse({ ...data, company: data.company || currentUser?.company || '', createdBy: currentUser?.id || '', createdAt: new Date(), status: 'draft' });
   };
 
   const handleTogglePublish = async (course: Course) => {
-    const newStatus = course.status === 'published' ? 'draft' : 'published';
-    await updateCourse(course.id, { status: newStatus });
-  };
-
-  const handleSaveCourse = async (data: Omit<Course, 'id' | 'createdBy' | 'createdAt'> & { id?: string }) => {
-    if (data.id && !isCloning) {
-      await updateCourse(data.id, data);
-    } else {
-      const { id, ...courseData } = data;
-      const newCoursePayload: Omit<Course, 'id'> = {
-        ...courseData,
-        company: courseData.company || currentUser?.company || '',
-        createdBy: currentUser?.id || '',
-        createdAt: new Date(),
-        status: 'draft',
-      };
-      await addCourse(newCoursePayload);
-    }
-  };
-
-  const openDeleteDialog = (coursesToDelete: Course[]) => {
-    setCoursesToDelete(coursesToDelete);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDelete = async () => {
-    if (coursesToDelete && coursesToDelete.length > 0) {
-      const deletePromises = coursesToDelete.map(course => deleteCourse(course.id));
-      await Promise.all(deletePromises);
-      toast({
-        title: "Hapus Berhasil",
-        description: `${coursesToDelete.length} kursus telah berhasil dihapus.`,
-      });
-      setCoursesToDelete(null);
-      setSelectedRowIds([]);
-    }
+    const next = course.status === 'published' ? 'draft' : 'published';
+    await updateCourse(course.id, { status: next });
+    toast({ title: "Status Diperbarui" });
   };
 
   return (
-    <>
-      <div className="space-y-6">
-        <Card>
-          <CardHeader className="sm:flex-row sm:items-start sm:justify-between">
-            <div className="space-y-1.5">
-              <CardTitle className="flex items-center gap-2">
-                <BookOpenCheck />
-                Manajemen Kursus (LMS)
-              </CardTitle>
-              <CardDescription>
-                Buat, edit, dan kelola semua materi kursus dan modul pembelajaran.
-              </CardDescription>
-            </div>
-             <div className="flex items-center gap-2 self-end sm:self-center">
-              {showCompanyFilter && (
-                <Select value={selectedCompanyFilter} onValueChange={setSelectedCompanyFilter}>
-                    <SelectTrigger className="w-full sm:w-[200px]">
-                        <SelectValue placeholder="Filter Perusahaan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">Semua Perusahaan</SelectItem>
-                        {manageableCompanies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-              )}
-               {selectedRowIds.length > 0 && (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                            Aksi ({selectedRowIds.length})
-                            <ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => openDeleteDialog(courses.filter(c => selectedRowIds.includes(c.id)))} className="text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Hapus Pilihan
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-               )}
-               <Button onClick={handleAddCourse}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Tambah Kursus
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                   <TableHead className="w-[40px]">
-                    <Checkbox
-                      checked={selectedRowIds.length > 0 && selectedRowIds.length === companyCourses.length}
-                      onCheckedChange={handleSelectAll}
-                      aria-label="Pilih semua"
-                    />
-                  </TableHead>
-                  <TableHead>Nama Kursus</TableHead>
-                  <TableHead>Perusahaan</TableHead>
-                  <TableHead>Kategori</TableHead>
-                  <TableHead className="hidden sm:table-cell">Jumlah Modul</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {companyCourses.length > 0 ? (
-                  companyCourses.map(course => (
-                    <TableRow key={course.id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedRowIds.includes(course.id)}
-                            onCheckedChange={() => handleRowSelect(course.id)}
-                            aria-label={`Pilih ${course.title}`}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                           <div className="flex items-start gap-4">
-                              {course.thumbnailUrl && (
-                                <img src={course.thumbnailUrl} alt={course.title} className="rounded-md object-cover w-20 h-auto aspect-video" onError={(e) => (e.currentTarget.style.display = 'none')} />
-                              )}
-                              <div className="flex flex-col">
-                                <span>{course.title}</span>
-                                <TargetAudienceInfo target={course.targetAudience} />
-                              </div>
-                           </div>
-                        </TableCell>
-                        <TableCell>{course.company === 'Global' ? <Badge variant="secondary">Global</Badge> : course.company}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {course.categories && course.categories.length > 0
-                              ? course.categories.map(cat => <Badge key={cat} variant="secondary">{cat}</Badge>)
-                              : <span className="text-xs text-muted-foreground">-</span>}
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">{course.modules.length}</TableCell>
-                        <TableCell>
-                           <Badge variant={course.status === 'published' ? 'default' : 'outline'}>{course.status === 'published' ? 'Diterbitkan' : 'Draf'}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                           <DropdownMenu>
-                             <DropdownMenuTrigger asChild>
-                               <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
-                             </DropdownMenuTrigger>
-                             <DropdownMenuContent>
-                               <DropdownMenuItem onClick={() => handleViewSimulation(course)}><Eye className="mr-2 h-4 w-4" />Lihat Simulasi</DropdownMenuItem>
-                               <DropdownMenuItem onClick={() => handleEditCourse(course)}><Edit className="mr-2 h-4 w-4" />Ubah</DropdownMenuItem>
-                               <DropdownMenuItem onClick={() => handleDuplicateCourse(course)}><Copy className="mr-2 h-4 w-4" />Duplikat</DropdownMenuItem>
-                               {userRole === 'superadmin' && course.company !== 'Global' && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => handleDuplicateToGlobal(course)}>
-                                    <Globe className="mr-2 h-4 w-4" /> Duplikat ke Global
-                                  </DropdownMenuItem>
-                                </>
-                               )}
-                               <DropdownMenuSeparator />
-                               {course.status === 'published' ? (
-                                    <DropdownMenuItem onClick={() => handleTogglePublish(course)}>
-                                        <EyeOff className="mr-2 h-4 w-4" /> Batalkan Publikasi
-                                    </DropdownMenuItem>
-                                ) : (
-                                    <DropdownMenuItem onClick={() => handleTogglePublish(course)}>
-                                        <CheckCircle className="mr-2 h-4 w-4" /> Terbitkan
-                                    </DropdownMenuItem>
-                                )}
-                               <DropdownMenuSeparator />
-                               <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog([course])}>Hapus</DropdownMenuItem>
-                             </DropdownMenuContent>
-                           </DropdownMenu>
-                        </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
-                      Belum ada kursus yang dibuat untuk filter ini.
-                    </TableCell>
-                  </TableRow>
+    <ResponsivePage>
+      <PageHeader 
+        title="Manajemen Kursus" 
+        description="Kelola kurikulum, materi interaktif, dan kriteria kelulusan pelatihan mandiri."
+        icon={BookOpenCheck}
+        actions={
+            <div className="flex items-center gap-2">
+                {selectedRowIds.length > 0 && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="h-9 gap-1 font-bold">Aksi Massal ({selectedRowIds.length}) <ChevronDown size={14}/></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end"><DropdownMenuItem onClick={() => { setCoursesToDelete(courses.filter(c => selectedRowIds.includes(c.id))); setDeleteDialogOpen(true); }} className="text-destructive font-bold"><Trash2 size={14} className="mr-2"/> Hapus Terpilih</DropdownMenuItem></DropdownMenuContent>
+                    </DropdownMenu>
                 )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
-      <CourseFormSheet
-        isOpen={isFormSheetOpen}
-        onOpenChange={setFormSheetOpen}
-        course={selectedCourse}
-        isCloning={isCloning}
-        onSave={handleSaveCourse}
+                <Button onClick={() => { setSelectedCourse(undefined); setIsCloning(false); setFormSheetOpen(true); }} className="font-bold shadow-lg h-9 sm:h-10"><PlusCircle size={16} className="mr-2" /> Tambah Kursus</Button>
+            </div>
+        }
       />
-      <CourseSimulationSheet
-        isOpen={isSimulationSheetOpen}
-        onOpenChange={setSimulationSheetOpen}
-        course={selectedCourse}
+
+      <ResponsiveToolbar>
+        <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input placeholder="Cari judul kursus..." className="pl-9 h-10 border-none bg-background/50 shadow-none focus-visible:ring-primary/20" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        </div>
+        {showCompanyFilter && (
+            <Select value={selectedCompanyFilter} onValueChange={setSelectedCompanyFilter}>
+                <SelectTrigger className="w-full sm:w-[200px] h-10 bg-background border-none shadow-sm text-[10px] font-black uppercase"><Building size={14} className="mr-2 text-primary" /><SelectValue placeholder="Perusahaan" /></SelectTrigger>
+                <SelectContent className="z-[350]"><SelectItem value="all">Semua Klien</SelectItem>{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+            </Select>
+        )}
+      </ResponsiveToolbar>
+
+      <AdaptiveTable 
+        data={companyCourses}
+        keyExtractor={(c) => c.id}
+        columns={[
+            { header: "Materi Kursus", cell: (c) => (
+                <div className="flex items-center gap-4">
+                    <div className="size-14 rounded-lg overflow-hidden bg-slate-200 shrink-0 relative border shadow-sm">
+                        {c.thumbnailUrl ? <Image src={c.thumbnailUrl} alt={c.title} fill className="object-cover" /> : <BookOpenCheck size={20} className="absolute center text-slate-400" />}
+                    </div>
+                    <div className="min-w-0">
+                        <p className="font-bold text-slate-900 truncate leading-tight">{c.title}</p>
+                        <TargetAudienceInfo target={c.targetAudience} />
+                    </div>
+                </div>
+            )},
+            { header: "Perusahaan", cell: (c) => <span className="text-xs font-medium text-slate-600">{c.company === 'Global' ? <Badge variant="secondary" className="text-[8px] font-black border-none uppercase h-4">GLOBAL</Badge> : c.company}</span> },
+            { header: "Modul", className: "text-center font-mono font-bold", cell: (c) => c.modules.length },
+            { header: "Status", cell: (c) => <Badge variant={c.status === 'published' ? 'default' : 'outline'} className="text-[9px] font-black uppercase h-5">{c.status === 'published' ? 'Aktif' : 'Draf'}</Badge> },
+            { header: "", className: "text-right", cell: (c) => (
+                <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal size={18}/></Button></DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="z-[350]">
+                    <DropdownMenuItem onClick={() => { setSelectedCourse(c); setSimulationSheetOpen(true); }}><Eye size={14} className="mr-2"/> Lihat Simulasi</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setSelectedCourse(c); setIsCloning(false); setFormSheetOpen(true); }}><Edit size={14} className="mr-2"/> Ubah Konten</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setSelectedCourse(c); setIsCloning(true); setFormSheetOpen(true); }}><Copy size={14} className="mr-2"/> Duplikat (Clone)</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleTogglePublish(c)}>{c.status === 'published' ? <><EyeOff size={14} className="mr-2"/> Tarik Publikasi</> : <><CheckCircle size={14} className="mr-2"/> Terbitkan Kursus</>}</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => { setCoursesToDelete([c]); setDeleteDialogOpen(true); }} className="text-destructive font-bold"><Trash2 size={14} className="mr-2"/> Hapus</DropdownMenuItem>
+                </DropdownMenuContent></DropdownMenu>
+            )}
+        ]}
+        renderMobileCard={(c) => (
+            <Card className="border-border/40 shadow-sm overflow-hidden bg-background">
+                <CardContent className="p-4 space-y-4">
+                    <div className="flex justify-between items-start gap-3">
+                        <div className="size-14 rounded-xl overflow-hidden bg-slate-200 shrink-0 relative">
+                            {c.thumbnailUrl && <Image src={c.thumbnailUrl} alt={c.title} fill className="object-cover" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <h4 className="font-black text-xs uppercase truncate text-slate-800">{c.title}</h4>
+                            <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-[7px] font-bold h-4 px-1.5 border-none bg-muted/50">{c.modules.length} MODUL</Badge>
+                                <Badge variant={c.status === 'published' ? 'default' : 'outline'} className="text-[7px] font-black uppercase h-4 px-1.5 border-none">{c.status}</Badge>
+                            </div>
+                        </div>
+                        <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal size={14}/></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end"><DropdownMenuItem onClick={() => { setSelectedCourse(c); setSimulationSheetOpen(true); }}>Simulasi</DropdownMenuItem><DropdownMenuItem onClick={() => { setSelectedCourse(c); setFormSheetOpen(true); }}>Ubah</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+                    </div>
+                    <div className="pt-3 border-t border-dashed flex justify-between items-center">
+                        <span className="text-[8px] font-black uppercase text-muted-foreground">Klien: {c.company}</span>
+                        <Button variant="ghost" size="sm" className="h-7 text-[9px] font-black uppercase gap-1.5" onClick={() => { setSelectedCourse(c); setFormSheetOpen(true); }}>DETAIL <ArrowRight size={10} /></Button>
+                    </div>
+                </CardContent>
+            </Card>
+        )}
       />
-      <DeleteConfirmationDialog
-        isOpen={isDeleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        onConfirm={handleDelete}
-        itemName={coursesToDelete?.length === 1 ? coursesToDelete[0].title : `${coursesToDelete?.length} kursus`}
-        itemType="kursus"
-      />
-    </>
+
+      <CourseFormSheet isOpen={isFormSheetOpen} onOpenChange={setFormSheetOpen} course={selectedCourse} isCloning={isCloning} onSave={handleSaveCourse} />
+      <CourseSimulationSheet isOpen={isSimulationSheetOpen} onOpenChange={setSimulationSheetOpen} course={selectedCourse} />
+      <DeleteConfirmationDialog isOpen={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen} onConfirm={async () => { if(coursesToDelete) await Promise.all(coursesToDelete.map(c => deleteCourse(c.id))); setCoursesToDelete(null); }} itemName={coursesToDelete?.length === 1 ? coursesToDelete[0].title : `${coursesToDelete?.length} kursus`} itemType="kursus" />
+    </ResponsivePage>
   );
 }
