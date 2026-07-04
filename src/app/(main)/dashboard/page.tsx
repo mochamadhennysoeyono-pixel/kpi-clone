@@ -12,7 +12,8 @@ import {
     TrendingUp,
     Building,
     Calendar,
-    Activity
+    Activity,
+    LayoutDashboard
 } from "lucide-react";
 import { format, addDays, isAfter, isBefore, formatDistanceToNowStrict } from "date-fns";
 import { id as localeId } from "date-fns/locale";
