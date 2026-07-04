@@ -3,22 +3,29 @@
 
 import * as React from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+  PlusCircle,
+  MoreHorizontal,
+  Target,
+  Trash2,
+  Search,
+  Filter,
+  Building,
+  Pencil,
+} from "lucide-react";
+import { useMasterData } from "@/contexts/master-data-context";
+import { useAuth } from "@/contexts/auth-context";
+import type { CompanyObjective, Company } from "@/types";
+import { useToast } from "@/hooks/use-toast";
+import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
+import { ObjectiveFormSheet } from "@/components/master-data/company-objectives/objective-form-sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ResponsivePage, ResponsiveToolbar } from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { AdaptiveTable } from "@/components/ui/adaptive-table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,15 +34,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { PlusCircle, MoreHorizontal, Target, Trash2 } from "lucide-react";
-import { useMasterData } from "@/contexts/master-data-context";
-import { useAuth } from "@/contexts/auth-context";
-import type { CompanyObjective, Company } from "@/types";
-import { useToast } from "@/hooks/use-toast";
-import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
-import { ObjectiveFormSheet } from "@/components/master-data/company-objectives/objective-form-sheet";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
 
 export default function CompanyObjectivesPage() {
   const { companyObjectives, addCompanyObjective, updateCompanyObjective, deleteCompanyObjectives, companies } = useMasterData();
@@ -46,6 +44,7 @@ export default function CompanyObjectivesPage() {
   const [selectedObjective, setSelectedObjective] = React.useState<CompanyObjective | undefined>(undefined);
   const [objectiveToDelete, setObjectiveToDelete] = React.useState<CompanyObjective | null>(null);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedCompanyFilter, setSelectedCompanyFilter] = React.useState<string>("all");
 
   const manageableCompanies = React.useMemo(() => {
@@ -73,15 +72,21 @@ export default function CompanyObjectivesPage() {
 
   const filteredObjectives = React.useMemo(() => {
     if (!companyObjectives) return [];
-    let objectives = companyObjectives;
+    let result = companyObjectives;
+    
     if (selectedCompanyFilter !== 'all') {
-        objectives = objectives.filter(obj => obj.company === selectedCompanyFilter);
+        result = result.filter(obj => obj.company === selectedCompanyFilter);
     } else if (userRole !== 'superadmin') {
         const manageableCompanyNames = manageableCompanies.map(c => c.name);
-        objectives = objectives.filter(obj => manageableCompanyNames.includes(obj.company));
+        result = result.filter(obj => manageableCompanyNames.includes(obj.company));
     }
-    return objectives;
-  }, [companyObjectives, selectedCompanyFilter, userRole, manageableCompanies]);
+
+    if (searchTerm) {
+        result = result.filter(obj => obj.objectiveName.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+
+    return result;
+  }, [companyObjectives, selectedCompanyFilter, userRole, manageableCompanies, searchTerm]);
 
   const handleAddItem = () => {
     setSelectedObjective(undefined);
@@ -108,7 +113,6 @@ export default function CompanyObjectivesPage() {
   const handleSave = async (data: { company: string; period: string; objectives: (Omit<CompanyObjective, 'id' | 'company' | 'period'> & {id?: string})[] }) => {
     const { company, period, objectives } = data;
     let successCount = 0;
-    let errorCount = 0;
 
     for (const obj of objectives) {
       const objectiveData = {
@@ -119,17 +123,14 @@ export default function CompanyObjectivesPage() {
         period,
       };
 
-      const isEditing = !!obj.id;
-
       try {
-        if (isEditing) {
-          await updateCompanyObjective(obj.id!, objectiveData);
+        if (obj.id) {
+          await updateCompanyObjective(obj.id, objectiveData);
         } else {
           await addCompanyObjective(objectiveData);
         }
         successCount++;
       } catch (e: any) {
-        errorCount++;
         toast({ variant: "destructive", title: `Gagal Menyimpan "${obj.objectiveName}"`, description: e.message });
       }
     }
@@ -142,87 +143,116 @@ export default function CompanyObjectivesPage() {
   const showCompanyFilter = userRole === 'superadmin' || (userRole === 'manajemen' && !!companies.find(c => c.name === currentUser?.company)?.isHolding);
 
   return (
-    <>
-      <Card>
-        <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <CardTitle className="font-headline flex items-center gap-2">
-                        <Target className="h-6 w-6"/>
-                        Objective Perusahaan
-                    </CardTitle>
-                    <CardDescription>
-                        Definisikan tujuan strategis utama sebagai landasan AI dalam merancang KPI.
-                    </CardDescription>
-                </div>
-                <div className="flex items-center gap-2 self-end sm:self-center">
-                    {showCompanyFilter && (
-                         <Select value={selectedCompanyFilter} onValueChange={setSelectedCompanyFilter}>
-                            <SelectTrigger className="w-[220px]">
-                                <SelectValue placeholder="Filter Perusahaan"/>
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua Perusahaan</SelectItem>
-                                {manageableCompanies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
-                            </SelectContent>
-                         </Select>
-                    )}
-                    <Button onClick={handleAddItem}><PlusCircle className="mr-2 h-4 w-4"/> Tambah Objective</Button>
-                </div>
-            </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nama Objective</TableHead>
-                <TableHead>Perspektif BSC</TableHead>
-                <TableHead>Fokus Strategis</TableHead>
-                {userRole === 'superadmin' && <TableHead>Perusahaan</TableHead>}
-                <TableHead><span className="sr-only">Aksi</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredObjectives.length > 0 ? (
-                filteredObjectives.map((obj) => (
-                  <TableRow key={obj.id}>
-                    <TableCell className="font-medium max-w-sm">{obj.objectiveName}</TableCell>
-                    <TableCell><Badge variant="outline">{obj.bscPerspective}</Badge></TableCell>
-                    <TableCell><Badge variant="secondary">{obj.strategicFocus}</Badge></TableCell>
-                    {userRole === 'superadmin' && <TableCell>{obj.company}</TableCell>}
-                    <TableCell className="text-right">
-                       <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Aksi</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleEditItem(obj)}>Ubah</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(obj)}>
-                                <Trash2 className="mr-2 h-4 w-4" /> Hapus
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                    <TableCell colSpan={userRole === 'superadmin' ? 5 : 4} className="h-24 text-center">
-                        Belum ada objective yang ditetapkan.
-                    </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+    <ResponsivePage>
+      <PageHeader 
+        title="Objective Perusahaan"
+        description="Definisikan tujuan strategis utama sebagai landasan AI dalam merancang KPI."
+        icon={Target}
+        actions={
+          <Button onClick={handleAddItem} className="font-bold shadow-lg h-9 sm:h-10">
+            <PlusCircle className="size-4" />
+            Tambah Objective
+          </Button>
+        }
+      />
 
-       <ObjectiveFormSheet 
+      <ResponsiveToolbar>
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input 
+            placeholder="Cari objective..." 
+            className="pl-9 h-10 border-none shadow-none bg-background/50 focus-visible:ring-primary/20"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        {showCompanyFilter && (
+            <Select value={selectedCompanyFilter} onValueChange={setSelectedCompanyFilter}>
+                <SelectTrigger className="w-full sm:w-[220px] h-10 bg-background border-none">
+                    <Building className="size-4 mr-2 text-primary" />
+                    <SelectValue placeholder="Pilih Perusahaan" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Semua Perusahaan</SelectItem>
+                    {manageableCompanies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                </SelectContent>
+            </Select>
+        )}
+      </ResponsiveToolbar>
+
+      <AdaptiveTable 
+        data={filteredObjectives}
+        keyExtractor={(o) => o.id}
+        columns={[
+          {
+            header: "Objective",
+            cell: (o) => (
+              <div className="flex items-start gap-3">
+                <div className="size-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center border shrink-0 mt-0.5">
+                  <Target className="size-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-900 leading-tight mb-1">{o.objectiveName}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Badge variant="outline" className="text-[9px] font-black uppercase h-5 border-none bg-muted/50">{o.period}</Badge>
+                    {userRole === 'superadmin' && <Badge variant="secondary" className="text-[9px] font-black uppercase h-5">{o.company}</Badge>}
+                  </div>
+                </div>
+              </div>
+            )
+          },
+          {
+            header: "Perspektif BSC",
+            cell: (o) => <Badge variant="outline" className="text-[10px] font-bold uppercase">{o.bscPerspective}</Badge>
+          },
+          {
+            header: "Fokus Strategis",
+            cell: (o) => <Badge variant="secondary" className="text-[10px] font-black uppercase">{o.strategicFocus}</Badge>
+          },
+          {
+            header: "",
+            className: "text-right",
+            cell: (o) => (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal className="size-4" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleEditItem(o)}><Pencil className="size-3.5 mr-2" />Ubah</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(o)}><Trash2 className="size-3.5 mr-2" />Hapus</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+          }
+        ]}
+        renderMobileCard={(o) => (
+          <Card className="border-border/40 shadow-sm overflow-hidden">
+            <CardContent className="p-4 space-y-4">
+                <div className="flex justify-between items-start gap-3">
+                    <div className="size-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center border shrink-0">
+                        <Target size={20} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="font-bold text-sm text-foreground leading-snug">{o.objectiveName}</h3>
+                        <p className="text-[9px] text-muted-foreground font-black uppercase mt-1">Periode: {o.period}</p>
+                    </div>
+                    <Badge variant="outline" className="text-[8px] h-4 font-black uppercase bg-muted/30 border-none shrink-0">{o.strategicFocus}</Badge>
+                </div>
+                <div className="pt-3 border-t">
+                    <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1">Perspektif BSC</p>
+                    <Badge variant="secondary" className="text-[9px] font-black h-5 w-full justify-center">{o.bscPerspective}</Badge>
+                </div>
+                <div className="flex gap-2 pt-1">
+                    <Button variant="outline" size="sm" className="flex-1 font-bold text-[10px] h-8" onClick={() => handleEditItem(o)}>UBAH</Button>
+                    <Button variant="ghost" size="sm" className="flex-1 font-bold text-[10px] h-8 text-destructive" onClick={() => openDeleteDialog(o)}>HAPUS</Button>
+                </div>
+            </CardContent>
+          </Card>
+        )}
+      />
+
+      <ObjectiveFormSheet 
         isOpen={isSheetOpen}
         onOpenChange={setSheetOpen}
         objective={selectedObjective}
@@ -236,6 +266,6 @@ export default function CompanyObjectivesPage() {
         itemName={objectiveToDelete?.objectiveName || ''}
         itemType="objective perusahaan"
       />
-    </>
+    </ResponsivePage>
   );
 }
