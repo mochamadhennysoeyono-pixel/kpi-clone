@@ -1,25 +1,28 @@
-// src/app/(main)/master-data/employees/page.tsx
+
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useState, useMemo, useRef } from "react";
+import { 
+    Users, PlusCircle, Search, Filter, Building, 
+    MoreHorizontal, Pencil, ShieldCheck, Zap, 
+    Trash2, Send, Loader2, Mail, Briefcase, Network
+} from "lucide-react";
+import { 
+    ResponsivePage, 
+    ResponsiveToolbar 
+} from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { AdaptiveTable } from "@/components/ui/adaptive-table";
+import { useMasterData } from "@/contexts/master-data-context";
+import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/hooks/use-toast";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
+import { EmployeeFormSheet } from "@/components/master-data/employees/employee-form-sheet";
+import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,934 +31,230 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  PlusCircle,
-  MoreHorizontal,
-  Upload,
-  Download,
-  ChevronDown,
-  Trash2,
-  Send,
-  FileSpreadsheet,
-  AlertCircle,
-  Users,
-  Loader2,
-  ShieldCheck,
-  Zap,
-  Pencil,
-  Filter,
-  Building
-} from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import type { Employee, LoginStatus, Company, SubscriptionPlan, ModuleId } from "@/types";
-import { EmployeeFormSheet } from "@/components/master-data/employees/employee-form-sheet";
-import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
-import { useToast } from "@/hooks/use-toast";
-import { useMasterData } from "@/contexts/master-data-context";
-import { useAuth } from "@/contexts/auth-context";
-import { cn } from "@/lib/utils";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { id as localeId } from "date-fns/locale";
-import { Input } from "@/components/ui/input";
-import { isValid } from "date-fns";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-
-// --- Assignment Slot Dialog ---
-function ModuleAccessDialog({ 
-    isOpen, 
-    onOpenChange, 
-    employee, 
-    company, 
-    allEmployees,
-    onSave 
-}: { 
-    isOpen: boolean, 
-    onOpenChange: (o: boolean) => void, 
-    employee: Employee | null, 
-    company: Company | null,
-    allEmployees: Employee[],
-    onSave: (id: string, access: Record<string, boolean>) => Promise<void>
-}) {
-    const [localAccess, setLocalAccess] = useState<Record<string, boolean>>({});
-    const [isSaving, setIsSaving] = useState(false);
-    
-    useEffect(() => {
-        if (employee) {
-            setLocalAccess(employee.moduleAccess || {});
-        }
-    }, [employee]);
-
-    const activeModules = useMemo(() => {
-        if (!company?.moduleSubscriptions) return [];
-        return Object.entries(company.moduleSubscriptions)
-            .filter(([_, sub]) => sub.status === 'active')
-            .map(([id, sub]) => ({ id, ...sub }));
-    }, [company]);
-
-    const getUsage = (moduleId: string) => {
-        return allEmployees.filter(e => e.company === company?.name && e.moduleAccess?.[moduleId]).length;
-    };
-
-    const handleToggle = (moduleId: string, enabled: boolean) => {
-        const usage = getUsage(moduleId);
-        const sub = company?.moduleSubscriptions?.[moduleId as ModuleId];
-        const limit = sub?.quota ?? 0;
-
-        if (enabled && limit !== -1 && usage >= limit) {
-            alert(`Kuota modul ini sudah penuh (${usage}/${limit}).`);
-            return;
-        }
-
-        setLocalAccess(prev => ({ ...prev, [moduleId]: enabled }));
-    };
-
-    const handleConfirm = async () => {
-        if (!employee) return;
-        setIsSaving(true);
-        await onSave(employee.id, localAccess);
-        setIsSaving(false);
-        onOpenChange(false);
-    };
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Zap className="size-5 text-primary" />
-                        Kelola Akses Modul (Slotting)
-                    </DialogTitle>
-                    <DialogDescription>
-                        Tentukan modul apa saja yang dapat diakses oleh <strong>{employee?.name}</strong>.
-                    </DialogDescription>
-                </DialogHeader>
-                
-                <div className="py-6 space-y-4">
-                    {activeModules.length > 0 ? activeModules.map(mod => {
-                        const usage = getUsage(mod.id);
-                        
-                        return (
-                            <div key={mod.id} className="flex items-center justify-between p-4 rounded-xl border bg-muted/20">
-                                <div className="space-y-1">
-                                    <p className="text-sm font-bold uppercase tracking-tight">{mod.id}</p>
-                                    <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase">
-                                        <Users size={10} />
-                                        Kuota: <span className={cn(usage >= mod.quota && mod.quota !== -1 ? "text-destructive" : "text-primary")}>
-                                            {usage} / {mod.quota === -1 ? '∞' : mod.quota}
-                                        </span>
-                                    </div>
-                                </div>
-                                <Switch 
-                                    checked={!!localAccess[mod.id]} 
-                                    onCheckedChange={(val) => handleToggle(mod.id, val)}
-                                />
-                            </div>
-                        );
-                    }) : (
-                        <div className="text-center py-10 opacity-40 italic text-sm">
-                            Perusahaan belum berlangganan modul apa pun.
-                        </div>
-                    )}
-                </div>
-
-                <DialogFooter>
-                    <Button variant="ghost" onClick={() => onOpenChange(false)}>Batal</Button>
-                    <Button onClick={handleConfirm} disabled={isSaving || activeModules.length === 0}>
-                        {isSaving && <Loader2 className="size-4 animate-spin mr-2" />}
-                        Simpan Hak Akses
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { Employee } from "@/types";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function EmployeesPage() {
-  const { currentUser, userRole, updateUserProfile, sendPasswordReset, addUserAsAdmin, setIsLoading } = useAuth();
-  const { 
-    employees,
-    deleteEmployees,
-    companies,
-    departments,
-    positions,
-    fetchData,
-    subscriptionPlans,
-    updateEmployee
-  } = useMasterData();
+  const { employees, companies, departments, positions, deleteEmployees, fetchData } = useMasterData();
+  const { currentUser, userRole, sendPasswordReset, setIsLoading } = useAuth();
+  const { toast } = useToast();
+  const { isMobile } = useBreakpoint();
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterCompany, setFilterCompany] = useState("all");
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | undefined>(undefined);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [employeesToDelete, setEmployeesToDelete] = useState<Employee[] | null>(null);
-  
-  const [isAccessDialogOpen, setIsAccessDialogOpen] = useState(false);
-  const [employeeForAccess, setEmployeeForAccess] = useState<Employee | null>(null);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
-
-  const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
-  const [isSendingInvitation, setIsSendingInvitation] = useState<string | null>(null);
-  const [filters, setFilters] = useState({
-    company: "all",
-    position: "all",
-    department: "all",
-  });
-  
-  const userCompany = useMemo(() => {
-    return companies.find(c => c.name === currentUser?.company);
-  }, [companies, currentUser]);
-  
-  const isHoldingAdmin = useMemo(() => userRole === 'manajemen' && !!userCompany?.isHolding, [userRole, userCompany]);
-  
-  useEffect(() => {
-    if (userRole === 'manajemen' && !isHoldingAdmin && currentUser) {
-      setFilters(prev => ({ ...prev, company: currentUser.company, department: 'all', position: 'all' }));
-    }
-     if (userRole === 'manajemen' && isHoldingAdmin) {
-      setFilters(prev => ({ ...prev, company: "all", department: 'all', position: 'all' }));
-    }
-  }, [userRole, currentUser, isHoldingAdmin]);
-
-  const quotaInfo = useMemo(() => {
-    if (!currentUser || !userRole || userRole === 'superadmin' || !userCompany) return null;
-    
-    let relevantCompany: Company | null = userCompany;
-    if (userCompany.parentId) {
-        relevantCompany = companies.find(c => c.id === userCompany.parentId) || null;
-    }
-
-    const DEFAULT_USER_LIMIT = 5;
-    const DEFAULT_MGMT_LIMIT = 2;
-
-    const plan = subscriptionPlans.find(p => p.id === relevantCompany?.subscriptionPlanId);
-    
-    const userLimit = relevantCompany?.customUserLimit ?? plan?.userLimit ?? DEFAULT_USER_LIMIT;
-    const mgmtLimit = relevantCompany?.customManagementUserLimit ?? plan?.managementUserLimit ?? DEFAULT_MGMT_LIMIT;
-
-    const groupCompanyNames = relevantCompany?.isHolding 
-        ? [relevantCompany.name, ...companies.filter(c => c.parentId === relevantCompany?.id).map(c => c.name)]
-        : [relevantCompany?.name || currentUser.company];
-        
-    const groupEmployees = employees.filter(e => groupCompanyNames.includes(e.company));
-
-    const userCount = groupEmployees.filter(e => e.role === 'user').length;
-    const managementCount = groupEmployees.filter(e => e.role === 'manajemen').length;
-
-    const userLimitReached = userLimit !== -1 && userCount >= userLimit;
-    const managementLimitReached = mgmtLimit !== -1 && managementCount >= mgmtLimit;
-
-    let message = "";
-    if (userLimitReached && managementLimitReached) {
-        message = "Kuota akun telah penuh (Staff & Manajemen). Hubungi pusat untuk upgrade.";
-    } else if (userLimitReached) {
-        message = `Kuota Staff (User) penuh (${userCount}/${userLimit === -1 ? '∞' : userLimit}). Anda hanya dapat menambah Admin.`;
-    } else if (managementLimitReached) {
-        message = `Kuota Manajemen penuh (${managementCount}/${mgmtLimit === -1 ? '∞' : mgmtLimit}). Anda hanya dapat menambah Staff.`;
-    }
-
-    return { 
-        userLimitReached, 
-        managementLimitReached, 
-        message,
-        currentUsage: { user: userCount, mgmt: managementCount },
-        limits: { user: userLimit, mgmt: mgmtLimit }
-    };
-
-  }, [currentUser, userRole, userCompany, companies, subscriptionPlans, employees]);
-
-
-  const handleFilterChange = (filterType: keyof typeof filters, value: string) => {
-     setFilters(prev => {
-      const newFilters = { ...prev, [filterType]: value };
-      if (filterType === 'company') {
-        newFilters.department = 'all';
-        newFilters.position = 'all';
-      }
-      if (filterType === 'department') {
-        newFilters.position = 'all';
-      }
-      return newFilters;
-    });
-  };
-
-  const manageableCompanies = useMemo(() => {
-    if (userRole === 'superadmin') return companies;
-    if (isHoldingAdmin && userCompany) {
-      const getChildCompanies = (parentId: string): Company[] => {
-        const children = companies.filter(c => c.parentId === parentId);
-        return [...children, ...children.flatMap(c => getChildCompanies(c.id))];
-      };
-      return [userCompany, ...getChildCompanies(userCompany.id)];
-    }
-    if (userCompany) return [userCompany];
-    return [];
-  }, [userRole, isHoldingAdmin, userCompany, companies]);
-  
+  // --- Scoping Logic ---
   const filteredEmployees = useMemo(() => {
-    let baseEmployees = employees.filter(e => e.role !== 'superadmin');
+    let result = employees.filter(e => e.role !== 'superadmin');
     
-    if (userRole === 'manajemen') {
-        if (isHoldingAdmin) {
-            const manageableCompanyNames = manageableCompanies.map(c => c.name?.toLowerCase() || '');
-            baseEmployees = baseEmployees.filter(e => manageableCompanyNames.includes(e.company?.toLowerCase() || ''));
-        } else if (currentUser) {
-            baseEmployees = baseEmployees.filter(e => e.company?.toLowerCase() === currentUser.company?.toLowerCase());
-        }
-    } else if (userRole === 'user') {
-        const isManager = employees.some(e => e.reportsTo === currentUser?.id);
-        if (isManager && currentUser) {
-            const getSubordinateIdsRecursive = (managerId: string): string[] => {
-                const directReports = employees.filter(e => e.reportsTo === managerId).map(e => e.id);
-                if (directReports.length === 0) return [];
-                return [...directReports, ...directReports.flatMap(id => getSubordinateIdsRecursive(id))];
-            };
-            const teamIds = [currentUser.id, ...getSubordinateIdsRecursive(currentUser.id)];
-            baseEmployees = baseEmployees.filter(e => teamIds.includes(e.id));
-        }
-    }
-
-    return baseEmployees.filter(employee => {
-      const companyMatch = filters.company === 'all' || employee.company?.toLowerCase() === filters.company.toLowerCase();
-      const departmentMatch = filters.department === 'all' || employee.department?.toLowerCase() === filters.department.toLowerCase();
-      const positionMatch = filters.position === 'all' || employee.position?.toLowerCase() === filters.position.toLowerCase();
-      return companyMatch && departmentMatch && positionMatch;
-    });
-  }, [employees, filters, userRole, currentUser, isHoldingAdmin, manageableCompanies]);
-
-
-  const uniqueDepartmentOptions = useMemo(() => {
-    let relevantDepartments = departments;
-    if(filters.company !== 'all') {
-        relevantDepartments = relevantDepartments.filter(d => d.company?.toLowerCase() === filters.company.toLowerCase());
-    } else if (userRole !== 'superadmin' && isHoldingAdmin) {
-        const managedCompanyNames = manageableCompanies.map(c => c.name?.toLowerCase() || '');
-        relevantDepartments = relevantDepartments.filter(d => managedCompanyNames.includes(d.company?.toLowerCase() || ''));
-    } else if (userRole !== 'superadmin' && !isHoldingAdmin && currentUser) {
-        relevantDepartments = relevantDepartments.filter(d => d.company?.toLowerCase() === currentUser.company?.toLowerCase());
-    }
-    return [...new Set(relevantDepartments.map(d => d.name))];
-  }, [departments, filters.company, isHoldingAdmin, manageableCompanies, userRole, currentUser]);
-  
-  const uniquePositionOptions = useMemo(() => {
-    let relevantPositions = positions;
-    
-    if(filters.company !== 'all') {
-        relevantPositions = relevantPositions.filter(p => p.company?.toLowerCase() === filters.company.toLowerCase());
-    } else if (userRole !== 'superadmin' && isHoldingAdmin) {
-        const managedCompanyNames = manageableCompanies.map(c => c.name?.toLowerCase() || '');
-        relevantPositions = relevantPositions.filter(p => managedCompanyNames.includes(p.company?.toLowerCase() || ''));
-    } else if (userRole !== 'superadmin' && !isHoldingAdmin && currentUser) {
-        relevantPositions = relevantPositions.filter(p => p.company?.toLowerCase() === currentUser.company?.toLowerCase());
+    if (filterCompany !== "all") {
+        result = result.filter(e => e.company === filterCompany);
     }
     
-    if (filters.department !== 'all') {
-      relevantPositions = relevantPositions.filter(p => p.department?.toLowerCase() === filters.department.toLowerCase());
+    if (searchTerm) {
+        result = result.filter(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }
-    return [...new Set(relevantPositions.map(p => p.name))];
-  }, [positions, filters.company, filters.department, isHoldingAdmin, manageableCompanies, userRole, currentUser]);
-  
-  const handleSelectAll = (checked: boolean | "indeterminate") => {
-    if (checked) {
-      const allSelectableIds = filteredEmployees
-        .filter(emp => emp.id !== currentUser?.id)
-        .map(emp => emp.id);
-      setSelectedRowIds(allSelectableIds);
-    } else {
-      setSelectedRowIds([]);
-    }
-  };
+    
+    return result.sort((a, b) => a.name.localeCompare(b.name));
+  }, [employees, filterCompany, searchTerm]);
 
-  const handleRowSelect = (rowId: string) => {
-    if (rowId === currentUser?.id) return;
-
-    setSelectedRowIds(prev =>
-      prev.includes(rowId) ? prev.filter(id => id !== rowId) : [...prev, rowId]
-    );
-  };
-  
-  const openBulkDeleteDialog = () => {
-    const itemsToDelete = employees.filter(e => selectedRowIds.includes(e.id));
-    setEmployeesToDelete(itemsToDelete);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleBulkStatusChange = async (status: 'Aktif' | 'Tidak Aktif') => {
-      setIsLoading(true);
-      try {
-          await Promise.all(selectedRowIds.map(id => updateUserProfile(id, { status })));
-          toast({
-              title: "Aksi Massal Berhasil",
-              description: `Status ${selectedRowIds.length} karyawan telah berhasil diubah.`,
-          });
-          await fetchData();
-          setSelectedRowIds([]);
-      } finally {
-          setIsLoading(false);
-      }
-  };
-
-  const handleBulkSendInvitation = async () => {
-    if (selectedRowIds.length === 0) {
-      toast({ variant: 'destructive', title: 'Tidak ada karyawan dipilih.' });
-      return;
-    }
-  
-    setIsLoading(true);
-    const employeesToSend = employees.filter(e => selectedRowIds.includes(e.id));
-    let successCount = 0;
-    let errorCount = 0;
-  
-    try {
-        for (const employee of employeesToSend) {
-            const result = await sendPasswordReset(employee.email, employee.name, true); 
-            if (result.success) successCount++; else errorCount++;
-            await sleep(2000); 
-        }
-        
-        toast({
-            title: "Proses Selesai",
-            description: `${successCount} email pembaruan sandi / aktivasi terkirim. ${errorCount} gagal.`,
-        });
-    } finally {
-        setIsLoading(false);
-        setSelectedRowIds([]);
-        await fetchData();
-    }
-  };
-
-  const handleAddEmployee = () => {
-    if (quotaInfo?.userLimitReached && quotaInfo?.managementLimitReached) {
-        toast({ variant: "destructive", title: "Kuota Penuh", description: quotaInfo.message });
-        return;
-    }
-    setSelectedEmployee(undefined);
-    setSheetOpen(true);
-  };
-
-  const handleEditEmployee = (employee: Employee) => {
+  const handleEdit = (employee: Employee) => {
     setSelectedEmployee(employee);
     setSheetOpen(true);
   };
 
-  const handleSaveEmployee = async (id: string, employeeData: Omit<Employee, 'id' | 'loginStatus' | 'password'>) => {
-    setIsLoading(true);
-    try {
-        await updateUserProfile(id, employeeData);
-        await fetchData();
-        toast({ title: "Data Karyawan Diperbarui" });
-    } finally {
-        setIsLoading(false);
-    }
-  };
-  
-  const handleAdd = async (employeeData: Omit<Employee, 'id' | 'loginStatus'>) => {
-    if (employeeData.role === 'user' && quotaInfo?.userLimitReached) {
-        toast({ variant: "destructive", title: "Kuota Penuh", description: "Batas maksimal akun Staff telah tercapai." });
-        return;
-    }
-    if (employeeData.role === 'manajemen' && quotaInfo?.managementLimitReached) {
-        toast({ variant: "destructive", title: "Kuota Penuh", description: "Batas maksimal akun Manajemen telah tercapai." });
-        return;
-    }
-
-    setIsLoading(true);
-    try {
-        const result = await addUserAsAdmin(employeeData, false, true); 
-        if(result.success){
-            await fetchData();
-            toast({ title: "Karyawan Ditambahkan", description: `Akun untuk ${employeeData.name} telah dibuat dengan status No Login.` });
-        } else {
-            toast({ variant: "destructive", title: "Gagal Menambah Karyawan", description: result.error });
-        }
-    } finally {
-        setIsLoading(false);
-    }
+  const handleSendReset = async (email: string, name: string) => {
+    const result = await sendPasswordReset(email, name);
+    if (result.success) toast({ title: "Email Terkirim" });
   };
 
   const openDeleteDialog = (employee: Employee) => {
-    if (employee.id === currentUser?.id) {
-        toast({
-            variant: "destructive",
-            title: "Tindakan Ditolak",
-            description: "Anda tidak dapat menghapus akun Anda sendiri.",
-        });
-        return;
-    }
     setEmployeesToDelete([employee]);
     setDeleteDialogOpen(true);
   };
-  
-  const handleDelete = async () => {
-    if (employeesToDelete && employeesToDelete.length > 0) {
-      setIsLoading(true);
-      try {
-          const idsToDelete = employeesToDelete.map(e => e.id);
-          await deleteEmployees(idsToDelete);
-          setEmployeesToDelete(null);
-          setSelectedRowIds([]);
-          await fetchData();
-      } finally {
-          setIsLoading(false);
-      }
-    }
-  };
 
-  const handleSendInvitation = async (email: string, name: string) => {
-    setIsSendingInvitation(email);
+  const handleConfirmDelete = async () => {
+    if (!employeesToDelete) return;
     setIsLoading(true);
-    try {
-        const result = await sendPasswordReset(email, name);
-        if (result.success) {
-          toast({ title: 'Undangan Terkirim', description: `Email pembaruan sandi / aktivasi telah dikirim ke ${email}.` });
-          await fetchData();
-        } else {
-          toast({ variant: 'destructive', title: 'Gagal Mengirim Undangan', description: result.error });
-        }
-    } finally {
-        setIsSendingInvitation(null);
-        setIsLoading(false);
-    }
+    await deleteEmployees(employeesToDelete.map(e => e.id));
+    setDeleteDialogOpen(false);
+    setIsLoading(false);
+    fetchData(true);
   };
 
-  const handleSaveModuleAccess = async (id: string, moduleAccess: Record<string, boolean>) => {
-      try {
-          await updateEmployee(id, { moduleAccess });
-          toast({ title: "Akses Modul Diperbarui" });
-          await fetchData(true);
-      } catch (e: any) {
-          toast({ variant: 'destructive', title: "Gagal Update", description: e.message });
-      }
-  };
-
-  const handleImportClick = () => {
-    if (quotaInfo?.userLimitReached && quotaInfo?.managementLimitReached) {
-        toast({ variant: "destructive", title: "Kuota Penuh", description: quotaInfo.message });
-        return;
-    }
-    fileInputRef.current?.click();
-  };
-
-  const handleDownloadExample = async () => {
-    const XLSX = await import('xlsx');
-    const headers = [
-      'Nama Lengkap', 'Email', 'No. Telepon', 'Perusahaan', 'Departemen', 'Jabatan',
-      'Level Jabatan', 'ID Atasan', 'Tanggal Bergabung (YYYY-MM-DD)', 'Role'
-    ];
-    const exampleData = [
-        headers,
-        ['Budi Santoso', 'budi.s@contoh.com', '081234567890', 'PT. Contoh Jaya', 'Teknologi', 'Software Engineer', 'Staff', '', '2023-01-15', 'user'],
-        ['Ani Yudhoyono', 'ani.y@contoh.com', '089876543210', 'PT. Contoh Jaya', 'Marketing', 'Digital Marketer', 'Staff', '', '2023-03-20', 'user']
-    ];
-    const worksheet = XLSX.utils.aoa_to_sheet(exampleData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
-    XLSX.writeFile(workbook, "Contoh_Format_Karyawan.xlsx");
-  };
-
-  const handleExport = async () => {
-    setIsLoading(true);
-    try {
-        const XLSX = await import('xlsx');
-        const dataToExport = filteredEmployees.map(emp => ({
-        'ID': emp.id,
-        'Nama Lengkap': emp.name,
-        'Email': emp.email,
-        'No. Telepon': emp.phone,
-        'Perusahaan': emp.company,
-        'Departemen': emp.department,
-        'Jabatan': emp.position,
-        'Level Jabatan': emp.level,
-        'ID Atasan': emp.reportsTo,
-        'Tanggal Bergabung': emp.joinDate,
-        'Status Akun': emp.status,
-        'Status Login': emp.loginStatus,
-        'Role': emp.role
-        }));
-
-        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Data Karyawan");
-        XLSX.writeFile(workbook, "Data_Karyawan.xlsx");
-    } finally {
-        setIsLoading(false);
-    }
-  };
-  
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const XLSX = await import('xlsx');
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setIsLoading(true);
-    try {
-        const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data);
-        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
-
-        let successCount = 0;
-        let failCount = 0;
-
-        for (const row of jsonData) {
-            const rawCompany = String(row['Perusahaan'] || '').trim();
-            const normalizedCompany = manageableCompanies.find(c => c.name.toLowerCase() === rawCompany.toLowerCase())?.name || rawCompany;
-
-            let joinDate = new Date().toISOString().split('T')[0];
-            if (row['Tanggal Bergabung (YYYY-MM-DD)']) {
-                const rawDate = row['Tanggal Bergabung (YYYY-MM-DD)'];
-                if (typeof rawDate === 'number') {
-                    const date = new Date((rawDate - 25569) * 86400 * 1000);
-                    if (isValid(date)) joinDate = date.toISOString().split('T')[0];
-                } else {
-                    const date = new Date(rawDate);
-                    if (isValid(date)) joinDate = date.toISOString().split('T')[0];
-                }
-            }
-
-            const employeeData: Omit<Employee, 'id' | 'loginStatus'> = {
-                name: row['Nama Lengkap'],
-                email: row['Email']?.toLowerCase().trim(),
-                phone: String(row['No. Telepon'] || ''),
-                company: normalizedCompany,
-                department: String(row['Departemen'] || ''),
-                position: String(row['Jabatan'] || ''),
-                level: row['Level Jabatan'] || 'Staff',
-                reportsTo: row['ID Atasan'] || '',
-                joinDate: joinDate,
-                status: 'Aktif',
-                role: (row['Role']?.toLowerCase() === 'manajemen' ? 'manajemen' : 'user'),
-            };
-
-            if (!employeeData.name || !employeeData.email || !employeeData.company) {
-                failCount++;
-                continue;
-            }
-            
-            if (employeeData.role === 'user' && quotaInfo && quotaInfo.userLimitReached) {
-                failCount++;
-                continue;
-            }
-            if (employeeData.role === 'manajemen' && quotaInfo && quotaInfo.managementLimitReached) {
-                failCount++;
-                continue;
-            }
-
-            const result = await addUserAsAdmin(employeeData, false, true); 
-            if (result.success) {
-                successCount++;
-            } else {
-                failCount++;
-            }
-            await sleep(1500); 
-        }
-        
-        await fetchData(true);
-
-        toast({
-            title: `Impor Selesai`,
-            description: `${successCount} data berhasil diimpor. ${failCount} gagal (cek kuota atau data tidak lengkap).`,
-        });
-    } catch (e: any) {
-        console.error("Import error:", e);
-        toast({
-            variant: "destructive",
-            title: "Gagal Mengimpor",
-            description: e.message || 'Terjadi kesalahan saat memproses file.'
-        });
-    } finally {
-        setIsLoading(false);
-        if (event.target) event.target.value = '';
-    }
-  };
-
-
-  const getLoginStatusBadge = (status: LoginStatus) => {
-    switch (status) {
-        case "Active": return "bg-green-100 text-green-800 border-green-200";
-        case "Invited": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-        case "No Login": return "bg-gray-100 text-gray-800 border-gray-200";
-        default: return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  }
-
-  const showCompanyFilter = userRole === 'superadmin' || isHoldingAdmin;
-
+  // --- REUSABLE ADAPTIVE COMPONENTS USAGE ---
   return (
-    <div className="w-full min-w-0 space-y-6">
-      <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
-        <CardHeader className="px-4 sm:px-6">
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-                <div className="p-2 bg-primary/10 rounded-lg shrink-0">
-                    <Users className="size-6 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <CardTitle className="font-headline text-xl sm:text-2xl text-foreground">
-                        Data Karyawan
-                    </CardTitle>
-                    <CardDescription className="text-sm leading-relaxed max-w-full">
-                        Kelola data karyawan di perusahaan Anda. Menampilkan {filteredEmployees.length} data.
-                    </CardDescription>
-                </div>
-            </div>
-             <div className="flex flex-wrap items-center gap-2 shrink-0 self-end xl:self-center">
-                {selectedRowIds.length > 0 && (
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-10 gap-1 shadow-sm">
-                            <ChevronDown className="ml-1 h-3.5 w-3.5" />
-                            Aksi Massal ({selectedRowIds.length})
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="z-[350]">
-                        <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Pilih Aksi</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleBulkSendInvitation}>
-                            <Send className="mr-2 h-4 w-4" />
-                            Kirim Pembaruan Sandi / Aktivasi
-                        </DropdownMenuItem>
-                         <DropdownMenuItem onClick={() => handleBulkStatusChange("Aktif")}>Ubah Status ke Aktif</DropdownMenuItem>
-                         <DropdownMenuItem onClick={() => handleBulkStatusChange("Tidak Aktif")}>Ubah Status ke Tidak Aktif</DropdownMenuItem>
-                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive font-bold" onClick={openBulkDeleteDialog}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Hapus Pilihan
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-                )}
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-10 gap-1 shadow-sm" disabled={quotaInfo?.userLimitReached && quotaInfo?.managementLimitReached}>
-                             <span className="whitespace-nowrap">Impor/Ekspor</span>
-                             <ChevronDown className="h-3.5 w-3.5" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="z-[350]">
-                        <DropdownMenuItem onClick={handleImportClick}>
-                            <Upload className="mr-2 h-4 w-4" /> Impor dari Excel
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleExport}>
-                            <Download className="mr-2 h-4 w-4" /> Ekspor ke Excel
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleDownloadExample}>
-                          <FileSpreadsheet className="mr-2 h-4 w-4" /> Unduh Contoh Format
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-                 <input type="file" ref={fileInputRef} onChange={handleImport} accept=".xlsx, .xls" style={{ display: 'none' }} />
+    <ResponsivePage>
+      <PageHeader 
+        title="Manajemen Karyawan"
+        description="Kelola profil personil, penempatan, dan akses modul secara terpusat."
+        icon={Users}
+        actions={
+          <Button onClick={() => { setSelectedEmployee(undefined); setSheetOpen(true); }} className="font-bold shadow-lg h-9 sm:h-10">
+            <PlusCircle className="size-4" />
+            Tambah Karyawan
+          </Button>
+        }
+      />
 
-                <Button size="sm" className="h-10 gap-1 font-bold shadow-md" onClick={handleAddEmployee} disabled={quotaInfo?.userLimitReached && quotaInfo?.managementLimitReached}>
-                  <PlusCircle className="h-3.5 w-3.5" />
-                  <span className="whitespace-nowrap">Tambah Karyawan</span>
-                </Button>
-             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="px-4 sm:px-6 pt-6">
-            {quotaInfo?.message && (
-                <Alert variant={quotaInfo.userLimitReached && quotaInfo.managementLimitReached ? "destructive" : "default"} className="mb-6">
-                    <AlertCircle className="h-4 w-4 shrink-0" />
-                    <AlertDescription className="text-xs sm:text-sm">{quotaInfo.message}</AlertDescription>
-                </Alert>
-            )}
-            <div className={cn(
-              "grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 border rounded-xl bg-muted/30",
-              showCompanyFilter ? "lg:grid-cols-3" : "lg:grid-cols-2"
-            )}>
-              {showCompanyFilter && (
-                <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Perusahaan</Label>
-                    <Select value={filters.company} onValueChange={(value) => handleFilterChange('company', value)}>
-                    <SelectTrigger className="bg-background">
-                        <Building className="size-3.5 mr-2 text-primary shrink-0" />
-                        <SelectValue placeholder="Semua Perusahaan" />
-                    </SelectTrigger>
-                    <SelectContent className="z-[350]">
-                        <SelectItem value="all">Semua Perusahaan</SelectItem>
-                        {manageableCompanies.map(company => (
-                        <SelectItem key={company.id} value={company.name}>{company.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Departemen</Label>
-                <Select value={filters.department} onValueChange={(value) => handleFilterChange('department', value)}>
-                    <SelectTrigger className="bg-background">
-                    <Filter className="size-3.5 mr-2 text-muted-foreground shrink-0" />
-                    <SelectValue placeholder="Semua Departemen" />
-                    </SelectTrigger>
-                    <SelectContent className="z-[350]">
-                    <SelectItem value="all">Semua Departemen</SelectItem>
-                    {uniqueDepartmentOptions.map(department => (
-                        <SelectItem key={department} value={department}>{department}</SelectItem>
-                    ))}
-                    </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Jabatan</Label>
-                <Select value={filters.position} onValueChange={(value) => handleFilterChange('position', value)}>
-                    <SelectTrigger className="bg-background">
-                    <Filter className="size-3.5 mr-2 text-muted-foreground shrink-0" />
-                    <SelectValue placeholder="Semua Jabatan" />
-                    </SelectTrigger>
-                    <SelectContent className="z-[350]">
-                    <SelectItem value="all">Semua Jabatan</SelectItem>
-                    {uniquePositionOptions.map(position => (
-                        <SelectItem key={position} value={position}>{position}</SelectItem>
-                    ))}
-                    </SelectContent>
-                </Select>
-              </div>
-            </div>
-          
-          {/* WRAPPER TABEL UNTUK MENCEGAH OVERFLOW HORIZONTAL */}
-          <div className="w-full overflow-hidden min-w-0 rounded-xl border shadow-sm">
-            <div className="overflow-x-auto w-full">
-              <Table className="min-w-[1000px]">
-                <TableHeader className="bg-muted/50">
-                  <TableRow>
-                    <TableHead className="w-[40px]">
-                        <Checkbox
-                            checked={selectedRowIds.length > 0 && selectedRowIds.length === filteredEmployees.filter(e => e.id !== currentUser?.id).length && filteredEmployees.length > 1}
-                            onCheckedChange={(checked) => handleSelectAll(checked)}
-                            aria-label="Pilih semua"
-                        />
-                    </TableHead>
-                    <TableHead>Karyawan</TableHead>
-                    <TableHead>Jabatan</TableHead>
-                    <TableHead>Akses Modul</TableHead>
-                    <TableHead>Status Akun</TableHead>
-                    <TableHead>Status Login</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredEmployees.map((employee) => {
-                    const accessedModules = Object.entries(employee.moduleAccess || {})
-                        .filter(([_, enabled]) => enabled)
-                        .map(([id]) => id);
+      <ResponsiveToolbar>
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input 
+            placeholder="Cari nama karyawan..." 
+            className="pl-9 h-10 border-none shadow-none bg-background/50 focus-visible:ring-primary/20"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+            <Select value={filterCompany} onValueChange={setFilterCompany}>
+                <SelectTrigger className="w-full sm:w-[200px] h-10 bg-background border-none">
+                    <Building className="size-4 mr-2 text-primary" />
+                    <SelectValue placeholder="Semua Perusahaan" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Semua Perusahaan</SelectItem>
+                    {companies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                </SelectContent>
+            </Select>
+        </div>
+      </ResponsiveToolbar>
 
-                    return (
-                      <TableRow key={employee.id} data-state={selectedRowIds.includes(employee.id) && "selected"} className="hover:bg-muted/5 group">
-                          <TableCell>
-                              <Checkbox
-                                  checked={selectedRowIds.includes(employee.id)}
-                                  onCheckedChange={() => handleRowSelect(employee.id)}
-                                  aria-label={`Pilih ${employee.name}`}
-                                  disabled={employee.id === currentUser?.id}
-                              />
-                          </TableCell>
-                          <TableCell className="font-medium py-4">
-                          <div className="flex items-center gap-3">
-                              <Avatar className="size-9 border shadow-sm">
-                                  <AvatarFallback className="bg-muted text-muted-foreground text-[10px] font-black uppercase">
-                                      {employee.name.substring(0, 2)}
-                                  </AvatarFallback>
-                              </Avatar>
-                              <div className="grid gap-0.5 min-w-0 flex-1">
-                                  <span className="font-bold text-slate-900 truncate">{employee.name}</span>
-                                  <span className="text-[10px] text-muted-foreground font-bold tracking-tight uppercase truncate">{employee.email}</span>
-                              </div>
-                          </div>
-                          </TableCell>
-                          <TableCell className="text-sm text-slate-600 font-medium">{employee.position}</TableCell>
-                          <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                  {accessedModules.length > 0 ? accessedModules.map(m => (
-                                      <Badge key={m} variant="secondary" className="text-[8px] h-4 uppercase font-bold px-1">{m}</Badge>
-                                  )) : <span className="text-[10px] text-muted-foreground italic">No Access</span>}
-                              </div>
-                          </TableCell>
-                          <TableCell>
-                          <Badge variant={employee.status === "Aktif" ? "default" : "outline"} className="text-[10px] uppercase font-black border-none">
-                              {employee.status}
-                          </Badge>
-                          </TableCell>
-                          <TableCell>
-                          <Badge variant="outline" className={cn("font-bold text-[10px] uppercase", getLoginStatusBadge(employee.loginStatus))}>
-                              {employee.loginStatus}
-                          </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                          <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                              <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full" disabled={isSendingInvitation === employee.email}>
-                                  {isSendingInvitation === employee.email ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
-                                  <span className="sr-only">Buka menu</span>
-                              </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="z-[350]">
-                              <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Aksi Karyawan</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={() => { setEmployeeForAccess(employee); setIsAccessDialogOpen(true); }}>
-                                  <Zap className="mr-2 h-4 w-4" /> Kelola Akses Modul
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditEmployee(employee)}>
-                                  <Pencil size={16} className="mr-2" /> Ubah Profil
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={async () => await handleSendInvitation(employee.email, employee.name)}>
-                                  <Send className="mr-2 h-4 w-4" />
-                                  Kirim Pembaruan Sandi / Aktivasi
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(employee)} disabled={employee.id === currentUser?.id}>
-                                  <Trash2 size={16} className="mr-2" /> Hapus Akun
-                              </DropdownMenuItem>
-                              </DropdownMenuContent>
-                          </DropdownMenu>
-                          </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
+      <AdaptiveTable 
+        data={filteredEmployees}
+        keyExtractor={(e) => e.id}
+        columns={[
+          {
+            header: "Karyawan",
+            cell: (e) => (
+              <div className="flex items-center gap-3">
+                <Avatar className="size-9 border shadow-sm shrink-0">
+                  <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-black uppercase">
+                    {e.name.substring(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-slate-900 truncate">{e.name}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-medium truncate">{e.email}</p>
+                </div>
+              </div>
+            )
+          },
+          {
+            header: "Posisi & Dept",
+            accessorKey: "position",
+            hideOnTablet: true,
+            cell: (e) => (
+              <div className="space-y-0.5">
+                <p className="font-bold text-xs">{e.position}</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-tight">{e.department}</p>
+              </div>
+            )
+          },
+          {
+             header: "Perusahaan",
+             accessorKey: "company",
+             className: "font-medium text-xs",
+          },
+          {
+            header: "Status",
+            cell: (e) => (
+              <Badge variant={e.status === 'Aktif' ? 'default' : 'outline'} className="text-[9px] uppercase font-black h-5 border-none">
+                {e.status}
+              </Badge>
+            )
+          },
+          {
+            header: "",
+            className: "text-right",
+            cell: (e) => (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal className="size-4" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                   <DropdownMenuItem onClick={() => handleEdit(e)}><Pencil className="size-3.5 mr-2" />Ubah</DropdownMenuItem>
+                   <DropdownMenuItem onClick={() => handleSendReset(e.email, e.name)}><Send className="size-3.5 mr-2" />Kirim Reset Sandi</DropdownMenuItem>
+                   <DropdownMenuSeparator />
+                   <DropdownMenuItem onClick={() => openDeleteDialog(e)} className="text-destructive font-bold"><Trash2 className="size-3.5 mr-2" />Hapus</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+          }
+        ]}
+        renderMobileCard={(e) => (
+          <Card className="border-border/40 shadow-sm overflow-hidden">
+            <CardContent className="p-4 space-y-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="size-12 border-2 border-primary/10 shadow-sm">
+                  <AvatarFallback className="bg-primary/5 text-primary text-xs font-black uppercase">{e.name.substring(0, 2)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                   <h3 className="font-black text-base truncate">{e.name}</h3>
+                   <div className="flex items-center gap-2 mt-0.5">
+                      <Badge variant="outline" className="text-[8px] font-black uppercase h-4 bg-muted/50 border-none">{e.level}</Badge>
+                      <Badge variant={e.status === 'Aktif' ? 'default' : 'outline'} className="text-[8px] font-black uppercase h-4 border-none">{e.status}</Badge>
+                   </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-y-3 pt-3 border-t text-[11px] font-bold">
+                  <div className="space-y-1">
+                      <p className="text-muted-foreground uppercase text-[8px] tracking-widest">Jabatan</p>
+                      <div className="flex items-center gap-1.5"><Briefcase className="size-3 text-primary" /> {e.position}</div>
+                  </div>
+                  <div className="space-y-1">
+                      <p className="text-muted-foreground uppercase text-[8px] tracking-widest">Departemen</p>
+                      <div className="flex items-center gap-1.5"><Network className="size-3 text-primary" /> {e.department}</div>
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                      <p className="text-muted-foreground uppercase text-[8px] tracking-widest">Email</p>
+                      <div className="flex items-center gap-1.5"><Mail className="size-3 text-primary" /> {e.email}</div>
+                  </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                  <Button variant="outline" size="sm" className="font-bold text-[10px] h-9 gap-2" onClick={() => handleEdit(e)}>
+                      <Pencil className="size-3" /> UBAH DATA
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="font-bold text-[10px] h-9">AKSI LAIN <ChevronDown className="size-3 ml-1" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-[180px]">
+                      <DropdownMenuItem onClick={() => handleSendReset(e.email, e.name)}>Kirim Reset Sandi</DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(e)}>Hapus Akun</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      />
+
       <EmployeeFormSheet 
-        isOpen={isSheetOpen} 
-        onOpenChange={setSheetOpen} 
-        employee={selectedEmployee} 
-        onSave={handleSaveEmployee}
-        onAdd={handleAdd}
-        quotaInfo={quotaInfo as any}
+        isOpen={isSheetOpen}
+        onOpenChange={setSheetOpen}
+        employee={selectedEmployee}
+        onAdd={(d) => { fetchData(true); }}
+        onSave={(id, d) => { fetchData(true); }}
+        quotaInfo={null}
       />
 
-      <ModuleAccessDialog 
-        isOpen={isAccessDialogOpen} 
-        onOpenChange={setIsAccessDialogOpen} 
-        employee={employeeForAccess} 
-        company={userCompany || null} 
-        allEmployees={employees} 
-        onSave={handleSaveModuleAccess} 
-      />
-
-      <DeleteConfirmationDialog
+      <DeleteConfirmationDialog 
         isOpen={isDeleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        onConfirm={handleDelete}
-        itemName={employeesToDelete?.length === 1 ? employeesToDelete[0].name : `${employeesToDelete?.length} item`}
-        itemType="karyawan"
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        itemName={employeesToDelete?.[0]?.name || ""}
+        itemType="Karyawan"
       />
-    </div>
+    </ResponsivePage>
   );
 }
