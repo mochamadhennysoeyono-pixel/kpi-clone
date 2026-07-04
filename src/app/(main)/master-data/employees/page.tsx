@@ -51,7 +51,9 @@ import {
   ShieldCheck,
   ShieldAlert,
   Zap,
-  Pencil
+  Pencil,
+  Filter,
+  Building
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -67,6 +69,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { id as localeId } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
 import { isValid } from "date-fns";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 // --- Assignment Slot Dialog ---
 function ModuleAccessDialog({ 
@@ -695,28 +698,32 @@ export default function EmployeesPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
-        <CardHeader className="bg-primary text-primary-foreground dark:bg-card">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex-1 min-w-0">
-                <CardTitle className="font-headline text-lg sm:text-2xl flex items-center gap-3">
-                    <Users className="h-6 w-6 text-primary-foreground" />
-                    Data Karyawan
-                </CardTitle>
-                <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground text-xs sm:text-sm">
-                    Kelola data karyawan di perusahaan Anda. Menampilkan {filteredEmployees.length} data.
-                </CardDescription>
+        <CardHeader>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+                <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+                    <Users className="size-6 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <CardTitle className="font-headline text-xl sm:text-2xl text-foreground truncate">
+                        Data Karyawan
+                    </CardTitle>
+                    <CardDescription className="text-sm leading-relaxed">
+                        Kelola data karyawan di perusahaan Anda. Menampilkan {filteredEmployees.length} data.
+                    </CardDescription>
+                </div>
             </div>
-             <div className="flex flex-wrap items-center gap-2 shrink-0">
+             <div className="flex flex-wrap items-center gap-2 shrink-0 self-end lg:self-center">
                 {selectedRowIds.length > 0 && (
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9 gap-1 bg-background/20 text-primary-foreground hover:bg-background/30 dark:bg-muted dark:text-foreground dark:hover:bg-muted/80">
+                        <Button variant="outline" size="sm" className="h-10 gap-1 shadow-sm">
                             <ChevronDown className="ml-1 h-3.5 w-3.5" />
                             Aksi Massal ({selectedRowIds.length})
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Pilih Aksi</DropdownMenuLabel>
+                    <DropdownMenuContent align="end" className="z-[350]">
+                        <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Pilih Aksi</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handleBulkSendInvitation}>
                             <Send className="mr-2 h-4 w-4" />
@@ -734,12 +741,12 @@ export default function EmployeesPage() {
                 )}
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9 gap-1 bg-background/20 text-primary-foreground hover:bg-background/30 dark:bg-muted dark:text-foreground dark:hover:bg-muted/80" disabled={quotaInfo?.userLimitReached && quotaInfo?.managementLimitReached}>
-                             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Impor/Ekspor</span>
+                        <Button variant="outline" size="sm" className="h-10 gap-1 shadow-sm" disabled={quotaInfo?.userLimitReached && quotaInfo?.managementLimitReached}>
+                             <span className="whitespace-nowrap">Impor/Ekspor</span>
                              <ChevronDown className="h-3.5 w-3.5" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="z-[350]">
                         <DropdownMenuItem onClick={handleImportClick}>
                             <Upload className="mr-2 h-4 w-4" /> Impor dari Excel
                         </DropdownMenuItem>
@@ -754,65 +761,75 @@ export default function EmployeesPage() {
                 </DropdownMenu>
                  <input type="file" ref={fileInputRef} onChange={handleImport} accept=".xlsx, .xls" style={{ display: 'none' }} />
 
-                <Button size="sm" className="h-9 gap-1 font-bold shadow-md" onClick={handleAddEmployee} disabled={quotaInfo?.userLimitReached && quotaInfo?.managementLimitReached}>
+                <Button size="sm" className="h-10 gap-1 font-bold shadow-md" onClick={handleAddEmployee} disabled={quotaInfo?.userLimitReached && quotaInfo?.managementLimitReached}>
                   <PlusCircle className="h-3.5 w-3.5" />
-                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                    Tambah Karyawan
-                  </span>
+                  <span className="whitespace-nowrap">Tambah Karyawan</span>
                 </Button>
              </div>
           </div>
         </CardHeader>
         <CardContent className="pt-6">
             {quotaInfo?.message && (
-                <Alert variant={quotaInfo.userLimitReached && quotaInfo.managementLimitReached ? "destructive" : "default"} className="mb-4">
-                    <AlertCircle className="h-4 w-4" />
+                <Alert variant={quotaInfo.userLimitReached && quotaInfo.managementLimitReached ? "destructive" : "default"} className="mb-6">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
                     <AlertDescription className="text-xs sm:text-sm">{quotaInfo.message}</AlertDescription>
                 </Alert>
             )}
             <div className={cn(
-              "grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 border rounded-lg bg-muted/30",
-              showCompanyFilter ? "md:grid-cols-3" : "md:grid-cols-2"
+              "grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 border rounded-xl bg-muted/30",
+              showCompanyFilter ? "lg:grid-cols-3" : "lg:grid-cols-2"
             )}>
               {showCompanyFilter && (
-                <Select value={filters.company} onValueChange={(value) => handleFilterChange('company', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter Perusahaan" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Perusahaan</SelectItem>
-                    {manageableCompanies.map(company => (
-                      <SelectItem key={company.id} value={company.name}>{company.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Perusahaan</Label>
+                    <Select value={filters.company} onValueChange={(value) => handleFilterChange('company', value)}>
+                    <SelectTrigger className="bg-background">
+                        <Building className="size-3.5 mr-2 text-primary shrink-0" />
+                        <SelectValue placeholder="Semua Perusahaan" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[350]">
+                        <SelectItem value="all">Semua Perusahaan</SelectItem>
+                        {manageableCompanies.map(company => (
+                        <SelectItem key={company.id} value={company.name}>{company.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                </div>
               )}
-              <Select value={filters.department} onValueChange={(value) => handleFilterChange('department', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter Departemen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Departemen</SelectItem>
-                   {uniqueDepartmentOptions.map(department => (
-                    <SelectItem key={department} value={department}>{department}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={filters.position} onValueChange={(value) => handleFilterChange('position', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter Jabatan" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Jabatan</SelectItem>
-                  {uniquePositionOptions.map(position => (
-                    <SelectItem key={position} value={position}>{position}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Departemen</Label>
+                <Select value={filters.department} onValueChange={(value) => handleFilterChange('department', value)}>
+                    <SelectTrigger className="bg-background">
+                    <Filter className="size-3.5 mr-2 text-muted-foreground shrink-0" />
+                    <SelectValue placeholder="Semua Departemen" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[350]">
+                    <SelectItem value="all">Semua Departemen</SelectItem>
+                    {uniqueDepartmentOptions.map(department => (
+                        <SelectItem key={department} value={department}>{department}</SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Jabatan</Label>
+                <Select value={filters.position} onValueChange={(value) => handleFilterChange('position', value)}>
+                    <SelectTrigger className="bg-background">
+                    <Filter className="size-3.5 mr-2 text-muted-foreground shrink-0" />
+                    <SelectValue placeholder="Semua Jabatan" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[350]">
+                    <SelectItem value="all">Semua Jabatan</SelectItem>
+                    {uniquePositionOptions.map(position => (
+                        <SelectItem key={position} value={position}>{position}</SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+              </div>
             </div>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+          <div className="overflow-x-auto rounded-xl border shadow-sm">
+            <Table className="min-w-[1000px]">
+              <TableHeader className="bg-muted/50">
                 <TableRow>
                   <TableHead className="w-[40px]">
                       <Checkbox
@@ -822,13 +839,11 @@ export default function EmployeesPage() {
                       />
                   </TableHead>
                   <TableHead>Karyawan</TableHead>
-                  <TableHead className="hidden md:table-cell">Jabatan</TableHead>
-                  <TableHead className="hidden lg:table-cell">Akses Modul</TableHead>
-                  <TableHead className="hidden lg:table-cell">Status Akun</TableHead>
-                  <TableHead className="hidden lg:table-cell">Status Login</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Aksi</span>
-                  </TableHead>
+                  <TableHead>Jabatan</TableHead>
+                  <TableHead>Akses Modul</TableHead>
+                  <TableHead>Status Akun</TableHead>
+                  <TableHead>Status Login</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -838,7 +853,7 @@ export default function EmployeesPage() {
                       .map(([id]) => id);
 
                   return (
-                    <TableRow key={employee.id} data-state={selectedRowIds.includes(employee.id) && "selected"}>
+                    <TableRow key={employee.id} data-state={selectedRowIds.includes(employee.id) && "selected"} className="hover:bg-muted/5 group">
                         <TableCell>
                             <Checkbox
                                 checked={selectedRowIds.includes(employee.id)}
@@ -849,30 +864,31 @@ export default function EmployeesPage() {
                         </TableCell>
                         <TableCell className="font-medium py-4">
                         <div className="flex items-center gap-3">
-                            <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-full bg-muted">
-                            <User className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                            <div className="grid gap-0.5">
-                            <span className="font-bold text-slate-900">{employee.name}</span>
-                            <span className="text-xs text-muted-foreground sm:hidden font-medium">{employee.position}</span>
-                            <span className="text-[10px] text-muted-foreground hidden sm:inline uppercase font-bold tracking-tight">{employee.email}</span>
+                            <Avatar className="size-9 border shadow-sm">
+                                <AvatarFallback className="bg-muted text-muted-foreground text-[10px] font-black uppercase">
+                                    {employee.name.substring(0, 2)}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="grid gap-0.5 min-w-0 flex-1">
+                                <span className="font-bold text-slate-900 truncate">{employee.name}</span>
+                                <span className="text-[10px] text-muted-foreground font-bold tracking-tight uppercase truncate">{employee.email}</span>
                             </div>
                         </div>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell text-sm text-slate-600">{employee.position}</TableCell>
-                        <TableCell className="hidden lg:table-cell">
+                        <TableCell className="text-sm text-slate-600 font-medium">{employee.position}</TableCell>
+                        <TableCell>
                             <div className="flex flex-wrap gap-1">
                                 {accessedModules.length > 0 ? accessedModules.map(m => (
                                     <Badge key={m} variant="secondary" className="text-[8px] h-4 uppercase font-bold px-1">{m}</Badge>
                                 )) : <span className="text-[10px] text-muted-foreground italic">No Access</span>}
                             </div>
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                        <Badge variant={employee.status === "Aktif" ? "default" : "outline"} className="text-[10px] uppercase font-black">
+                        <TableCell>
+                        <Badge variant={employee.status === "Aktif" ? "default" : "outline"} className="text-[10px] uppercase font-black border-none">
                             {employee.status}
                         </Badge>
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell">
+                        <TableCell>
                         <Badge variant="outline" className={cn("font-bold text-[10px] uppercase", getLoginStatusBadge(employee.loginStatus))}>
                             {employee.loginStatus}
                         </Badge>
@@ -885,7 +901,7 @@ export default function EmployeesPage() {
                                 <span className="sr-only">Buka menu</span>
                             </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" className="z-[350]">
                             <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Aksi Karyawan</DropdownMenuLabel>
                             <DropdownMenuItem onClick={() => { setEmployeeForAccess(employee); setIsAccessDialogOpen(true); }}>
                                 <Zap className="mr-2 h-4 w-4" /> Kelola Akses Modul

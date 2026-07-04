@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { PlusCircle, MoreHorizontal, ChevronDown, CalendarDays, BellRing, Settings } from "lucide-react";
+import { PlusCircle, MoreHorizontal, ChevronDown, CalendarDays, BellRing, Settings, Building, Filter, Network, Briefcase } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { KpiSetup, Company, KpiIndicator, KpiIndicatorCycle } from '@/types';
@@ -186,138 +186,162 @@ export default function SetupKpiPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
-        <CardHeader className="bg-primary text-primary-foreground dark:bg-card">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex-1 min-w-0">
-                <CardTitle className="font-headline text-lg sm:text-2xl flex items-center gap-3">
-                    <Settings className="h-6 w-6 text-primary-foreground" />
-                    Pengaturan KPI
-                </CardTitle>
-                <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground text-xs sm:text-sm">
-                    Kelola konfigurasi KPI untuk berbagai peran dan departemen.
-                </CardDescription>
+        <CardHeader>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+                <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+                    <Settings className="size-6 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <CardTitle className="font-headline text-xl sm:text-2xl text-foreground truncate">
+                        Pengaturan KPI
+                    </CardTitle>
+                    <CardDescription className="text-sm leading-relaxed">
+                        Kelola konfigurasi KPI untuk berbagai peran dan departemen.
+                    </CardDescription>
+                </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 shrink-0 self-end lg:self-center">
                 <KpiBulkActions filteredSetups={filteredSetups} />
                 <Button size="sm" className="h-10 gap-1 font-bold shadow-md" onClick={() => handleAddSetup()}>
                     <PlusCircle className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                        Buat Pengaturan
-                    </span>
+                    <span className="whitespace-nowrap">Buat Pengaturan</span>
                 </Button>
             </div>
           </div>
-        </CardHeader>
+        </Header>
         <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row items-center gap-2 mb-6 p-4 border rounded-lg bg-muted/30">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6 p-4 border rounded-xl bg-muted/30">
                {showCompanyFilter && (
-                <Select value={selectedCompanyFilter || 'all'} onValueChange={(value) => { setSelectedCompanyFilter(value); setSelectedDepartment('all'); setSelectedPosition('all'); }}>
-                  <SelectTrigger className="w-full sm:w-[200px]">
-                    <SelectValue placeholder="Filter Perusahaan" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Perusahaan</SelectItem>
-                    {manageableCompanies.map(c => (
-                      <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="space-y-1.5">
+                    <p className="text-[10px] font-black uppercase text-muted-foreground ml-1">Perusahaan</p>
+                    <Select value={selectedCompanyFilter || 'all'} onValueChange={(value) => { setSelectedCompanyFilter(value); setSelectedDepartment('all'); setSelectedPosition('all'); }}>
+                        <SelectTrigger className="bg-background">
+                            <Building className="size-3.5 mr-2 text-primary shrink-0" />
+                            <SelectValue placeholder="Semua Perusahaan" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[350]">
+                            <SelectItem value="all">Semua Perusahaan</SelectItem>
+                            {manageableCompanies.map(c => (
+                            <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
               )}
-               <Select value={selectedDepartment} onValueChange={(value) => { setSelectedDepartment(value); setSelectedPosition('all'); }} disabled={departmentOptions.length === 0}>
-                  <SelectTrigger className="w-full sm:w-[200px]">
-                    <SelectValue placeholder="Filter Departemen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Departemen</SelectItem>
-                    {departmentOptions.map(d => (
-                      <SelectItem key={d} value={d}>{d}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                 <Select value={selectedPosition} onValueChange={setSelectedPosition} disabled={positionOptions.length === 0}>
-                  <SelectTrigger className="w-full sm:w-[200px]">
-                    <SelectValue placeholder="Filter Jabatan" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Jabatan</SelectItem>
-                    {positionOptions.map(p => (
-                      <SelectItem key={p} value={p}>{p}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-1.5">
+                  <p className="text-[10px] font-black uppercase text-muted-foreground ml-1">Departemen</p>
+                  <Select value={selectedDepartment} onValueChange={(value) => { setSelectedDepartment(value); setSelectedPosition('all'); }} disabled={departmentOptions.length === 0}>
+                    <SelectTrigger className="bg-background">
+                        <Network className="size-3.5 mr-2 text-muted-foreground shrink-0" />
+                        <SelectValue placeholder="Semua Departemen" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[350]">
+                        <SelectItem value="all">Semua Departemen</SelectItem>
+                        {departmentOptions.map(d => (
+                        <SelectItem key={d} value={d}>{d}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+              </div>
+              <div className="space-y-1.5">
+                  <p className="text-[10px] font-black uppercase text-muted-foreground ml-1">Jabatan</p>
+                  <Select value={selectedPosition} onValueChange={setSelectedPosition} disabled={positionOptions.length === 0}>
+                    <SelectTrigger className="bg-background">
+                        <Briefcase className="size-3.5 mr-2 text-muted-foreground shrink-0" />
+                        <SelectValue placeholder="Semua Jabatan" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[350]">
+                        <SelectItem value="all">Semua Jabatan</SelectItem>
+                        {positionOptions.map(p => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+              </div>
             </div>
           <Accordion type="single" collapsible className="w-full">
             {filteredSetups.map((setup) => (
-              <AccordionItem value={setup.id} key={setup.id}>
-                <AccordionTrigger>
+              <AccordionItem value={setup.id} key={setup.id} className="border rounded-xl mb-3 overflow-hidden bg-background shadow-sm">
+                <AccordionTrigger className="px-4 py-4 hover:no-underline">
                     <div className="flex items-center justify-between w-full pr-4">
-                        <div className="text-left grid gap-1">
-                            <p className="font-semibold">{setup.position} ({setup.level})</p>
-                            <p className="text-sm text-muted-foreground">{setup.department} {(userRole === 'superadmin' || isHoldingAdmin) && `(${setup.company})`}</p>
-                            <div className="flex items-center text-xs text-muted-foreground gap-1.5 pt-1">
-                                <CalendarDays className="h-3.5 w-3.5" />
+                        <div className="text-left grid gap-0.5 min-w-0 flex-1">
+                            <p className="font-bold text-slate-900 truncate">{setup.position} ({setup.level})</p>
+                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-tight truncate">
+                                <span>{setup.department}</span>
+                                {(userRole === 'superadmin' || isHoldingAdmin) && (
+                                    <>
+                                        <span className="opacity-30">•</span>
+                                        <span className="text-primary">{setup.company}</span>
+                                    </>
+                                )}
+                            </div>
+                            <div className="flex items-center text-[10px] font-medium text-muted-foreground gap-1.5 pt-1.5">
+                                <CalendarDays className="size-3" />
                                 <span>{formatPeriod(setup.validFrom)} - {formatPeriod(setup.validTo)}</span>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3 shrink-0">
                             {!!setup.pendingIndicators?.length && (
                                 <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <div className="flex items-center gap-1 text-yellow-600 animate-pulse">
-                                            <BellRing className="h-4 w-4" />
-                                            <span className="text-xs font-semibold">{setup.pendingIndicators.length}</span>
+                                        <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100 animate-pulse">
+                                            <BellRing className="size-3.5" />
+                                            <span className="text-[10px] font-black">{setup.pendingIndicators.length} BARU</span>
                                         </div>
                                     </TooltipTrigger>
-                                    <TooltipContent>
+                                    <TooltipContent className="z-[350]">
                                     <p>Ada KPI turunan baru yang perlu ditinjau.</p>
                                     </TooltipContent>
                                 </Tooltip>
                                 </TooltipProvider>
                             )}
-                            <Badge variant={setup.status === "Aktif" ? "default" : "outline"}>
+                            <Badge variant={setup.status === "Aktif" ? "default" : "outline"} className="text-[9px] uppercase font-black px-1.5 h-5">
                                 {setup.status}
                             </Badge>
                         </div>
                     </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                    <div className="pl-4 pr-4 pb-4">
-                        <p className="text-sm text-muted-foreground mb-4">{setup.description}</p>
-                         <div className="overflow-x-auto">
+                    <div className="px-4 pb-4">
+                        {setup.description && (
+                            <p className="text-xs text-muted-foreground mb-4 bg-muted/20 p-3 rounded-lg border border-dashed">{setup.description}</p>
+                        )}
+                         <div className="overflow-x-auto rounded-lg border">
                             <Table>
-                                <TableHeader>
+                                <TableHeader className="bg-muted/30">
                                     <TableRow>
-                                        <TableHead>Indikator</TableHead>
-                                        <TableHead>Target</TableHead>
-                                        <TableHead className="text-right">Bobot</TableHead>
+                                        <TableHead className="text-[10px] font-bold uppercase">Indikator</TableHead>
+                                        <TableHead className="text-[10px] font-bold uppercase">Target</TableHead>
+                                        <TableHead className="text-right text-[10px] font-bold uppercase">Bobot</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {setup.indicators.map(indicator => (
-                                        <TableRow key={indicator.id}>
-                                            <TableCell className="font-medium">{indicator.indicator}</TableCell>
-                                            <TableCell>{indicator.target} {indicator.targetFormat === 'Persentase' ? '%' : indicator.unit}</TableCell>
-                                            <TableCell className="text-right">{indicator.weight}%</TableCell>
+                                        <TableRow key={indicator.id} className="hover:bg-muted/5">
+                                            <TableCell className="font-bold text-xs py-3">{indicator.indicator}</TableCell>
+                                            <TableCell className="text-xs font-medium">{indicator.target} {indicator.targetFormat === 'Persentase' ? '%' : indicator.unit}</TableCell>
+                                            <TableCell className="text-right font-black text-primary text-xs">{indicator.weight}%</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
                             </Table>
                         </div>
-                        <div className="mt-4 flex justify-end">
+                        <div className="mt-4 flex justify-end gap-2">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button aria-haspopup="true" size="icon" variant="ghost">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Buka menu</span>
+                                  <Button aria-haspopup="true" size="sm" variant="ghost" className="h-8 gap-2 font-bold text-muted-foreground">
+                                    <MoreHorizontal className="size-4" />
+                                    <span>Pilihan Aksi</span>
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                  <DropdownMenuItem onClick={() => handleEditSetup(setup)}>Ubah Pengaturan</DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleDuplicateSetup(setup)}>Duplikat Pengaturan</DropdownMenuItem>
+                                <DropdownMenuContent align="end" className="z-[350]">
+                                  <DropdownMenuLabel className="text-[10px] uppercase opacity-60">Manajemen Setup</DropdownMenuLabel>
+                                  <DropdownMenuItem onClick={() => handleEditSetup(setup)} className="text-xs">Ubah Pengaturan</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleDuplicateSetup(setup)} className="text-xs">Duplikat Pengaturan</DropdownMenuItem>
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(setup)}>Hapus Pengaturan</DropdownMenuItem>
+                                  <DropdownMenuItem className="text-destructive font-bold text-xs" onClick={() => openDeleteDialog(setup)}>Hapus Pengaturan</DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                         </div>
@@ -327,8 +351,10 @@ export default function SetupKpiPage() {
             ))}
           </Accordion>
            {filteredSetups.length === 0 && (
-              <div className="text-center text-muted-foreground py-10">
-                  <p>Tidak ada pengaturan KPI yang ditemukan untuk filter yang dipilih.</p>
+              <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-xl">
+                  <Settings className="size-10 mx-auto mb-3 opacity-20" />
+                  <p className="font-bold text-xs uppercase tracking-widest">Tidak ada pengaturan ditemukan</p>
+                  <p className="text-[10px] mt-1">Coba sesuaikan filter atau buat pengaturan baru.</p>
               </div>
            )}
         </CardContent>

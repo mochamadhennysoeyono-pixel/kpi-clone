@@ -121,8 +121,6 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
     const company = companies.find(c => c.id === targetId);
     if (!company) return null;
 
-    // FIX: Management quota strictly uses customManagementUserLimit or default 1
-    // Ignore staff limits (userLimit) from plans
     const limit = company.customManagementUserLimit || 1;
     const currentUsage = companyAdmins.filter(a => a.company === company.name).length;
 
@@ -142,7 +140,6 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
         return;
     }
     
-    // STRICT BLOCKING: Check quota before opening sheet
     if (quotaInfo?.managementLimitReached) {
         if (onQuotaFull) {
             onQuotaFull(); 
@@ -226,26 +223,26 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
     <div className="space-y-6">
       <Card className="shadow-lg border-t-4 border-primary overflow-hidden">
         <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <div className="p-2 bg-primary/10 rounded-lg shrink-0">
                 <ShieldCheck className="size-6 text-primary" />
               </div>
-              <div>
-                <CardTitle className="font-headline text-2xl text-foreground">
+              <div className="flex-1 min-w-0">
+                <CardTitle className="font-headline text-xl sm:text-2xl text-foreground truncate">
                     {isSuperadmin ? "Manajemen Admin Klien" : "Manajemen Tim Admin"}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm leading-relaxed">
                    {isSuperadmin 
                     ? "Kelola seluruh akun admin dari semua perusahaan klien di satu tempat."
                     : "Kelola rekan tim Manajemen Anda. Akun di sini tidak akan muncul di daftar KPI karyawan."}
                 </CardDescription>
               </div>
             </div>
-             <div className="flex items-center gap-2 self-end sm:self-center">
+             <div className="flex items-center gap-2 shrink-0 self-end lg:self-center">
                 <Button size="sm" className="h-10 gap-1 font-bold shadow-md" onClick={handleAddAdmin}>
                   <PlusCircle className="h-4 w-4" />
-                  Tambah Admin
+                  <span className="whitespace-nowrap">Tambah Admin</span>
                 </Button>
              </div>
           </div>
@@ -256,14 +253,14 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
               !(isSuperadmin || isHoldingAdmin) && "justify-end"
             )}>
                 {(isSuperadmin || isHoldingAdmin) && (
-                    <div className="flex flex-1 items-center gap-2">
-                        <Filter className="size-4 text-muted-foreground hidden sm:block" />
+                    <div className="flex flex-1 items-center gap-2 min-w-0">
+                        <Filter className="size-4 text-muted-foreground hidden sm:block shrink-0" />
                         <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
                             <SelectTrigger className="w-full md:w-[280px] bg-background">
-                                <Building className="size-3.5 mr-2 text-primary" />
+                                <Building className="size-3.5 mr-2 text-primary shrink-0" />
                                 <SelectValue placeholder="Pilih Perusahaan" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="z-[350]">
                                 <SelectItem value="all">Semua Perusahaan</SelectItem>
                                 {manageableCompanies.map(c => (
                                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
@@ -273,7 +270,7 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
                     </div>
                 )}
                 {quotaInfo && (
-                    <div className="flex items-center gap-4 px-4 py-2 bg-background rounded-lg border border-border/40 shadow-sm">
+                    <div className="flex items-center gap-4 px-4 py-2 bg-background rounded-lg border border-border/40 shadow-sm shrink-0">
                         <div className="text-center border-r pr-4">
                             <p className="text-[9px] font-black uppercase text-muted-foreground">Kuota Terpakai</p>
                             <p className={cn("text-lg font-black", quotaInfo.managementLimitReached ? "text-destructive" : "text-primary")}>
@@ -287,8 +284,8 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
                 )}
             </div>
 
-            <div className="rounded-xl border overflow-hidden shadow-sm">
-                <Table>
+            <div className="rounded-xl border overflow-x-auto shadow-sm">
+                <Table className="min-w-[800px]">
                     <TableHeader className="bg-muted/50">
                     <TableRow>
                         <TableHead>Nama Pengguna</TableHead>
@@ -338,7 +335,7 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
                                     {isSendingInvitation === admin.email ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
                                 </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
+                                <DropdownMenuContent align="end" className="z-[350]">
                                 <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Opsi Admin</DropdownMenuLabel>
                                 <DropdownMenuItem onClick={() => handleEditAdmin(admin)}>
                                     Ubah Profil
