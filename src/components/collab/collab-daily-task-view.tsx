@@ -36,7 +36,8 @@ import {
     CalendarCheck2,
     Timer,
     TrendingUp,
-    Search
+    Search,
+    LayoutGrid
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -93,6 +94,8 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar } from '../ui/calendar';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { AdaptiveCardGrid, AdaptiveMetricCard, AdaptiveInsightCard } from '@/components/ui/adaptive-card';
 
 interface CollabDailyTaskViewProps {
     space: any;
@@ -132,6 +135,7 @@ export function CollabDailyTaskView({ space, onBackToDashboard }: CollabDailyTas
     const { currentUser, userRole } = useAuth();
     const { collabTasks, employees, addCollabTask, updateCollabTask, deleteCollabTask, fetchData } = useMasterData();
     const { toast } = useToast();
+    const { isMobile } = useBreakpoint();
 
     const [activeSubTab, setActiveSubTab] = useState<DailySubTab>('calendar');
     const [isLoading, setIsLoading] = useState(false);
@@ -831,159 +835,70 @@ export function CollabDailyTaskView({ space, onBackToDashboard }: CollabDailyTas
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card className="border-none shadow-sm bg-primary text-primary-foreground">
-                        <CardContent className="p-4 flex items-center justify-between">
-                            <div>
-                                <p className="text-[9px] font-black uppercase opacity-70">Total Agenda</p>
-                                <p className="text-2xl font-black">{reportStats.total}</p>
-                            </div>
-                            <div className="p-2 bg-white/20 rounded-lg"><CalendarIcon size={20} /></div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-none shadow-sm bg-background">
-                        <CardContent className="p-4 flex items-center justify-between">
-                            <div>
-                                <p className="text-[9px] font-black uppercase text-muted-foreground">Persentase Penyelesaian</p>
-                                <p className="text-2xl font-black text-green-600">{reportStats.efficiency}%</p>
-                            </div>
-                            <div className="p-2 bg-green-50 rounded-lg text-green-600"><Zap size={20} /></div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-none shadow-sm bg-background">
-                        <CardContent className="p-4 flex items-center justify-between">
-                            <div>
-                                <p className="text-[9px] font-black uppercase text-muted-foreground">Total Waktu Kerja</p>
-                                <p className="text-2xl font-black text-blue-600">{formatDuration(reportStats.totalMinutes)}</p>
-                            </div>
-                            <div className="p-2 bg-blue-50 rounded-lg text-blue-600"><Timer size={20} /></div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-none shadow-sm bg-background">
-                        <CardContent className="p-4 flex items-center justify-between">
-                            <div>
-                                <p className="text-[9px] font-black uppercase text-muted-foreground">Batal/Gagal</p>
-                                <p className="text-2xl font-black text-red-600">{reportStats.failed}</p>
-                            </div>
-                            <div className="p-2 bg-red-50 rounded-lg text-red-600"><XCircle size={20} /></div>
-                        </CardContent>
-                    </Card>
-                </div>
+                <AdaptiveCardGrid complexity="simple">
+                    <AdaptiveMetricCard 
+                        title="Total Agenda" 
+                        value={reportStats.total} 
+                        icon={CalendarIcon} 
+                        color="bg-primary/10 text-primary" 
+                    />
+                    <AdaptiveMetricCard 
+                        title="Penyelesaian" 
+                        value={`${reportStats.efficiency}%`} 
+                        icon={Zap} 
+                        color="bg-green-500/10 text-green-600" 
+                    />
+                    <AdaptiveMetricCard 
+                        title="Waktu Kerja" 
+                        value={formatDuration(reportStats.totalMinutes)} 
+                        icon={Timer} 
+                        color="bg-blue-500/10 text-blue-600" 
+                    />
+                    <AdaptiveMetricCard 
+                        title="Batal/Gagal" 
+                        value={reportStats.failed} 
+                        icon={XCircle} 
+                        color="bg-rose-500/10 text-rose-600" 
+                    />
+                </AdaptiveCardGrid>
 
-                {/* --- Analisa Beban Kerja Tim (Waktu) --- */}
-                <Card className="border-none shadow-sm bg-background overflow-hidden">
-                    <CardHeader className="pb-2 border-b bg-muted/30">
-                        <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                            <TrendingUp size={14} className="text-primary" /> Analisa Beban Kerja Tim (Workload)
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="bg-muted/10 hover:bg-muted/10 border-none">
-                                    <TableHead className="text-[10px] font-bold uppercase">Personil</TableHead>
-                                    <TableHead className="text-[10px] font-bold uppercase text-center">Total Waktu</TableHead>
-                                    <TableHead className="text-[10px] font-bold uppercase text-center">Penyelesaian</TableHead>
-                                    <TableHead className="text-[10px] font-bold uppercase text-right">Intensitas</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {workloadByMember.map((m, idx) => (
-                                    <TableRow key={idx} className="group border-border/40">
-                                        <TableCell className="py-4">
-                                            <div className="flex items-center gap-2">
-                                                <Avatar className="size-6 border">
-                                                    <AvatarFallback className="text-[8px] font-black">{m.name.substring(0,2).toUpperCase()}</AvatarFallback>
-                                                </Avatar>
-                                                <span className="text-xs font-bold">{m.name}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-center font-mono text-xs font-black text-blue-600">
-                                            {formatDuration(m.totalMin)}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="flex flex-col items-center gap-1">
-                                                <span className="text-[10px] font-bold">{m.efficiency}%</span>
-                                                <Progress value={m.efficiency} className="h-1 w-16" />
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Badge variant="outline" className="text-[9px] font-black bg-muted/30 border-none">
-                                                {m.taskCount} Tugas
-                                            </Badge>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
+                <AdaptiveCardGrid complexity="complex">
+                    <AdaptiveInsightCard title="Analisa Beban Kerja Tim" icon={TrendingUp} description="Distribusi waktu per anggota">
+                        <div className="space-y-4 pt-2">
+                            {workloadByMember.map((m, idx) => (
+                                <div key={idx} className="space-y-1.5">
+                                    <div className="flex justify-between items-center text-[10px] font-black uppercase">
+                                        <span className="text-foreground/80 truncate pr-2">{m.name}</span>
+                                        <span className="text-primary whitespace-nowrap">{formatDuration(m.totalMin)}</span>
+                                    </div>
+                                    <Progress value={m.efficiency} className="h-1.5" />
+                                </div>
+                            ))}
+                            {workloadByMember.length === 0 && <p className="text-center py-10 text-xs text-muted-foreground italic">Belum ada data pengerjaan.</p>}
+                        </div>
+                    </AdaptiveInsightCard>
 
-                {/* --- Analisa Konteks Aktivitas (Top Keywords) --- */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="border-none shadow-sm bg-background overflow-hidden">
-                        <CardHeader className="pb-2 border-b bg-muted/30">
-                            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                <ListChecks size={14} className="text-primary" /> Top Konteks Aktivitas (Waktu Terbanyak)
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4">
-                            <div className="space-y-4">
-                                {keywordAnalysis.length > 0 ? keywordAnalysis.map((item, idx) => {
-                                    const maxMin = keywordAnalysis[0].totalMin;
-                                    const percent = (item.totalMin / maxMin) * 100;
-                                    return (
-                                        <div key={idx} className="space-y-1.5">
-                                            <div className="flex justify-between items-center text-[10px] font-bold uppercase">
-                                                <span className="text-foreground/80">{item.word}</span>
-                                                <span className="text-primary">{formatDuration(item.totalMin)}</span>
-                                            </div>
-                                            <Progress value={percent} className="h-1.5" />
+                    <AdaptiveInsightCard title="Konteks Aktivitas Terbanyak" icon={ListChecks} description="Berdasarkan durasi kumulatif">
+                        <div className="space-y-4 pt-2">
+                            {keywordAnalysis.length > 0 ? keywordAnalysis.map((item, idx) => {
+                                const maxMin = keywordAnalysis[0].totalMin;
+                                const percent = (item.totalMin / maxMin) * 100;
+                                return (
+                                    <div key={idx} className="space-y-1.5">
+                                        <div className="flex justify-between items-center text-[10px] font-bold uppercase">
+                                            <span className="text-foreground/80">{item.word}</span>
+                                            <span className="text-primary">{formatDuration(item.totalMin)}</span>
                                         </div>
-                                    );
-                                }) : (
-                                    <p className="text-center py-10 text-xs text-muted-foreground italic">Belum ada data aktivitas untuk dianalisa.</p>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-none shadow-sm bg-background overflow-hidden">
-                        <CardHeader className="pb-2 border-b bg-muted/30">
-                            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                <Search size={14} className="text-primary" /> Rekomendasi Optimasi
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-6">
-                            <div className="space-y-4">
-                                <div className="flex gap-3">
-                                    <div className="p-2 h-fit bg-blue-50 text-blue-600 rounded-lg"><Clock size={16}/></div>
-                                    <div>
-                                        <p className="text-xs font-bold">Keseimbangan Beban Kerja</p>
-                                        <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
-                                            {workloadByMember.length > 1 ? (
-                                                `Beban kerja tertinggi saat ini dipegang oleh ${workloadByMember[0].name} dengan total ${formatDuration(workloadByMember[0].totalMin)}. Pertimbangkan delegasi jika selisih dengan anggota lain > 30%.`
-                                            ) : "Data anggota belum cukup untuk analisa pembanding."}
-                                        </p>
+                                        <Progress value={percent} className="h-1.5" />
                                     </div>
-                                </div>
-                                <div className="flex gap-3">
-                                    <div className="p-2 h-fit bg-green-50 text-green-600 rounded-lg"><CheckCircle2 size={16}/></div>
-                                    <div>
-                                        <p className="text-xs font-bold">Analisa Intensitas Kata Kunci</p>
-                                        <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
-                                            {keywordAnalysis.length > 0 ? (
-                                                `Aktivitas dominan tim Anda bulan ini berkaitan dengan "${keywordAnalysis[0].word.toUpperCase()}". Fokuskan perbaikan alat atau SOP pada area tersebut untuk efisiensi.`
-                                            ) : "Belum ada pola aktivitas yang terdeteksi."}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                                );
+                            }) : (
+                                <p className="text-center py-10 text-xs text-muted-foreground italic">Belum ada pola aktivitas terdeteksi.</p>
+                            )}
+                        </div>
+                    </AdaptiveInsightCard>
+                </AdaptiveCardGrid>
 
-                {/* --- Rincian Tabel Standar --- */}
                 <Card className="border-none shadow-sm bg-background overflow-hidden">
                     <CardHeader className="pb-2 border-b bg-muted/30">
                         <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
@@ -995,11 +910,10 @@ export function CollabDailyTaskView({ space, onBackToDashboard }: CollabDailyTas
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-muted/10">
-                                        <TableHead className="text-[10px] font-bold uppercase">Tugas / PIC</TableHead>
+                                        <TableHead className="text-[10px] font-bold uppercase py-4">Tugas / PIC</TableHead>
                                         <TableHead className="text-[10px] font-bold uppercase text-center">Status</TableHead>
                                         <TableHead className="text-[10px] font-bold uppercase text-center">Durasi</TableHead>
-                                        <TableHead className="text-[10px] font-bold uppercase">Keterangan</TableHead>
-                                        <TableHead className="text-[10px] font-bold uppercase text-right">Waktu Update</TableHead>
+                                        <TableHead className="text-[10px] font-bold uppercase text-right">Update</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -1018,14 +932,9 @@ export function CollabDailyTaskView({ space, onBackToDashboard }: CollabDailyTas
                                             return (
                                                 <TableRow key={t.id} className="group hover:bg-muted/5 border-border/40">
                                                     <TableCell className="py-4">
-                                                        <p className="text-xs font-bold text-foreground/90">{t.title}</p>
+                                                        <p className="text-xs font-bold text-foreground/90 leading-tight">{t.title}</p>
                                                         <div className="flex items-center gap-1.5 mt-1">
-                                                            <Avatar className="size-4 border">
-                                                                <AvatarFallback className="text-[6px] font-black bg-primary/10 text-primary">
-                                                                    {t.assigneeName?.substring(0,2).toUpperCase()}
-                                                                </AvatarFallback>
-                                                            </Avatar>
-                                                            <span className="text-[9px] font-medium text-muted-foreground uppercase">{t.assigneeName}</span>
+                                                            <span className="text-[9px] font-black text-primary uppercase">{t.assigneeName}</span>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-center">
@@ -1036,21 +945,15 @@ export function CollabDailyTaskView({ space, onBackToDashboard }: CollabDailyTas
                                                     <TableCell className="text-center font-mono text-[10px] font-bold">
                                                         {durationStr}
                                                     </TableCell>
-                                                    <TableCell className="max-w-[200px]">
-                                                        <p className="text-[10px] text-muted-foreground leading-relaxed italic line-clamp-2">
-                                                            {t.description || t.text || "-"}
-                                                        </p>
-                                                    </TableCell>
                                                     <TableCell className="text-right">
-                                                        <p className="text-[10px] font-bold text-foreground/70">{updateDate ? format(updateDate, "dd/MM/yy", { locale: localeId }) : "-"}</p>
-                                                        <p className="text-[8px] text-muted-foreground">{updateDate ? format(updateDate, "HH:mm") : ""}</p>
+                                                        <p className="text-[10px] font-bold text-foreground/70">{updateDate ? format(updateDate, "dd/MM/yy") : "-"}</p>
                                                     </TableCell>
                                                 </TableRow>
                                             );
                                         })
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="h-40 text-center text-muted-foreground italic text-xs font-medium">
+                                            <TableCell colSpan={4} className="h-40 text-center text-muted-foreground italic text-xs font-medium">
                                                 Tidak ada data untuk periode ini.
                                             </TableCell>
                                         </TableRow>
@@ -1127,7 +1030,7 @@ export function CollabDailyTaskView({ space, onBackToDashboard }: CollabDailyTas
 
             {/* CREATE/EDIT DIALOG */}
             <Dialog open={isCreateDialogOpen} onOpenChange={(o) => { setIsCreateDialogOpen(o); if(!o) setEditingTask(null); }}>
-                <DialogContent className="sm:max-w-md flex flex-col h-full max-h-[90vh] p-0 overflow-hidden">
+                <DialogContent className="sm:max-w-md flex flex-col h-full max-h-[90vh] p-0 overflow-hidden border-none shadow-2xl">
                     <DialogHeader className="p-6 pb-2 shrink-0 bg-background border-b">
                         <DialogTitle className="font-headline font-black text-sm">{editingTask ? 'Ubah Rencana' : 'Buat Rencana Agenda'}</DialogTitle>
                         <DialogDescription className="text-[10px] font-bold uppercase tracking-wider">Untuk: {format(selectedDate, "d MMMM yyyy", { locale: localeId })}</DialogDescription>
@@ -1235,7 +1138,7 @@ export function CollabDailyTaskView({ space, onBackToDashboard }: CollabDailyTas
 
             {/* FINISH/UPDATE STATUS DIALOG */}
             <Dialog open={!!finishingTask} onOpenChange={(o) => !o && setFinishingTask(null)}>
-                <DialogContent className="sm:max-w-md flex flex-col h-full max-h-[90vh] p-0 overflow-hidden">
+                <DialogContent className="sm:max-w-md flex flex-col h-full max-h-[90vh] p-0 overflow-hidden border-none shadow-2xl">
                     <DialogHeader className="p-6 pb-2 shrink-0 bg-background border-b text-left">
                         <DialogTitle className="font-black text-sm uppercase">Update Progress Tugas</DialogTitle>
                         <DialogDescription className="text-xs font-bold text-primary">Agenda: {finishingTask?.title}</DialogDescription>

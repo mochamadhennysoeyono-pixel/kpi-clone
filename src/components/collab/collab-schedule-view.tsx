@@ -37,6 +37,7 @@ import {
 import { id as localeId } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import type { CollabTask, CollabSpace } from '@/types';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 
 interface CollabScheduleViewProps {
     space: CollabSpace;
@@ -55,6 +56,7 @@ export function CollabScheduleView({ space }: CollabScheduleViewProps) {
     const { collabTasks, employees } = useMasterData();
     const [viewMode, setViewMode] = useState<'timeline' | 'calendar'>('timeline');
     const [currentMonth, setCurrentMonth] = useState(new Date());
+    const { isMobile } = useBreakpoint();
 
     // 1. Base Task Data
     const tasksInSpace = useMemo(() => {
@@ -108,7 +110,6 @@ export function CollabScheduleView({ space }: CollabScheduleViewProps) {
         const end = endOfMonth(currentMonth);
         const days = eachDayOfInterval({ start, end });
         
-        // Fill empty days at the start of the week
         const startDay = getDay(start);
         const prefix = Array.from({ length: startDay }, (_, i) => null);
         
@@ -126,14 +127,14 @@ export function CollabScheduleView({ space }: CollabScheduleViewProps) {
 
                 <div className="bg-muted/30 hover:bg-muted/50 border border-border/40 rounded-xl p-4 transition-all hover:translate-x-1 cursor-default">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="space-y-1">
-                            <h4 className="text-sm font-bold text-foreground leading-tight">{task.title}</h4>
-                            <div className="flex items-center gap-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-tight">
-                                <span className="flex items-center gap-1"><Clock className="size-3" /> {dueDate ? format(dueDate, "d MMM yyyy", { locale: localeId }) : "-"}</span>
-                                <span className="flex items-center gap-1"><Hourglass className="size-3" /> PIC: {assigneeNames || 'Belum ditugaskan'}</span>
+                        <div className="space-y-1 min-w-0">
+                            <h4 className="text-sm font-bold text-foreground leading-tight truncate pr-4">{task.title}</h4>
+                            <div className="flex flex-wrap items-center gap-3 text-[9px] sm:text-[10px] font-black uppercase text-muted-foreground tracking-tighter">
+                                <span className="flex items-center gap-1.5"><Clock className="size-3" /> {dueDate ? format(dueDate, "d MMM yyyy") : "-"}</span>
+                                <span className="flex items-center gap-1.5 truncate"><User className="size-3" /> {assigneeNames || 'Unassigned'}</span>
                             </div>
                         </div>
-                        <Badge variant="outline" className="text-[9px] font-black uppercase h-6 px-2 shrink-0 bg-background/50 border-none shadow-sm">
+                        <Badge variant="outline" className="text-[8px] font-black uppercase h-5 px-1.5 shrink-0 bg-background/50 border-none shadow-sm w-fit">
                             {task.status.replace('-', ' ')}
                         </Badge>
                     </div>
@@ -144,28 +145,28 @@ export function CollabScheduleView({ space }: CollabScheduleViewProps) {
 
     return (
         <div className="flex flex-col h-full gap-6 animate-fade-in pb-10">
-            {/* Header & View Switcher */}
+            {/* Header Adaptive Switcher */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/20">
                         <div className="p-1.5 bg-rose-500 rounded-lg text-white"><AlertCircle size={16} /></div>
-                        <div><p className="text-[9px] font-black uppercase text-rose-600 tracking-wider">Overdue</p><p className="text-lg font-black text-rose-700 leading-none">{timelineData.overdue.length}</p></div>
+                        <div className="min-w-0"><p className="text-[9px] font-black uppercase text-rose-600 tracking-wider">Overdue</p><p className="text-lg font-black text-rose-700 leading-none">{timelineData.overdue.length}</p></div>
                     </div>
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 dark:bg-blue-950/20">
                         <div className="p-1.5 bg-blue-500 rounded-lg text-white"><Timer size={16} /></div>
-                        <div><p className="text-[9px] font-black uppercase text-blue-600 tracking-wider">Minggu Ini</p><p className="text-lg font-black text-blue-700 leading-none">{timelineData.today.length + timelineData.thisWeek.length}</p></div>
+                        <div className="min-w-0"><p className="text-[9px] font-black uppercase text-blue-600 tracking-wider">Mgg Ini</p><p className="text-lg font-black text-blue-700 leading-none">{timelineData.today.length + timelineData.thisWeek.length}</p></div>
                     </div>
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20">
                         <div className="p-1.5 bg-emerald-500 rounded-lg text-white"><CalendarDays size={16} /></div>
-                        <div><p className="text-[9px] font-black uppercase text-emerald-600 tracking-wider">Total Tugas</p><p className="text-lg font-black text-emerald-700 leading-none">{tasksInSpace.length}</p></div>
+                        <div className="min-w-0"><p className="text-[9px] font-black uppercase text-emerald-600 tracking-wider">Total</p><p className="text-lg font-black text-emerald-700 leading-none">{tasksInSpace.length}</p></div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-xl border border-border/40">
+                <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-xl border border-border/40 self-end">
                     <Button 
                         variant={viewMode === 'timeline' ? 'default' : 'ghost'} 
                         size="sm" 
-                        className="h-8 text-[10px] font-black uppercase px-3"
+                        className="h-8 text-[9px] font-black uppercase px-3"
                         onClick={() => setViewMode('timeline')}
                     >
                         <List className="size-3 mr-1.5" /> Lini Masa
@@ -173,7 +174,7 @@ export function CollabScheduleView({ space }: CollabScheduleViewProps) {
                     <Button 
                         variant={viewMode === 'calendar' ? 'default' : 'ghost'} 
                         size="sm" 
-                        className="h-8 text-[10px] font-black uppercase px-3"
+                        className="h-8 text-[9px] font-black uppercase px-3"
                         onClick={() => setViewMode('calendar')}
                     >
                         <LayoutGrid className="size-3 mr-1.5" /> Kalender
@@ -184,19 +185,19 @@ export function CollabScheduleView({ space }: CollabScheduleViewProps) {
             {/* Content Area */}
             <div className="flex-1 min-h-0 bg-background rounded-2xl border border-border/40 shadow-sm overflow-hidden flex flex-col">
                 {viewMode === 'timeline' ? (
-                    <ScrollArea className="flex-1 p-6">
-                        <div className="space-y-10">
+                    <ScrollArea className="flex-1 p-5 sm:p-8">
+                        <div className="space-y-12">
                             {tasksInSpace.length > 0 ? (
                                 <>
                                     {timelineData.overdue.length > 0 && (
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-2"><Badge variant="destructive" className="text-[9px] font-black uppercase">Terlewati</Badge><Separator className="flex-1 bg-rose-200 dark:bg-rose-900/30" /></div>
+                                        <div className="space-y-6">
+                                            <div className="flex items-center gap-3"><Badge variant="destructive" className="text-[9px] font-black uppercase h-5">Terlewati</Badge><Separator className="flex-1 bg-rose-200 dark:bg-rose-900/30" /></div>
                                             <div>{timelineData.overdue.map(t => renderTaskItem(t, "bg-rose-500"))}</div>
                                         </div>
                                     )}
                                     {(timelineData.today.length > 0 || timelineData.thisWeek.length > 0) && (
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-2"><Badge className="bg-blue-500 text-white text-[9px] font-black uppercase">Minggu Ini</Badge><Separator className="flex-1 bg-blue-200 dark:bg-blue-900/30" /></div>
+                                        <div className="space-y-6">
+                                            <div className="flex items-center gap-3"><Badge className="bg-blue-500 text-white text-[9px] font-black uppercase h-5">Minggu Ini</Badge><Separator className="flex-1 bg-blue-200 dark:bg-blue-900/30" /></div>
                                             <div>
                                                 {timelineData.today.map(t => renderTaskItem(t, "bg-amber-500"))}
                                                 {timelineData.thisWeek.map(t => renderTaskItem(t, "bg-blue-500"))}
@@ -204,16 +205,18 @@ export function CollabScheduleView({ space }: CollabScheduleViewProps) {
                                         </div>
                                     )}
                                     {timelineData.upcoming.length > 0 && (
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-2"><Badge variant="outline" className="text-[9px] font-black uppercase">Mendatang</Badge><Separator className="flex-1" /></div>
+                                        <div className="space-y-6">
+                                            <div className="flex items-center gap-3"><Badge variant="outline" className="text-[9px] font-black uppercase h-5">Mendatang</Badge><Separator className="flex-1" /></div>
                                             <div>{timelineData.upcoming.map(t => renderTaskItem(t, "bg-slate-300"))}</div>
                                         </div>
                                     )}
                                 </>
                             ) : (
-                                <div className="py-20 text-center space-y-4">
-                                    <Calendar className="size-12 mx-auto text-muted-foreground/20" />
-                                    <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Jadwal Masih Kosong</p>
+                                <div className="py-24 text-center space-y-4">
+                                    <div className="size-20 bg-muted/20 rounded-full flex items-center justify-center mx-auto opacity-20">
+                                        <Calendar className="size-10" />
+                                    </div>
+                                    <p className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">Jadwal Kosong</p>
                                 </div>
                             )}
                         </div>
@@ -221,14 +224,14 @@ export function CollabScheduleView({ space }: CollabScheduleViewProps) {
                 ) : (
                     <div className="flex-1 flex flex-col min-h-0">
                         <div className="p-4 border-b bg-muted/10 flex items-center justify-between shrink-0">
-                            <h3 className="text-sm font-black uppercase tracking-tight text-foreground/70">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-foreground/70">
                                 {format(currentMonth, "MMMM yyyy", { locale: localeId })}
                             </h3>
                             <div className="flex items-center gap-1">
                                 <Button variant="outline" size="icon" className="size-8 rounded-lg" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
                                     <ChevronLeft size={14} />
                                 </Button>
-                                <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold" onClick={() => setCurrentMonth(new Date())}>HARI INI</Button>
+                                <Button variant="outline" size="sm" className="h-8 text-[9px] font-black uppercase tracking-tighter" onClick={() => setCurrentMonth(new Date())}>HARI INI</Button>
                                 <Button variant="outline" size="icon" className="size-8 rounded-lg" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
                                     <ChevronRight size={14} />
                                 </Button>
@@ -236,7 +239,7 @@ export function CollabScheduleView({ space }: CollabScheduleViewProps) {
                         </div>
                         
                         <div className="flex-1 overflow-auto p-4">
-                            <div className="grid grid-cols-7 border-t border-l rounded-lg overflow-hidden min-w-[600px]">
+                            <div className="grid grid-cols-7 border-t border-l rounded-xl overflow-hidden min-w-[600px] bg-muted/5">
                                 {['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'].map(d => (
                                     <div key={d} className="p-2 text-center text-[9px] font-black text-muted-foreground bg-muted/20 border-r border-b">{d}</div>
                                 ))}
@@ -249,15 +252,15 @@ export function CollabScheduleView({ space }: CollabScheduleViewProps) {
                                             key={i} 
                                             className={cn(
                                                 "h-24 p-1 border-r border-b transition-colors flex flex-col gap-1",
-                                                !day ? "bg-muted/5" : "bg-background",
+                                                !day ? "bg-muted/10" : "bg-background",
                                                 isCurrentDay && "bg-primary/5"
                                             )}
                                         >
                                             {day && (
                                                 <>
                                                     <span className={cn(
-                                                        "text-[10px] font-bold size-5 flex items-center justify-center rounded-full ml-auto mb-1",
-                                                        isCurrentDay ? "bg-primary text-white" : "text-muted-foreground"
+                                                        "text-[9px] font-black size-5 flex items-center justify-center rounded-lg ml-auto mb-1",
+                                                        isCurrentDay ? "bg-primary text-white" : "text-muted-foreground opacity-40"
                                                     )}>
                                                         {format(day, "d")}
                                                     </span>
@@ -267,8 +270,8 @@ export function CollabScheduleView({ space }: CollabScheduleViewProps) {
                                                                 <div 
                                                                     key={t.id} 
                                                                     className={cn(
-                                                                        "text-[8px] p-1 px-1.5 rounded border leading-none font-bold truncate",
-                                                                        t.status === 'done' ? "bg-green-50 border-green-100 text-green-700 opacity-60" : "bg-primary/10 border-primary/20 text-primary"
+                                                                        "text-[8px] p-1 px-1.5 rounded-lg border leading-none font-black truncate uppercase tracking-tighter shadow-sm",
+                                                                        t.status === 'done' ? "bg-green-50 border-green-100 text-green-700 opacity-60" : "bg-primary/5 border-primary/10 text-primary"
                                                                     )}
                                                                     title={t.title}
                                                                 >

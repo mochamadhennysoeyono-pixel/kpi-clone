@@ -1,4 +1,3 @@
-
 // src/app/(main)/collab-space/[spaceId]/page.tsx
 "use client";
 
@@ -43,7 +42,9 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { usePageContext } from '@/contexts/page-context';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { ResponsivePage } from '@/components/ui/adaptive-layout';
+import { AdaptiveCardGrid } from '@/components/ui/adaptive-card';
 
 type FeatureType = 'chat' | 'daily-tasks' | 'project' | 'announcements' | 'schedule' | 'documents' | 'dashboard';
 
@@ -113,6 +114,8 @@ const colorThemes: Record<string, {
 };
 
 function FeatureIcon({ icon: Icon, label, onClick, theme, badgeCount }: { icon: any, label: string, onClick: () => void, theme: any, badgeCount?: number }) {
+    const { isMobile } = useBreakpoint();
+    
     return (
         <button 
             type="button"
@@ -138,7 +141,12 @@ function FeatureIcon({ icon: Icon, label, onClick, theme, badgeCount }: { icon: 
             )}>
                 <Icon className={cn("size-6 sm:size-8", theme.iconText, "group-hover:text-white transition-colors")} />
             </div>
-            <span className="font-bold text-[11px] sm:text-sm text-muted-foreground group-hover:text-foreground line-clamp-1">{label}</span>
+            <span className={cn(
+                "font-bold text-muted-foreground group-hover:text-foreground line-clamp-1",
+                isMobile ? "text-[10px]" : "text-sm"
+            )}>
+                {label}
+            </span>
         </button>
     );
 }
@@ -146,7 +154,7 @@ function FeatureIcon({ icon: Icon, label, onClick, theme, badgeCount }: { icon: 
 export default function CollabSpaceDetailPage() {
     const params = useParams();
     const router = useRouter();
-    const isMobile = useIsMobile();
+    const { isMobile } = useBreakpoint();
     const { currentUser } = useAuth();
     const { collabSpaces, collabTasks, collabMessages, employees } = useMasterData();
     const { setHideBottomNav } = usePageContext();
@@ -254,33 +262,33 @@ export default function CollabSpaceDetailPage() {
     }
 
     return (
-        <div className={cn(
-            "flex flex-col h-full min-w-0 animate-fade-in",
-            (activeFeature !== 'chat' && activeFeature !== 'daily-tasks') && "space-y-4 sm:space-y-6 pb-20 md:pb-6"
+        <ResponsivePage className={cn(
+            "flex flex-col h-full min-w-0",
+            (activeFeature === 'chat' || activeFeature === 'daily-tasks') && "p-0 sm:p-0 md:p-0 lg:p-0 xl:p-0"
         )}>
             {/* Header Breadcrumb */}
             <div className={cn(
                 "flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0",
-                (activeFeature === 'chat') && "p-4 border-b bg-background"
+                (activeFeature === 'chat' || activeFeature === 'daily-tasks') && "p-4 border-b bg-background"
             )}>
                 <div className="flex items-center gap-2">
                     <button onClick={() => {
                         if (activeFeature === 'dashboard') router.push('/collab-space');
                         else setActiveFeature('dashboard');
-                    }} className="-ml-2 h-8 px-2 text-muted-foreground text-xs flex items-center hover:bg-muted rounded-md transition-colors">
-                        <ChevronLeft className="mr-1 h-4 w-4" />
-                        {activeFeature === 'dashboard' ? 'Ruangan' : 'Dash'}
+                    }} className="-ml-2 h-8 px-2 text-muted-foreground text-[10px] sm:text-xs font-black uppercase tracking-widest flex items-center hover:bg-muted rounded-md transition-colors">
+                        <ChevronLeft className="mr-1 size-4" />
+                        {activeFeature === 'dashboard' ? 'Semua Ruangan' : 'DASHBOARD'}
                     </button>
                     <Separator orientation="vertical" className="h-4" />
-                    <h1 className="font-bold text-sm text-foreground truncate max-w-[120px] sm:max-w-none">{space.name}</h1>
+                    <h1 className="font-black text-sm text-foreground truncate max-w-[150px] sm:max-w-none uppercase tracking-tighter">{space.name}</h1>
                 </div>
                 <div className="flex items-center gap-2">
                     <button 
                         type="button" 
                         onClick={() => setIsMembersDialogOpen(true)}
-                        className="h-7 px-3 rounded-full bg-secondary hover:bg-secondary/80 transition-colors flex items-center gap-1.5"
+                        className="h-8 px-4 rounded-full bg-secondary hover:bg-secondary/80 transition-colors flex items-center gap-1.5"
                     >
-                        <Users className="size-3 text-primary" />
+                        <Users className="size-3.5 text-primary" />
                         <span className="text-[10px] uppercase font-black text-foreground/70">
                             {space.memberIds.length} <span className="hidden sm:inline">Anggota</span>
                         </span>
@@ -290,19 +298,21 @@ export default function CollabSpaceDetailPage() {
 
             {/* Dashboard Header Card */}
             {activeFeature === 'dashboard' && (
-                <Card className={cn("text-primary-foreground shadow-lg border-none overflow-hidden relative flex-shrink-0", activeTheme.header)}>
-                    <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-                        <LayoutGrid size={120} />
+                <Card className={cn("text-primary-foreground shadow-lg border-none overflow-hidden relative flex-shrink-0 mb-6", activeTheme.header)}>
+                    <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none shrink-0">
+                        <LayoutGrid size={150} />
                     </div>
-                    <CardHeader className="relative z-10 p-5 sm:p-6">
+                    <CardHeader className="relative z-10 p-6 sm:p-10">
                         <div className="flex justify-between items-start">
-                            <div className="space-y-1 min-w-0 pr-4">
-                                <CardTitle className="text-lg sm:text-2xl font-headline leading-tight truncate">{space.name}</CardTitle>
-                                <CardDescription className="text-primary-foreground/80 line-clamp-2 text-xs sm:text-sm">
+                            <div className="space-y-2 min-w-0 pr-4">
+                                <CardTitle className={cn("font-black font-headline leading-tight truncate uppercase tracking-tighter", isMobile ? "text-2xl" : "text-4xl")}>
+                                    {space.name}
+                                </CardTitle>
+                                <CardDescription className="text-primary-foreground/80 line-clamp-2 text-xs sm:text-base max-w-2xl font-medium">
                                     {space.description}
                                 </CardDescription>
                             </div>
-                            <Badge variant="secondary" className={cn("border-none backdrop-blur-md shrink-0 text-[10px]", activeTheme.badge)}>
+                            <Badge variant="secondary" className={cn("border-none backdrop-blur-md shrink-0 text-[10px] font-black uppercase h-6", activeTheme.badge)}>
                                 {space.status === 'active' ? 'Aktif' : 'Arsip'}
                             </Badge>
                         </div>
@@ -312,7 +322,7 @@ export default function CollabSpaceDetailPage() {
 
             {/* Content Area */}
             {activeFeature === 'dashboard' ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 animate-fade-in">
+                <AdaptiveCardGrid complexity="medium" className="animate-fade-in">
                     {features.map(f => (
                         <FeatureIcon 
                             key={f.id}
@@ -323,7 +333,7 @@ export default function CollabSpaceDetailPage() {
                             onClick={() => handleFeatureClick(f.id as FeatureType)}
                         />
                     ))}
-                </div>
+                </AdaptiveCardGrid>
             ) : (
                 <div className={cn(
                     "flex flex-col min-h-0",
@@ -331,20 +341,20 @@ export default function CollabSpaceDetailPage() {
                 )}>
                     {(activeFeature !== 'chat' && activeFeature !== 'daily-tasks') && (
                         <div className={cn(
-                            "flex items-center justify-between p-2 px-4 rounded-xl border flex-shrink-0 mb-4",
+                            "flex items-center justify-between p-3 px-5 rounded-2xl border flex-shrink-0 mb-6",
                             "bg-muted/50 shadow-sm",
                             activeTheme.accentBorder
                         )}>
-                            <div className="flex items-center gap-2">
-                                <div className={cn("p-1.5 rounded-lg", activeTheme.iconBg)}>
-                                    {ActiveIcon && <ActiveIcon className={cn("size-3.5", activeTheme.iconText)} />}
+                            <div className="flex items-center gap-3">
+                                <div className={cn("p-2 rounded-xl", activeTheme.iconBg)}>
+                                    {ActiveIcon && <ActiveIcon className={cn("size-4", activeTheme.iconText)} />}
                                 </div>
-                                <span className={cn("text-[9px] sm:text-[10px] font-black uppercase tracking-widest", activeTheme.accentText)}>
+                                <span className={cn("text-[10px] font-black uppercase tracking-[0.2em]", activeTheme.accentText)}>
                                     {activeFeature.replace('-', ' ')}
                                 </span>
                             </div>
-                            <Button variant="ghost" size="sm" onClick={() => handleFeatureClick('dashboard')} className="hover:bg-background h-7 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs">
-                                <X className="size-3 sm:size-3.5 mr-1.5" /> Tutup
+                            <Button variant="ghost" size="sm" onClick={() => handleFeatureClick('dashboard')} className="hover:bg-background h-9 px-4 text-[10px] font-black uppercase tracking-widest gap-2">
+                                <X className="size-4" /> Tutup
                             </Button>
                         </div>
                     )}
@@ -377,12 +387,12 @@ export default function CollabSpaceDetailPage() {
                 <DialogContent className="sm:max-w-md h-[550px] max-h-[85vh] flex flex-col p-0 overflow-hidden shadow-2xl border-none gap-0">
                     <div className="p-6 pb-4 border-b shrink-0 bg-background">
                         <DialogHeader className="p-0">
-                            <DialogTitle className="flex items-center gap-2 text-xl font-headline font-bold">
+                            <DialogTitle className="flex items-center gap-2 text-xl font-headline font-black uppercase tracking-tighter">
                                 <Users size={24} className="text-primary" />
                                 Anggota Ruangan
                             </DialogTitle>
-                            <DialogDescription className="text-sm">
-                                Daftar personil di ruangan <strong>{space.name}</strong>.
+                            <DialogDescription className="text-xs font-bold uppercase tracking-widest text-muted-foreground mt-1">
+                                Total: {space.memberIds.length} Personil Terdaftar
                             </DialogDescription>
                         </DialogHeader>
                     </div>
@@ -392,7 +402,7 @@ export default function CollabSpaceDetailPage() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                             <Input 
                                 placeholder="Cari nama atau jabatan..." 
-                                className="pl-10 h-11 bg-background border-border/60 focus-visible:ring-primary/20 shadow-sm rounded-xl"
+                                className="pl-10 h-11 bg-background border-border/60 focus-visible:ring-primary/20 shadow-sm rounded-xl font-medium"
                                 value={memberSearch}
                                 onChange={(e) => setMemberSearch(e.target.value)}
                             />
@@ -408,13 +418,13 @@ export default function CollabSpaceDetailPage() {
                                 return (
                                     <div key={member.id} className="flex items-center gap-4 p-3 rounded-2xl hover:bg-muted/50 transition-all group">
                                         <Avatar className="size-11 border-2 border-background shadow-md group-hover:scale-105 transition-transform">
-                                            <AvatarFallback className="text-xs font-black bg-primary/10 text-primary">
+                                            <AvatarFallback className="text-[10px] font-black bg-primary/10 text-primary">
                                                 {initials}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
                                             <p className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors">{member.name}</p>
-                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight mt-0.5">{member.position}</p>
+                                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-0.5">{member.position}</p>
                                         </div>
                                         {isCreator && (
                                             <Badge variant="secondary" className="text-[8px] font-black uppercase h-5 px-2 bg-amber-100 text-amber-700 border-none rounded-full shadow-sm shrink-0">
@@ -430,7 +440,7 @@ export default function CollabSpaceDetailPage() {
                     <div className="p-4 border-t bg-muted/10 shrink-0">
                         <Button 
                             variant="outline" 
-                            className="w-full font-black text-xs uppercase tracking-widest h-11 rounded-xl shadow-sm border-border/60 hover:bg-background" 
+                            className="w-full font-black text-[10px] uppercase tracking-[0.2em] h-11 rounded-xl shadow-sm border-border/60 hover:bg-background" 
                             onClick={() => setIsMembersDialogOpen(false)}
                         >
                             Tutup
@@ -438,7 +448,6 @@ export default function CollabSpaceDetailPage() {
                     </div>
                 </DialogContent>
             </Dialog>
-        </div>
+        </ResponsivePage>
     );
 }
-
