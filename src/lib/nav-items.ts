@@ -45,7 +45,8 @@ import {
     Envelope,
     ShoppingCart,
     CaretLeft,
-    DotsThreeOutline
+    DotsThreeOutline,
+    ListChecks
 } from "@phosphor-icons/react";
 
 export const iconMap: { [key: string]: React.ElementType } = {
