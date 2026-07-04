@@ -109,7 +109,7 @@ function MotionNav() {
                                     <CollapsibleTrigger asChild>
                                         <button
                                             className={cn(
-                                                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs w-full text-left transition-all",
+                                                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm w-full text-left transition-all",
                                                 isGroupActive ? "text-primary bg-primary/5 font-bold" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                                             )}
                                         >
@@ -117,7 +117,7 @@ function MotionNav() {
                                               <Icon size={18} />
                                             </div>
                                             {(isOpen || isMobile) && (
-                                                <span className="flex-1 font-bold tracking-tight uppercase text-[10px]">
+                                                <span className="flex-1 font-medium tracking-tight text-sm">
                                                     {item.label}
                                                 </span>
                                             )}
@@ -132,7 +132,7 @@ function MotionNav() {
                                                   return (
                                                       <li key={subItem.href}>
                                                           <Link href={subItem.href} className={cn(
-                                                              "block pl-4 pr-3 py-2 text-[10px] font-bold uppercase tracking-tight transition-all",
+                                                              "block pl-4 pr-3 py-2 text-sm font-medium tracking-tight transition-all",
                                                               isSubActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                                                           )}>
                                                               {subItem.label}
@@ -153,7 +153,7 @@ function MotionNav() {
                             <Link
                                 href={item.href || '#'}
                                 className={cn(
-                                    `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs transition-all`,
+                                    `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all`,
                                     isActive ? "bg-primary text-white shadow-lg shadow-primary/20 font-bold" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                                 )}
                             >
@@ -161,7 +161,7 @@ function MotionNav() {
                                     <Icon size={18} />
                                 </div>
                                 {(isOpen || isMobile) && (
-                                    <span className="font-bold tracking-tight uppercase text-[10px]">
+                                    <span className="font-medium tracking-tight text-sm">
                                     {item.label}
                                     </span>
                                 )}
@@ -187,7 +187,7 @@ function MotionNav() {
                 {(isOpen || isMobile) && (
                   <div className="flex-1 text-left min-w-0">
                     <p className="text-[11px] font-black text-foreground truncate uppercase tracking-tighter">{currentUser?.name}</p>
-                    <div className="flex items-center gap-1.5 text-[9px] font-black text-muted-foreground uppercase group-hover:text-destructive transition-colors">
+                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-muted-foreground group-hover:text-destructive transition-colors">
                         <LogOut size={10} />
                         <span>Log Out</span>
                     </div>

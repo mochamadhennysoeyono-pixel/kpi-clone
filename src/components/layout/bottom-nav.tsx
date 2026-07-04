@@ -160,7 +160,7 @@ export function BottomNav() {
                             <div className="p-2 rounded-xl bg-muted/50">
                                 <LayoutGrid size={22} className="text-muted-foreground" />
                             </div>
-                            <span className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground">Menu</span>
+                            <span className="text-[9px] font-bold text-muted-foreground">Menu</span>
                         </button>
                     );
                 }
@@ -186,7 +186,7 @@ export function BottomNav() {
                             <Icon size={isPortalLink ? 20 : 22} className={cn(isActive ? "text-primary" : "opacity-70", isPortalLink && "text-slate-600 stroke-[3px]")} />
                         </div>
                         <span className={cn(
-                            "text-[8px] font-black uppercase tracking-tighter",
+                            "text-[9px] font-bold",
                             isActive ? "text-primary" : "opacity-60"
                         )}>
                             {item.label}

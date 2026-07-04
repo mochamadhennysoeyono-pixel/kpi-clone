@@ -137,7 +137,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                       ) : (
                         <div className="w-full h-full flex flex-col items-center cursor-pointer">{content}</div>
                       )}
-                      <span className="text-[10px] text-center font-medium text-muted-foreground group-hover:text-foreground h-8">{subItem.label}</span>
+                      <span className="text-[11px] text-center font-medium text-muted-foreground group-hover:text-foreground h-8">{subItem.label}</span>
                     </div>
                   )
                 })}

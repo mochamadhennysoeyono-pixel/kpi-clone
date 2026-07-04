@@ -93,7 +93,7 @@ export default function Header() {
                         variant="ghost" 
                         size="sm" 
                         onClick={() => router.push('/portal')}
-                        className="gap-2 font-black text-[10px] uppercase tracking-widest text-primary hover:text-white hover:bg-primary transition-all px-3 h-8 border border-primary/20 rounded-lg"
+                        className="gap-2 font-semibold text-xs text-primary hover:text-white hover:bg-primary transition-all px-3 h-8 border border-primary/20 rounded-lg"
                     >
                         <ChevronLeft size={14} className="stroke-[3px]" />
                         Portal
@@ -105,9 +105,9 @@ export default function Header() {
 
       <div className="hidden md:flex">
         {isPortal ? (
-            <Badge variant="outline" className="h-7 px-3 rounded-lg gap-2 font-black text-[9px] uppercase tracking-[0.2em] bg-primary/5 border-primary/20 text-primary">
+            <Badge variant="outline" className="h-7 px-3 rounded-lg gap-2 font-semibold text-[11px] bg-primary/5 border-primary/20 text-primary">
                 <LayoutGrid size={12} />
-                Portal Utama PERFOM
+                Portal Utama Perfom
             </Badge>
         ) : <LiveClock />}
       </div>
@@ -131,13 +131,13 @@ export default function Header() {
             <DropdownMenuItem asChild className="p-3 cursor-pointer">
                 <Link href="/settings" className="flex items-center gap-3">
                   <Settings size={14} className="opacity-60"/>
-                  <span className="text-xs font-bold uppercase tracking-tight">Pengaturan</span>
+                  <span className="text-xs font-bold">Pengaturan</span>
                 </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-white/5" />
             <DropdownMenuItem onClick={() => logout()} className="p-3 cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive">
                   <LogOut size={14} className="mr-3" />
-                  <span className="text-xs font-bold uppercase tracking-tight">Keluar</span>
+                  <span className="text-xs font-bold">Keluar</span>
               </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
