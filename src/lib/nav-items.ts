@@ -333,12 +333,11 @@ export function getNavItems(
         .filter((item): item is NonNullable<typeof item> => item !== null);
 
     // --- Dynamic Filtering based on activeModule ---
-    if (activeModule) {
+    // MOD: Superadmin always sees everything. Filtering only for other roles.
+    if (activeModule && userRole !== 'superadmin') {
         visibleItems = visibleItems.filter(item => {
             if ((item as any).moduleId === activeModule) return true;
             if (item.subItems && item.subItems.some(sub => (sub as any).moduleId === activeModule)) return true;
-            // Always allow "Manajemen Sistem" for Superadmin even if they are in a module
-            if (capabilities.isSuperAdmin && item.label === 'Manajemen Sistem') return true;
             return false;
         });
     }

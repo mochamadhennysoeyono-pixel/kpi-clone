@@ -1,3 +1,4 @@
+
 // src/components/layout/header.tsx
 'use client';
 
@@ -102,18 +103,22 @@ export default function Header() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-                <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => router.push('/portal')}
-                    className="hidden lg:flex gap-2 font-bold text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary transition-all active:scale-95 px-2"
-                >
-                    <ChevronLeft size={16} className="stroke-[3px]" />
-                    Portal Utama
-                </Button>
-                <div className="hidden lg:block">
-                     <Separator orientation="vertical" className="h-6 mx-2 opacity-40" />
-                </div>
+                {userRole !== 'superadmin' && (
+                    <>
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => router.push('/portal')}
+                            className="hidden lg:flex gap-2 font-bold text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary transition-all active:scale-95 px-2"
+                        >
+                            <ChevronLeft size={16} className="stroke-[3px]" />
+                            Portal Utama
+                        </Button>
+                        <div className="hidden lg:block">
+                             <Separator orientation="vertical" className="h-6 mx-2 opacity-40" />
+                        </div>
+                    </>
+                )}
                 <SidebarTrigger />
             </div>
           )}

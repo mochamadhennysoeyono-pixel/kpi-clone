@@ -1,3 +1,4 @@
+
 // src/components/ui/sidebar.tsx
 "use client";
 
@@ -37,7 +38,7 @@ function MotionNav() {
   const userCompany = React.useMemo(() => {
     if (!currentUser) return null;
     return companies.find(c => c.name === currentUser.company);
-  }, [companies, currentUser]);
+  }, [currentUser, companies]);
 
   const userSubscriptionPlan = React.useMemo(() => {
     if (!userCompany) return null;
@@ -127,7 +128,8 @@ function MotionNav() {
 
         <ScrollArea className="flex-1 px-4">
              <ul className="space-y-1.5 pb-10">
-                {activeModule && (isOpen || isMobile) && (
+                {/* MOD: Portal link is only for non-superadmins */}
+                {activeModule && userRole !== 'superadmin' && (isOpen || isMobile) && (
                     <li className="mb-6 px-2">
                         <Button 
                             variant="ghost" 
