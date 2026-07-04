@@ -2,14 +2,6 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useMasterData } from "@/contexts/master-data-context";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { 
     Users, 
     Crown, 
@@ -17,7 +9,10 @@ import {
     AlertCircle, 
     ArrowUpRight,
     Clock,
-    TrendingUp
+    TrendingUp,
+    Building,
+    Calendar,
+    Activity
 } from "lucide-react";
 import { format, addDays, isAfter, isBefore, formatDistanceToNowStrict } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -35,46 +30,29 @@ import {
 } from "recharts";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { 
+    ResponsivePage, 
+    ResponsiveGrid 
+} from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { AdaptiveTable } from "@/components/ui/adaptive-table";
+import { ResponsiveStatCard } from "@/components/ui/responsive-stat-card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
 
-
-// =================================================================
-// CONTEXT: APP DASHBOARD - Denser UI Components
-// =================================================================
-
-const PageHeader = ({ title, description, children }) => (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
-        <div>
-            <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
-            <p className="mt-1 text-sm text-slate-500">{description}</p>
-        </div>
-        {children && <div>{children}</div>}
-    </div>
-);
-
-const StatBlock = ({ title, value, description, icon: Icon, iconColor }) => (
-    <div className="p-4">
-        <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{title}</p>
-            <Icon className={`size-4 ${iconColor || 'text-slate-400'}`} />
-        </div>
-        <p className="text-2xl font-bold text-slate-900">{value}</p>
-        <p className="text-xs text-slate-500 mt-1">{description}</p>
-    </div>
-);
-
-// --- CHART CONFIG (keeping it neutral) --- //
+// --- CHART CONFIG --- //
 const CHART_COLORS = ["#1e293b", "#475569", "#64748b", "#94a3b8", "#cbd5e1"];
 const BAR_CHART_FILL = "#1e293b";
 
 export default function AdminDashboardPage() {
   const { companies, employees, subscriptionPlans, subscriptionLogs } = useMasterData();
+  const { isMobile, isTablet, isLaptop } = useBreakpoint();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // All business logic remains the same, no changes here
   const stats = useMemo(() => {
     const activeCompanies = companies.filter(c => c.status === 'Aktif');
     const pendingCompanies = companies.filter(c => c.status === 'Menunggu Persetujuan');
@@ -91,7 +69,7 @@ export default function AdminDashboardPage() {
   }, [companies, subscriptionPlans, employees]);
 
   const planDistributionData = useMemo(() => {
-    const distribution = {};
+    const distribution: Record<string, number> = {};
     companies.forEach(c => {
         const plan = subscriptionPlans.find(p => p.id === c.subscriptionPlanId);
         const planName = plan?.name || (c.subscriptionPlanId === 'default-trial' ? 'TRIAL' : 'N/A');
@@ -104,7 +82,7 @@ export default function AdminDashboardPage() {
     }));
   }, [companies, subscriptionPlans]);
 
- const quotaUsageData = useMemo(() => {
+  const quotaUsageData = useMemo(() => {
     return companies.filter(c => c.status === 'Aktif').map(company => {
         const plan = subscriptionPlans.find(p => p.id === company.subscriptionPlanId);
         const userLimit = company.customUserLimit ?? plan?.userLimit ?? 5;
@@ -118,8 +96,11 @@ export default function AdminDashboardPage() {
     const now = new Date();
     const threshold = addDays(now, 30);
     return companies.filter(c => c.subscriptionExpiryDate && c.status === 'Aktif' && isAfter(new Date(c.subscriptionExpiryDate), now) && isBefore(new Date(c.subscriptionExpiryDate), threshold))
-        .map(c => ({ ...c, daysLeft: formatDistanceToNowStrict(new Date(c.subscriptionExpiryDate), { unit: 'day', locale: localeId }) }))
-        .sort((a, b) => new Date(a.subscriptionExpiryDate).getTime() - new Date(b.subscriptionExpiryDate).getTime());
+        .map(c => ({ 
+            ...c, 
+            daysLeft: formatDistanceToNowStrict(new Date(c.subscriptionExpiryDate!), { unit: 'day', locale: localeId }) 
+        }))
+        .sort((a, b) => new Date(a.subscriptionExpiryDate!).getTime() - new Date(b.subscriptionExpiryDate!).getTime());
   }, [companies]);
 
   const latestActivity = useMemo(() => {
@@ -129,163 +110,232 @@ export default function AdminDashboardPage() {
   if (!isClient) return null;
 
   return (
-    <div className="space-y-6 animate-fade-in pb-10">
+    <ResponsivePage>
       <PageHeader 
         title="Dasbor Bisnis" 
         description="Monitoring pendapatan, utilitas klien, dan kesehatan langganan global."
-      >
-        <Button asChild size="sm" className="bg-slate-900 text-white hover:bg-slate-800 active:scale-95">
-            <Link href="/subscription-logs">Lihat Audit Log <ArrowUpRight className="ml-2 size-3" /></Link>
-        </Button>
-      </PageHeader>
+        icon={LayoutDashboard}
+        actions={
+            <Button asChild className="font-bold shadow-lg h-10 px-6 active:scale-95">
+                <Link href="/subscription-logs">
+                    <Activity className="mr-2 size-4" />
+                    Lihat Audit Log
+                </Link>
+            </Button>
+        }
+      />
 
-      {/* --- REFACTORED: Hero Stats (Dense) --- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border border-slate-200 rounded-lg divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
-        <StatBlock
+      {/* --- HERO STATS: Adaptive Grid --- */}
+      <ResponsiveGrid cols={{ xs: 1, sm: 2, md: 2, lg: 4, xl: 4 }}>
+        <ResponsiveStatCard
           title="Estimasi Revenue"
           value={`Rp ${(stats.totalRevenue / 1000000).toFixed(1)}jt`}
           icon={Wallet}
           description="Total nilai paket aktif"
-          iconColor="text-emerald-500"
+          color="bg-emerald-500/10 text-emerald-600"
         />
-        <StatBlock
+        <ResponsiveStatCard
           title="Langganan Berbayar"
           value={stats.activePaidSubscribers.toString()}
           icon={Crown}
           description="Perusahaan Non-Trial"
-          iconColor="text-amber-500"
+          color="bg-amber-500/10 text-amber-600"
         />
-        <StatBlock
+        <ResponsiveStatCard
           title="Total User Sistem"
           value={stats.totalUsers.toString()}
           icon={Users}
           description="Akun karyawan aktif"
         />
-        <StatBlock
+        <ResponsiveStatCard
           title="Pending Aktivasi"
           value={stats.pendingCount.toString()}
           icon={AlertCircle}
           description="Butuh persetujuan"
-          iconColor={stats.pendingCount > 0 ? "text-rose-500" : "text-slate-400"}
+          color={stats.pendingCount > 0 ? "bg-rose-500/10 text-rose-600" : "bg-slate-100 text-slate-400"}
         />
-      </div>
+      </ResponsiveGrid>
 
-      {/* --- REFACTORED: Analytics Section (Dense) --- */}
-      <div className="space-y-6 pt-6 border-t border-slate-200">
-        
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Plan Distribution */}
-            <div className="lg:col-span-5">
-                <h2 className="text-sm font-semibold text-slate-600 mb-3">Sebaran Paket Aktif</h2>
-                <div className="w-full h-[300px] flex items-center">
-                    <ResponsiveContainer width="60%" height="100%">
-                        <PieChart>
-                            <Pie data={planDistributionData} innerRadius={60} outerRadius={90} paddingAngle={3} dataKey="value">
-                                {planDistributionData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}
-                            </Pie>
-                            <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }} />
-                        </PieChart>
-                    </ResponsiveContainer>
-                    <div className="flex flex-col gap-3 w-[40%] pl-4">
+      {/* --- ANALYTICS SECTION --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8">
+        {/* Plan Distribution */}
+        <Card className="lg:col-span-5 shadow-sm border-border/40 overflow-hidden">
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <TrendingUp size={14} className="text-primary" /> Sebaran Paket Aktif
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="flex flex-col sm:flex-row items-center h-full min-h-[300px]">
+                    <div className="w-full sm:w-1/2 h-[250px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie 
+                                    data={planDistributionData} 
+                                    innerRadius={isMobile ? 50 : 60} 
+                                    outerRadius={isMobile ? 80 : 90} 
+                                    paddingAngle={3} 
+                                    dataKey="value"
+                                >
+                                    {planDistributionData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}
+                                </Pie>
+                                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '11px' }} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                    <div className="w-full sm:w-1/2 flex flex-col gap-2.5 pl-0 sm:pl-6 mt-4 sm:mt-0">
                         {planDistributionData.map((item, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                                <div className="size-2.5 rounded-full" style={{ backgroundColor: item.fill }} />
-                                <span className="text-xs font-medium text-slate-600 uppercase">{item.name}</span>
-                                <span className="text-xs font-bold ml-auto text-slate-800">{item.value}</span>
+                            <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+                                <div className="flex items-center gap-2">
+                                    <div className="size-2 rounded-full" style={{ backgroundColor: item.fill }} />
+                                    <span className="text-[10px] font-black uppercase text-slate-600">{item.name}</span>
+                                </div>
+                                <span className="text-xs font-black text-slate-900">{item.value} Klien</span>
                             </div>
                         ))}
                     </div>
                 </div>
-            </div>
+            </CardContent>
+        </Card>
 
-            {/* Quota Consumers */}
-            <div className="lg:col-span-7">
-                 <h2 className="text-sm font-semibold text-slate-600 mb-1">Utilisasi Kuota User Tertinggi</h2>
-                 <p className="text-xs text-slate-500 mb-3">Top 5 perusahaan dengan penggunaan kuota user terbanyak (%).</p>
-                <div className="w-full h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={quotaUsageData} layout="vertical" margin={{ left: 10, right: 30 }}>
-                            <XAxis type="number" domain={[0, 100]} hide />
-                            <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fill: '#475569' }} width={80} axisLine={false} tickLine={false} />
-                            <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }} />
-                            <Bar dataKey="usage" fill={BAR_CHART_FILL} radius={[4, 4, 4, 4]} barSize={16} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
+        {/* Quota Consumers */}
+        <Card className="lg:col-span-7 shadow-sm border-border/40 overflow-hidden">
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <Users size={14} className="text-primary" /> Utilisasi Kuota User Tertinggi (%)
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="h-[300px] pt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={quotaUsageData} layout="vertical" margin={{ left: -10, right: 30, top: 0, bottom: 0 }}>
+                        <XAxis type="number" domain={[0, 100]} hide />
+                        <YAxis 
+                            dataKey="name" 
+                            type="category" 
+                            tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} 
+                            width={100} 
+                            axisLine={false} 
+                            tickLine={false} 
+                        />
+                        <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', fontSize: '11px' }} />
+                        <Bar dataKey="usage" fill={BAR_CHART_FILL} radius={[0, 4, 4, 0]} barSize={16} />
+                    </BarChart>
+                </ResponsiveContainer>
+            </CardContent>
+        </Card>
+      </div>
+
+      {/* --- TABLES SECTION: Adaptive Tables --- */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-8">
+        <div className="space-y-4">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1 flex items-center gap-2">
+                <Clock className="size-3.5 text-rose-500" /> Akan Kedaluwarsa
+            </h2>
+            <AdaptiveTable
+                data={expiringSoon}
+                keyExtractor={(c) => c.id}
+                emptyMessage="Tidak ada paket yang segera berakhir."
+                columns={[
+                    {
+                        header: "Perusahaan",
+                        cell: (c) => (
+                            <div className="flex items-center gap-2">
+                                <Building size={14} className="text-muted-foreground" />
+                                <span className="font-bold text-slate-800">{c.name}</span>
+                            </div>
+                        )
+                    },
+                    {
+                        header: "Tanggal Berakhir",
+                        cell: (c) => (
+                            <div className="flex items-center gap-2 text-slate-600">
+                                <Calendar size={14} className="opacity-40" />
+                                {format(new Date(c.subscriptionExpiryDate!), "d MMM yyyy")}
+                            </div>
+                        )
+                    },
+                    {
+                        header: "Sisa Waktu",
+                        className: "text-right",
+                        cell: (c) => (
+                            <Badge variant="destructive" className="font-black text-[9px] uppercase tracking-tighter h-5">
+                                {c.daysLeft.split(' ')[0]} HARI LAGI
+                            </Badge>
+                        )
+                    }
+                ]}
+                renderMobileCard={(c) => (
+                    <Card className="border-rose-100 bg-rose-50/30">
+                        <CardContent className="p-4 flex items-center justify-between">
+                            <div className="min-w-0">
+                                <h3 className="font-black text-sm uppercase truncate">{c.name}</h3>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1 mt-0.5">
+                                    <Calendar size={10} /> {format(new Date(c.subscriptionExpiryDate!), "d MMM yyyy")}
+                                </p>
+                            </div>
+                            <Badge variant="destructive" className="font-black text-[10px] h-6 shrink-0">{c.daysLeft.split(' ')[0]} HARI</Badge>
+                        </CardContent>
+                    </Card>
+                )}
+            />
         </div>
 
-        {/* --- REFACTORED: Tables Row (Dense) --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-6 border-t border-slate-200">
-            <div>
-                <h2 className="text-base font-bold text-slate-800 flex items-center gap-2 mb-1">
-                    <Clock className="size-4 text-rose-500" />
-                    Akan Kedaluwarsa ({expiringSoon.length})
-                </h2>
-                <p className="text-sm text-slate-500 mb-3">Klien yang masa aktifnya habis dalam 30 hari ke depan.</p>
-                <div className="border border-slate-200 rounded-lg overflow-hidden">
-                     <Table>
-                        <TableHeader className="bg-slate-50">
-                            <TableRow>
-                                <TableHead className="pl-4 text-xs">Perusahaan</TableHead>
-                                <TableHead className="text-xs">Berakhir</TableHead>
-                                <TableHead className="text-right pr-4 text-xs">Sisa Hari</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {expiringSoon.length > 0 ? expiringSoon.map(c => (
-                                <TableRow key={c.id} className="hover:bg-slate-50">
-                                    <TableCell className="pl-4 font-medium text-sm text-slate-800">{c.name}</TableCell>
-                                    <TableCell className="text-sm text-slate-600">{format(new Date(c.subscriptionExpiryDate), "d MMM yyyy")}</TableCell>
-                                    <TableCell className="text-right pr-4">
-                                        <Badge variant="destructive" className="text-xs">{c.daysLeft.split(' ')[0]} hari</Badge>
-                                    </TableCell>
-                                </TableRow>
-                            )) : (
-                                <TableRow><TableCell colSpan={3} className="h-24 text-center text-slate-500 text-sm italic">Tidak ada paket yang segera berakhir.</TableCell></TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-            </div>
-            <div>
-                <h2 className="text-base font-bold text-slate-800 flex items-center gap-2 mb-1">
-                    <TrendingUp className="size-4 text-slate-500" />
-                    Aktivitas Transaksi Terakhir
-                </h2>
-                <p className="text-sm text-slate-500 mb-3">Log histori pembaruan paket & registrasi.</p>
-                <div className="border border-slate-200 rounded-lg overflow-hidden">
-                    <Table>
-                        <TableHeader className="bg-slate-50">
-                            <TableRow>
-                                <TableHead className="pl-4 text-xs">Waktu</TableHead>
-                                <TableHead className="text-xs">Aksi</TableHead>
-                                <TableHead className="text-right pr-4 text-xs">Nilai (Rp)</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {latestActivity.length > 0 ? latestActivity.map(log => (
-                                <TableRow key={log.id} className="hover:bg-slate-50">
-                                    <TableCell className="pl-4 text-xs font-medium text-slate-500">
-                                        {log.timestamp?.toDate ? format(log.timestamp.toDate(), "d MMM, HH:mm") : "N/A"}
-                                    </TableCell>
-                                    <TableCell>
-                                        <p className="text-sm font-medium leading-tight text-slate-800">{log.companyName}</p>
-                                        <Badge variant="outline" className="text-[9px] uppercase font-semibold mt-0.5">{log.action.replace('_', ' ')}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right pr-4 font-mono text-sm font-semibold text-slate-800">
-                                        {log.amount.toLocaleString('id-ID')}
-                                    </TableCell>
-                                </TableRow>
-                            )) : (
-                                <TableRow><TableCell colSpan={3} className="h-24 text-center text-slate-500 text-sm italic">Belum ada aktivitas tercatat.</TableCell></TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-            </div>
+        <div className="space-y-4">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1 flex items-center gap-2">
+                <TrendingUp className="size-3.5 text-blue-500" /> Aktivitas Transaksi
+            </h2>
+            <AdaptiveTable
+                data={latestActivity}
+                keyExtractor={(log) => log.id}
+                emptyMessage="Belum ada aktivitas tercatat."
+                columns={[
+                    {
+                        header: "Waktu",
+                        cell: (log) => (
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                                {log.timestamp?.toDate ? format(log.timestamp.toDate(), "d MMM, HH:mm") : "N/A"}
+                            </span>
+                        )
+                    },
+                    {
+                        header: "Detail Aksi",
+                        cell: (log) => (
+                            <div className="flex flex-col gap-0.5">
+                                <span className="font-bold text-slate-900 text-xs">{log.companyName}</span>
+                                <Badge variant="outline" className="w-fit text-[8px] font-black uppercase h-4 px-1.5 border-none bg-slate-100">{log.action.replace('_', ' ')}</Badge>
+                            </div>
+                        )
+                    },
+                    {
+                        header: "Nilai (Rp)",
+                        className: "text-right",
+                        cell: (log) => (
+                            <span className="font-mono text-xs font-black text-slate-800">
+                                {log.amount.toLocaleString('id-ID')}
+                            </span>
+                        )
+                    }
+                ]}
+                renderMobileCard={(log) => (
+                    <Card className="border-border/40 shadow-sm">
+                        <CardContent className="p-4">
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="min-w-0">
+                                    <h4 className="font-black text-sm uppercase truncate text-slate-800">{log.companyName}</h4>
+                                    <p className="text-[9px] font-bold text-muted-foreground uppercase">{log.timestamp?.toDate ? format(log.timestamp.toDate(), "d MMM, HH:mm") : "N/A"}</p>
+                                </div>
+                                <Badge variant="secondary" className="text-[8px] font-black uppercase">{log.action.replace('_', ' ')}</Badge>
+                            </div>
+                            <div className="flex justify-between items-center pt-2 border-t border-dashed">
+                                <span className="text-[9px] font-black text-muted-foreground uppercase">Nilai Transaksi</span>
+                                <span className="font-mono text-sm font-black text-primary">Rp {log.amount.toLocaleString('id-ID')}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+            />
         </div>
       </div>
-    </div>
+    </ResponsivePage>
   );
 }
