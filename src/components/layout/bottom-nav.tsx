@@ -55,7 +55,7 @@ export function BottomNav() {
     }
     const allDesktopItems = getNavItems(userRole, hasSubordinates, userCompany, userSubscriptionPlan, false, currentUser, okrs, activeModule);
     const menuGroup = {
-      label: 'Semua Menu',
+      label: 'Menu Utama',
       subItems: allDesktopItems,
     };
     setActiveGroup(menuGroup);
@@ -130,7 +130,7 @@ export function BottomNav() {
                 <div className="flex justify-center -translate-y-4">
                     <button 
                         onClick={handleMenuClick} 
-                        className="size-14 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20 ring-4 ring-white transition-transform active:scale-90"
+                        className="size-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-black/20 ring-4 ring-white transition-transform active:scale-90"
                     >
                         <SquaresFour size={26} weight="fill" />
                     </button>
@@ -171,7 +171,7 @@ export function BottomNav() {
                             className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-90 group"
                         >
                             <div className="p-1.5 rounded-lg transition-all duration-300 group-active:scale-125">
-                                <SquaresFour size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} className="opacity-60" />
+                                <SquaresFour size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} className="opacity-90" />
                             </div>
                             <span className="text-[9px] font-black uppercase text-slate-400">Menu</span>
                         </button>
@@ -197,7 +197,7 @@ export function BottomNav() {
                             isActive ? "bg-primary/5 scale-110" : "bg-transparent group-active:scale-125",
                             isPortalLink && "bg-slate-50 border border-slate-100"
                         )}>
-                            <Icon size={isPortalLink ? 18 : 22} weight="fill" style={{ fill: isPortalLink ? "#171717" : "url(#brand-gradient)" }} className={cn(isActive ? "opacity-100" : "opacity-60")} />
+                            <Icon size={isPortalLink ? 18 : 22} weight="fill" style={{ fill: isPortalLink ? "#171717" : "url(#brand-gradient)" }} className={cn(isActive ? "opacity-100" : "opacity-90")} />
                         </div>
                         <span className={cn(
                             "text-[9px] font-black uppercase tracking-tight",

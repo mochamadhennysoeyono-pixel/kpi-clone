@@ -9,7 +9,6 @@ import { usePathname } from "next/navigation";
 import { useSubMenu } from './submenu-context';
 import React from "react";
 import { ScrollArea } from "../ui/scroll-area";
-import { Separator } from "../ui/separator";
 
 interface SubMenuOverlayProps {
   activeGroup: any;
@@ -95,7 +94,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                             <CaretLeft className="size-4 text-slate-900" weight="bold" />
                         </button>
                     ) : (
-                        <div className="size-9 rounded-xl bg-primary/5 flex items-center justify-center text-primary border border-primary/10 shadow-sm">
+                        <div className="size-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-900 border border-slate-100 shadow-sm">
                             <SquaresFour size={20} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
                         </div>
                     )}
@@ -104,7 +103,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                             {currentView.label}
                         </h2>
                         <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-60 mt-1.5">
-                            Executive Navigator
+                            Navigator
                         </p>
                     </div>
                 </div>
@@ -116,7 +115,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                 </button>
             </div>
 
-            {/* High-Density Grid Area */}
+            {/* Obsidian Grid Area */}
             <div className="flex-1 min-h-0 bg-[#fafafa]">
                 <ScrollArea className="h-full">
                     <div className="p-5 pb-16">
@@ -142,24 +141,24 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                             "flex flex-col items-center justify-center gap-3 p-4 rounded-xl transition-all duration-300 border group/item active:scale-95",
                                             isActive 
                                                 ? "bg-white border-primary shadow-lg ring-1 ring-primary/10" 
-                                                : "bg-white border-slate-100 hover:border-primary/20 hover:shadow-stripe"
+                                                : "bg-white border-slate-100 hover:border-slate-300 hover:shadow-stripe"
                                         )}>
                                             <div className={cn(
                                                 "size-10 flex items-center justify-center transition-all duration-500",
-                                                isActive ? "scale-110" : "group-hover/item:scale-125 group-hover/item:rotate-12"
+                                                isActive ? "scale-110" : "group-hover/item:scale-125"
                                             )}>
                                                 {IconComponent && (
                                                     <IconComponent 
                                                         size={32} 
                                                         weight="fill" 
                                                         style={{ fill: "url(#brand-gradient)" }} 
-                                                        className={cn(isActive ? "opacity-100" : "opacity-80")}
+                                                        className={cn(isActive ? "opacity-100" : "opacity-90")}
                                                     />
                                                 )}
                                             </div>
                                             <span className={cn(
-                                                "text-[10px] text-center font-bold tracking-tight leading-tight px-0.5 transition-colors uppercase",
-                                                isActive ? "text-primary" : "text-slate-600 group-hover/item:text-slate-900"
+                                                "text-[10px] text-center font-black tracking-tight leading-tight px-0.5 transition-colors uppercase",
+                                                isActive ? "text-primary" : "text-slate-500 group-hover/item:text-slate-900"
                                             )}>
                                                 {subItem.label}
                                             </span>

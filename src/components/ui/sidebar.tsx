@@ -22,7 +22,7 @@ import { ScrollArea } from "./scroll-area";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { Avatar, AvatarFallback } from "./avatar";
 
-/** AppSidebar component - Optimized for Premium Industrial Utility */
+/** AppSidebar component - Optimized for Obsidian Glass Aesthetic */
 function MotionNav() {
   const { isOpen, setIsOpen } = useSidebar();
   const pathname = usePathname();
@@ -112,8 +112,8 @@ function MotionNav() {
                                                 isGroupActive ? "text-primary bg-primary/5 font-bold" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
                                             )}
                                         >
-                                            <div className="flex size-5 items-center justify-center shrink-0 transition-transform group-hover:scale-125 group-hover:rotate-12">
-                                              {Icon && <Icon size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} className={cn(isGroupActive ? "opacity-100" : "opacity-40 grayscale group-hover:opacity-100 group-hover:grayscale-0")} />}
+                                            <div className="flex size-5 items-center justify-center shrink-0 transition-transform group-hover:scale-125">
+                                              {Icon && <Icon size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} className={cn(isGroupActive ? "opacity-100" : "opacity-80 group-hover:opacity-100")} />}
                                             </div>
                                             {(isOpen || isMobile) && (
                                                 <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 font-bold tracking-tight text-[11px] uppercase">
@@ -156,8 +156,8 @@ function MotionNav() {
                                     isActive ? "bg-white border border-slate-100 shadow-md font-bold ring-1 ring-primary/5" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
                                 )}
                             >
-                                <div className="flex size-5 items-center justify-center shrink-0 transition-transform group-hover:scale-125 group-hover:rotate-12">
-                                    {Icon && <Icon size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} className={cn(isActive ? "opacity-100" : "opacity-40 grayscale group-hover:opacity-100 group-hover:grayscale-0")} />}
+                                <div className="flex size-5 items-center justify-center shrink-0 transition-transform group-hover:scale-125">
+                                    {Icon && <Icon size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} className={cn(isActive ? "opacity-100" : "opacity-80 group-hover:opacity-100")} />}
                                 </div>
                                 {(isOpen || isMobile) && (
                                     <span className="font-bold tracking-tight text-[11px] uppercase">
