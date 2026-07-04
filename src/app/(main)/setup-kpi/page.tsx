@@ -187,7 +187,7 @@ export default function SetupKpiPage() {
     <div className="w-full min-w-0 space-y-6">
       <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
         <CardHeader className="px-4 sm:px-6">
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+          <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6">
             <div className="flex items-start gap-3 flex-1 min-w-0">
                 <div className="p-2 bg-primary/10 rounded-lg shrink-0">
                     <Settings className="size-6 text-primary" />
@@ -196,7 +196,7 @@ export default function SetupKpiPage() {
                     <CardTitle className="font-headline text-xl sm:text-2xl text-foreground">
                         Pengaturan KPI
                     </CardTitle>
-                    <CardDescription className="text-sm leading-relaxed max-w-full">
+                    <CardDescription className="text-sm leading-relaxed max-w-full break-words">
                         Kelola konfigurasi KPI untuk berbagai peran dan departemen.
                     </CardDescription>
                 </div>
@@ -210,7 +210,7 @@ export default function SetupKpiPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="px-4 sm:px-6 pt-6">
+        <CardContent className="px-4 sm:px-6 pt-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6 p-4 border rounded-xl bg-muted/30">
                {showCompanyFilter && (
                 <div className="space-y-1.5">
@@ -260,96 +260,101 @@ export default function SetupKpiPage() {
                     </Select>
               </div>
             </div>
-          <Accordion type="single" collapsible className="w-full">
-            {filteredSetups.map((setup) => (
-              <AccordionItem value={setup.id} key={setup.id} className="border rounded-xl mb-3 overflow-hidden bg-background shadow-sm">
-                <AccordionTrigger className="px-4 py-4 hover:no-underline">
-                    <div className="flex items-center justify-between w-full pr-4">
-                        <div className="text-left grid gap-0.5 min-w-0 flex-1">
-                            <p className="font-bold text-slate-900 truncate">{setup.position} ({setup.level})</p>
-                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-tight truncate">
-                                <span>{setup.department}</span>
-                                {(userRole === 'superadmin' || isHoldingAdmin) && (
-                                    <>
-                                        <span className="opacity-30">•</span>
-                                        <span className="text-primary">{setup.company}</span>
-                                    </>
-                                )}
-                            </div>
-                            <div className="flex items-center text-[10px] font-medium text-muted-foreground gap-1.5 pt-1.5">
-                                <CalendarDays className="size-3" />
-                                <span>{formatPeriod(setup.validFrom)} - {formatPeriod(setup.validTo)}</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                            {!!setup.pendingIndicators?.length && (
-                                <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100 animate-pulse">
-                                            <BellRing className="size-3.5" />
-                                            <span className="text-[10px] font-black">{setup.pendingIndicators.length} BARU</span>
-                                        </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="z-[350]">
-                                    <p>Ada KPI turunan baru yang perlu ditinjau.</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                                </TooltipProvider>
-                            )}
-                            <Badge variant={setup.status === "Aktif" ? "default" : "outline"} className="text-[9px] uppercase font-black px-1.5 h-5">
-                                {setup.status}
-                            </Badge>
-                        </div>
-                    </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                    <div className="px-4 pb-4">
-                        {setup.description && (
-                            <p className="text-xs text-muted-foreground mb-4 bg-muted/20 p-3 rounded-lg border border-dashed">{setup.description}</p>
-                        )}
-                         <div className="overflow-x-auto rounded-lg border">
-                            <Table>
-                                <TableHeader className="bg-muted/30">
-                                    <TableRow>
-                                        <TableHead className="text-[10px] font-bold uppercase">Indikator</TableHead>
-                                        <TableHead className="text-[10px] font-bold uppercase">Target</TableHead>
-                                        <TableHead className="text-right text-[10px] font-bold uppercase">Bobot</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {setup.indicators.map(indicator => (
-                                        <TableRow key={indicator.id} className="hover:bg-muted/5">
-                                            <TableCell className="font-bold text-xs py-3">{indicator.indicator}</TableCell>
-                                            <TableCell className="text-xs font-medium">{indicator.target} {indicator.targetFormat === 'Persentase' ? '%' : indicator.unit}</TableCell>
-                                            <TableCell className="text-right font-black text-primary text-xs">{indicator.weight}%</TableCell>
+          
+          <div className="w-full min-w-0">
+            <Accordion type="single" collapsible className="w-full">
+              {filteredSetups.map((setup) => (
+                <AccordionItem value={setup.id} key={setup.id} className="border rounded-xl mb-3 overflow-hidden bg-background shadow-sm">
+                  <AccordionTrigger className="px-4 py-4 hover:no-underline">
+                      <div className="flex items-center justify-between w-full pr-4">
+                          <div className="text-left grid gap-0.5 min-w-0 flex-1">
+                              <p className="font-bold text-slate-900 truncate">{setup.position} ({setup.level})</p>
+                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-tight truncate">
+                                  <span>{setup.department}</span>
+                                  {(userRole === 'superadmin' || isHoldingAdmin) && (
+                                      <>
+                                          <span className="opacity-30">•</span>
+                                          <span className="text-primary">{setup.company}</span>
+                                      </>
+                                  )}
+                              </div>
+                              <div className="flex items-center text-[10px] font-medium text-muted-foreground gap-1.5 pt-1.5">
+                                  <CalendarDays className="size-3" />
+                                  <span>{formatPeriod(setup.validFrom)} - {formatPeriod(setup.validTo)}</span>
+                              </div>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                              {!!setup.pendingIndicators?.length && (
+                                  <TooltipProvider>
+                                  <Tooltip>
+                                      <TooltipTrigger asChild>
+                                          <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100 animate-pulse">
+                                              <BellRing className="size-3.5" />
+                                              <span className="text-[10px] font-black">{setup.pendingIndicators.length} BARU</span>
+                                          </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="z-[350]">
+                                      <p>Ada KPI turunan baru yang perlu ditinjau.</p>
+                                      </TooltipContent>
+                                  </Tooltip>
+                                  </TooltipProvider>
+                              )}
+                              <Badge variant={setup.status === "Aktif" ? "default" : "outline"} className="text-[9px] uppercase font-black px-1.5 h-5">
+                                  {setup.status}
+                              </Badge>
+                          </div>
+                      </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                      <div className="px-4 pb-4">
+                          {setup.description && (
+                              <p className="text-xs text-muted-foreground mb-4 bg-muted/20 p-3 rounded-lg border border-dashed">{setup.description}</p>
+                          )}
+                           <div className="w-full overflow-hidden min-w-0 rounded-lg border">
+                              <div className="overflow-x-auto w-full">
+                                <Table className="min-w-[500px]">
+                                    <TableHeader className="bg-muted/30">
+                                        <TableRow>
+                                            <TableHead className="text-[10px] font-bold uppercase">Indikator</TableHead>
+                                            <TableHead className="text-[10px] font-bold uppercase">Target</TableHead>
+                                            <TableHead className="text-right text-[10px] font-bold uppercase">Bobot</TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                        <div className="mt-4 flex justify-end gap-2">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button aria-haspopup="true" size="sm" variant="ghost" className="h-8 gap-2 font-bold text-muted-foreground">
-                                    <MoreHorizontal className="size-4" />
-                                    <span>Pilihan Aksi</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="z-[350]">
-                                  <DropdownMenuLabel className="text-[10px] uppercase opacity-60">Manajemen Setup</DropdownMenuLabel>
-                                  <DropdownMenuItem onClick={() => handleEditSetup(setup)} className="text-xs">Ubah Pengaturan</DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleDuplicateSetup(setup)} className="text-xs">Duplikat Pengaturan</DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem className="text-destructive font-bold text-xs" onClick={() => openDeleteDialog(setup)}>Hapus Pengaturan</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                        </div>
-                    </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {setup.indicators.map(indicator => (
+                                            <TableRow key={indicator.id} className="hover:bg-muted/5">
+                                                <TableCell className="font-bold text-xs py-3">{indicator.indicator}</TableCell>
+                                                <TableCell className="text-xs font-medium">{indicator.target} {indicator.targetFormat === 'Persentase' ? '%' : indicator.unit}</TableCell>
+                                                <TableCell className="text-right font-black text-primary text-xs">{indicator.weight}%</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                              </div>
+                          </div>
+                          <div className="mt-4 flex justify-end gap-2">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="sm" variant="ghost" className="h-8 gap-2 font-bold text-muted-foreground">
+                                      <MoreHorizontal className="size-4" />
+                                      <span>Pilihan Aksi</span>
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="z-[350]">
+                                    <DropdownMenuLabel className="text-[10px] uppercase opacity-60">Manajemen Setup</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => handleEditSetup(setup)} className="text-xs">Ubah Pengaturan</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleDuplicateSetup(setup)} className="text-xs">Duplikat Pengaturan</DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem className="text-destructive font-bold text-xs" onClick={() => openDeleteDialog(setup)}>Hapus Pengaturan</DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                          </div>
+                      </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
            {filteredSetups.length === 0 && (
               <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-xl">
                   <Settings className="size-10 mx-auto mb-3 opacity-20" />

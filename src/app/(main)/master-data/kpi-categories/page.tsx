@@ -48,7 +48,6 @@ export default function KpiCategoriesPage() {
   const [categoriesToDelete, setCategoriesToDelete] = useState<KpiCategory[] | null>(null);
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('all');
   
   const defaultCategoryIds = useMemo(() => new Set(DEFAULT_KPI_CATEGORIES.map(c => c.id)), []);
@@ -131,24 +130,24 @@ export default function KpiCategoriesPage() {
   };
   
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
-        <CardHeader>
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <CardHeader className="px-4 sm:px-6">
+          <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6">
             <div className="flex items-start gap-3 flex-1 min-w-0">
               <div className="p-2 bg-primary/10 rounded-lg shrink-0">
                 <FolderKanban className="size-6 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <CardTitle className="font-headline text-xl sm:text-2xl text-foreground truncate">
+                <CardTitle className="font-headline text-xl sm:text-2xl text-foreground">
                     Kategori KPI
                 </CardTitle>
-                <CardDescription className="text-sm leading-relaxed">
+                <CardDescription className="text-sm leading-relaxed max-w-full break-words">
                    Definisikan dan kelola kategori untuk Indikator Kinerja Utama. Menampilkan {filteredCategories.length} data.
                 </CardDescription>
               </div>
             </div>
-             <div className="flex flex-wrap items-center gap-2 shrink-0 self-end lg:self-center">
+             <div className="flex flex-wrap items-center gap-2 shrink-0 self-end xl:self-center">
                 {selectedRowIds.length > 0 && (
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -174,7 +173,7 @@ export default function KpiCategoriesPage() {
              </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-6">
+        <CardContent className="px-4 sm:px-6 pt-2">
           {userRole === 'superadmin' && (
             <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 border rounded-xl bg-muted/30 max-w-full">
               <div className="flex flex-1 items-center gap-2 min-w-0">
@@ -193,75 +192,77 @@ export default function KpiCategoriesPage() {
               </div>
             </div>
           )}
-          <div className="overflow-x-auto rounded-xl border shadow-sm">
-            <Table className="min-w-[800px]">
-                <TableHeader className="bg-muted/50">
-                <TableRow>
-                    <TableHead className="w-[40px]">
-                        <Checkbox
-                            checked={selectedRowIds.length > 0 && selectedRowIds.length === filteredCategories.filter(c => !defaultCategoryIds.has(c.id)).length && filteredCategories.filter(c => !defaultCategoryIds.has(c.id)).length > 0}
-                            onCheckedChange={(checked) => handleSelectAll(checked)}
-                            aria-label="Pilih semua"
-                        />
-                    </TableHead>
-                    <TableHead className="w-[120px]">Kode</TableHead>
-                    <TableHead>Nama Kategori</TableHead>
-                    {userRole === 'superadmin' && <TableHead>Konteks</TableHead>}
-                    <TableHead>Status</TableHead>
-                    <TableHead>Deskripsi</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-                </TableHeader>
-                <TableBody>
-                {filteredCategories.map((category) => {
-                    const isDefault = defaultCategoryIds.has(category.id);
-                    return (
-                    <TableRow key={category.id} data-state={selectedRowIds.includes(category.id) && "selected"} className="hover:bg-muted/5">
-                        <TableCell>
+          <div className="w-full overflow-hidden min-w-0 rounded-xl border shadow-sm">
+            <div className="overflow-x-auto w-full">
+                <Table className="min-w-[800px]">
+                    <TableHeader className="bg-muted/50">
+                    <TableRow>
+                        <TableHead className="w-[40px]">
                             <Checkbox
-                                checked={selectedRowIds.includes(category.id)}
-                                onCheckedChange={() => handleRowSelect(category.id)}
-                                aria-label={`Pilih ${category.name}`}
-                                disabled={isDefault}
+                                checked={selectedRowIds.length > 0 && selectedRowIds.length === filteredCategories.filter(c => !defaultCategoryIds.has(c.id)).length && filteredCategories.filter(c => !defaultCategoryIds.has(c.id)).length > 0}
+                                onCheckedChange={(checked) => handleSelectAll(checked)}
+                                aria-label="Pilih semua"
                             />
-                        </TableCell>
-                        <TableCell className="font-mono text-sm font-bold text-primary">{category.code}</TableCell>
-                        <TableCell className="font-bold text-slate-900">{category.name}</TableCell>
-                        {userRole === 'superadmin' && (
-                            <TableCell>
-                                {isDefault ? <Badge variant="secondary" className="text-[8px] font-black uppercase">GLOBAL</Badge> : <span className="text-xs font-semibold">{category.company}</span>}
-                            </TableCell>
-                        )}
-                        <TableCell>
-                        <Badge variant={category.status === "Aktif" ? "default" : "outline"} className="text-[10px] uppercase font-black">
-                            {category.status}
-                        </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground leading-relaxed max-w-xs truncate">{category.description}</TableCell>
-                        <TableCell className="text-right">
-                        {isDefault ? (
-                            <div className="flex justify-end pr-4"><Lock className="size-4 text-muted-foreground/30" /></div>
-                        ) : (
-                            <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
-                                <MoreHorizontal className="size-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="z-[350]">
-                                <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Opsi Kategori</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => handleEditCategory(category)}>Ubah Detail</DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(category)}>Hapus</DropdownMenuItem>
-                            </DropdownMenuContent>
-                            </DropdownMenu>
-                        )}
-                        </TableCell>
+                        </TableHead>
+                        <TableHead className="w-[120px]">Kode</TableHead>
+                        <TableHead>Nama Kategori</TableHead>
+                        {userRole === 'superadmin' && <TableHead>Konteks</TableHead>}
+                        <TableHead>Status</TableHead>
+                        <TableHead>Deskripsi</TableHead>
+                        <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
-                    )
-                })}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                    {filteredCategories.map((category) => {
+                        const isDefault = defaultCategoryIds.has(category.id);
+                        return (
+                        <TableRow key={category.id} data-state={selectedRowIds.includes(category.id) && "selected"} className="hover:bg-muted/5 group">
+                            <TableCell>
+                                <Checkbox
+                                    checked={selectedRowIds.includes(category.id)}
+                                    onCheckedChange={() => handleRowSelect(category.id)}
+                                    aria-label={`Pilih ${category.name}`}
+                                    disabled={isDefault}
+                                />
+                            </TableCell>
+                            <TableCell className="font-mono text-sm font-bold text-primary">{category.code}</TableCell>
+                            <TableCell className="font-bold text-slate-900">{category.name}</TableCell>
+                            {userRole === 'superadmin' && (
+                                <TableCell>
+                                    {isDefault ? <Badge variant="secondary" className="text-[8px] font-black uppercase">GLOBAL</Badge> : <span className="text-xs font-semibold">{category.company}</span>}
+                                </TableCell>
+                            )}
+                            <TableCell>
+                            <Badge variant={category.status === "Aktif" ? "default" : "outline"} className="text-[10px] uppercase font-black px-1.5 h-5">
+                                {category.status}
+                            </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground leading-relaxed max-w-xs truncate">{category.description}</TableCell>
+                            <TableCell className="text-right">
+                            {isDefault ? (
+                                <div className="flex justify-end pr-4"><Lock className="size-4 text-muted-foreground/30" /></div>
+                            ) : (
+                                <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
+                                    <MoreHorizontal className="size-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="z-[350]">
+                                    <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Opsi Kategori</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => handleEditCategory(category)}>Ubah Detail</DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(category)}>Hapus</DropdownMenuItem>
+                                </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
+                            </TableCell>
+                        </TableRow>
+                        )
+                    })}
+                    </TableBody>
+                </Table>
+            </div>
           </div>
         </CardContent>
       </Card>
