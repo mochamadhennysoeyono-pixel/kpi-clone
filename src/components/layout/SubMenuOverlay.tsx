@@ -3,7 +3,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, X, LayoutGrid } from "lucide-react";
+import { X, LayoutGrid, CaretLeft } from "@phosphor-icons/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
@@ -93,11 +93,11 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                             onClick={handleBack}
                             className="size-8 rounded-lg bg-muted flex items-center justify-center hover:bg-accent transition-all active:scale-90"
                         >
-                            <ChevronLeft className="size-4" />
+                            <CaretLeft className="size-4" weight="bold" />
                         </button>
                     ) : (
                         <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm">
-                            <LayoutGrid size={16} />
+                            <LayoutGrid size={18} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
                         </div>
                     )}
                     <div className="min-w-0">
@@ -113,13 +113,13 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                     onClick={onClose}
                     className="size-8 rounded-lg bg-muted/50 flex items-center justify-center hover:bg-muted transition-all active:scale-90"
                 >
-                    <X className="size-4" />
+                    <X className="size-4" weight="bold" />
                 </button>
             </div>
 
             <Separator />
             
-            {/* Scrollable Grid: High Density Style */}
+            {/* Scrollable Grid: High Density Style with Phosphor Icons */}
             <div className="flex-1 min-h-0 bg-slate-50/30">
                 <ScrollArea className="h-full">
                     <div className="p-4 pb-12">
@@ -148,10 +148,17 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                                 : "bg-background border-slate-100 hover:border-primary/20 hover:bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
                                         )}>
                                             <div className={cn(
-                                                "size-8 flex items-center justify-center transition-all duration-300",
-                                                isActive ? "text-primary scale-110" : "text-slate-400 group-hover/item:text-primary"
+                                                "size-9 flex items-center justify-center transition-all duration-300",
+                                                isActive ? "scale-110" : "group-hover/item:scale-110"
                                             )}>
-                                                {IconComponent && <IconComponent size={22} />}
+                                                {IconComponent && (
+                                                    <IconComponent 
+                                                        size={28} 
+                                                        weight="fill" 
+                                                        style={{ fill: "url(#brand-gradient)" }} 
+                                                        className={cn(isActive ? "opacity-100" : "opacity-40 grayscale group-hover/item:grayscale-0 group-hover/item:opacity-100")}
+                                                    />
+                                                )}
                                             </div>
                                             <span className={cn(
                                                 "text-[10px] text-center font-bold tracking-tight leading-tight px-0.5 min-h-[24px] flex items-start justify-center transition-colors",

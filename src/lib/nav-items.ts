@@ -1,139 +1,131 @@
 
 // src/lib/nav-items.ts
-
 import React from 'react';
 import type { UserRole, Company, SubscriptionPlan, Employee, OKR, ModuleId } from "@/types";
 import { 
-    GraduationCap, 
-    BookUser, 
-    AreaChart, 
-    FileQuestion, 
-    Library, 
-    Files, 
-    FileText, 
-    LayoutGrid, 
-    Target, 
-    Calendar, 
-    User, 
-    Users2, 
-    Workflow, 
-    ListChecks, 
-    Image as ImageIcon, 
-    FilePieChart, 
-    Settings2,
-    Home,
-    Building,
-    Network,
+    Gauge,
+    House,
+    SquaresFour,
+    ShieldCheckered,
+    UserPlus,
+    ClipboardCheck,
+    Crown,
+    ClockCounterClockwise,
+    GitMerge,
+    Lightning,
+    SlidersHorizontal,
+    Database,
+    Buildings,
+    Graph,
     Briefcase,
     Users,
     GitFork,
-    Database,
-    FolderKanban,
-    BookCopy,
-    ClipboardPen,
-    Settings,
-    FilePlus2,
-    UserCog,
-    GitMerge,
-    ShieldCheck,
-    ClipboardCheck,
-    Crown,
-    LayoutDashboard,
-    SlidersHorizontal,
-    ShoppingCart,
-    BookOpenCheck,
-    History,
-    Zap,
-    KeyRound,
-    UserPlus,
+    Folders,
+    BookBookmark,
+    Brain,
+    ChartBar,
+    Target,
+    Image,
+    TreeStructure,
+    ProjectorScreen,
+    ChartPie,
     Activity,
-    LogOut,
-    Mail,
-    BellRing,
-    BrainCircuit,
-    CheckCircle,
-    MoreHorizontal,
-    ChevronLeft
-} from 'lucide-react';
+    UserCog,
+    FilePlus,
+    Settings,
+    BellRinging,
+    Flag,
+    GraduationCap,
+    BookOpen,
+    Path,
+    Books,
+    Exam,
+    Files,
+    FileText,
+    Envelope,
+    ShoppingCart,
+    CaretLeft,
+    DotsThreeOutline
+} from "@phosphor-icons/react";
 
 export const iconMap: { [key: string]: React.ElementType } = {
     // --- Dashboard & Home ---
-    '/dashboard': LayoutDashboard,
-    '/action-center': Home,
-    '/portal': LayoutGrid,
-    '/beranda': Home,
+    '/dashboard': Gauge,
+    '/action-center': House,
+    '/portal': SquaresFour,
+    '/beranda': House,
 
     // --- Manajemen Sistem (Superadmin) ---
-    '/admin-management': ShieldCheck,
+    '/admin-management': ShieldCheckered,
     '/company-admin-management': UserPlus,
     '/activation-management': ClipboardCheck,
     '/subscription-management': Crown,
-    '/subscription-logs': History,
+    '/subscription-logs': ClockCounterClockwise,
     '/group-management': GitMerge,
-    '/feature-management': KeyRound,
+    '/feature-management': Lightning,
     'manajemen-sistem': SlidersHorizontal,
-    'manajemen-fitur': Zap,
+    'manajemen-fitur': Lightning,
 
     // --- Pondasi Data ---
     'pusat-data': Database,
-    '/master-data/company': Building,
-    '/master-data/departments': Network,
+    '/master-data/company': Buildings,
+    '/master-data/departments': Graph,
     '/master-data/positions': Briefcase,
     '/master-data/employees': Users,
     '/master-data/hierarchy': GitFork,
-    '/master-data/kpi-categories': FolderKanban,
-    '/master-data/kbo-categories': BookCopy,
-    '/master-data/kbo-competencies': BrainCircuit,
+    '/master-data/kpi-categories': Folders,
+    '/master-data/kbo-categories': BookBookmark,
+    '/master-data/kbo-competencies': Brain,
     '/master-data/kpi-data': Database,
     '/master-data/company-objectives': Target,
-    '/media-library': ImageIcon,
+    '/media-library': Image,
 
     // --- Pusat Holding ---
-    'pusat-holding': GitMerge,
-    '/holding-dashboard': AreaChart,
+    'pusat-holding': TreeStructure,
+    '/holding-dashboard': ChartBar,
     '/holding-kpi-setup': Settings,
     '/holding-group-management': Users,
-    '/holding-management': GitMerge,
+    '/holding-management': TreeStructure,
 
     // --- CollabSpace ---
-    '/collab-space': LayoutGrid,
-    '/collab-space/management': Settings2,
-    '/collab-space/reports': FilePieChart,
+    '/collab-space': ProjectorScreen,
+    '/collab-space/management': Settings,
+    '/collab-space/reports': ChartPie,
 
     // --- Analisis & Laporan ---
-    'analisis-laporan': AreaChart,
-    '/reports': FilePieChart,
+    'analisis-laporan': ChartBar,
+    '/reports': ChartPie,
     '/cycle-reports': Activity,
-    '/appraisal-dashboard': AreaChart,
+    '/appraisal-dashboard': ChartBar,
     '/kbo-appraisal': ClipboardCheck,
 
     // --- Manajemen KPI ---
     'manajemen-kpi': ClipboardCheck,
     '/my-performance': UserCog,
-    '/input-achievement': FilePlus2,
+    '/input-achievement': FilePlus,
     '/setup-kpi': Settings,
 
     // --- Manajemen KBO ---
-    'manajemen-kbo': ClipboardPen,
-    '/appraisal-settings': ClipboardPen,
+    'manajemen-kbo': ClipboardCheck,
+    '/appraisal-settings': Settings,
 
     // --- OKR ---
-    'okr-management': Target,
-    '/okr': Target,
-    '/okr/reports': AreaChart,
+    'okr-management': Flag,
+    '/okr': Flag,
+    '/okr/reports': ChartBar,
     '/okr/progress': ListChecks,
 
-    // --- LMS (Learning Management System) ---
+    // --- LMS ---
     'lms-portal': GraduationCap,
-    'lms-user': BookUser,
+    'lms-user': BookOpen,
     'manajemen-pembelajaran': GraduationCap,
-    '/lms/admin/dashboard': GraduationCap,
-    '/lms/admin/courses': BookOpenCheck,
-    '/lms/admin/programs': Workflow,
-    '/lms/admin/global-catalog': Library,
-    '/lms/admin/quizzes': FileQuestion,
-    '/lms/admin/reports': AreaChart,
-    '/lms/user/my-learnings': BookUser,
+    '/lms/admin/dashboard': Gauge,
+    '/lms/admin/courses': BookOpen,
+    '/lms/admin/programs': Path,
+    '/lms/admin/global-catalog': Books,
+    '/lms/admin/quizzes': Exam,
+    '/lms/admin/reports': ChartBar,
+    '/lms/user/my-learnings': BookOpen,
 
     // --- Dokumen ---
     'manajemen-dokumen': Files,
@@ -144,13 +136,12 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/subscription-status': Crown,
     '/subscription-plans': ShoppingCart,
     '/settings': Settings,
-    '/memos': Mail,
-    'default': FolderKanban,
-    'more': MoreHorizontal,
-    'portal': ChevronLeft,
+    '/memos': Envelope,
+    'default': Folders,
+    'more': DotsThreeOutline,
+    'portal': CaretLeft,
 };
 
-// Helper to determine active module from path
 export const getActiveModuleFromPath = (path: string): ModuleId | null => {
     if (path.startsWith('/action-center') || 
         path.startsWith('/my-performance') || 
@@ -199,10 +190,8 @@ export function getNavItems(
       isDeptHead: hasSubordinates,
       isRegularUser: userRole === 'user' && !hasSubordinates,
       isManager: userRole === 'manajemen' || hasSubordinates,
-      
       isHolding: userCompany?.isHolding === true,
       canBecomeHolding: userCompany?.canBecomeHolding === true,
-      
       canAccessKpi: true,
       canAccessKbo: true,
       canAccessOkr: true,
@@ -210,7 +199,6 @@ export function getNavItems(
       canAccessCollabSpace: true,
       canAccessDocs: true,
       canAccessReports: true,
-      
       isOkrParticipant: isOkrParticipant,
     };
     
@@ -373,7 +361,6 @@ export function getNavItems(
         })
         .filter((item): item is NonNullable<typeof item> => item !== null);
 
-    // --- Dynamic Filtering based on activeModule ---
     if (activeModule && userRole !== 'superadmin') {
         visibleItems = visibleItems.filter(item => {
             if ((item as any).moduleId === activeModule) return true;
