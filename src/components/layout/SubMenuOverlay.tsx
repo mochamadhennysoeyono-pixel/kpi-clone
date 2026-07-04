@@ -3,12 +3,13 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import { useSubMenu } from './submenu-context';
 import React from "react";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface SubMenuOverlayProps {
   activeGroup: any;
@@ -49,12 +50,12 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
     return null;
   }
   
-  const isSubMenuView = currentView.label !== 'Semua Menu';
+  const isSubMenuView = viewStack.length > 1;
   const itemsToShow = currentView?.subItems || [];
 
   const variants = {
     enter: (direction: number) => ({
-      x: direction > 0 ? "100%" : "-50%",
+      x: direction > 0 ? "20%" : "-20%",
       opacity: 0,
     }),
     center: {
@@ -62,7 +63,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
       opacity: 1,
     },
     exit: (direction: number) => ({
-      x: direction < 0 ? "100%" : "-50%",
+      x: direction < 0 ? "20%" : "-20%",
       opacity: 0,
     }),
   };
@@ -74,76 +75,109 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[99] bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-md"
           onClick={onClose}
         >
           <motion.div
-            key={viewStack.length}
-            initial={{ y: "100%" }}
-            animate={{ y: "0%" }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className="fixed bottom-20 left-2 right-2 h-auto max-h-[75vh] bg-background rounded-2xl p-4 flex flex-col shadow-2xl z-[101]"
+            initial={{ y: "100%", opacity: 0 }}
+            animate={{ y: "0%", opacity: 1 }}
+            exit={{ y: "100%", opacity: 0 }}
+            transition={{ type: "spring", stiffness: 350, damping: 35 }}
+            className="fixed bottom-4 left-2 right-2 h-auto max-h-[85vh] bg-background/95 backdrop-blur-2xl rounded-[2.5rem] border border-border/40 shadow-[0_-20px_80px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden no-print"
             onClick={(e) => e.stopPropagation()}
           >
-             <div className="flex items-center gap-2 pb-4 border-b mb-4">
-                {isSubMenuView && (
-                    <Button variant="ghost" size="icon" className="mr-2" onClick={handleBack}>
-                        <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                )}
-              <div>
-                <h2 className="text-xl font-headline font-semibold">{currentView.label}</h2>
-                <p className="text-sm text-muted-foreground">Pilih salah satu menu di bawah ini</p>
-              </div>
+            {/* Header Section */}
+            <div className="p-6 pb-4 shrink-0 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    {isSubMenuView ? (
+                        <button 
+                            onClick={handleBack}
+                            className="size-10 rounded-2xl bg-muted/50 flex items-center justify-center hover:bg-muted transition-all active:scale-90"
+                        >
+                            <ChevronLeft className="size-5" />
+                        </button>
+                    ) : (
+                        <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                            <ChevronLeft className="size-5 stroke-[3px]" />
+                        </div>
+                    )}
+                    <div className="min-w-0">
+                        <h2 className="text-lg font-black tracking-tighter text-slate-900 uppercase">
+                            {currentView.label}
+                        </h2>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
+                            {isSubMenuView ? "Pilih opsi di bawah ini" : "Pusat Layanan Aplikasi"}
+                        </p>
+                    </div>
+                </div>
+                <button 
+                    onClick={onClose}
+                    className="size-10 rounded-2xl bg-muted/50 flex items-center justify-center hover:bg-muted transition-all active:scale-90"
+                >
+                    <X className="size-5" />
+                </button>
+            </div>
+
+            <Separator className="opacity-40" />
+            
+            {/* Grid Area */}
+            <div className="flex-1 overflow-hidden">
+                <ScrollArea className="h-full">
+                    <div className="p-6 pt-4">
+                        <AnimatePresence initial={false} custom={direction} mode="wait">
+                            <motion.div
+                                key={currentView.label}
+                                custom={direction}
+                                variants={variants}
+                                initial="enter"
+                                animate="center"
+                                exit="exit"
+                                transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                                className="grid grid-cols-4 gap-x-2 gap-y-6"
+                            >
+                                {itemsToShow.map((subItem: any) => {
+                                    const IconComponent = iconMap[subItem.iconName || subItem.href || 'default'];
+                                    const isLink = !!subItem.href;
+                                    const hasSubItems = subItem.subItems && subItem.subItems.length > 0;
+                                    const isActive = isLink && (pathname === subItem.href || (subItem.href !== '/' && pathname.startsWith(subItem.href)));
+                                    
+                                    const content = (
+                                        <div className="flex flex-col items-center justify-start gap-2.5 group/item transition-all active:scale-95">
+                                            <div className={cn(
+                                                "size-14 sm:size-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-300",
+                                                isActive 
+                                                    ? "bg-primary text-primary-foreground shadow-xl shadow-primary/20 scale-105" 
+                                                    : "bg-muted/40 text-muted-foreground group-hover/item:bg-muted group-hover/item:text-primary ring-1 ring-border/20 group-hover/item:ring-primary/20"
+                                            )}>
+                                                {IconComponent && <IconComponent className={cn("size-6 sm:size-7 transition-colors", isActive ? "text-white" : "group-hover/item:text-primary")} />}
+                                            </div>
+                                            <span className={cn(
+                                                "text-[10px] text-center font-black uppercase tracking-tight leading-tight px-1 h-8 flex items-start justify-center transition-colors",
+                                                isActive ? "text-primary" : "text-slate-500 group-hover/item:text-slate-900"
+                                            )}>
+                                                {subItem.label}
+                                            </span>
+                                        </div>
+                                    );
+
+                                    return (
+                                        <div key={subItem.href || subItem.label} onClick={() => handleSubItemClick(subItem)} className="cursor-pointer">
+                                            {isLink && !hasSubItems ? (
+                                                <Link href={subItem.href}>{content}</Link>
+                                            ) : (
+                                                content
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+                </ScrollArea>
             </div>
             
-            <div className="flex-1 overflow-y-auto">
-              <AnimatePresence initial={false} custom={direction}>
-                 <motion.div
-                    key={viewStack.length}
-                    custom={direction}
-                    variants={variants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
-                    className="grid grid-cols-4 gap-x-2 gap-y-3"
-                 >
-                 {itemsToShow.map((subItem: any) => {
-                  const IconComponent = iconMap[subItem.iconName || subItem.href || 'default'];
-                  const isLink = subItem.href;
-                  const hasSubItems = subItem.subItems && subItem.subItems.length > 0;
-                  const isActive = isLink && (pathname === subItem.href || (subItem.href !== '/' && pathname.startsWith(subItem.href)));
-                  
-                  const content = (
-                       <div className={cn(
-                        "flex items-center justify-center w-14 h-14 rounded-xl bg-background shadow-md transition-all duration-300 group-hover:shadow-lg group-hover:scale-105",
-                         isActive ? "bg-primary text-primary-foreground" : "ring-1 ring-border"
-                      )}>
-                        {IconComponent && <IconComponent className={cn("w-6 h-6 text-muted-foreground group-hover:text-primary", isActive && "text-primary-foreground")} />}
-                      </div>
-                  );
-                    const itemKey = subItem.href || subItem.label;
-                    const itemProps = {
-                        className: "flex flex-col items-center justify-start space-y-1.5 group",
-                        onClick: () => handleSubItemClick(subItem),
-                    };
-
-                  return (
-                    <div key={itemKey} {...itemProps}>
-                      {isLink && !hasSubItems ? (
-                        <Link href={subItem.href} className="w-full h-full flex flex-col items-center">{content}</Link>
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center cursor-pointer">{content}</div>
-                      )}
-                      <span className="text-[11px] text-center font-medium text-muted-foreground group-hover:text-foreground h-8">{subItem.label}</span>
-                    </div>
-                  )
-                })}
-                </motion.div>
-              </AnimatePresence>
-            </div>
+            {/* Footer space to avoid overlap with bottom nav */}
+            <div className="h-10 shrink-0 bg-muted/10" />
           </motion.div>
         </motion.div>
       )}
