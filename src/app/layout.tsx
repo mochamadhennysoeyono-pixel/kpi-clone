@@ -1,12 +1,14 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { PushNotificationManager } from "@/components/layout/push-notification-manager";
 import Script from "next/script";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Perfom - Sistem HRIS Terintegrasi",
@@ -31,7 +33,11 @@ export default function RootLayout({
   const clientKey = process.env.MIDTRANS_CLIENT_KEY || "Mid-client-MpjNTjYjtHljjjQ9";
 
   return (
-    <html lang="en" className={GeistSans.variable} suppressHydrationWarning>
+    <html 
+      lang="en" 
+      className={cn(GeistSans.variable, GeistMono.variable)} 
+      suppressHydrationWarning
+    >
       <body className="font-sans antialiased">
         <ThemeProvider
           attribute="class"
