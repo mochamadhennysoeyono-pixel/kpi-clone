@@ -1,4 +1,3 @@
-
 // src/app/(main)/main-layout-content.tsx
 "use client";
 
@@ -73,9 +72,9 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden relative">
         <Header />
         
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col relative">
+        <div className="flex-1 min-h-0 flex flex-col relative">
             <ScrollArea className="flex-1 w-full">
-                <main className="w-full min-w-0 overflow-x-hidden">
+                <main className="w-full min-w-0">
                     <div className={cn(
                         "p-4 sm:p-6 lg:p-10 w-full min-w-0",
                         // Menambahkan padding bawah pada mobile agar tidak tertutup bottom nav
@@ -93,4 +92,3 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
     </div>
   );
 }
-

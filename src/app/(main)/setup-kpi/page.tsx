@@ -186,31 +186,30 @@ export default function SetupKpiPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
-        <CardHeader>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                        <Settings className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                        <CardTitle className="font-headline text-2xl">Pengaturan KPI</CardTitle>
-                        <CardDescription>
-                            Kelola konfigurasi KPI untuk berbagai peran dan departemen.
-                        </CardDescription>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2 self-end sm:self-center">
-                    <KpiBulkActions filteredSetups={filteredSetups} />
-                    <Button size="sm" className="h-10 gap-1 shadow-md" onClick={() => handleAddSetup()}>
-                        <PlusCircle className="h-3.5 w-3.5" />
-                        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                            Buat Pengaturan
-                        </span>
-                    </Button>
-                </div>
+        <CardHeader className="bg-primary text-primary-foreground dark:bg-card">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+                <CardTitle className="font-headline text-lg sm:text-2xl flex items-center gap-3">
+                    <Settings className="h-6 w-6 text-primary-foreground" />
+                    Pengaturan KPI
+                </CardTitle>
+                <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground text-xs sm:text-sm">
+                    Kelola konfigurasi KPI untuk berbagai peran dan departemen.
+                </CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row items-center gap-2 pt-2 border-t">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <KpiBulkActions filteredSetups={filteredSetups} />
+                <Button size="sm" className="h-10 gap-1 font-bold shadow-md" onClick={() => handleAddSetup()}>
+                    <PlusCircle className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                        Buat Pengaturan
+                    </span>
+                </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row items-center gap-2 mb-6 p-4 border rounded-lg bg-muted/30">
                {showCompanyFilter && (
                 <Select value={selectedCompanyFilter || 'all'} onValueChange={(value) => { setSelectedCompanyFilter(value); setSelectedDepartment('all'); setSelectedPosition('all'); }}>
                   <SelectTrigger className="w-full sm:w-[200px]">
@@ -247,9 +246,6 @@ export default function SetupKpiPage() {
                   </SelectContent>
                 </Select>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
           <Accordion type="single" collapsible className="w-full">
             {filteredSetups.map((setup) => (
               <AccordionItem value={setup.id} key={setup.id}>

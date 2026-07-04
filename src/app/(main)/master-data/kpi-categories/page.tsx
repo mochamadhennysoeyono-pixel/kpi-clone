@@ -1,4 +1,3 @@
-
 // src/app/(main)/master-data/kpi-categories/page.tsx
 "use client";
 
@@ -55,7 +54,7 @@ export default function KpiCategoriesPage() {
   const defaultCategoryIds = useMemo(() => new Set(DEFAULT_KPI_CATEGORIES.map(c => c.id)), []);
 
   const filteredCategories = useMemo(() => {
-    let cats = kpiCategories.filter(c => !defaultCategoryIds.has(c.id)); // Exclude defaults initially
+    let cats = kpiCategories.filter(c => !defaultCategoryIds.has(c.id)); 
     if (userRole === 'superadmin') {
       if (selectedCompanyFilter !== 'all') {
         cats = cats.filter(c => c.company === selectedCompanyFilter);
@@ -63,12 +62,10 @@ export default function KpiCategoriesPage() {
     } else if (currentUser) {
       cats = cats.filter(c => c.company === currentUser.company);
     }
-    // Always add default categories at the top
     return [...DEFAULT_KPI_CATEGORIES, ...cats];
   }, [kpiCategories, currentUser, userRole, selectedCompanyFilter, defaultCategoryIds]);
 
   const handleSelectAll = (checked: boolean | "indeterminate") => {
-    // Only allow selecting non-default categories
     const selectableIds = filteredCategories.filter(c => !defaultCategoryIds.has(c.id)).map(c => c.id);
     if (checked) {
       setSelectedRowIds(selectableIds);
@@ -133,43 +130,30 @@ export default function KpiCategoriesPage() {
     }
   };
   
-  const handleExport = () => {
-    toast({ description: "Fitur ini sedang dinonaktifkan untuk sementara." });
-  };
-
-  const handleImportClick = () => {
-    toast({ description: "Fitur ini sedang dinonaktifkan untuk sementara." });
-  };
-
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    toast({ description: "Fitur ini sedang dinonaktifkan untuk sementara." });
-  };
-
-
   return (
     <div className="space-y-6">
       <Card className="shadow-lg mb-6">
         <CardHeader className="bg-primary text-primary-foreground dark:bg-card rounded-t-lg">
-          <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-4">
-            <div>
-              <CardTitle className="font-headline">Kategori KPI</CardTitle>
-              <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="font-headline text-lg sm:text-xl">Kategori KPI</CardTitle>
+              <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground text-xs sm:text-sm">
                 Definisikan dan kelola kategori untuk Indikator Kinerja Utama. Menampilkan {filteredCategories.length} data.
               </CardDescription>
             </div>
-             <div className="flex items-center gap-2 self-end sm:self-center">
+             <div className="flex flex-wrap items-center gap-2 shrink-0">
                 {selectedRowIds.length > 0 && (
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="bg-background/20 text-primary-foreground hover:bg-background/30 dark:bg-muted dark:text-foreground dark:hover:bg-muted/80">
+                        <Button variant="outline" size="sm" className="h-9 gap-1 bg-background/20 text-primary-foreground hover:bg-background/30 dark:bg-muted dark:text-foreground dark:hover:bg-muted/80">
                             Aksi Massal ({selectedRowIds.length})
-                            <ChevronDown className="ml-2 h-4 w-4" />
+                            <ChevronDown className="ml-1 h-3.5 w-3.5" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Pilih Aksi</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={openBulkDeleteDialog}>
+                        <DropdownMenuItem className="text-destructive font-bold" onClick={openBulkDeleteDialog}>
                             <Trash2 className="mr-2 h-4 w-4" />
                             Hapus Pilihan
                         </DropdownMenuItem>
@@ -184,22 +168,15 @@ export default function KpiCategoriesPage() {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={handleImportClick}>
+                        <DropdownMenuItem onClick={() => toast({ description: "Fitur segera tersedia." })}>
                             <Upload className="mr-2 h-4 w-4" /> Impor dari Excel
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleExport}>
+                        <DropdownMenuItem onClick={() => toast({ description: "Fitur segera tersedia." })}>
                             <Download className="mr-2 h-4 w-4" /> Ekspor ke Excel
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                            <a href="https://docs.google.com/spreadsheets/d/19mwT-PaBBElj5Uho9-LeSbg47u5_thDL/export?format=xlsx" target="_blank" rel="noopener noreferrer">
-                                <FileSpreadsheet className="mr-2 h-4 w-4" /> Unduh Contoh Format
-                            </a>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
-                <input type="file" ref={fileInputRef} onChange={handleImport} accept=".xlsx, .xls" style={{ display: 'none' }} />
-                <Button size="sm" className="h-9 gap-1" onClick={handleAddCategory}>
+                <Button size="sm" className="h-9 gap-1 font-bold shadow-md" onClick={handleAddCategory}>
                   <PlusCircle className="h-3.5 w-3.5" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                     Tambah Kategori

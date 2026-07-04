@@ -143,39 +143,37 @@ export default function CompanyPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
-        <CardHeader>
-          <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-4">
-            <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                    <Building className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                    <CardTitle className="font-headline text-2xl">Data Perusahaan Klien</CardTitle>
-                    <CardDescription>
-                        Kelola data klien dan migrasikan paket mereka ke sistem terbaru di sini.
-                    </CardDescription>
-                </div>
+        <CardHeader className="bg-primary text-primary-foreground dark:bg-card">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+                <CardTitle className="font-headline text-lg sm:text-2xl flex items-center gap-3">
+                    <Building className="h-6 w-6 text-primary-foreground" />
+                    Data Perusahaan Klien
+                </CardTitle>
+                <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground text-xs sm:text-sm">
+                    Kelola data klien dan migrasikan paket mereka ke sistem terbaru di sini.
+                </CardDescription>
             </div>
-             <div className="flex items-center gap-2 self-end sm:self-center">
+             <div className="flex flex-wrap items-center gap-2 shrink-0">
                 {selectedRowIds.length > 0 && (
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="h-9 gap-1">
+                        <Button variant="outline" size="sm" className="h-9 gap-1 bg-background/20 text-primary-foreground hover:bg-background/30 dark:bg-muted dark:text-foreground dark:hover:bg-muted/80">
                             Aksi Massal ({selectedRowIds.length})
-                            <ChevronDown className="ml-2 h-4 w-4" />
+                            <ChevronDown className="ml-1 h-3.5 w-3.5" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Pilih Aksi</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={handleBulkDelete}>
+                        <DropdownMenuItem className="text-destructive font-bold" onClick={handleBulkDelete}>
                             <Trash2 className="mr-2 h-4 w-4" />
                             Hapus Pilihan
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
                 )}
-                <Button size="sm" className="h-9 gap-1 shadow-md" onClick={handleAddCompany}>
+                <Button size="sm" className="h-9 gap-1 font-bold shadow-md" onClick={handleAddCompany}>
                   <PlusCircle className="h-3.5 w-3.5" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                     Tambah Perusahaan
@@ -185,18 +183,18 @@ export default function CompanyPage() {
           </div>
         </CardHeader>
         <CardContent className="pt-6">
-            <div className="flex items-center gap-4 mb-6 p-4 border rounded-lg bg-muted/30">
+            <div className="flex flex-col sm:flex-row items-center gap-4 mb-6 p-4 border rounded-lg bg-muted/30">
                 <div className="relative w-full">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
                         placeholder="Cari nama perusahaan..."
-                        className="pl-10"
+                        className="pl-9"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -240,15 +238,15 @@ export default function CompanyPage() {
                                 aria-label={`Pilih ${company.name}`}
                             />
                     </TableCell>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium py-4">
                         <div className="flex items-center gap-3">
-                        <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-full bg-muted">
-                            <Building className="h-5 w-5 text-muted-foreground" />
+                        <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-xl bg-primary/5 text-primary border border-primary/10">
+                            <Building className="h-5 w-5" />
                         </div>
                         <div className="grid gap-0.5">
-                            <span className="font-bold flex items-center gap-1.5">
+                            <span className="font-bold flex items-center gap-1.5 text-slate-900">
                                 {company.name} 
-                                {company.isHolding && <Badge variant="secondary" className="h-4 text-[8px] px-1 bg-primary/10 text-primary">HOLDING</Badge>}
+                                {company.isHolding && <Badge variant="secondary" className="h-4 text-[8px] px-1 bg-primary/10 text-primary border-none font-black uppercase">HOLDING</Badge>}
                             </span>
                             <span className="text-[10px] text-muted-foreground hidden sm:inline uppercase font-bold tracking-tight">
                                 {company.businessField}
@@ -258,7 +256,7 @@ export default function CompanyPage() {
                     </TableCell>
                     <TableCell>
                         {company.parentId ? (
-                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                                <GitMerge className="size-3" />
                                <span>Ikut Induk</span>
                            </div>
@@ -269,10 +267,10 @@ export default function CompanyPage() {
                                     onValueChange={(planId) => handlePlanChange(company, planId)}
                                 >
                                     <SelectTrigger className={cn(
-                                        "w-[160px] text-xs h-9 font-bold",
+                                        "w-[160px] text-[10px] h-8 font-black uppercase tracking-tight",
                                         !currentPlan && "border-destructive/50 text-destructive bg-destructive/5"
                                     )}>
-                                        <SelectValue placeholder="Pilih Paket Baru" />
+                                        <SelectValue placeholder="Pilih Paket" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="none" disabled>-- Pilih Paket --</SelectItem>
@@ -287,8 +285,8 @@ export default function CompanyPage() {
                                     </SelectContent>
                                 </Select>
                                 {!currentPlan && company.subscriptionPlanId !== 'default-trial' && (
-                                    <span className="text-[9px] font-black text-destructive uppercase flex items-center gap-1">
-                                        <Sparkles size={10} /> Paket Belum Terhubung
+                                    <span className="text-[8px] font-black text-destructive uppercase flex items-center gap-1">
+                                        <Sparkles size={8} /> Paket Belum Terhubung
                                     </span>
                                 )}
                            </div>
@@ -296,7 +294,7 @@ export default function CompanyPage() {
                     </TableCell>
                     <TableCell>
                          {currentPlan ? (
-                            <div className="flex flex-col gap-1 text-[10px] text-muted-foreground font-bold uppercase tracking-tight">
+                            <div className="flex flex-col gap-1 text-[9px] text-muted-foreground font-bold uppercase tracking-tight">
                                 <div className="flex items-center gap-1.5"><Users className="h-2.5 w-2.5" /> Staff: <span className="text-foreground">{usage.userCount}/{currentPlan.userLimit === -1 ? '∞' : currentPlan.userLimit}</span></div>
                                 <div className="flex items-center gap-1.5"><Crown className="h-2.5 w-2.5" /> Admin: <span className="text-foreground">{usage.managementCount}/{currentPlan.managementUserLimit === -1 ? '∞' : currentPlan.managementUserLimit}</span></div>
                             </div>
@@ -305,14 +303,14 @@ export default function CompanyPage() {
                         )}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                        <Badge variant={company.status === "Aktif" ? "default" : "outline"} className="text-[10px] uppercase font-black">
+                        <Badge variant={company.status === "Aktif" ? "default" : "outline"} className="text-[9px] uppercase font-black px-1.5 h-5">
                         {company.status}
                         </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-right">
                         <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
                             <MoreHorizontal className="h-4 w-4" />
                             <span className="sr-only">Buka menu</span>
                             </Button>
@@ -328,7 +326,7 @@ export default function CompanyPage() {
                                 <Pencil className="mr-2 h-4 w-4"/> Edit Identitas
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive cursor-pointer" onClick={() => openDeleteDialog(company)}>
+                            <DropdownMenuItem className="text-destructive font-bold cursor-pointer" onClick={() => openDeleteDialog(company)}>
                                 <Trash2 className="mr-2 h-4 w-4"/> Hapus Perusahaan
                             </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -340,8 +338,8 @@ export default function CompanyPage() {
               ) : (
                 <TableRow>
                     <TableCell colSpan={6} className="h-40 text-center text-muted-foreground">
-                        <div className="flex flex-col items-center gap-2 opacity-40">
-                            <Building size={40} />
+                        <div className="flex flex-col items-center gap-2 opacity-30">
+                            <Building size={48} />
                             <p className="font-bold uppercase text-xs">Tidak ada data perusahaan.</p>
                         </div>
                     </TableCell>

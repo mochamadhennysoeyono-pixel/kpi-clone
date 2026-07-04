@@ -279,35 +279,35 @@ export default function DepartmentsPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-lg mb-6">
-        <CardHeader className="bg-primary text-primary-foreground dark:bg-card rounded-t-lg">
-          <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-4">
-            <div>
-              <CardTitle className="font-headline">Data Departemen</CardTitle>
-              <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground">
+      <Card className="shadow-lg mb-6 overflow-hidden">
+        <CardHeader className="bg-primary text-primary-foreground dark:bg-card">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="font-headline text-lg sm:text-xl">Data Departemen</CardTitle>
+              <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground text-xs sm:text-sm">
                 Kelola daftar departemen di perusahaan Anda. Menampilkan {filteredDepartments.length} data.
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2 self-end sm:self-center">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
                 {selectedRowIds.length > 0 && (
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="bg-background/20 text-primary-foreground hover:bg-background/30 dark:bg-muted dark:text-foreground dark:hover:bg-muted/80">
+                        <Button variant="outline" size="sm" className="h-9 gap-1 bg-background/20 text-primary-foreground hover:bg-background/30 dark:bg-muted dark:text-foreground dark:hover:bg-muted/80">
                             Aksi Massal ({selectedRowIds.length})
-                            <ChevronDown className="ml-2 h-4 w-4" />
+                            <ChevronDown className="ml-1 h-3.5 w-3.5" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Pilih Aksi</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={openBulkDeleteDialog}>
+                        <DropdownMenuItem className="text-destructive font-bold" onClick={openBulkDeleteDialog}>
                             <Trash2 className="mr-2 h-4 w-4" />
                             Hapus Pilihan
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
                 )}
-                <Button size="sm" className="h-9 gap-1" onClick={handleAddItem}>
+                <Button size="sm" className="h-9 gap-1 font-bold shadow-md" onClick={handleAddItem}>
                   <PlusCircle className="h-3.5 w-3.5" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                     Tambah Departemen
@@ -359,32 +359,30 @@ export default function DepartmentsPage() {
                             aria-label={`Pilih ${department.name}`}
                         />
                   </TableCell>
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium py-4">
                      <div className="flex items-center gap-3">
-                      <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-full bg-muted">
-                        <Network className="h-5 w-5 text-muted-foreground" />
+                      <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-xl bg-primary/5 text-primary border border-primary/10">
+                        <Network className="h-5 w-5" />
                       </div>
-                       {department.name}
+                       <span className="text-slate-900 font-bold">{department.name}</span>
                     </div>
                   </TableCell>
-                  {canShowCompanyFilter && <TableCell>{department.company}</TableCell>}
-                  <TableCell>
-                    <div className="flex justify-end">
+                  {canShowCompanyFilter && <TableCell className="text-sm text-slate-600">{department.company}</TableCell>}
+                  <TableCell className="text-right">
                         <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
                             <MoreHorizontal className="h-4 w-4" />
                             <span className="sr-only">Buka menu</span>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleEditItem(department)}>Ubah</DropdownMenuItem>
+                            <DropdownMenuLabel className="text-[10px] font-black uppercase opacity-60">Opsi Departemen</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => handleEditItem(department)}>Ubah Nama</DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(department)}>Hapus</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(department)}>Hapus Departemen</DropdownMenuItem>
                         </DropdownMenuContent>
                         </DropdownMenu>
-                    </div>
                   </TableCell>
                 </TableRow>
               ))}

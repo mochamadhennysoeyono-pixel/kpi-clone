@@ -1,4 +1,3 @@
-
 // src/app/(main)/master-data/employees/page.tsx
 "use client";
 
@@ -696,25 +695,23 @@ export default function EmployeesPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                    <Users className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                    <CardTitle className="font-headline text-2xl text-foreground">Data Karyawan</CardTitle>
-                    <CardDescription>
-                        Kelola data karyawan di perusahaan Anda. Menampilkan {filteredEmployees.length} data.
-                    </CardDescription>
-                </div>
+        <CardHeader className="bg-primary text-primary-foreground dark:bg-card">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+                <CardTitle className="font-headline text-lg sm:text-2xl flex items-center gap-3">
+                    <Users className="h-6 w-6 text-primary-foreground" />
+                    Data Karyawan
+                </CardTitle>
+                <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground text-xs sm:text-sm">
+                    Kelola data karyawan di perusahaan Anda. Menampilkan {filteredEmployees.length} data.
+                </CardDescription>
             </div>
-             <div className="ml-auto flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
+             <div className="flex flex-wrap items-center gap-2 shrink-0">
                 {selectedRowIds.length > 0 && (
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="h-9 gap-1">
-                            <ChevronDown className="ml-2 h-4 w-4" />
+                        <Button variant="outline" size="sm" className="h-9 gap-1 bg-background/20 text-primary-foreground hover:bg-background/30 dark:bg-muted dark:text-foreground dark:hover:bg-muted/80">
+                            <ChevronDown className="ml-1 h-3.5 w-3.5" />
                             Aksi Massal ({selectedRowIds.length})
                         </Button>
                     </DropdownMenuTrigger>
@@ -728,7 +725,7 @@ export default function EmployeesPage() {
                          <DropdownMenuItem onClick={() => handleBulkStatusChange("Aktif")}>Ubah Status ke Aktif</DropdownMenuItem>
                          <DropdownMenuItem onClick={() => handleBulkStatusChange("Tidak Aktif")}>Ubah Status ke Tidak Aktif</DropdownMenuItem>
                          <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={openBulkDeleteDialog}>
+                        <DropdownMenuItem className="text-destructive font-bold" onClick={openBulkDeleteDialog}>
                             <Trash2 className="mr-2 h-4 w-4" />
                             Hapus Pilihan
                         </DropdownMenuItem>
@@ -737,7 +734,7 @@ export default function EmployeesPage() {
                 )}
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9 gap-1" disabled={quotaInfo?.userLimitReached && quotaInfo?.managementLimitReached}>
+                        <Button variant="outline" size="sm" className="h-9 gap-1 bg-background/20 text-primary-foreground hover:bg-background/30 dark:bg-muted dark:text-foreground dark:hover:bg-muted/80" disabled={quotaInfo?.userLimitReached && quotaInfo?.managementLimitReached}>
                              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Impor/Ekspor</span>
                              <ChevronDown className="h-3.5 w-3.5" />
                         </Button>
@@ -757,7 +754,7 @@ export default function EmployeesPage() {
                 </DropdownMenu>
                  <input type="file" ref={fileInputRef} onChange={handleImport} accept=".xlsx, .xls" style={{ display: 'none' }} />
 
-                <Button size="sm" className="h-9 gap-1 shadow-md" onClick={handleAddEmployee} disabled={quotaInfo?.userLimitReached && quotaInfo?.managementLimitReached}>
+                <Button size="sm" className="h-9 gap-1 font-bold shadow-md" onClick={handleAddEmployee} disabled={quotaInfo?.userLimitReached && quotaInfo?.managementLimitReached}>
                   <PlusCircle className="h-3.5 w-3.5" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                     Tambah Karyawan
@@ -770,7 +767,7 @@ export default function EmployeesPage() {
             {quotaInfo?.message && (
                 <Alert variant={quotaInfo.userLimitReached && quotaInfo.managementLimitReached ? "destructive" : "default"} className="mb-4">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{quotaInfo.message}</AlertDescription>
+                    <AlertDescription className="text-xs sm:text-sm">{quotaInfo.message}</AlertDescription>
                 </Alert>
             )}
             <div className={cn(
@@ -850,19 +847,19 @@ export default function EmployeesPage() {
                                 disabled={employee.id === currentUser?.id}
                             />
                         </TableCell>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium py-4">
                         <div className="flex items-center gap-3">
                             <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-full bg-muted">
                             <User className="h-5 w-5 text-muted-foreground" />
                             </div>
                             <div className="grid gap-0.5">
-                            <span className="font-medium text-foreground">{employee.name}</span>
-                            <span className="text-sm text-muted-foreground sm:hidden">{employee.position}</span>
-                            <span className="text-xs text-muted-foreground hidden sm:inline">{employee.email}</span>
+                            <span className="font-bold text-slate-900">{employee.name}</span>
+                            <span className="text-xs text-muted-foreground sm:hidden font-medium">{employee.position}</span>
+                            <span className="text-[10px] text-muted-foreground hidden sm:inline uppercase font-bold tracking-tight">{employee.email}</span>
                             </div>
                         </div>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell">{employee.position}</TableCell>
+                        <TableCell className="hidden md:table-cell text-sm text-slate-600">{employee.position}</TableCell>
                         <TableCell className="hidden lg:table-cell">
                             <div className="flex flex-wrap gap-1">
                                 {accessedModules.length > 0 ? accessedModules.map(m => (
@@ -871,25 +868,25 @@ export default function EmployeesPage() {
                             </div>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
-                        <Badge variant={employee.status === "Aktif" ? "default" : "outline"}>
+                        <Badge variant={employee.status === "Aktif" ? "default" : "outline"} className="text-[10px] uppercase font-black">
                             {employee.status}
                         </Badge>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
-                        <Badge variant="outline" className={cn("font-medium", getLoginStatusBadge(employee.loginStatus))}>
+                        <Badge variant="outline" className={cn("font-bold text-[10px] uppercase", getLoginStatusBadge(employee.loginStatus))}>
                             {employee.loginStatus}
                         </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-right">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost" disabled={isSendingInvitation === employee.email}>
-                                {isSendingInvitation === employee.email ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
+                            <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full" disabled={isSendingInvitation === employee.email}>
+                                {isSendingInvitation === employee.email ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
                                 <span className="sr-only">Buka menu</span>
                             </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Aksi Karyawan</DropdownMenuLabel>
+                            <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Aksi Karyawan</DropdownMenuLabel>
                             <DropdownMenuItem onClick={() => { setEmployeeForAccess(employee); setIsAccessDialogOpen(true); }}>
                                 <Zap className="mr-2 h-4 w-4" /> Kelola Akses Modul
                             </DropdownMenuItem>
@@ -901,7 +898,7 @@ export default function EmployeesPage() {
                                 Kirim Pembaruan Sandi / Aktivasi
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(employee)} disabled={employee.id === currentUser?.id}>
+                            <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(employee)} disabled={employee.id === currentUser?.id}>
                                 <Trash2 size={16} className="mr-2" /> Hapus Akun
                             </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -926,12 +923,12 @@ export default function EmployeesPage() {
       />
 
       <ModuleAccessDialog 
-        isOpen={isAccessDialogOpen}
-        onOpenChange={setIsAccessDialogOpen}
-        employee={employeeForAccess}
-        company={userCompany || null}
-        allEmployees={employees}
-        onSave={handleSaveModuleAccess}
+        isOpen={isAccessDialogOpen} 
+        onOpenChange={setIsAccessDialogOpen} 
+        employee={employeeForAccess} 
+        company={userCompany || null} 
+        allEmployees={employees} 
+        onSave={handleSaveModuleAccess} 
       />
 
       <DeleteConfirmationDialog
