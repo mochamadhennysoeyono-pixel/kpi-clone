@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -32,7 +33,7 @@ export function AdaptiveCardGrid({ children, complexity = 'simple', className }:
 
 /**
  * AdaptiveMetricCard (Simple Card): Untuk angka, counter, status ringkas.
- * Transformasi: Super kompak di mobile (Grid 2).
+ * Optimized for Deep Dark Contrast & Tabular Nums.
  */
 interface AdaptiveMetricCardProps {
   title: string;
@@ -48,7 +49,7 @@ export function AdaptiveMetricCard({ title, value, icon: Icon, description, badg
   const { isMobile } = useBreakpoint();
 
   return (
-    <Card className="border-none shadow-sm hover:shadow-md transition-all bg-background group overflow-hidden">
+    <Card className="border-border/40 shadow-sm hover:shadow-md transition-all bg-card group overflow-hidden">
       <CardContent className={cn("flex flex-col h-full", isMobile ? "p-3" : "p-6")}>
         <div className="flex items-center justify-between mb-2">
           <div className={cn(
@@ -59,7 +60,7 @@ export function AdaptiveMetricCard({ title, value, icon: Icon, description, badg
             <Icon size={isMobile ? 16 : 22} />
           </div>
           {badge && (
-            <Badge variant="outline" className="text-[8px] font-black uppercase px-1.5 h-4 border-none bg-muted/50">
+            <Badge variant="outline" className="text-[8px] font-black uppercase px-1.5 h-4 border-none bg-white/5 text-white/60">
               {badge}
             </Badge>
           )}
@@ -67,13 +68,13 @@ export function AdaptiveMetricCard({ title, value, icon: Icon, description, badg
         
         <div className="space-y-1 min-w-0">
           <p className={cn(
-            "font-black uppercase text-muted-foreground tracking-widest truncate",
+            "font-black uppercase text-[#8a8f98] tracking-widest truncate",
             isMobile ? "text-[8px]" : "text-[10px]"
           )}>
             {title}
           </p>
           <h3 className={cn(
-            "font-black text-slate-900 leading-none truncate",
+            "font-black text-white leading-none truncate tnum", // Added tnum for digits
             isMobile ? "text-lg" : "text-3xl"
           )}>
             {value}
@@ -83,7 +84,7 @@ export function AdaptiveMetricCard({ title, value, icon: Icon, description, badg
             <div className={cn(
               "flex items-center gap-1 font-bold uppercase",
               isMobile ? "text-[7px]" : "text-[9px]",
-              trend.isUp ? "text-green-600" : "text-rose-600"
+              trend.isUp ? "text-green-400" : "text-rose-400"
             )}>
               {trend.value}% {isMobile ? "" : "vs periode lalu"}
             </div>
@@ -102,7 +103,6 @@ export function AdaptiveMetricCard({ title, value, icon: Icon, description, badg
 
 /**
  * AdaptiveInsightCard (Complex Card): Untuk Chart, Activity Log, Tabel Mini.
- * Transformasi: Full width di mobile untuk menjaga presisi data.
  */
 interface AdaptiveInsightCardProps {
   title: string;
@@ -117,14 +117,14 @@ export function AdaptiveInsightCard({ title, description, icon: Icon, children, 
   const { isMobile } = useBreakpoint();
 
   return (
-    <Card className={cn("shadow-sm border-border/40 overflow-hidden flex flex-col", className)}>
+    <Card className={cn("shadow-sm border-border/40 overflow-hidden flex flex-col bg-card", className)}>
       <CardHeader className={isMobile ? "p-4 pb-2" : "p-6 pb-2"}>
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/5 rounded-lg text-primary shrink-0 border border-primary/10">
+          <div className="p-2 bg-primary/5 rounded-lg text-primary shrink-0 border border-primary/20">
             <Icon size={isMobile ? 16 : 20} />
           </div>
           <div className="min-w-0">
-            <CardTitle className={cn("font-black uppercase tracking-widest text-slate-800", isMobile ? "text-[10px]" : "text-sm")}>
+            <CardTitle className={cn("font-black uppercase tracking-widest text-white", isMobile ? "text-[10px]" : "text-sm")}>
               {title}
             </CardTitle>
             {description && (
@@ -139,7 +139,7 @@ export function AdaptiveInsightCard({ title, description, icon: Icon, children, 
         {children}
       </CardContent>
       {footer && (
-        <CardFooter className={cn("bg-muted/10 border-t", isMobile ? "p-3" : "p-4")}>
+        <CardFooter className={cn("bg-white/5 border-t", isMobile ? "p-3" : "p-4")}>
           {footer}
         </CardFooter>
       )}

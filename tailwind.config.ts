@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 import { fontFamily } from "tailwindcss/defaultTheme"
 
@@ -19,6 +20,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ["var(--font-geist-sans)", ...fontFamily.sans],
+        mono: ["var(--font-geist-mono)", ...fontFamily.mono],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -99,10 +101,6 @@ const config: Config = {
             animationTimingFunction: 'cubic-bezier(0,0,0.2,1)',
           },
         },
-        'concentric-ring-rotation': {
-          from: { transform: 'rotate(0deg)' },
-          to: { transform: 'rotate(360deg)' },
-        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -110,7 +108,6 @@ const config: Config = {
         'fade-in': 'fade-in 0.5s ease-in-out forwards',
         'bounce': 'bounce 1s infinite',
         'spin-slow': 'spin 3s linear infinite',
-        'concentric-ring': 'concentric-ring-rotation var(--duration, 1s) linear infinite',
       },
     },
   },

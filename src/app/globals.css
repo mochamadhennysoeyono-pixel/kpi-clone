@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -46,7 +47,7 @@
   }
   body {
     @apply bg-background text-[#f7f8f8] antialiased selection:bg-primary/30 selection:text-white font-sans;
-    font-feature-settings: "ss01", "ss02", "cv01", "tnum"; /* Enforce Tabular Numerics & Geometric Alternates */
+    font-feature-settings: "ss01", "ss02", "cv01", "tnum"; /* Enforce Tabular Numerics */
   }
   
   /* Stripe-style Tabular Numbers for all numeric data */
