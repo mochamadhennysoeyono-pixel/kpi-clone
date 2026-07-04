@@ -51,7 +51,8 @@ import {
     Tray,
     Stack,
     AddressBook,
-    FileSearch
+    FileMagnifyingGlass,
+    Checks
 } from "@phosphor-icons/react";
 
 export const iconMap: { [key: string]: React.ElementType } = {
@@ -82,7 +83,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/master-data/kpi-categories': Folders,
     '/master-data/kbo-categories': BookBookmark,
     '/master-data/kbo-competencies': Brain,
-    '/master-data/kpi-data': FileSearch,
+    '/master-data/kpi-data': FileMagnifyingGlass,
     '/master-data/company-objectives': Target,
     '/media-library': Image,
 
@@ -103,7 +104,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/reports': ChartPie,
     '/cycle-reports': Activity,
     '/appraisal-dashboard': ChartBar,
-    '/kbo-appraisal': CheckCircle,
+    '/kbo-appraisal': Checks,
 
     // --- Manajemen KPI ---
     'manajemen-kpi': CheckCircle,

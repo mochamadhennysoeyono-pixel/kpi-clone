@@ -10,7 +10,7 @@ import { useMasterData } from '@/contexts/master-data-context';
 import {
   House,
   ChartBar,
-  ClipboardCheck,
+  Checks,
   SquaresFour,
   CaretLeft,
   Activity,
@@ -96,7 +96,7 @@ export function BottomNav() {
         { href: '/dashboard', label: 'Home', icon: House },
         { href: '/appraisal-dashboard', label: 'Appraisal', icon: Activity },
         { href: '/reports', label: 'Laporan', icon: ChartBar },
-        { href: '/kbo-appraisal', label: 'KBO', icon: ClipboardCheck },
+        { href: '/kbo-appraisal', label: 'KBO', icon: Checks },
     ];
   }, []);
 
@@ -110,7 +110,7 @@ export function BottomNav() {
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] h-[72px] bg-background/95 backdrop-blur-xl border-t border-border/40 pb-safe shadow-[0_-8px_30px_rgb(0,0,0,0.04)] no-print">
             <div className="relative grid grid-cols-5 items-center h-full w-full px-2">
                 {classicBottomItems.slice(0, 2).map((item) => {
-                    const Icon = item.icon;
+                    const Icon = item.icon || Folders;
                     const isActive = pathname === item.href;
                     return (
                         <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 group">
@@ -137,7 +137,7 @@ export function BottomNav() {
                 </div>
 
                 {classicBottomItems.slice(2, 4).map((item) => {
-                    const Icon = item.icon;
+                    const Icon = item.icon || Folders;
                     const isActive = pathname === item.href;
                     return (
                         <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 group">
@@ -178,7 +178,8 @@ export function BottomNav() {
                     );
                 }
 
-                const Icon = item.iconName === 'portal' ? CaretLeft : (iconMap[item.iconName || item.href || 'default'] || Folders);
+                const RawIcon = item.iconName === 'portal' ? CaretLeft : (iconMap[item.iconName || item.href || 'default']);
+                const Icon = RawIcon || Folders;
                 const isActive = item.href && (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)));
                 const isPortalLink = item.iconName === 'portal';
 
