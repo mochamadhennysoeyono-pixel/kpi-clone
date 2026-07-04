@@ -42,18 +42,38 @@ import {
     SlidersHorizontal,
     ShoppingCart,
     BookOpenCheck,
-    History
+    History,
+    Zap,
+    KeyRound,
+    UserPlus,
+    Activity,
+    LogOut,
+    Mail,
+    BellRing,
+    BrainCircuit,
+    CheckCircle
 } from 'lucide-react';
 
 export const iconMap: { [key: string]: React.ElementType } = {
+    // --- Dashboard & Home ---
     '/dashboard': LayoutDashboard,
-    '/my-performance': UserCog,
-    '/okr': Target,
-    '/okr/progress': ListChecks,
-    '/okr/reports': AreaChart,
-    '/reports': FilePieChart,
-    '/cycle-reports': AreaChart,
-    '/appraisal-dashboard': AreaChart,
+    '/action-center': Home,
+    '/portal': LayoutGrid,
+    '/beranda': Home,
+
+    // --- Manajemen Sistem (Superadmin) ---
+    '/admin-management': ShieldCheck,
+    '/company-admin-management': UserPlus,
+    '/activation-management': ClipboardCheck,
+    '/subscription-management': Crown,
+    '/subscription-logs': History,
+    '/group-management': GitMerge,
+    '/feature-management': KeyRound,
+    'manajemen-sistem': SlidersHorizontal,
+    'manajemen-fitur': Zap,
+
+    // --- Pondasi Data ---
+    'pusat-data': Database,
     '/master-data/company': Building,
     '/master-data/departments': Network,
     '/master-data/positions': Briefcase,
@@ -61,25 +81,50 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/master-data/hierarchy': GitFork,
     '/master-data/kpi-categories': FolderKanban,
     '/master-data/kbo-categories': BookCopy,
-    '/master-data/kbo-competencies': ClipboardPen,
+    '/master-data/kbo-competencies': BrainCircuit,
     '/master-data/kpi-data': Database,
     '/master-data/company-objectives': Target,
     '/media-library': ImageIcon,
-    '/appraisal-settings': ClipboardPen,
-    '/kbo-appraisal': AreaChart,
-    '/setup-kpi': Settings,
-    '/input-achievement': FilePlus2,
-    'manajemen-sistem': SlidersHorizontal,
-    'manajemen-fitur': SlidersHorizontal,
-    'analisis-laporan': FilePieChart,
-    'pusat-data': Database,
-    'manajemen-kpi': ClipboardCheck,
-    'manajemen-kbo': ClipboardPen,
+
+    // --- Pusat Holding ---
     'pusat-holding': GitMerge,
+    '/holding-dashboard': AreaChart,
+    '/holding-kpi-setup': Settings,
+    '/holding-group-management': Users,
+    '/holding-management': GitMerge,
+
+    // --- CollabSpace ---
+    '/collab-space': LayoutGrid,
+    '/collab-space/management': Settings2,
+    '/collab-space/reports': FilePieChart,
+
+    // --- Analisis & Laporan ---
+    'analisis-laporan': AreaChart,
+    '/reports': FilePieChart,
+    '/cycle-reports': Activity,
+    '/appraisal-dashboard': AreaChart,
+    '/kbo-appraisal': ClipboardCheck,
+
+    // --- Manajemen KPI ---
+    'manajemen-kpi': ClipboardCheck,
+    '/my-performance': UserCog,
+    '/input-achievement': FilePlus2,
+    '/setup-kpi': Settings,
+
+    // --- Manajemen KBO ---
+    'manajemen-kbo': ClipboardPen,
+    '/appraisal-settings': ClipboardPen,
+
+    // --- OKR ---
     'okr-management': Target,
-    'manajemen-pembelajaran': GraduationCap,
+    '/okr': Target,
+    '/okr/reports': AreaChart,
+    '/okr/progress': ListChecks,
+
+    // --- LMS (Learning Management System) ---
     'lms-portal': GraduationCap,
     'lms-user': BookUser,
+    'manajemen-pembelajaran': GraduationCap,
     '/lms/admin/dashboard': GraduationCap,
     '/lms/admin/courses': BookOpenCheck,
     '/lms/admin/programs': Workflow,
@@ -87,26 +132,20 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/lms/admin/quizzes': FileQuestion,
     '/lms/admin/reports': AreaChart,
     '/lms/user/my-learnings': BookUser,
-    '/admin-management': ShieldCheck,
-    '/company-admin-management': ShieldCheck,
-    '/activation-management': ClipboardCheck,
-    '/subscription-management': Crown,
-    '/subscription-logs': History,
-    '/beranda': Home,
-    '/action-center': Home,
-    '/subscription-status': Crown,
-    '/subscription-plans': ShoppingCart,
-    '/collab-space': LayoutGrid,
-    '/collab-space/management': Settings2,
-    '/collab-space/reports': FilePieChart,
+
+    // --- Dokumen ---
+    'manajemen-dokumen': Files,
     '/document-management/templates': FileText,
     '/document-management/contracts': Files,
-    'manajemen-dokumen': Files,
-    '/holding-dashboard': AreaChart,
-    '/holding-kpi-setup': Settings,
-    '/holding-group-management': Users,
-    '/holding-management': GitMerge,
-    default: FolderKanban,
+
+    // --- Lainnya ---
+    '/subscription-status': Crown,
+    '/subscription-plans': ShoppingCart,
+    '/settings': Settings,
+    '/memos': Mail,
+    'default': FolderKanban,
+    'more': MoreHorizontal,
+    'portal': ChevronLeft,
 };
 
 // Helper to determine active module from path
@@ -333,7 +372,6 @@ export function getNavItems(
         .filter((item): item is NonNullable<typeof item> => item !== null);
 
     // --- Dynamic Filtering based on activeModule ---
-    // MOD: Superadmin always sees everything. Filtering only for other roles.
     if (activeModule && userRole !== 'superadmin') {
         visibleItems = visibleItems.filter(item => {
             if ((item as any).moduleId === activeModule) return true;
