@@ -3,7 +3,6 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { useBreakpoint } from "@/hooks/use-breakpoint";
 
 interface PageHeaderProps {
   title: string;
@@ -15,36 +14,33 @@ interface PageHeaderProps {
 
 /**
  * PageHeader Adaptif:
- * - Ukuran teks menyesuaikan layar.
- * - Actions berjejer di desktop, menumpuk di mobile.
- * - Optimized for Deep Dark Contrast.
+ * Optimized for Modern Industrial Utility.
+ * Compressed typography for high information density.
  */
 export function PageHeader({ title, description, icon: Icon, actions, className }: PageHeaderProps) {
-  const { isMobile } = useBreakpoint();
-
   return (
     <div className={cn(
       "flex flex-col gap-4 mb-6 sm:mb-8",
-      "lg:flex-row lg:items-start lg:justify-between",
+      "lg:flex-row lg:items-center lg:justify-between",
       className
     )}>
-      <div className="flex items-start gap-4 min-w-0">
+      <div className="flex items-center gap-3 min-w-0">
         {Icon && (
-          <div className="p-2 sm:p-3 bg-primary/10 rounded-xl shrink-0 border border-primary/20 shadow-stripe">
-            <Icon className="size-5 sm:size-6 lg:size-8 text-primary" />
+          <div className="p-2 bg-primary/10 rounded-lg shrink-0 border border-primary/20 shadow-[0_8px_30px_rgb(0,55,112,0.12)]">
+            <Icon className="size-5 text-primary" />
           </div>
         )}
-        <div className="min-w-0 space-y-1">
+        <div className="min-w-0 space-y-0.5">
           <h1 className={cn(
-            "font-black tracking-tight text-white leading-tight", // Contrast Fix
-            "text-xl sm:text-2xl md:text-3xl lg:text-4xl" // Adaptive Typography
+            "font-black tracking-tighter text-white leading-tight",
+            "text-lg sm:text-xl md:text-2xl" 
           )}>
             {title}
           </h1>
           {description && (
             <p className={cn(
-              "text-[#8a8f98] font-medium leading-relaxed max-w-3xl", // Muted Gray for description
-              "text-xs sm:text-sm md:text-base" // Adaptive Typography
+              "text-[#8a8f98] font-medium leading-relaxed max-w-2xl",
+              "text-[10px] sm:text-xs"
             )}>
               {description}
             </p>
