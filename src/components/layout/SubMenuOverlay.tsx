@@ -2,8 +2,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, SquaresFour, CaretLeft } from "@phosphor-icons/react";
-import { Folders } from "@phosphor-icons/react";
+import { X, SquaresFour, CaretLeft, Folders } from "@phosphor-icons/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
@@ -82,16 +81,16 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
             animate={{ y: "0%" }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className="fixed bottom-0 left-0 right-0 h-[70vh] bg-background rounded-t-2xl border-t border-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden no-print"
+            className="fixed bottom-0 left-0 right-0 h-[70vh] bg-background/80 backdrop-blur-2xl rounded-t-2xl border-t border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden no-print"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Padat Header */}
-            <div className="px-5 py-4 flex items-center justify-between shrink-0 bg-background">
+            <div className="px-5 py-4 flex items-center justify-between shrink-0 bg-background/50 border-b border-white/10">
                 <div className="flex items-center gap-3">
                     {isSubMenuView ? (
                         <button 
                             onClick={handleBack}
-                            className="size-8 rounded-lg bg-muted flex items-center justify-center hover:bg-accent transition-all active:scale-90"
+                            className="size-8 rounded-lg bg-white/20 flex items-center justify-center hover:bg-white/40 transition-all active:scale-90 border border-white/20 shadow-sm"
                         >
                             <CaretLeft className="size-4" weight="bold" />
                         </button>
@@ -111,16 +110,14 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                 </div>
                 <button 
                     onClick={onClose}
-                    className="size-8 rounded-lg bg-muted/50 flex items-center justify-center hover:bg-muted transition-all active:scale-90"
+                    className="size-8 rounded-lg bg-white/20 flex items-center justify-center hover:bg-white/40 transition-all active:scale-90 border border-white/20 shadow-sm"
                 >
                     <X className="size-4" weight="bold" />
                 </button>
             </div>
 
-            <Separator />
-            
-            {/* Scrollable Grid: High Density Style with Phosphor Icons */}
-            <div className="flex-1 min-h-0 bg-slate-50/30">
+            {/* Grid Area */}
+            <div className="flex-1 min-h-0">
                 <ScrollArea className="h-full">
                     <div className="p-4 pb-12">
                         <AnimatePresence initial={false} custom={direction} mode="wait">
@@ -135,7 +132,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                 className="grid grid-cols-3 gap-2.5"
                             >
                                 {itemsToShow.map((subItem: any) => {
-                                    const IconComponent = iconMap[subItem.iconName || subItem.href || 'default'] || Folders;
+                                    const IconComponent = (iconMap[subItem.iconName || subItem.href || 'default']) || Folders;
                                     const isLink = !!subItem.href;
                                     const hasSubItems = subItem.subItems && subItem.subItems.length > 0;
                                     const isActive = isLink && (pathname === subItem.href || (subItem.href !== '/' && pathname.startsWith(subItem.href)));
@@ -144,8 +141,8 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                         <div className={cn(
                                             "flex flex-col items-center justify-center gap-2.5 p-3.5 rounded-xl transition-all duration-200 border group/item active:scale-95",
                                             isActive 
-                                                ? "bg-primary/5 border-primary/30 shadow-sm" 
-                                                : "bg-background border-slate-100 hover:border-primary/20 hover:bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+                                                ? "bg-primary/10 border-primary/30 shadow-md" 
+                                                : "bg-white/40 border-white/60 hover:border-primary/20 hover:bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
                                         )}>
                                             <div className={cn(
                                                 "size-9 flex items-center justify-center transition-all duration-300",
@@ -156,7 +153,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                                         size={28} 
                                                         weight="fill" 
                                                         style={{ fill: "url(#brand-gradient)" }} 
-                                                        className={cn(isActive ? "opacity-100" : "opacity-100 grayscale-0")}
+                                                        className="opacity-100"
                                                     />
                                                 )}
                                             </div>
@@ -186,7 +183,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
             </div>
             
             {/* Bottom Trim */}
-            <div className="h-4 shrink-0 bg-background border-t" />
+            <div className="h-4 shrink-0 bg-background/50 border-t border-white/10" />
           </motion.div>
         </motion.div>
       )}

@@ -178,8 +178,8 @@ export function BottomNav() {
                     );
                 }
 
-                const RawIcon = item.iconName === 'portal' ? CaretLeft : (iconMap[item.iconName || item.href || 'default']);
-                const Icon = RawIcon || Folders;
+                const RawIcon = item.iconName === 'portal' ? CaretLeft : (iconMap[item.iconName || item.href || 'default'] || Folders);
+                const Icon = RawIcon;
                 const isActive = item.href && (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)));
                 const isPortalLink = item.iconName === 'portal';
 
