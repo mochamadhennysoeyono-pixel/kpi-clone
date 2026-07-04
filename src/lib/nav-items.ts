@@ -51,7 +51,9 @@ import {
     Mail,
     BellRing,
     BrainCircuit,
-    CheckCircle
+    CheckCircle,
+    MoreHorizontal,
+    ChevronLeft
 } from 'lucide-react';
 
 export const iconMap: { [key: string]: React.ElementType } = {
