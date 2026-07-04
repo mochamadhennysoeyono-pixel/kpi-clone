@@ -4,37 +4,16 @@
 
 import { useState, useMemo } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
   PlusCircle,
   MoreHorizontal,
   User,
   ShieldCheck,
   Send,
   Loader2,
+  Pencil,
+  Trash2,
+  Mail,
+  ChevronDown,
 } from "lucide-react";
 import type { Employee, LoginStatus } from "@/types";
 import { EmployeeFormSheet } from "@/components/master-data/employees/employee-form-sheet";
@@ -43,10 +22,26 @@ import { useToast } from "@/hooks/use-toast";
 import { useMasterData } from "@/contexts/master-data-context";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "@/lib/firebase/client";
-import { doc, setDoc, addDoc, collection } from "firebase/firestore";
-
+import { db } from "@/lib/firebase/client";
+import { doc, setDoc, collection } from "firebase/firestore";
+import { 
+    ResponsivePage, 
+    ResponsiveToolbar 
+} from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { AdaptiveTable } from "@/components/ui/adaptive-table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function AdminManagementPage() {
   const { currentUser, userRole, updateUserProfile, sendPasswordReset } = useAuth();
@@ -76,10 +71,9 @@ export default function AdminManagementPage() {
     toast({
         variant: 'destructive',
         title: 'Aksi Dilarang',
-        description: 'Pembuatan akun login baru harus dilakukan melalui backend (Cloud Function) untuk menjaga keamanan sesi admin. Fitur ini dinonaktifkan sementara di UI.',
+        description: 'Pembuatan akun login baru harus dilakukan melalui backend.',
     });
     
-    // Fallback: Create Firestore document only, without creating Auth user
     try {
         const docRef = doc(collection(db, 'employees'));
         const dataToSave: Omit<Employee, 'id' | 'password'> = {
@@ -92,28 +86,19 @@ export default function AdminManagementPage() {
             reportsTo: '',
             status: 'Aktif',
             joinDate: new Date().toISOString().split('T')[0],
-            loginStatus: 'No Login', // Set to No Login as Auth user is not created
+            loginStatus: 'No Login',
         };
         await setDoc(docRef, dataToSave);
         await fetchData();
-        toast({ title: "Data Superadmin Dibuat", description: "Data superadmin baru telah dibuat di database. Akun login harus dibuat secara manual." });
+        toast({ title: "Data Dibuat", description: "Data superadmin baru telah disimpan." });
     } catch (e: any) {
-        console.error("Error creating superadmin document:", e);
-        toast({
-            variant: 'destructive',
-            title: 'Gagal Membuat Data',
-            description: e.message || 'Terjadi kesalahan saat menyimpan data superadmin baru.'
-        });
+        toast({ variant: 'destructive', title: 'Gagal', description: e.message });
     }
   }
   
   const openDeleteDialog = (employee: Employee) => {
     if (employee.id === currentUser?.id) {
-        toast({
-            variant: "destructive",
-            title: "Tindakan Ditolak",
-            description: "Anda tidak dapat menghapus akun Anda sendiri.",
-        });
+        toast({ variant: "destructive", title: "Ditolak", description: "Tidak bisa menghapus diri sendiri." });
         return;
     }
     setEmployeeToDelete(employee);
@@ -132,16 +117,7 @@ export default function AdminManagementPage() {
     const result = await sendPasswordReset(email);
     setIsSendingInvitation(null);
     if (result.success) {
-      toast({
-        title: "Email Terkirim",
-        description: `Email pembaruan kata sandi telah dikirim ke ${email}.`,
-      });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Gagal Mengirim Email",
-        description: result.error || "Terjadi kesalahan yang tidak diketahui.",
-      });
+      toast({ title: "Email Terkirim" });
     }
   };
   
@@ -149,111 +125,115 @@ export default function AdminManagementPage() {
     switch (status) {
         case "Active": return "bg-green-100 text-green-800 border-green-200";
         case "Invited": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-        case "No Login": return "bg-gray-100 text-gray-800 border-gray-200";
         default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
   }
 
   if (userRole !== 'superadmin') {
-      return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Akses Ditolak</CardTitle>
-                <CardDescription>Halaman ini hanya dapat diakses oleh Superadmin.</CardDescription>
-            </CardHeader>
-        </Card>
-      )
+      return <div className="p-20 text-center font-bold">Akses Ditolak.</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="shadow-lg mb-6">
-        <CardHeader className="bg-primary text-primary-foreground dark:bg-card rounded-t-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex-1">
-              <CardTitle className="font-headline flex items-center gap-2">
-                <ShieldCheck />
-                Manajemen Superadmin
-              </CardTitle>
-              <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground">
-                Kelola pengguna dengan hak akses tertinggi di sistem.
-              </CardDescription>
-            </div>
-             <div className="ml-auto flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
-                <Button size="sm" className="h-9 gap-1" onClick={handleAddEmployee}>
-                  <PlusCircle className="h-3.5 w-3.5" />
-                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                    Tambah Superadmin
-                  </span>
-                </Button>
-             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nama Pengguna</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Status Akun</TableHead>
-                  <TableHead>Status Login</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Aksi</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {superAdmins.map((employee) => (
-                  <TableRow key={employee.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
-                        <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-full bg-muted">
-                          <User className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                        <span>{employee.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{employee.email}</TableCell>
-                    <TableCell>
-                      <Badge variant={employee.status === "Aktif" ? "default" : "outline"}>
-                        {employee.status}
-                      </Badge>
-                    </TableCell>
-                     <TableCell>
-                      <Badge variant="outline" className={cn("font-medium", getLoginStatusBadge(employee.loginStatus))}>
-                        {employee.loginStatus}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost" disabled={isSendingInvitation === employee.email}>
-                            {isSendingInvitation === employee.email ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
-                            <span className="sr-only">Buka menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => handleEditEmployee(employee)}>Ubah</DropdownMenuItem>
-                          {employee.loginStatus !== 'No Login' && (
-                            <DropdownMenuItem onClick={() => handleSendInvitation(employee.email)}>
-                              <Send className="mr-2 h-4 w-4" />
-                              Kirim Pembaruan Sandi
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(employee)} disabled={employee.id === currentUser?.id}>Hapus</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+    <ResponsivePage>
+      <PageHeader 
+        title="Manajemen Superadmin"
+        description="Kelola pengguna dengan hak akses tertinggi di sistem."
+        icon={ShieldCheck}
+        actions={
+          <Button onClick={handleAddEmployee} className="font-bold shadow-lg h-9 sm:h-10">
+            <PlusCircle className="size-4" />
+            Tambah Superadmin
+          </Button>
+        }
+      />
+
+      <AdaptiveTable 
+        data={superAdmins}
+        keyExtractor={(e) => e.id}
+        columns={[
+          {
+            header: "Superadmin",
+            cell: (e) => (
+              <div className="flex items-center gap-3">
+                <Avatar className="size-9 border shadow-sm">
+                  <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-black uppercase">
+                    {e.name.substring(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-900 truncate">{e.name}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-medium truncate">{e.email}</p>
+                </div>
+              </div>
+            )
+          },
+          {
+            header: "Status Akun",
+            cell: (e) => (
+              <Badge variant={e.status === "Aktif" ? "default" : "outline"} className="text-[9px] uppercase font-black">
+                {e.status}
+              </Badge>
+            )
+          },
+          {
+            header: "Login",
+            cell: (e) => (
+              <Badge variant="outline" className={cn("text-[9px] uppercase font-bold h-5", getLoginStatusBadge(e.loginStatus))}>
+                {e.loginStatus}
+              </Badge>
+            )
+          },
+          {
+            header: "",
+            className: "text-right",
+            cell: (e) => (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" disabled={isSendingInvitation === e.email}>
+                    {isSendingInvitation === e.email ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleEditEmployee(e)}><Pencil className="size-3.5 mr-2" />Ubah</DropdownMenuItem>
+                  {e.loginStatus !== 'No Login' && (
+                    <DropdownMenuItem onClick={() => handleSendInvitation(e.email)}>
+                      <Send className="mr-2 size-3.5" /> Kirim Reset Sandi
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(e)} disabled={e.id === currentUser?.id}>
+                    <Trash2 className="size-3.5 mr-2" /> Hapus
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+          }
+        ]}
+        renderMobileCard={(e) => (
+          <Card className="border-border/40 shadow-sm">
+            <CardContent className="p-4 space-y-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="size-11 border-2 border-primary/10 shadow-sm">
+                  <AvatarFallback className="bg-primary/5 text-primary text-xs font-black uppercase">{e.name.substring(0, 2)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                   <h3 className="font-black text-sm truncate uppercase tracking-tight">{e.name}</h3>
+                   <p className="text-[10px] text-muted-foreground truncate">{e.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-3 border-t">
+                  <Badge variant={e.status === "Aktif" ? "default" : "outline"} className="text-[8px] font-black uppercase">{e.status}</Badge>
+                  <Badge variant="outline" className={cn("text-[8px] font-black uppercase", getLoginStatusBadge(e.loginStatus))}>{e.loginStatus}</Badge>
+              </div>
+              <div className="flex gap-2 pt-2">
+                  <Button variant="outline" size="sm" className="flex-1 font-bold text-[10px] h-8" onClick={() => handleEditEmployee(e)}>UBAH</Button>
+                  <Button variant="ghost" size="sm" className="flex-1 font-bold text-[10px] h-8 text-destructive" onClick={() => openDeleteDialog(e)} disabled={e.id === currentUser?.id}>HAPUS</Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      />
+
       <EmployeeFormSheet 
         isOpen={isSheetOpen} 
         onOpenChange={setSheetOpen} 
@@ -269,6 +249,6 @@ export default function AdminManagementPage() {
         itemName={employeeToDelete?.name || ''}
         itemType="superadmin"
       />
-    </div>
+    </ResponsivePage>
   );
 }

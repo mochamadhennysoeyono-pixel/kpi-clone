@@ -1,268 +1,210 @@
+
 // src/app/(main)/master-data/positions/page.tsx
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { PlusCircle, MoreHorizontal, Briefcase, ChevronDown, Trash2 } from "lucide-react";
+  PlusCircle,
+  MoreHorizontal,
+  Briefcase,
+  Trash2,
+  Search,
+  Building,
+  Filter,
+  Pencil,
+  Network,
+} from "lucide-react";
 import type { Position, Company, Department } from "@/types";
 import { PositionFormDialog } from "@/components/master-data/positions/position-form-dialog";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import { useMasterData } from "@/contexts/master-data-context";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
+import { 
+    ResponsivePage, 
+    ResponsiveToolbar 
+} from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { AdaptiveTable } from "@/components/ui/adaptive-table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 export default function PositionsPage() {
   const { positions, addPosition, updatePosition, deletePositions, companies, departments } = useMasterData();
   const { currentUser, userRole } = useAuth();
+  const { toast } = useToast();
   
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState<Position | undefined>(undefined);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [positionsToDelete, setPositionsToDelete] = useState<Position[] | null>(null);
-  const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
-  const { toast } = useToast();
+  const [positionToDelete, setPositionToDelete] = useState<Position | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('all');
 
-  const userCompany = useMemo(() => {
-    return companies.find(c => c.name === currentUser?.company);
-  }, [companies, currentUser]);
-
   const manageableCompanies = useMemo(() => {
-    if (userRole === 'superadmin') {
-      return companies;
-    }
+    if (userRole === 'superadmin') return companies.filter(c => c.status === 'Aktif');
+    const userCompany = companies.find(c => c.name === currentUser?.company);
     if (!userCompany) return [];
-    
     if (userCompany.isHolding) {
-      const getChildCompanies = (parentId: string): Company[] => {
-        const children = companies.filter(c => c.parentId === parentId);
-        return [...children, ...children.flatMap(c => getChildCompanies(c.id))];
+      const getChildren = (id: string): Company[] => {
+        const childs = companies.filter(c => c.parentId === id);
+        return [...childs, ...childs.flatMap(c => getChildren(c.id))];
       };
-      return [userCompany, ...getChildCompanies(userCompany.id)];
+      return [userCompany, ...getChildren(userCompany.id)].filter(c => c.status === 'Aktif');
     }
     return [userCompany];
-  }, [userRole, companies, userCompany]);
-  
-  const manageableCompanyNames = useMemo(() => manageableCompanies.map(c => c.name), [manageableCompanies]);
+  }, [userRole, companies, currentUser]);
 
   const filteredPositions = useMemo(() => {
-    let pos = positions.filter(p => manageableCompanyNames.includes(p.company));
-    
-    if (selectedCompanyFilter !== 'all') {
-      pos = pos.filter(p => p.company === selectedCompanyFilter);
-    }
-    
-    return pos;
-  }, [positions, manageableCompanyNames, selectedCompanyFilter]);
-
-  useEffect(() => {
-    if (userRole !== 'superadmin' && manageableCompanies.length > 1) {
-      setSelectedCompanyFilter('all');
-    } else if (userRole !== 'superadmin' && manageableCompanies.length === 1) {
-      setSelectedCompanyFilter(manageableCompanies[0].name);
-    }
-  }, [userRole, manageableCompanies]);
-
-  const handleSelectAll = (checked: boolean | "indeterminate") => {
-    if (checked) {
-      setSelectedRowIds(filteredPositions.map(p => p.id));
-    } else {
-      setSelectedRowIds([]);
-    }
-  };
-
-  const handleRowSelect = (rowId: string) => {
-    setSelectedRowIds(prev =>
-      prev.includes(rowId) ? prev.filter(id => id !== rowId) : [...prev, rowId]
-    );
-  };
-
-  const openBulkDeleteDialog = () => {
-    const itemsToDelete = positions.filter(p => selectedRowIds.includes(p.id));
-    setPositionsToDelete(itemsToDelete);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleAddItem = () => {
-    setSelectedPosition(undefined);
-    setDialogOpen(true);
-  };
-
-  const handleEditItem = (item: Position) => {
-    setSelectedPosition(item);
-    setDialogOpen(true);
-  };
+    const manageableNames = new Set(manageableCompanies.map(c => c.name));
+    return positions.filter(p => 
+        manageableNames.has(p.company) &&
+        (selectedCompanyFilter === 'all' || p.company === selectedCompanyFilter) &&
+        (p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    ).sort((a,b) => a.name.localeCompare(b.name));
+  }, [positions, manageableCompanies, selectedCompanyFilter, searchTerm]);
 
   const handleSaveItem = async (data: Omit<Position, 'id'>) => {
-     if (!data.company || !data.department) {
-        toast({ variant: "destructive", title: "Gagal Menyimpan", description: "Perusahaan dan departemen harus dipilih." });
-        return;
-    }
-
     if (selectedPosition) {
       await updatePosition(selectedPosition.id, data);
     } else {
       await addPosition(data);
     }
-  };
-
-  const openDeleteDialog = (item: Position) => {
-    setPositionsToDelete([item]);
-    setDeleteDialogOpen(true);
+    setDialogOpen(false);
   };
 
   const handleDelete = async () => {
-    if (positionsToDelete && positionsToDelete.length > 0) {
-      const idsToDelete = positionsToDelete.map(p => p.id);
-      await deletePositions(idsToDelete);
-      toast({ title: "Data Dihapus", description: `${idsToDelete.length} data jabatan telah berhasil dihapus.` });
-      setPositionsToDelete(null);
-      setSelectedRowIds([]);
+    if (positionToDelete) {
+      await deletePositions([positionToDelete.id]);
+      setPositionToDelete(null);
     }
   };
 
-  const canShowCompanyFilter = manageableCompanies.length > 1;
-
   return (
-    <div className="space-y-6">
-      <Card className="shadow-lg mb-6 overflow-hidden">
-        <CardHeader className="bg-primary text-primary-foreground dark:bg-card">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <CardTitle className="font-headline text-lg sm:text-xl">Data Jabatan</CardTitle>
-              <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground text-xs sm:text-sm">
-                Kelola daftar jabatan di perusahaan Anda. Menampilkan {filteredPositions.length} data.
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
-                {selectedRowIds.length > 0 && (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-9 gap-1 bg-background/20 text-primary-foreground hover:bg-background/30 dark:bg-muted dark:text-foreground dark:hover:bg-muted/80">
-                                Aksi Massal ({selectedRowIds.length})
-                                <ChevronDown className="ml-1 h-3.5 w-3.5" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Pilih Aksi</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive font-bold" onClick={openBulkDeleteDialog}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Hapus Pilihan
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )}
-                <Button size="sm" className="h-9 gap-1 font-bold shadow-md" onClick={handleAddItem}>
-                  <PlusCircle className="h-3.5 w-3.5" />
-                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                    Tambah Jabatan
-                  </span>
-                </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          {canShowCompanyFilter && (
-            <div className="mb-6 p-4 border rounded-lg bg-muted/30 max-w-xs">
-              <Select value={selectedCompanyFilter} onValueChange={setSelectedCompanyFilter}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Filter Perusahaan" />
+    <ResponsivePage>
+      <PageHeader 
+        title="Daftar Jabatan"
+        description="Kelola seluruh tingkat jabatan dan penempatan departemen di seluruh unit bisnis."
+        icon={Briefcase}
+        actions={
+          <Button onClick={() => { setSelectedPosition(undefined); setDialogOpen(true); }} className="font-bold shadow-lg h-9 sm:h-10">
+            <PlusCircle className="size-4" />
+            Tambah Jabatan
+          </Button>
+        }
+      />
+
+      <ResponsiveToolbar>
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input 
+            placeholder="Cari jabatan..." 
+            className="pl-9 h-10 border-none shadow-none bg-background/50 focus-visible:ring-primary/20"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+            <Select value={selectedCompanyFilter} onValueChange={setSelectedCompanyFilter}>
+                <SelectTrigger className="w-full sm:w-[200px] h-10 bg-background border-none">
+                    <Building className="size-4 mr-2 text-primary" />
+                    <SelectValue placeholder="Perusahaan" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Perusahaan</SelectItem>
-                  {manageableCompanies.map(c => (
-                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                  ))}
+                    <SelectItem value="all">Semua Perusahaan</SelectItem>
+                    {manageableCompanies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
                 </SelectContent>
-              </Select>
-            </div>
-          )}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead padding="checkbox" className="w-[40px]">
-                    <Checkbox
-                        checked={selectedRowIds.length > 0 && filteredPositions.length > 0 && selectedRowIds.length === filteredPositions.length}
-                        onCheckedChange={(checked) => handleSelectAll(checked)}
-                        aria-label="Pilih semua"
-                    />
-                </TableHead>
-                <TableHead>Nama Jabatan</TableHead>
-                <TableHead>Departemen</TableHead>
-                {canShowCompanyFilter && <TableHead>Perusahaan</TableHead>}
-                <TableHead>
-                  <span className="sr-only">Aksi</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredPositions.map((position) => (
-                <TableRow key={position.id} data-state={selectedRowIds.includes(position.id) && "selected"}>
-                  <TableCell padding="checkbox">
-                        <Checkbox
-                            checked={selectedRowIds.includes(position.id)}
-                            onCheckedChange={() => handleRowSelect(position.id)}
-                            aria-label={`Pilih ${position.name}`}
-                        />
-                  </TableCell>
-                  <TableCell className="font-medium py-4">
-                     <div className="flex items-center gap-3">
-                      <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-xl bg-primary/5 text-primary border border-primary/10">
-                        <Briefcase className="h-5 w-5" />
-                      </div>
-                       <span className="text-slate-900 font-bold">{position.name}</span>
+            </Select>
+        </div>
+      </ResponsiveToolbar>
+
+      <AdaptiveTable 
+        data={filteredPositions}
+        keyExtractor={(p) => p.id}
+        columns={[
+          {
+            header: "Jabatan",
+            cell: (p) => (
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center border shrink-0">
+                  <Briefcase className="size-5" />
+                </div>
+                <span className="font-bold text-slate-900">{p.name}</span>
+              </div>
+            )
+          },
+          {
+             header: "Departemen",
+             cell: (p) => (
+                <div className="flex items-center gap-2 text-slate-600 font-medium">
+                    <Network size={14} className="opacity-50" />
+                    {p.department}
+                </div>
+             )
+          },
+          {
+             header: "Perusahaan",
+             accessorKey: "company",
+             className: "text-slate-500 text-xs",
+          },
+          {
+            header: "",
+            className: "text-right",
+            cell: (p) => (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal className="size-4" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => { setSelectedPosition(p); setDialogOpen(true); }}>
+                    <Pencil className="size-3.5 mr-2" /> Ubah Detail
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive font-bold" onClick={() => { setPositionToDelete(p); setDeleteDialogOpen(true); }}>
+                    <Trash2 className="size-3.5 mr-2" /> Hapus
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+          }
+        ]}
+        renderMobileCard={(p) => (
+          <Card className="border-border/40 shadow-sm">
+            <CardContent className="p-4 space-y-4">
+                <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4 min-w-0">
+                        <div className="size-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center border shrink-0">
+                            <Briefcase size={20} />
+                        </div>
+                        <div className="min-w-0">
+                            <h3 className="font-black text-sm uppercase truncate">{p.name}</h3>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                                <Network size={10} /> {p.department}
+                            </p>
+                        </div>
                     </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-600">{position.department}</TableCell>
-                   {canShowCompanyFilter && <TableCell className="text-sm text-slate-600">{position.company}</TableCell>}
-                  <TableCell className="text-right">
-                        <DropdownMenu>
+                    <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Buka menu</span>
-                            </Button>
+                            <Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal className="size-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuLabel className="text-[10px] font-black uppercase opacity-60">Opsi Jabatan</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleEditItem(position)}>Ubah Detail</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(position)}>Hapus Jabatan</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setSelectedPosition(p); setDialogOpen(true); }}>Ubah</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive font-bold" onClick={() => { setPositionToDelete(p); setDeleteDialogOpen(true); }}>Hapus</DropdownMenuItem>
                         </DropdownMenuContent>
-                        </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                    </DropdownMenu>
+                </div>
+                <div className="pt-2 border-t">
+                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Perusahaan</p>
+                    <p className="text-xs font-bold text-foreground/80">{p.company}</p>
+                </div>
+            </CardContent>
+          </Card>
+        )}
+      />
 
       <PositionFormDialog
         isOpen={isDialogOpen}
@@ -277,9 +219,9 @@ export default function PositionsPage() {
         isOpen={isDeleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDelete}
-        itemName={positionsToDelete?.length === 1 ? positionsToDelete[0].name : `${positionsToDelete?.length} item`}
+        itemName={positionToDelete?.name || ''}
         itemType="jabatan"
       />
-    </div>
+    </ResponsivePage>
   );
 }

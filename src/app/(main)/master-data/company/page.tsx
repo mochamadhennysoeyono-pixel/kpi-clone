@@ -1,26 +1,41 @@
+
 // src/app/(main)/master-data/company/page.tsx
 "use client";
 
 import { useState, useMemo } from "react";
 import Link from 'next/link';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+  PlusCircle,
+  MoreHorizontal,
+  Building,
+  ChevronDown,
+  Trash2,
+  Search,
+  Crown,
+  Users,
+  Eye,
+  Sparkles,
+  Pencil,
+  GitMerge,
+  Filter,
+} from "lucide-react";
+import type { Company } from "@/types";
+import { CompanyFormSheet } from "@/components/master-data/company/company-form-sheet";
+import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
+import { useMasterData } from "@/contexts/master-data-context";
+import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { 
+    ResponsivePage, 
+    ResponsiveToolbar 
+} from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { AdaptiveTable } from "@/components/ui/adaptive-table";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,16 +44,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { PlusCircle, MoreHorizontal, Building, ChevronDown, Trash2, Search, Crown, Users, Eye, Sparkles, Pencil, GitMerge } from "lucide-react";
-import type { Company, Employee } from "@/types";
-import { CompanyFormSheet } from "@/components/master-data/company/company-form-sheet";
-import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
-import { useMasterData } from "@/contexts/master-data-context";
-import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-
 
 export default function CompanyPage() {
   const { companies, addCompany, updateCompany, deleteCompany, subscriptionPlans, employees } = useMasterData();
@@ -71,34 +76,6 @@ export default function CompanyPage() {
     return usageMap;
   }, [companies, employees]);
 
-  const handleSelectAll = (checked: boolean | "indeterminate") => {
-    if (checked) {
-      setSelectedRowIds(filteredCompanies.map(c => c.id));
-    } else {
-      setSelectedRowIds([]);
-    }
-  };
-
-  const handleRowSelect = (rowId: string) => {
-    setSelectedRowIds(prev =>
-      prev.includes(rowId) ? prev.filter(id => id !== rowId) : [...prev, rowId]
-    );
-  };
-  
-  const handleBulkDelete = async () => {
-    await Promise.all(selectedRowIds.map(id => deleteCompany(id)));
-    toast({
-        title: "Aksi Massal Berhasil",
-        description: `${selectedRowIds.length} data perusahaan telah berhasil dihapus.`,
-    });
-    setSelectedRowIds([]);
-  };
-
-  const handleAddCompany = () => {
-    setSelectedCompany(undefined);
-    setSheetOpen(true);
-  };
-
   const handleEditCompany = (company: Company) => {
     setSelectedCompany(company);
     setSheetOpen(true);
@@ -115,16 +92,9 @@ export default function CompanyPage() {
   const handlePlanChange = async (company: Company, planId: string) => {
     try {
         await updateCompany(company.id, { subscriptionPlanId: planId });
-        toast({
-            title: "Paket Diperbarui Manual",
-            description: `Perusahaan ${company.name} kini menggunakan paket baru. Log histori telah dicatat.`
-        });
+        toast({ title: "Paket Diperbarui" });
     } catch (e: any) {
-        toast({
-            variant: "destructive",
-            title: "Gagal Memperbarui",
-            description: e.message || 'Terjadi kesalahan.'
-        });
+        toast({ variant: "destructive", title: "Gagal", description: e.message });
     }
   }
 
@@ -141,214 +111,162 @@ export default function CompanyPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
-        <CardHeader className="bg-primary text-primary-foreground dark:bg-card">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex-1 min-w-0">
-                <CardTitle className="font-headline text-lg sm:text-2xl flex items-center gap-3">
-                    <Building className="h-6 w-6 text-primary-foreground" />
-                    Data Perusahaan Klien
-                </CardTitle>
-                <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground text-xs sm:text-sm">
-                    Kelola data klien dan migrasikan paket mereka ke sistem terbaru di sini.
-                </CardDescription>
-            </div>
-             <div className="flex flex-wrap items-center gap-2 shrink-0">
-                {selectedRowIds.length > 0 && (
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9 gap-1 bg-background/20 text-primary-foreground hover:bg-background/30 dark:bg-muted dark:text-foreground dark:hover:bg-muted/80">
-                            Aksi Massal ({selectedRowIds.length})
-                            <ChevronDown className="ml-1 h-3.5 w-3.5" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Pilih Aksi</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive font-bold" onClick={handleBulkDelete}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Hapus Pilihan
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-                )}
-                <Button size="sm" className="h-9 gap-1 font-bold shadow-md" onClick={handleAddCompany}>
-                  <PlusCircle className="h-3.5 w-3.5" />
-                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                    Tambah Perusahaan
-                  </span>
-                </Button>
-             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row items-center gap-4 mb-6 p-4 border rounded-lg bg-muted/30">
-                <div className="relative w-full">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Cari nama perusahaan..."
-                        className="pl-9"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+    <ResponsivePage>
+      <PageHeader 
+        title="Data Perusahaan Klien"
+        description="Kelola data klien, status operasional, dan integrasi paket langganan secara global."
+        icon={Building}
+        actions={
+          <Button onClick={() => { setSelectedCompany(undefined); setSheetOpen(true); }} className="font-bold shadow-lg h-9 sm:h-10">
+            <PlusCircle className="size-4" />
+            Tambah Perusahaan
+          </Button>
+        }
+      />
+
+      <ResponsiveToolbar>
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input 
+            placeholder="Cari nama perusahaan..." 
+            className="pl-9 h-10 border-none shadow-none bg-background/50 focus-visible:ring-primary/20"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[180px] h-10 bg-background border-none">
+                    <Filter className="size-4 mr-2 text-primary" />
+                    <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Semua Status</SelectItem>
+                    <SelectItem value="Aktif">Aktif</SelectItem>
+                    <SelectItem value="Tidak Aktif">Tidak Aktif</SelectItem>
+                </SelectContent>
+            </Select>
+        </div>
+      </ResponsiveToolbar>
+
+      <AdaptiveTable 
+        data={filteredCompanies}
+        keyExtractor={(c) => c.id}
+        columns={[
+          {
+            header: "Nama Perusahaan",
+            cell: (c) => (
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center border shrink-0">
+                  <Building className="size-5" />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">Semua Status</SelectItem>
-                        <SelectItem value="Aktif">Aktif</SelectItem>
-                        <SelectItem value="Tidak Aktif">Tidak Aktif</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                 <TableHead padding="checkbox" className="w-[40px]">
-                    <Checkbox
-                        checked={selectedRowIds.length > 0 && selectedRowIds.length === filteredCompanies.length && filteredCompanies.length > 0}
-                        onCheckedChange={(checked) => handleSelectAll(checked)}
-                        aria-label="Pilih semua"
-                    />
-                </TableHead>
-                <TableHead>Nama Perusahaan</TableHead>
-                <TableHead>Set Paket (Sistem Baru)</TableHead>
-                <TableHead>Penggunaan Kuota</TableHead>
-                <TableHead className="hidden md:table-cell">Status</TableHead>
-                <TableHead>
-                  <span className="sr-only">Aksi</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCompanies.length > 0 ? (
-                filteredCompanies.map((company) => {
-                    const usage = companyUsage.get(company.id) || { userCount: 0, managementCount: 0, childCompanyCount: 0 };
-                    const currentPlan = subscriptionPlans.find(p => p.id === company.subscriptionPlanId);
-                    
-                    return (
-                    <TableRow key={company.id} data-state={selectedRowIds.includes(company.id) && "selected"}>
-                    <TableCell padding="checkbox">
-                            <Checkbox
-                                checked={selectedRowIds.includes(company.id)}
-                                onCheckedChange={() => handleRowSelect(company.id)}
-                                aria-label={`Pilih ${company.name}`}
-                            />
-                    </TableCell>
-                    <TableCell className="font-medium py-4">
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-900 truncate flex items-center gap-2">
+                    {c.name}
+                    {c.isHolding && <Badge variant="secondary" className="text-[8px] h-4 font-black">HOLDING</Badge>}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-tight">{c.businessField}</p>
+                </div>
+              </div>
+            )
+          },
+          {
+            header: "Koneksi Paket",
+            cell: (c) => {
+                const currentPlan = subscriptionPlans.find(p => p.id === c.subscriptionPlanId);
+                return c.parentId ? (
+                    <Badge variant="outline" className="text-[9px] gap-1"><GitMerge size={10}/> IKUT INDUK</Badge>
+                ) : (
+                    <Select value={c.subscriptionPlanId || 'none'} onValueChange={(v) => handlePlanChange(c, v)}>
+                        <SelectTrigger className="h-8 text-[10px] font-black uppercase w-[150px]">
+                            <SelectValue placeholder="Pilih Paket" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {subscriptionPlans.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                );
+            }
+          },
+          {
+            header: "Utilisasi Kuota",
+            cell: (c) => {
+                const usage = companyUsage.get(c.id) || { userCount: 0, managementCount: 0 };
+                return (
+                    <div className="text-[9px] font-black uppercase space-y-0.5 text-muted-foreground">
+                        <div className="flex justify-between"><span>Staff:</span> <span className="text-primary">{usage.userCount}</span></div>
+                        <div className="flex justify-between"><span>Admin:</span> <span className="text-primary">{usage.managementCount}</span></div>
+                    </div>
+                );
+            }
+          },
+          {
+            header: "Status",
+            cell: (c) => (
+              <Badge variant={c.status === 'Aktif' ? 'default' : 'outline'} className="text-[9px] uppercase font-black">
+                {c.status}
+              </Badge>
+            )
+          },
+          {
+            header: "",
+            className: "text-right",
+            cell: (c) => (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal className="size-4" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href={`/company-subscription-status/${c.id}`} className="cursor-pointer">
+                      <Eye className="size-3.5 mr-2" /> Detail Paket
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleEditCompany(c)}><Pencil className="size-3.5 mr-2" />Edit Profil</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(c)}><Trash2 className="size-3.5 mr-2" />Hapus</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+          }
+        ]}
+        renderMobileCard={(c) => {
+            const usage = companyUsage.get(c.id) || { userCount: 0, managementCount: 0 };
+            return (
+                <Card className="border-border/40 shadow-sm">
+                    <CardContent className="p-4 space-y-4">
                         <div className="flex items-center gap-3">
-                        <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-xl bg-primary/5 text-primary border border-primary/10">
-                            <Building className="h-5 w-5" />
-                        </div>
-                        <div className="grid gap-0.5">
-                            <span className="font-bold flex items-center gap-1.5 text-slate-900">
-                                {company.name} 
-                                {company.isHolding && <Badge variant="secondary" className="h-4 text-[8px] px-1 bg-primary/10 text-primary border-none font-black uppercase">HOLDING</Badge>}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground hidden sm:inline uppercase font-bold tracking-tight">
-                                {company.businessField}
-                            </span>
-                        </div>
-                        </div>
-                    </TableCell>
-                    <TableCell>
-                        {company.parentId ? (
-                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                               <GitMerge className="size-3" />
-                               <span>Ikut Induk</span>
-                           </div>
-                        ) : (
-                           <div className="flex flex-col gap-1.5">
-                                <Select 
-                                    value={company.subscriptionPlanId || 'none'} 
-                                    onValueChange={(planId) => handlePlanChange(company, planId)}
-                                >
-                                    <SelectTrigger className={cn(
-                                        "w-[160px] text-[10px] h-8 font-black uppercase tracking-tight",
-                                        !currentPlan && "border-destructive/50 text-destructive bg-destructive/5"
-                                    )}>
-                                        <SelectValue placeholder="Pilih Paket" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="none" disabled>-- Pilih Paket --</SelectItem>
-                                        {subscriptionPlans.map(plan => (
-                                            <SelectItem key={plan.id} value={plan.id}>
-                                                <div className="flex items-center justify-between gap-4 w-full">
-                                                    <span>{plan.name}</span>
-                                                    <span className="opacity-50 font-normal">Rp{plan.price.toLocaleString('id-ID')}</span>
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {!currentPlan && company.subscriptionPlanId !== 'default-trial' && (
-                                    <span className="text-[8px] font-black text-destructive uppercase flex items-center gap-1">
-                                        <Sparkles size={8} /> Paket Belum Terhubung
-                                    </span>
-                                )}
-                           </div>
-                        )}
-                    </TableCell>
-                    <TableCell>
-                         {currentPlan ? (
-                            <div className="flex flex-col gap-1 text-[9px] text-muted-foreground font-bold uppercase tracking-tight">
-                                <div className="flex items-center gap-1.5"><Users className="h-2.5 w-2.5" /> Staff: <span className="text-foreground">{usage.userCount}/{currentPlan.userLimit === -1 ? '∞' : currentPlan.userLimit}</span></div>
-                                <div className="flex items-center gap-1.5"><Crown className="h-2.5 w-2.5" /> Admin: <span className="text-foreground">{usage.managementCount}/{currentPlan.managementUserLimit === -1 ? '∞' : currentPlan.managementUserLimit}</span></div>
+                            <div className="size-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center border shrink-0">
+                                <Building size={20} />
                             </div>
-                        ) : (
-                            <span className="text-[10px] text-muted-foreground italic">N/A</span>
-                        )}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                        <Badge variant={company.status === "Aktif" ? "default" : "outline"} className="text-[9px] uppercase font-black px-1.5 h-5">
-                        {company.status}
-                        </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                        <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Buka menu</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Manajemen Klien</DropdownMenuLabel>
-                            <DropdownMenuItem asChild>
-                                <Link href={`/company-subscription-status/${company.id}`} className="cursor-pointer">
-                                    <Eye className="mr-2 h-4 w-4"/> Detail & Riwayat Paket
-                                </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditCompany(company)} className="cursor-pointer">
-                                <Pencil className="mr-2 h-4 w-4"/> Edit Identitas
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive font-bold cursor-pointer" onClick={() => openDeleteDialog(company)}>
-                                <Trash2 className="mr-2 h-4 w-4"/> Hapus Perusahaan
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                        </DropdownMenu>
-                    </TableCell>
-                    </TableRow>
-                    )
-                })
-              ) : (
-                <TableRow>
-                    <TableCell colSpan={6} className="h-40 text-center text-muted-foreground">
-                        <div className="flex flex-col items-center gap-2 opacity-30">
-                            <Building size={48} />
-                            <p className="font-bold uppercase text-xs">Tidak ada data perusahaan.</p>
+                            <div className="min-w-0 flex-1">
+                                <h3 className="font-black text-sm uppercase truncate">{c.name}</h3>
+                                <p className="text-[10px] text-muted-foreground uppercase font-bold">{c.businessField}</p>
+                            </div>
+                            <Badge variant={c.status === 'Aktif' ? 'default' : 'outline'} className="text-[8px] font-black h-4">{c.status}</Badge>
                         </div>
-                    </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                        <div className="grid grid-cols-2 gap-2 pt-3 border-t">
+                            <div className="p-2 rounded-lg bg-muted/30 text-center">
+                                <p className="text-[8px] font-black text-muted-foreground uppercase">Staff Terdaftar</p>
+                                <p className="text-sm font-black text-primary">{usage.userCount}</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-muted/30 text-center">
+                                <p className="text-[8px] font-black text-muted-foreground uppercase">Admin Aktif</p>
+                                <p className="text-sm font-black text-primary">{usage.managementCount}</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                             <Button asChild variant="outline" size="sm" className="flex-1 font-bold text-[10px] h-8">
+                                <Link href={`/company-subscription-status/${c.id}`}>LOG PAKET</Link>
+                             </Button>
+                             <Button variant="ghost" size="sm" className="flex-1 font-bold text-[10px] h-8" onClick={() => handleEditCompany(c)}>EDIT</Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            );
+        }}
+      />
+
       <CompanyFormSheet 
         isOpen={isSheetOpen} 
         onOpenChange={setSheetOpen} 
@@ -362,6 +280,6 @@ export default function CompanyPage() {
         itemName={companyToDelete?.name || ''}
         itemType="perusahaan"
       />
-    </div>
+    </ResponsivePage>
   );
 }
