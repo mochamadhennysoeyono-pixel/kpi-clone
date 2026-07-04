@@ -4,7 +4,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useMasterData } from '@/contexts/master-data-context';
 import { useAuth } from '@/contexts/auth-context';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -23,10 +22,12 @@ import {
     Building,
     CheckCircle2,
     CheckCircle,
-    Circle,
     Clock,
     UserCheck,
-    Briefcase
+    Briefcase,
+    LayoutGrid,
+    Search,
+    FilePieChart
 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -34,6 +35,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { OKR, KeyResult, Company, Contributor, Milestone, ChecklistItem, Employee } from '@/types';
 import { cn } from '@/lib/utils';
 import React from 'react';
+import { ResponsivePage, ResponsiveToolbar } from '@/components/ui/adaptive-layout';
+import { PageHeader } from '@/components/ui/page-header';
+import { AdaptiveCardGrid, AdaptiveMetricCard, AdaptiveInsightCard } from '@/components/ui/adaptive-card';
+import { AdaptiveTable } from '@/components/ui/adaptive-table';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 
 // Helper to safely convert dates
 const safeToDate = (dateVal: any): Date | null => {
@@ -42,6 +50,12 @@ const safeToDate = (dateVal: any): Date | null => {
     if (typeof dateVal.toDate === 'function') return dateVal.toDate();
     const d = new Date(dateVal);
     return isNaN(d.getTime()) ? null : d;
+};
+
+const formatSafeDate = (date: any, formatStr: string) => {
+    const d = safeToDate(date);
+    if (!d) return 'N/A';
+    return format(d, formatStr, { locale: localeId });
 };
 
 // Global helper for name resolution
@@ -55,6 +69,7 @@ const resolveName = (id: string | undefined, storedName: string | undefined, emp
 // Detail View Component for OKR Reports
 const OkrReportDetailView = ({ okr, onBack }: { okr: OKR, onBack: () => void }) => {
     const { employees } = useMasterData();
+    const { isMobile } = useBreakpoint();
     const startDate = safeToDate(okr.startDate);
     const endDate = safeToDate(okr.endDate);
 
@@ -86,11 +101,9 @@ const OkrReportDetailView = ({ okr, onBack }: { okr: OKR, onBack: () => void }) 
             return userMap.get(id)!;
         };
 
-        // 1. Add Main Owner
         const mainOwner = getOrInit(okr.ownerId, okr.ownerName);
         mainOwner.roles.add("Project Owner");
 
-        // 2. Add KR Owners & Contributors
         okr.keyResults.forEach(kr => {
             const range = kr.targetValue - kr.startValue;
             const krProgress = range > 0 ? ((kr.currentValue - kr.startValue) / range) * 100 : (kr.currentValue >= kr.targetValue ? 100 : 0);
@@ -138,224 +151,206 @@ const OkrReportDetailView = ({ okr, onBack }: { okr: OKR, onBack: () => void }) 
     
     return (
         <div className="space-y-6 animate-fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <Button variant="ghost" onClick={onBack} className="-ml-4 hover:bg-muted">
-                    <ChevronLeft className="mr-2 h-4 w-4" />
-                    Kembali ke Daftar Laporan
-                </Button>
-            </div>
+            <Button variant="ghost" onClick={onBack} className="-ml-4 hover:bg-muted font-bold text-[10px] uppercase tracking-widest text-muted-foreground px-4">
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Kembali ke Daftar Laporan
+            </Button>
 
             <Tabs defaultValue="global" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-6">
-                    <TabsTrigger value="global">Global Project</TabsTrigger>
-                    <TabsTrigger value="individual">Laporan Individu</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-8 bg-muted/30 p-1 rounded-xl">
+                    <TabsTrigger value="global" className="font-bold text-xs">Global Project</TabsTrigger>
+                    <TabsTrigger value="individual" className="font-bold text-xs">Laporan Individu</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="global" className="space-y-6">
-                    <Card className="border-l-4 border-primary shadow-lg">
-                        <CardHeader>
-                            <div className="flex justify-between items-start gap-4">
-                                <div>
-                                    <Badge variant={getStatusVariant(okr.status)} className="mb-2">
+                <TabsContent value="global" className="space-y-8 m-0 border-none">
+                    <Card className="border-l-4 border-primary shadow-lg overflow-hidden bg-background">
+                        <CardContent className={isMobile ? "p-5" : "p-8"}>
+                            <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
+                                <div className="space-y-3 min-w-0">
+                                    <Badge variant={getStatusVariant(okr.status)} className="font-black text-[9px] uppercase h-5 px-2">
                                         {okr.status === 'Active' ? 'Sedang Berjalan' : okr.status}
                                     </Badge>
-                                    <CardTitle className="font-headline text-2xl">{okr.objective}</CardTitle>
-                                    <CardDescription className="pt-2 max-w-prose text-sm">{okr.description}</CardDescription>
+                                    <h2 className={cn("font-black tracking-tighter text-slate-900 leading-tight", isMobile ? "text-xl" : "text-3xl")}>
+                                        {okr.objective}
+                                    </h2>
+                                    <p className="text-muted-foreground text-sm leading-relaxed max-w-2xl">{okr.description}</p>
                                 </div>
-                                <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                                    <div className="text-right">
-                                        <p className="text-[10px] uppercase font-black text-muted-foreground">Capaian Progres</p>
-                                        <p className="font-black text-4xl text-primary leading-tight">{(okr.progress ?? 0).toFixed(1)}%</p>
+                                <div className="flex flex-col items-end gap-3 flex-shrink-0 w-full sm:w-auto">
+                                    <div className="text-right p-4 rounded-2xl bg-primary/5 border border-primary/10 w-full sm:w-auto">
+                                        <p className="text-[10px] uppercase font-black text-primary/60 tracking-widest mb-1">Capaian Progres</p>
+                                        <p className={cn("font-black text-primary leading-none", isMobile ? "text-4xl" : "text-5xl")}>
+                                            {(okr.progress ?? 0).toFixed(1)}%
+                                        </p>
                                     </div>
-                                    <div className="text-[10px] text-muted-foreground flex items-center gap-2 bg-muted px-2 py-1 rounded">
-                                        <Calendar className="h-3 w-3" />
-                                        <span>{startDate ? format(startDate, "d MMM yy", { locale: localeId }) : ''} - {endDate ? format(endDate, "d MMM yyyy", { locale: localeId }) : ''}</span>
+                                    <div className="text-[9px] font-black uppercase text-muted-foreground flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-full border border-border/40">
+                                        <Calendar className="size-3 opacity-60" />
+                                        <span>{startDate ? format(startDate, "d MMM yy") : ''} - {endDate ? format(endDate, "d MMM yyyy") : ''}</span>
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground border-t pt-4 mt-4">
-                                <LucideUser className="h-3.5 w-3.5" />
-                                <span>Owner Utama: <span className="font-bold text-foreground">{resolveName(okr.ownerId, okr.ownerName, employees)}</span></span>
+                            <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-t border-dashed mt-8 pt-5">
+                                <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                                    <LucideUser size={14} />
+                                </div>
+                                <span>Owner Utama: <span className="text-slate-900">{resolveName(okr.ownerId, okr.ownerName, employees)}</span></span>
                             </div>
-                        </CardHeader>
+                        </CardContent>
                     </Card>
                     
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <ListChecks className="h-5 w-5 text-primary" />
-                                Rincian Progres Key Results
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <Table>
-                                <TableHeader className="bg-muted/50">
-                                    <TableRow>
-                                        <TableHead className="w-[40%] font-bold">Key Result</TableHead>
-                                        <TableHead className="font-bold">Target & Aktual</TableHead>
-                                        <TableHead className="text-right font-bold">Progres</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {okr.keyResults.map(kr => {
-                                        const range = kr.targetValue - kr.startValue;
-                                        const progress = range > 0 ? ((kr.currentValue - kr.startValue) / range) * 100 : (kr.currentValue >= kr.targetValue ? 100 : 0);
-                                        const unit = kr.unit || (kr.type === 'Percentage' ? '%' : '');
-                                        const isMeasurable = kr.type === 'Numeric' || kr.type === 'Percentage';
-                                        const hasSubItems = (kr.type === 'Milestone' || kr.type === 'Binary') && ((kr.milestones?.length ?? 0) > 0 || (kr.checklist?.length ?? 0) > 0);
-                                        const hasContributors = kr.ownershipModel === 'split_ownership' && (kr.contributors?.length ?? 0) > 0;
+                    <div className="space-y-4">
+                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1 flex items-center gap-2">
+                            <ListChecks size={14} className="text-primary" /> Rincian Progres Key Results
+                        </h3>
+                        <AdaptiveTable 
+                            data={okr.keyResults}
+                            keyExtractor={(kr) => kr.id}
+                            columns={[
+                                { header: "Key Result", cell: (kr) => (
+                                    <div className="flex flex-col gap-1">
+                                        <span className="font-bold text-slate-900 text-sm">{kr.name}</span>
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="text-[8px] font-black uppercase h-4 bg-muted/50 border-none">{kr.type}</Badge>
+                                            <span className="text-[9px] font-bold text-muted-foreground">PIC: {resolveName(kr.ownerId || okr.ownerId, kr.ownerName, employees)}</span>
+                                        </div>
+                                    </div>
+                                )},
+                                { header: "Target & Aktual", cell: (kr) => {
+                                    const unit = kr.unit || (kr.type === 'Percentage' ? '%' : '');
+                                    const isMeasurable = kr.type === 'Numeric' || kr.type === 'Percentage';
+                                    return (
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground mb-1">
+                                                <span className="bg-muted px-1.5 py-0.5 rounded border">Mulai: {kr.startValue}{unit}</span>
+                                                <ArrowRight className="h-3 w-3" />
+                                                <span className="bg-primary/5 text-primary px-1.5 py-0.5 rounded border border-primary/10 font-bold">Target: {kr.targetValue}{unit}</span>
+                                            </div>
+                                            <span className="font-black text-xs text-foreground uppercase tracking-tight">
+                                                {isMeasurable ? `Aktual: ${kr.currentValue.toLocaleString('id-ID')}${unit}` : `Selesai: ${kr.currentValue} / ${kr.targetValue}`}
+                                            </span>
+                                        </div>
+                                    );
+                                }},
+                                { header: "Capaian (%)", className: "text-right", cell: (kr) => {
+                                    const range = kr.targetValue - kr.startValue;
+                                    const progress = range > 0 ? ((kr.currentValue - kr.startValue) / range) * 100 : (kr.currentValue >= kr.targetValue ? 100 : 0);
+                                    const safeP = Math.max(0, Math.min(progress, 100));
+                                    return (
+                                        <div className="flex flex-col items-end gap-1.5">
+                                            <span className="text-sm font-black text-primary">{safeP.toFixed(1)}%</span>
+                                            <Progress value={safeP} className="h-1 w-24" />
+                                        </div>
+                                    );
+                                }}
+                            ]}
+                            renderMobileCard={(kr) => {
+                                const range = kr.targetValue - kr.startValue;
+                                const progress = range > 0 ? ((kr.currentValue - kr.startValue) / range) * 100 : (kr.currentValue >= kr.targetValue ? 100 : 0);
+                                const safeP = Math.max(0, Math.min(progress, 100));
+                                const unit = kr.unit || (kr.type === 'Percentage' ? '%' : '');
+                                const isMeasurable = kr.type === 'Numeric' || kr.type === 'Percentage';
 
-                                        return (
-                                            <React.Fragment key={kr.id}>
-                                                <TableRow className="hover:bg-muted/5 border-b-0">
-                                                    <TableCell className="py-4">
-                                                        <p className="font-bold text-sm">{kr.name}</p>
-                                                        <div className="flex items-center gap-2 mt-1">
-                                                            <Badge variant="secondary" className="text-[10px] uppercase font-bold">{kr.type}</Badge>
-                                                            <p className="text-[10px] text-muted-foreground">PIC Utama: {resolveName(kr.ownerId || okr.ownerId, kr.ownerName, employees)}</p>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="py-4">
-                                                        <div className="flex flex-col">
-                                                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-1">
-                                                                <span className="bg-muted px-1.5 py-0.5 rounded border">Mulai: {kr.startValue}{unit}</span>
-                                                                <ArrowRight className="h-3 w-3" />
-                                                                <span className="bg-primary/5 text-primary px-1.5 py-0.5 rounded border border-primary/10 font-bold">Target: {kr.targetValue}{unit}</span>
-                                                            </div>
-                                                            <span className="font-black text-sm text-foreground">
-                                                                {isMeasurable ? `Total Aktual: ${kr.currentValue.toLocaleString('id-ID')}${unit}` : `Selesai: ${kr.currentValue} dari ${kr.targetValue}`}
-                                                            </span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-right py-4">
-                                                        <div className="flex flex-col items-end gap-1.5">
-                                                            <span className="text-sm font-black text-primary">{Math.max(0, Math.min(progress, 100)).toFixed(1)}%</span>
-                                                            <Progress value={Math.max(0, Math.min(progress, 100))} className="h-1.5 w-24" />
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                                
-                                                {hasSubItems && (
-                                                    <TableRow className="bg-muted/20 hover:bg-muted/30 border-b">
-                                                        <TableCell colSpan={3} className="py-3 px-6">
-                                                            <div className="space-y-3">
-                                                                <p className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-1.5">
-                                                                    <ListChecks className="h-3 w-3"/> Rincian Milestone & Penanggung Jawab
-                                                                </p>
-                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                                    {(kr.milestones || kr.checklist || []).map((item: any) => (
-                                                                        <div key={item.id} className="flex items-center gap-3 p-2 bg-background rounded border border-dashed border-muted-foreground/30">
-                                                                            {item.completed ? <CheckCircle className="h-4 w-4 text-green-500 shrink-0" /> : <Clock className="h-4 w-4 text-muted-foreground shrink-0" />}
-                                                                            <div className="flex-1 min-w-0">
-                                                                                <p className={cn("text-xs font-medium truncate", item.completed && "text-muted-foreground line-through")}>{item.text}</p>
-                                                                                <p className="text-[9px] text-muted-foreground">PIC: <span className="font-bold">{resolveName(item.ownerId, item.ownerName, employees)}</span></p>
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )}
-
-                                                {hasContributors && (
-                                                    <TableRow className="bg-muted/20 hover:bg-muted/30 border-b">
-                                                        <TableCell colSpan={3} className="py-3 px-6">
-                                                            <div className="space-y-3">
-                                                                <p className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-1.5">
-                                                                    <LucideUsers className="h-3 w-3"/> Rincian Kontribusi Anggota Tim
-                                                                </p>
-                                                                <div className="grid gap-2">
-                                                                    {kr.contributors.map((c: Contributor) => {
-                                                                        const cProgress = c.targetValue > 0 ? (c.currentValue / c.targetValue) * 100 : (c.currentValue >= c.targetValue ? 100 : 0);
-                                                                        return (
-                                                                            <div key={c.ownerId} className="flex items-center justify-between gap-4 p-2 bg-background rounded border border-dashed border-muted-foreground/30">
-                                                                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                                                    <LucideUser className="h-3 w-3 text-muted-foreground shrink-0"/>
-                                                                                    <span className="text-xs font-bold truncate">{resolveName(c.ownerId, c.ownerName, employees)}</span>
-                                                                                </div>
-                                                                                <div className="flex items-center gap-4 shrink-0">
-                                                                                    <div className="text-right hidden sm:block">
-                                                                                        <p className="text-[9px] text-muted-foreground uppercase font-medium">Aktual / Target</p>
-                                                                                        <p className="text-xs font-mono">{c.currentValue.toLocaleString('id-ID')} / {c.targetValue.toLocaleString('id-ID')} {unit}</p>
-                                                                                    </div>
-                                                                                    <div className="w-24 space-y-1">
-                                                                                        <div className="flex justify-between items-center text-[9px] font-black text-primary">
-                                                                                            <span>{Math.min(cProgress, 100).toFixed(0)}%</span>
-                                                                                            {cProgress >= 100 && <CheckCircle2 className="h-2.5 w-2.5 text-green-500" />}
-                                                                                        </div>
-                                                                                        <Progress value={Math.min(cProgress, 100)} className="h-1" />
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )}
-                                            </React.Fragment>
-                                        )
-                                    })}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
+                                return (
+                                    <Card className="border-border/40 shadow-sm overflow-hidden">
+                                        <CardContent className="p-4 space-y-4">
+                                            <div className="flex justify-between items-start gap-2">
+                                                <h4 className="font-black text-xs uppercase text-slate-800 leading-tight">{kr.name}</h4>
+                                                <Badge variant="secondary" className="text-[8px] h-4 font-black">{kr.type}</Badge>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4 py-3 border-y border-dashed">
+                                                <div className="space-y-1">
+                                                    <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Capaian Aktual</p>
+                                                    <p className="text-sm font-black text-primary">{kr.currentValue}{unit}</p>
+                                                </div>
+                                                <div className="space-y-1 text-right">
+                                                    <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Persentase</p>
+                                                    <p className="text-sm font-black text-primary">{safeP.toFixed(1)}%</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Avatar className="size-5 border">
+                                                        <AvatarFallback className="text-[7px] font-black">{resolveName(kr.ownerId || okr.ownerId, kr.ownerName, employees).substring(0,2).toUpperCase()}</AvatarFallback>
+                                                    </Avatar>
+                                                    <span className="text-[9px] font-bold text-muted-foreground uppercase">{resolveName(kr.ownerId || okr.ownerId, kr.ownerName, employees)}</span>
+                                                </div>
+                                                <span className="text-[9px] font-bold text-muted-foreground">TARGET: {kr.targetValue}{unit}</span>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                );
+                            }}
+                        />
+                    </div>
                 </TabsContent>
 
-                <TabsContent value="individual">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <LucideUsers className="h-5 w-5 text-primary" />
-                                Matriks Kontribusi Personil
-                            </CardTitle>
-                            <CardDescription>Ringkasan keterlibatan dan tingkat penyelesaian tugas individu dalam project ini.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <Table>
-                                <TableHeader className="bg-muted/50">
-                                    <TableRow>
-                                        <TableHead>Nama Personil</TableHead>
-                                        <TableHead>Peran</TableHead>
-                                        <TableHead className="text-center">Jumlah Tugas</TableHead>
-                                        <TableHead className="text-right">Rata-rata Progres</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {individualReport.map(user => (
-                                        <TableRow key={user.id} className="hover:bg-muted/5">
-                                            <TableCell className="font-bold">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="size-8 rounded-full bg-muted flex items-center justify-center">
-                                                        <LucideUser size={16} className="text-muted-foreground" />
+                <TabsContent value="individual" className="m-0 border-none animate-in fade-in duration-300">
+                    <div className="space-y-4">
+                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1 flex items-center gap-2">
+                            <LucideUsers size={14} className="text-primary" /> Matriks Kontribusi Personil
+                        </h3>
+                        <AdaptiveTable 
+                            data={individualReport}
+                            keyExtractor={(user) => user.id}
+                            columns={[
+                                { header: "Personil", cell: (user) => (
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="size-9 border shadow-sm">
+                                            <AvatarFallback className="text-[10px] font-black bg-primary/10 text-primary uppercase">
+                                                {user.name.substring(0, 2)}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <span className="font-bold text-slate-900">{user.name}</span>
+                                    </div>
+                                )},
+                                { header: "Peran di Project", cell: (user) => (
+                                    <div className="flex flex-wrap gap-1">
+                                        {user.roles.map(role => (
+                                            <Badge key={role} variant={role === 'Project Owner' ? 'default' : 'outline'} className="text-[9px] font-black uppercase h-5">
+                                                {role}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )},
+                                { header: "Total Tugas", className: "text-center font-mono font-bold", accessorKey: "taskCount" },
+                                { header: "Rata-rata Progres", className: "text-right", cell: (user) => (
+                                    <div className="flex flex-col items-end gap-1.5">
+                                        <span className="text-sm font-black text-primary">{user.avgProgress}%</span>
+                                        <Progress value={user.avgProgress} className="h-1 w-24" />
+                                    </div>
+                                )}
+                            ]}
+                            renderMobileCard={(user) => (
+                                <Card className="border-border/40 shadow-sm overflow-hidden bg-background">
+                                    <CardContent className="p-4 space-y-4">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="size-10 border-2 border-primary/10 shadow-sm">
+                                                    <AvatarFallback className="font-black text-xs">{user.name.substring(0,2).toUpperCase()}</AvatarFallback>
+                                                </Avatar>
+                                                <div className="min-w-0">
+                                                    <h4 className="font-black text-sm uppercase truncate text-slate-800">{user.name}</h4>
+                                                    <div className="flex gap-1 mt-1">
+                                                        {user.roles.slice(0, 1).map(role => (
+                                                            <span key={role} className="text-[8px] font-black uppercase text-primary/70">{role}</span>
+                                                        ))}
+                                                        {user.roles.length > 1 && <span className="text-[8px] font-black uppercase text-muted-foreground">+{user.roles.length - 1} LAINNYA</span>}
                                                     </div>
-                                                    {user.name}
                                                 </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {user.roles.map(role => (
-                                                        <Badge key={role} variant={role === 'Project Owner' ? 'default' : 'outline'} className="text-[10px] h-5">
-                                                            {role}
-                                                        </Badge>
-                                                    ))}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-center font-mono">{user.taskCount}</TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex flex-col items-end gap-1">
-                                                    <span className="font-black text-primary">{user.avgProgress}%</span>
-                                                    <Progress value={user.avgProgress} className="h-1.5 w-24" />
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-xl font-black text-primary leading-none">{user.avgProgress}%</p>
+                                                <p className="text-[8px] font-black uppercase text-muted-foreground mt-1">PROGRES</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between items-center pt-3 border-t border-dashed">
+                                            <span className="text-[9px] font-black text-muted-foreground uppercase">Tugas Terlibat</span>
+                                            <Badge variant="outline" className="text-[10px] font-black h-5 bg-muted/30 border-none">{user.taskCount} ITEM</Badge>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        />
+                    </div>
                 </TabsContent>
             </Tabs>
         </div>
@@ -363,12 +358,12 @@ const OkrReportDetailView = ({ okr, onBack }: { okr: OKR, onBack: () => void }) 
 };
 
 
-// Main Page Component
 export default function OkrReportsPage() {
     const { currentUser, userRole } = useAuth();
     const { okrs, companies, employees } = useMasterData();
     const [selectedOkr, setSelectedOkr] = useState<OKR | null>(null);
-    const [selectedCompany, setSelectedCompany] = useState<string>('all');
+    const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
+    const [searchTerm, setSearchTerm] = useState("");
 
     const userCompany = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
     const isHoldingAdmin = useMemo(() => userRole === 'manajemen' && !!userCompany?.isHolding, [userRole, userCompany]);
@@ -377,195 +372,119 @@ export default function OkrReportsPage() {
     const manageableCompanies = useMemo(() => {
         if (userRole === 'superadmin') return companies.filter(c => c.status === 'Aktif');
         if (isHoldingAdmin && userCompany) {
-            const getDescendantCompanies = (parentId: string): Company[] => {
+            const getDescendantCompanies = (parentId: string): any[] => {
                 const children = companies.filter(c => c.parentId === parentId);
                 return children.flatMap(c => [c, ...getDescendantCompanies(c.id)]);
             };
-            const all = [userCompany, ...getDescendantCompanies(userCompany.id)];
-            // Deduplicate by ID to guarantee unique keys
-            return Array.from(new Map(all.map(c => [c.id, c])).values());
+            return [userCompany, ...getDescendantCompanies(userCompany.id)];
         }
-        if (userCompany) return [userCompany];
         return [];
     }, [userRole, isHoldingAdmin, userCompany, companies]);
-
-    useEffect(() => {
-        if (!showCompanyFilter && currentUser?.company) {
-            setSelectedCompany(currentUser.company);
-        }
-    }, [showCompanyFilter, currentUser]);
 
     const reportOkrs = useMemo(() => {
         if (!currentUser || !okrs || !employees) return [];
         
-        // 1. Initial Company Scoping
-        let companyFilteredOkrs = okrs;
-        if (showCompanyFilter) {
-            if (selectedCompany !== 'all') {
-                companyFilteredOkrs = okrs.filter(okr => okr.company === selectedCompany);
-            } else {
-                const manageableNames = manageableCompanies.map(c => c.name);
-                companyFilteredOkrs = okrs.filter(okr => manageableNames.includes(okr.company));
-            }
-        } else {
-            companyFilteredOkrs = okrs.filter(okr => okr.company === currentUser.company);
-        }
-
-        // 2. Role-based Visibility Scoping
-        let visibleOkrs: OKR[] = [];
-        if (userRole === 'superadmin' || userRole === 'manajemen') {
-            visibleOkrs = companyFilteredOkrs;
-        } else {
-            const isManager = employees.some(e => e.reportsTo === currentUser.id);
-            if (isManager) {
-                const getSubordinateIdsRecursive = (managerId: string): string[] => {
-                    const directReports = employees.filter(e => e.reportsTo === managerId).map(e => e.id);
-                    if (directReports.length === 0) return [];
-                    return [...directReports, ...directReports.flatMap(id => getSubordinateIdsRecursive(id))];
-                };
-                const teamIds = [currentUser.id, ...getSubordinateIdsRecursive(currentUser.id)];
-                visibleOkrs = companyFilteredOkrs.filter(okr => 
-                    teamIds.includes(okr.ownerId) || 
-                    okr.keyResults.some(kr => 
-                        (kr.ownershipModel === 'single_owner' && teamIds.includes(kr.ownerId || okr.ownerId)) ||
-                        (kr.ownershipModel === 'delegated' && (kr.milestones?.some(m => teamIds.includes(m.ownerId || '')) || kr.checklist?.some(c => teamIds.includes(c.ownerId || '')))) ||
-                        (kr.ownershipModel === 'split_ownership' && kr.contributors?.some(c => teamIds.includes(c.ownerId)))
-                    )
-                );
-            } else {
-                visibleOkrs = companyFilteredOkrs.filter(okr => 
-                    okr.ownerId === currentUser.id ||
-                    okr.keyResults.some(kr => 
-                        (kr.ownershipModel === 'single_owner' && (kr.ownerId || okr.ownerId) === currentUser.id) ||
-                        (kr.ownershipModel === 'delegated' && (kr.milestones?.some(m => m.ownerId === currentUser.id) || kr.checklist?.some(c => kr.ownerId === currentUser.id || c.ownerId === currentUser.id))) ||
-                        (kr.ownershipModel === 'split_ownership' && kr.contributors?.some(c => c.ownerId === currentUser.id))
-                    )
-                );
-            }
-        }
-
-        // 3. Status Filtering & Sorting
-        return visibleOkrs.filter(okr => 
+        let filtered = okrs.filter(okr => 
             (okr.status === 'Active' || okr.status === 'Completed' || okr.status === 'Overdue')
-        ).sort((a,b) => {
-            const statusPriority: Record<string, number> = { 'Overdue': 0, 'Active': 1, 'Completed': 2 };
-            const pA = statusPriority[a.status] ?? 99;
-            const pB = statusPriority[b.status] ?? 99;
-            if (pA !== pB) return pA - pB;
-            
-            const dateA = safeToDate(a.endDate)?.getTime() || 0;
-            const dateB = safeToDate(b.endDate)?.getTime() || 0;
-            return dateB - dateA;
-        });
-    }, [okrs, currentUser, userRole, employees, selectedCompany, showCompanyFilter, manageableCompanies]);
+        );
+
+        if (showCompanyFilter && selectedCompanyId !== 'all') {
+            const companyName = companies.find(c => c.id === selectedCompanyId)?.name;
+            filtered = filtered.filter(o => o.company === companyName);
+        } else if (!showCompanyFilter) {
+            filtered = filtered.filter(o => o.company === currentUser.company);
+        }
+
+        if (searchTerm) {
+            filtered = filtered.filter(o => o.objective.toLowerCase().includes(searchTerm.toLowerCase()));
+        }
+
+        return filtered.sort((a,b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));
+    }, [okrs, currentUser, showCompanyFilter, selectedCompanyId, companies, searchTerm, employees]);
 
     if (selectedOkr) {
         return <OkrReportDetailView okr={selectedOkr} onBack={() => setSelectedOkr(null)} />;
     }
 
     return (
-        <div className="space-y-6">
-            <Card className="shadow-lg border-t-4 border-primary">
-                <CardHeader>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-primary/10 rounded-lg">
-                                <TrendingUp className="h-6 w-6 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle className="font-headline text-2xl">Laporan Progres & Hasil Proyek</CardTitle>
-                                <CardDescription>
-                                    Analisis pencapaian sementara untuk project aktif dan hasil akhir untuk project yang sudah selesai.
-                                </CardDescription>
-                            </div>
-                        </div>
-                        {showCompanyFilter && (
-                            <div className="flex items-center gap-2 self-start sm:self-center">
-                                <LucideLock className="h-4 w-4 text-muted-foreground" />
-                                <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-                                    <SelectTrigger className="w-[200px]">
-                                        <SelectValue placeholder="Filter Perusahaan" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">Semua Perusahaan</SelectItem>
-                                        {manageableCompanies.map(c => (
-                                            <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
-                    </div>
-                </CardHeader>
-            </Card>
+        <ResponsivePage>
+            <PageHeader 
+                title="Laporan Hasil Project" 
+                description="Analisis performa unit bisnis dan kontribusi personil terhadap sasaran strategis perusahaan." 
+                icon={FilePieChart} 
+            />
 
-            {reportOkrs.length > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {reportOkrs.map(okr => {
-                        const endDate = safeToDate(okr.endDate);
-                        const isOverdue = okr.status === 'Overdue';
-                        const isActive = okr.status === 'Active';
-
-                        return (
-                            <Card key={okr.id} className={cn(
-                                "shadow-sm hover:shadow-md transition-all duration-200 border-l-4",
-                                isOverdue ? "border-l-destructive" : isActive ? "border-l-blue-500" : "border-l-green-500"
-                            )}>
-                                <CardHeader className="pb-3">
-                                    <div className="flex justify-between items-start gap-2">
-                                        <CardTitle className="text-base font-bold line-clamp-1">{okr.objective}</CardTitle>
-                                        <Badge variant={okr.status === 'Completed' ? 'secondary' : okr.status === 'Overdue' ? 'destructive' : 'default'} className="text-[10px] uppercase font-bold shrink-0">
-                                            {okr.status === 'Active' ? 'Aktif' : okr.status}
-                                        </Badge>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-1">
-                                        <LucideUser className="h-3 w-3" />
-                                        <span>Owner: {resolveName(okr.ownerId, okr.ownerName, employees)}</span>
-                                        {showCompanyFilter && (
-                                            <>
-                                                <span className="mx-1">•</span>
-                                                <Building className="h-3 w-3" />
-                                                <span>{okr.company}</span>
-                                            </>
-                                        )}
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="pb-4">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between text-xs font-bold">
-                                            <span className="text-muted-foreground">{isActive ? 'Capaian Saat Ini' : 'Skor Akhir'}</span>
-                                            <span className="text-primary text-lg">{(okr.progress ?? 0).toFixed(1)}%</span>
-                                        </div>
-                                        <Progress value={okr.progress ?? 0} className="h-2" />
-                                    </div>
-                                </CardContent>
-                                <CardFooter className="flex justify-between items-center text-[10px] text-muted-foreground bg-muted/10 py-3 rounded-b-lg border-t">
-                                    <div className="flex items-center gap-2">
-                                        <Calendar className="h-3.5 w-3.5" />
-                                        <span>
-                                            Tenggat: {endDate ? format(endDate, "d MMM yyyy", { locale: localeId }) : 'N/A'}
-                                        </span>
-                                    </div>
-                                    <Button size="sm" variant="outline" className="h-7 text-[10px] font-bold" onClick={() => setSelectedOkr(okr)}>
-                                        Lihat Rincian <ArrowRight className="h-3 w-3 ml-1.5"/>
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        );
-                    })}
+            <ResponsiveToolbar>
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Cari project..." 
+                        className="pl-9 h-10 border-none bg-background/50 shadow-none focus-visible:ring-primary/20" 
+                        value={searchTerm} 
+                        onChange={(e) => setSearchTerm(e.target.value)} 
+                    />
                 </div>
-            ) : (
-                <Card className="border-dashed">
-                    <CardContent className="p-16 text-center">
-                        <div className="bg-muted rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                            <Target className="h-8 w-8 text-muted-foreground opacity-20" />
-                        </div>
-                        <p className="text-muted-foreground font-medium">
-                            Belum ada project yang dapat ditampilkan dalam laporan untuk kriteria ini.
-                        </p>
-                    </CardContent>
-                </Card>
-            )}
-        </div>
+                {showCompanyFilter && (
+                    <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                        <SelectTrigger className="w-full sm:w-[240px] h-10 bg-background border-none">
+                            <Building className="size-4 mr-2 text-primary" />
+                            <SelectValue placeholder="Semua Perusahaan" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[350]">
+                            <SelectItem value="all">Semua Unit Bisnis</SelectItem>
+                            {manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                )}
+            </ResponsiveToolbar>
+
+            <AdaptiveCardGrid complexity="medium">
+                {reportOkrs.length > 0 ? (
+                    reportOkrs.map(okr => (
+                        <Card key={okr.id} className="hover:shadow-md transition-all border-l-4 border-primary group bg-background overflow-hidden flex flex-col h-full">
+                            <CardHeader className="p-4 pb-2">
+                                <div className="flex justify-between items-start gap-2">
+                                    <CardTitle className="text-xs font-black uppercase tracking-tight text-slate-900 truncate flex-1">
+                                        {okr.objective}
+                                    </CardTitle>
+                                    <Badge variant={okr.status === 'Completed' ? 'secondary' : okr.status === 'Overdue' ? 'destructive' : 'default'} className="text-[8px] h-4 font-black uppercase shrink-0">
+                                        {okr.status}
+                                    </Badge>
+                                </div>
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase mt-1 flex items-center gap-1">
+                                    <Building size={10} /> {okr.company}
+                                </p>
+                            </CardHeader>
+                            <CardContent className="p-4 py-4 flex-1">
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between text-[10px] font-black uppercase">
+                                        <span className="text-muted-foreground">Progres</span>
+                                        <span className="text-primary">{(okr.progress ?? 0).toFixed(1)}%</span>
+                                    </div>
+                                    <Progress value={okr.progress ?? 0} className="h-1.5" />
+                                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-muted-foreground uppercase bg-muted/50 w-fit px-2 py-0.5 rounded-full">
+                                        <LucideUser size={10} /> {resolveName(okr.ownerId, okr.ownerName, employees)}
+                                    </div>
+                                </div>
+                            </CardContent>
+                            <CardFooter className="p-3 px-4 border-t bg-muted/5 mt-auto flex justify-between items-center">
+                                <div className="text-[9px] font-black text-muted-foreground uppercase flex items-center gap-1.5">
+                                    <Calendar size={12} className="opacity-40" />
+                                    {formatSafeDate(okr.endDate, "d MMM yy")}
+                                </div>
+                                <Button variant="ghost" size="sm" className="h-7 text-[9px] font-black gap-1.5 text-primary hover:bg-primary/5" onClick={() => setSelectedOkr(okr)}>
+                                    LIHAT ANALISIS <ArrowRight size={10} />
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    ))
+                ) : (
+                    <div className="col-span-full py-32 text-center border-2 border-dashed rounded-3xl bg-muted/5 opacity-40">
+                        <FilePieChart size={48} className="mx-auto mb-4 text-slate-400" />
+                        <p className="font-black uppercase text-[10px] tracking-[0.2em]">Belum Ada Laporan</p>
+                    </div>
+                )}
+            </AdaptiveCardGrid>
+        </ResponsivePage>
     );
 }
