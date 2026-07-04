@@ -3,6 +3,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, SquaresFour, CaretLeft } from "@phosphor-icons/react";
+import { Folders } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
@@ -134,7 +135,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                 className="grid grid-cols-3 gap-2.5"
                             >
                                 {itemsToShow.map((subItem: any) => {
-                                    const IconComponent = iconMap[subItem.iconName || subItem.href || 'default'];
+                                    const IconComponent = iconMap[subItem.iconName || subItem.href || 'default'] || Folders;
                                     const isLink = !!subItem.href;
                                     const hasSubItems = subItem.subItems && subItem.subItems.length > 0;
                                     const isActive = isLink && (pathname === subItem.href || (subItem.href !== '/' && pathname.startsWith(subItem.href)));

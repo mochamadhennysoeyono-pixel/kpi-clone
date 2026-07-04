@@ -1,9 +1,10 @@
+
 // src/components/ui/sidebar.tsx
 "use client";
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, X, ChevronDown, Menu, ChevronLeft, LayoutGrid } from "lucide-react";
+import { LogOut, X, ChevronDown, Menu, ChevronLeft, LayoutGrid, Folders } from "lucide-react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -98,7 +99,7 @@ function MotionNav() {
         <ScrollArea className="flex-1 px-3">
              <ul className="space-y-1 mt-4">
                 {navItems.map((item) => {
-                    const Icon = iconMap[item.iconName || 'default'];
+                    const Icon = iconMap[item.iconName || 'default'] || Folders;
                     const isGroupActive = item.subItems ? item.subItems.some(sub => pathname.startsWith(sub.href)) : false;
                     const isActive = item.href ? pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)) : isGroupActive;
 
@@ -133,7 +134,7 @@ function MotionNav() {
                                                       <li key={subItem.href}>
                                                           <Link href={subItem.href} className={cn(
                                                               "block pl-4 pr-3 py-2 text-sm font-medium tracking-tight transition-all",
-                                                              isSubActive ? "text-primary bg-primary/5 font-bold" : "text-muted-foreground hover:text-foreground"
+                                                              isSubActive ? "text-primary bg-primary/5 font-bold" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                                           )}>
                                                               {subItem.label}
                                                           </Link>
@@ -153,7 +154,7 @@ function MotionNav() {
                             <Link
                                 href={item.href || '#'}
                                 className={cn(
-                                    `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all`,
+                                    `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all`,
                                     isActive ? "bg-primary text-white shadow-lg shadow-primary/20 font-bold" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                 )}
                             >

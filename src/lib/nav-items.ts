@@ -3,12 +3,12 @@
 import React from 'react';
 import type { UserRole, Company, SubscriptionPlan, Employee, OKR, ModuleId } from "@/types";
 import { 
-    Gauge,
+    Speedometer,
     House,
     SquaresFour,
     ShieldCheckered,
     UserPlus,
-    ClipboardCheck,
+    SelectionCheck,
     Crown,
     ClockCounterClockwise,
     GitMerge,
@@ -16,7 +16,7 @@ import {
     SlidersHorizontal,
     Database,
     Buildings,
-    Graph,
+    ChartLine,
     Briefcase,
     Users,
     GitFork,
@@ -30,14 +30,14 @@ import {
     ProjectorScreen,
     ChartPie,
     Activity,
-    UserCog,
+    UserGear,
     FilePlus,
-    Settings,
+    Gear,
     BellRinging,
     Flag,
     GraduationCap,
     BookOpen,
-    Path,
+    RoadHorizon,
     Books,
     Exam,
     Files,
@@ -51,7 +51,7 @@ import {
 
 export const iconMap: { [key: string]: React.ElementType } = {
     // --- Dashboard & Home ---
-    '/dashboard': Gauge,
+    '/dashboard': Speedometer,
     '/action-center': House,
     '/portal': SquaresFour,
     '/beranda': House,
@@ -59,7 +59,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
     // --- Manajemen Sistem (Superadmin) ---
     '/admin-management': ShieldCheckered,
     '/company-admin-management': UserPlus,
-    '/activation-management': ClipboardCheck,
+    '/activation-management': SelectionCheck,
     '/subscription-management': Crown,
     '/subscription-logs': ClockCounterClockwise,
     '/group-management': GitMerge,
@@ -70,7 +70,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
     // --- Pondasi Data ---
     'pusat-data': Database,
     '/master-data/company': Buildings,
-    '/master-data/departments': Graph,
+    '/master-data/departments': ChartLine,
     '/master-data/positions': Briefcase,
     '/master-data/employees': Users,
     '/master-data/hierarchy': GitFork,
@@ -84,13 +84,13 @@ export const iconMap: { [key: string]: React.ElementType } = {
     // --- Pusat Holding ---
     'pusat-holding': TreeStructure,
     '/holding-dashboard': ChartBar,
-    '/holding-kpi-setup': Settings,
+    '/holding-kpi-setup': Gear,
     '/holding-group-management': Users,
     '/holding-management': TreeStructure,
 
     // --- CollabSpace ---
     '/collab-space': ProjectorScreen,
-    '/collab-space/management': Settings,
+    '/collab-space/management': Gear,
     '/collab-space/reports': ChartPie,
 
     // --- Analisis & Laporan ---
@@ -98,17 +98,17 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/reports': ChartPie,
     '/cycle-reports': Activity,
     '/appraisal-dashboard': ChartBar,
-    '/kbo-appraisal': ClipboardCheck,
+    '/kbo-appraisal': SelectionCheck,
 
     // --- Manajemen KPI ---
-    'manajemen-kpi': ClipboardCheck,
-    '/my-performance': UserCog,
+    'manajemen-kpi': SelectionCheck,
+    '/my-performance': UserGear,
     '/input-achievement': FilePlus,
-    '/setup-kpi': Settings,
+    '/setup-kpi': Gear,
 
     // --- Manajemen KBO ---
-    'manajemen-kbo': ClipboardCheck,
-    '/appraisal-settings': Settings,
+    'manajemen-kbo': SelectionCheck,
+    '/appraisal-settings': Gear,
 
     // --- OKR ---
     'okr-management': Flag,
@@ -120,9 +120,9 @@ export const iconMap: { [key: string]: React.ElementType } = {
     'lms-portal': GraduationCap,
     'lms-user': BookOpen,
     'manajemen-pembelajaran': GraduationCap,
-    '/lms/admin/dashboard': Gauge,
+    '/lms/admin/dashboard': Speedometer,
     '/lms/admin/courses': BookOpen,
-    '/lms/admin/programs': Path,
+    '/lms/admin/programs': RoadHorizon,
     '/lms/admin/global-catalog': Books,
     '/lms/admin/quizzes': Exam,
     '/lms/admin/reports': ChartBar,
@@ -136,7 +136,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
     // --- Lainnya ---
     '/subscription-status': Crown,
     '/subscription-plans': ShoppingCart,
-    '/settings': Settings,
+    '/settings': Gear,
     '/memos': Envelope,
     'default': Folders,
     'more': DotsThreeOutline,
