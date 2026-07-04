@@ -3,38 +3,6 @@
 
 import { useState, useMemo, useEffect } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   PlusCircle,
   MoreHorizontal,
   ShieldCheck,
@@ -43,6 +11,9 @@ import {
   Building,
   Filter,
   Trash2,
+  Users,
+  Shield,
+  Pencil,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { CompanyAdmin, Company, Employee } from "@/types";
@@ -52,12 +23,24 @@ import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import { EmployeeFormSheet } from "@/components/master-data/employees/employee-form-sheet";
+import { ResponsivePage, ResponsiveToolbar } from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { AdaptiveTable } from "@/components/ui/adaptive-table";
+import { AdaptiveCardGrid, AdaptiveMetricCard } from "@/components/ui/adaptive-card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Card, CardContent } from "@/components/ui/card";
 
-interface CompanyAdminManagementPageProps {
-    onQuotaFull?: () => void;
-}
-
-export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdminManagementPageProps) {
+export default function CompanyAdminManagementPage({ onQuotaFull }: { onQuotaFull?: () => void }) {
   const { currentUser, userRole, addCompanyAdmin, sendPasswordReset } = useAuth();
   const { companyAdmins, deleteCompanyAdmins, companies, subscriptionPlans, fetchData } = useMasterData();
   const [isSheetOpen, setSheetOpen] = useState(false);
@@ -69,7 +52,6 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
   const { toast } = useToast();
 
   const isSuperadmin = userRole === 'superadmin';
-
   const userCompany = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
   const isHoldingAdmin = useMemo(() => userRole === 'manajemen' && !!userCompany?.isHolding, [userRole, userCompany]);
 
@@ -94,7 +76,6 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
 
   const filteredAdmins = useMemo(() => {
     let admins = companyAdmins;
-
     if (isSuperadmin) {
         if (selectedCompanyId !== 'all') {
             const companyName = companies.find(c => c.id === selectedCompanyId)?.name;
@@ -103,13 +84,11 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
     } else {
         const manageableNames = manageableCompanies.map(c => c.name);
         admins = admins.filter(a => manageableNames.includes(a.company));
-        
         if (selectedCompanyId !== 'all') {
             const companyName = companies.find(c => c.id === selectedCompanyId)?.name;
             admins = admins.filter(a => a.company === companyName);
         }
     }
-
     return admins.sort((a, b) => a.name.localeCompare(b.name));
   }, [companyAdmins, isSuperadmin, selectedCompanyId, manageableCompanies, companies]);
 
@@ -138,35 +117,26 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
         toast({ variant: "destructive", title: "Pilih Perusahaan", description: "Harap pilih perusahaan spesifik terlebih dahulu untuk menambah admin." });
         return;
     }
-    
     if (quotaInfo?.managementLimitReached) {
-        if (onQuotaFull) {
-            onQuotaFull(); 
-        } else {
-            toast({ variant: "destructive", title: "Kuota Penuh", description: quotaInfo.message });
-        }
+        if (onQuotaFull) onQuotaFull(); 
+        else toast({ variant: "destructive", title: "Kuota Penuh", description: quotaInfo.message });
         return;
     }
-    
     setSelectedAdmin({
         role: 'manajemen',
-        company: isSuperadmin ? '' : (manageableCompanies.find(c => c.id === selectedCompanyId)?.name || ''),
+        company: isSuperadmin ? (companies.find(c => c.id === selectedCompanyId)?.name || '') : (userCompany?.name || ''),
         status: 'Aktif'
     });
     setSheetOpen(true);
   };
   
   const handleEditAdmin = (admin: CompanyAdmin) => {
-    setSelectedAdmin({
-        ...admin,
-        role: 'manajemen'
-    } as any);
+    setSelectedAdmin({ ...admin, role: 'manajemen' } as any);
     setSheetOpen(true);
   };
 
   const handleAddAction = async (data: any) => {
     const targetCompanyName = data.company || (isSuperadmin ? companies.find(c => c.id === selectedCompanyId)?.name : currentUser.company);
-
     const result = await addCompanyAdmin({
         name: data.name,
         email: data.email,
@@ -184,15 +154,6 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
     }
   };
   
-  const openDeleteDialog = (admin: CompanyAdmin) => {
-    if (admin.id === currentUser?.id) {
-        toast({ variant: "destructive", title: "Tindakan Ditolak", description: "Anda tidak dapat menghapus akun Anda sendiri." });
-        return;
-    }
-    setAdminToDelete(admin);
-    setDeleteDialogOpen(true);
-  };
-  
   const handleDelete = async () => {
     if (adminToDelete) {
       await deleteCompanyAdmins([adminToDelete.id]);
@@ -205,174 +166,146 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
     const result = await sendPasswordReset(email, name);
     setIsSendingInvitation(null);
     if (result.success) {
-      toast({
-        title: "Email Terkirim",
-        description: `Link pembaruan sandi / aktivasi untuk ${name} telah berhasil dikirim.`,
-      });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Gagal Mengirim",
-        description: result.error || "Terjadi kesalahan yang tidak diketahui.",
-      });
+      toast({ title: "Email Terkirim" });
     }
   };
 
   return (
-    <div className="w-full min-w-0 space-y-6">
-      <Card className="shadow-lg border-t-4 border-primary overflow-hidden min-w-0">
-        <CardHeader className="px-4 sm:px-6">
-          <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6">
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-              <div className="p-2 bg-primary/10 rounded-lg shrink-0">
-                <ShieldCheck className="size-6 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <CardTitle className="font-headline text-xl sm:text-2xl text-foreground">
-                    {isSuperadmin ? "Manajemen Admin Klien" : "Manajemen Tim Admin"}
-                </CardTitle>
-                <CardDescription className="text-sm leading-relaxed max-w-full break-words">
-                   {isSuperadmin 
-                    ? "Kelola seluruh akun admin dari semua perusahaan klien di satu tempat."
-                    : "Kelola rekan tim Manajemen Anda. Akun di sini tidak akan muncul di daftar KPI karyawan."}
-                </CardDescription>
-              </div>
-            </div>
-             <div className="flex items-center gap-2 shrink-0 self-end xl:self-center">
-                <Button size="sm" className="h-10 gap-1 font-bold shadow-md" onClick={handleAddAdmin}>
-                  <PlusCircle className="h-4 w-4" />
-                  <span className="whitespace-nowrap">Tambah Admin</span>
-                </Button>
-             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="px-4 sm:px-6 pt-2 min-w-0">
-            <div className={cn(
-              "flex flex-col md:flex-row gap-4 mb-6 p-4 border rounded-xl bg-muted/30",
-              !(isSuperadmin || isHoldingAdmin) && "justify-end"
-            )}>
-                {(isSuperadmin || isHoldingAdmin) && (
-                    <div className="flex flex-1 items-center gap-2 min-w-0">
-                        <Filter className="size-4 text-muted-foreground hidden sm:block shrink-0" />
-                        <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                            <SelectTrigger className="w-full md:w-[280px] bg-background">
-                                <Building className="size-3.5 mr-2 text-primary shrink-0" />
-                                <SelectValue placeholder="Pilih Perusahaan" />
-                            </SelectTrigger>
-                            <SelectContent className="z-[350]">
-                                <SelectItem value="all">Semua Perusahaan</SelectItem>
-                                {manageableCompanies.map(c => (
-                                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                )}
-                {quotaInfo && (
-                    <div className="flex items-center gap-4 px-4 py-2 bg-background rounded-lg border border-border/40 shadow-sm shrink-0">
-                        <div className="text-center border-r pr-4">
-                            <p className="text-[9px] font-black uppercase text-muted-foreground">Kuota Terpakai</p>
-                            <p className={cn("text-lg font-black", quotaInfo.managementLimitReached ? "text-destructive" : "text-primary")}>
-                                {quotaInfo.currentUsage} / {quotaInfo.limit === -1 ? '∞' : quotaInfo.limit}
-                            </p>
-                        </div>
-                        <div className="hidden sm:block">
-                            <p className="text-[10px] font-bold text-muted-foreground">Status kapasitas admin untuk <span className="text-foreground">{quotaInfo.companyName}</span></p>
-                        </div>
-                    </div>
-                )}
-            </div>
+    <ResponsivePage>
+      <PageHeader 
+        title={isSuperadmin ? "Manajemen Admin Klien" : "Manajemen Tim Admin"}
+        description={isSuperadmin ? "Kelola seluruh akun admin dari semua perusahaan klien di satu tempat." : "Kelola rekan tim Manajemen Anda."}
+        icon={ShieldCheck}
+        actions={
+          <Button onClick={handleAddAdmin} className="font-bold shadow-lg h-9 sm:h-10">
+            <PlusCircle className="size-4" />
+            Tambah Admin
+          </Button>
+        }
+      />
 
-            <div className="w-full overflow-hidden min-w-0 rounded-xl border shadow-sm">
-                <div className="overflow-x-auto w-full">
-                    <Table className="min-w-[800px]">
-                        <TableHeader className="bg-muted/50">
-                        <TableRow>
-                            <TableHead>Nama Pengguna</TableHead>
-                            {(isSuperadmin || isHoldingAdmin) && <TableHead>Perusahaan</TableHead>}
-                            <TableHead>Email</TableHead>
-                            <TableHead>Status Login</TableHead>
-                            <TableHead className="text-right">Aksi</TableHead>
-                        </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {filteredAdmins.length > 0 ? (
-                            filteredAdmins.map((admin) => (
-                            <TableRow key={admin.id} className="hover:bg-muted/5 group">
-                            <TableCell className="font-medium py-4">
-                                <div className="flex items-center gap-3">
-                                <Avatar className="size-9 border shadow-sm">
-                                    <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-black">
-                                        {admin.name.substring(0, 2).toUpperCase()}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <span className="font-bold text-slate-900">{admin.name}</span>
-                                </div>
-                            </TableCell>
-                            {(isSuperadmin || isHoldingAdmin) && (
-                                <TableCell>
-                                    <div className="flex items-center gap-1.5 text-xs font-semibold">
-                                        <Building className="size-3 text-muted-foreground" />
-                                        {admin.company}
-                                    </div>
-                                </TableCell>
-                            )}
-                            <TableCell className="text-sm text-slate-600">{admin.email}</TableCell>
-                            <TableCell>
-                                <Badge variant="outline" className={cn(
-                                    "font-bold text-[10px] uppercase",
-                                    admin.loginStatus === 'Active' ? "bg-green-50 text-green-700 border-green-200" :
-                                    admin.loginStatus === 'Invited' ? "bg-amber-50 text-amber-700 border-amber-200" :
-                                    "bg-slate-100 text-slate-600 border-slate-200"
-                                )}>
-                                    {admin.loginStatus}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                    <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
-                                        {isSendingInvitation === admin.email ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
-                                    </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="z-[350]">
-                                    <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Aksi Admin</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => handleEditAdmin(admin)}>
-                                        Ubah Profil
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleSendInvitation(admin.email, admin.name)}>
-                                        <Send className="mr-2 size-3.5" /> Kirim Pembaruan Sandi / Aktivasi
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(admin)}>
-                                        <Trash2 className="mr-2 size-3.5" /> Hapus Akses
-                                    </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={(isSuperadmin || isHoldingAdmin) ? 5 : 4} className="h-32 text-center text-muted-foreground italic">
-                                    Tidak ada data admin ditemukan.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                        </TableBody>
-                    </Table>
+      {(isSuperadmin || isHoldingAdmin) && (
+        <ResponsiveToolbar>
+          <div className="flex flex-1 items-center gap-2 min-w-0">
+            <Filter className="size-4 text-muted-foreground hidden sm:block shrink-0" />
+            <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                <SelectTrigger className="w-full md:w-[280px] bg-background">
+                    <Building className="size-3.5 mr-2 text-primary shrink-0" />
+                    <SelectValue placeholder="Pilih Perusahaan" />
+                </SelectTrigger>
+                <SelectContent className="z-[350]">
+                    <SelectItem value="all">Semua Perusahaan</SelectItem>
+                    {manageableCompanies.map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+          </div>
+        </ResponsiveToolbar>
+      )}
+
+      {quotaInfo && (
+        <AdaptiveCardGrid complexity="simple" className="mb-6">
+            <AdaptiveMetricCard 
+                title="Kapasitas Admin"
+                value={`${quotaInfo.currentUsage} / ${quotaInfo.limit === -1 ? '∞' : quotaInfo.limit}`}
+                icon={Shield}
+                color={quotaInfo.managementLimitReached ? "bg-rose-500/10 text-rose-600" : "bg-primary/10 text-primary"}
+                badge={quotaInfo.companyName}
+            />
+        </AdaptiveCardGrid>
+      )}
+
+      <AdaptiveTable 
+        data={filteredAdmins}
+        keyExtractor={(a) => a.id}
+        columns={[
+          {
+            header: "Admin Perusahaan",
+            cell: (a) => (
+              <div className="flex items-center gap-3">
+                <Avatar className="size-9 border shadow-sm shrink-0">
+                  <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-black uppercase">
+                    {a.name.substring(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-slate-900 truncate">{a.name}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-medium truncate">{a.email}</p>
                 </div>
-            </div>
-        </CardContent>
-      </Card>
-      
+              </div>
+            )
+          },
+          {
+             header: "Perusahaan",
+             accessorKey: "company",
+             className: "text-slate-600 font-medium",
+             hideOnTablet: true,
+          },
+          {
+            header: "Status Login",
+            cell: (a) => (
+              <Badge variant="outline" className={cn(
+                "text-[9px] font-black uppercase border-none h-5",
+                a.loginStatus === 'Active' ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-600"
+              )}>
+                {a.loginStatus}
+              </Badge>
+            )
+          },
+          {
+            header: "",
+            className: "text-right",
+            cell: (a) => (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    {isSendingInvitation === a.email ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="z-[350]">
+                  <DropdownMenuItem onClick={() => handleEditAdmin(a)}><Pencil className="size-3.5 mr-2" />Ubah</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSendInvitation(a.email, a.name)}><Send className="size-3.5 mr-2" />Kirim Reset Sandi</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive font-bold" onClick={() => { setAdminToDelete(a); setDeleteDialogOpen(true); }} disabled={a.id === currentUser?.id}><Trash2 className="size-3.5 mr-2" />Hapus</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+          }
+        ]}
+        renderMobileCard={(a) => (
+          <Card className="border-border/40 shadow-sm overflow-hidden">
+            <CardContent className="p-4 space-y-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="size-11 border-2 border-primary/10 shadow-sm">
+                  <AvatarFallback className="bg-primary/5 text-primary text-xs font-black uppercase">{a.name.substring(0, 2)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                   <h3 className="font-black text-sm uppercase truncate tracking-tight">{a.name}</h3>
+                   <p className="text-[10px] text-muted-foreground truncate">{a.email}</p>
+                </div>
+                <Badge variant="outline" className="text-[8px] font-black uppercase h-5 bg-muted/30 border-none">{a.loginStatus}</Badge>
+              </div>
+              <div className="pt-3 border-t">
+                  <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Perusahaan</p>
+                  <p className="text-xs font-bold text-foreground/80">{a.company}</p>
+              </div>
+              <div className="flex gap-2 pt-1">
+                  <Button variant="outline" size="sm" className="flex-1 font-bold text-[10px] h-8" onClick={() => handleEditAdmin(a)}>UBAH</Button>
+                  <Button variant="ghost" size="sm" className="flex-1 font-bold text-[10px] h-8 text-destructive" onClick={() => { setAdminToDelete(a); setDeleteDialogOpen(true); }} disabled={a.id === currentUser?.id}>HAPUS</Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      />
+
       <EmployeeFormSheet 
         isOpen={isSheetOpen}
         onOpenChange={setSheetOpen}
         employee={selectedAdmin}
         onAdd={handleAddAction}
         onSave={(id, data) => handleAddAction({ ...data, id })} 
-        quotaInfo={quotaInfo as any}
+        quotaInfo={null}
       />
 
       <DeleteConfirmationDialog
@@ -382,6 +315,6 @@ export default function CompanyAdminManagementPage({ onQuotaFull }: CompanyAdmin
         itemName={adminToDelete?.name || ''}
         itemType="admin perusahaan"
       />
-    </div>
+    </ResponsivePage>
   );
 }

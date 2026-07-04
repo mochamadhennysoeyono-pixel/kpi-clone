@@ -1,26 +1,19 @@
-
 // src/app/(main)/group-management/page.tsx
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Building, GitMerge, Check, AlertTriangle, ToggleLeft, ToggleRight } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Building, GitMerge, AlertTriangle, Filter } from 'lucide-react';
 import type { Company } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
+import { ResponsivePage, ResponsiveToolbar } from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { AdaptiveTable } from "@/components/ui/adaptive-table";
+import { Badge } from "@/components/ui/badge";
 import { Switch } from '@/components/ui/switch';
-
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 
 export default function GroupManagementPage() {
   const { companies, updateCompany } = useMasterData();
@@ -30,113 +23,103 @@ export default function GroupManagementPage() {
   const handleToggleHoldingStatus = async (company: Company) => {
     try {
         await updateCompany(company.id, { isHolding: !company.isHolding });
-        toast({
-            title: "Status Holding Diperbarui",
-            description: `Status holding untuk ${company.name} telah berhasil diubah.`
-        });
+        toast({ title: "Status Diperbarui" });
     } catch (e) {
-        toast({
-            variant: "destructive",
-            title: "Gagal Memperbarui",
-            description: "Terjadi kesalahan saat mengubah status holding."
-        });
+        toast({ variant: "destructive", title: "Gagal", description: "Terjadi kesalahan sistem." });
     }
   };
   
-   const handleToggleCanBecomeHolding = async (company: Company) => {
+  const handleToggleCanBecomeHolding = async (company: Company) => {
     try {
         await updateCompany(company.id, { canBecomeHolding: !company.canBecomeHolding });
-        toast({
-            title: "Izin Holding Diperbarui",
-            description: `Izin menjadi holding untuk ${company.name} telah berhasil diubah.`
-        });
+        toast({ title: "Izin Diperbarui" });
     } catch (e) {
-        toast({
-            variant: "destructive",
-            title: "Gagal Memperbarui",
-            description: "Terjadi kesalahan saat mengubah izin holding."
-        });
+        toast({ variant: "destructive", title: "Gagal", description: "Terjadi kesalahan sistem." });
     }
   };
 
-  if (userRole !== 'superadmin') {
-    return <div className="p-20 text-center font-bold">Akses Ditolak.</div>;
-  }
+  if (userRole !== 'superadmin') return <div className="p-20 text-center font-bold">Akses Ditolak.</div>;
 
   return (
-    <div className="space-y-6">
-      <Card className="shadow-lg mb-6">
-        <CardHeader className="bg-primary text-primary-foreground dark:bg-card dark:text-primary-foreground">
-            <div>
-              <CardTitle className="font-headline dark:text-white">Manajemen Status Holding</CardTitle>
-              <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground">
-                Aktifkan atau nonaktifkan status holding untuk setiap perusahaan klien.
-              </CardDescription>
-            </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-            <Table>
-                <TableHeader>
-                <TableRow>
-                    <TableHead>Nama Perusahaan</TableHead>
-                    <TableHead>Status Saat Ini</TableHead>
-                    <TableHead>Izin Upgrade Mandiri</TableHead>
-                    <TableHead className="text-right">Aksi (Aktifkan Holding)</TableHead>
-                </TableRow>
-                </TableHeader>
-                <TableBody>
-                {companies.map((company) => (
-                    <TableRow key={company.id}>
-                    <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
-                            <div className="hidden h-9 w-9 sm:flex items-center justify-center rounded-full bg-muted">
-                               {company.isHolding ? <GitMerge className="h-5 w-5 text-primary" /> : <Building className="h-5 w-5 text-muted-foreground" />}
-                            </div>
-                            <div>
-                                <p>{company.name}</p>
-                                <p className="text-xs text-muted-foreground">{company.businessField}</p>
-                            </div>
-                        </div>
-                    </TableCell>
-                    <TableCell>
-                        {company.isHolding ? (
-                            <Badge>Holding Aktif</Badge>
-                        ) : company.parentId ? (
-                            <Badge variant="secondary">Anak Perusahaan</Badge>
-                        ): (
-                            <Badge variant="outline">Standalone</Badge>
-                        )}
-                    </TableCell>
-                     <TableCell>
-                        <div className="flex items-center gap-2">
-                             <Switch
-                                id={`can-become-${company.id}`}
-                                checked={!!company.canBecomeHolding}
-                                onCheckedChange={() => handleToggleCanBecomeHolding(company)}
-                                disabled={!!company.parentId}
-                            />
-                            <label htmlFor={`can-become-${company.id}`} className="text-sm">
-                                {company.canBecomeHolding ? 'Diizinkan' : 'Tidak Diizinkan'}
-                            </label>
-                        </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                         <div className="flex items-center justify-end gap-2">
-                            <span className="text-sm">{company.isHolding ? 'Nonaktifkan' : 'Aktifkan'}</span>
-                            <Switch
-                                id={`is-holding-${company.id}`}
-                                checked={!!company.isHolding}
-                                onCheckedChange={() => handleToggleHoldingStatus(company)}
-                                disabled={!!company.parentId}
-                            />
-                        </div>
-                    </TableCell>
-                    </TableRow>
-                ))}
-                </TableBody>
-            </Table>
-        </CardContent>
-      </Card>
-    </div>
+    <ResponsivePage>
+      <PageHeader 
+        title="Manajemen Status Holding"
+        description="Aktifkan fitur struktur induk-anak (Group) untuk perusahaan yang memenuhi syarat."
+        icon={GitMerge}
+      />
+
+      <AdaptiveTable 
+        data={companies}
+        keyExtractor={(c) => c.id}
+        columns={[
+          {
+            header: "Klien",
+            cell: (c) => (
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center border shrink-0">
+                  {c.isHolding ? <GitMerge className="size-5" /> : <Building className="size-5" />}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-900 truncate">{c.name}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-black">{c.businessField}</p>
+                </div>
+              </div>
+            )
+          },
+          {
+            header: "Status Hirarki",
+            cell: (c) => (
+                c.isHolding ? <Badge className="bg-primary text-white text-[9px] font-black uppercase">Holding Aktif</Badge> : 
+                c.parentId ? <Badge variant="secondary" className="text-[9px] font-black uppercase">Anak Perusahaan</Badge> : 
+                <Badge variant="outline" className="text-[9px] font-black uppercase">Standalone</Badge>
+            )
+          },
+          {
+            header: "Izin Upgrade",
+            cell: (c) => (
+                <div className="flex items-center gap-3">
+                    <Switch checked={!!c.canBecomeHolding} onCheckedChange={() => handleToggleCanBecomeHolding(c)} disabled={!!c.parentId} />
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">{c.canBecomeHolding ? 'Ya' : 'Tidak'}</span>
+                </div>
+            )
+          },
+          {
+            header: "Mode Holding",
+            className: "text-right",
+            cell: (c) => (
+                <div className="flex items-center justify-end gap-3">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">{c.isHolding ? 'Aktif' : 'Nonaktif'}</span>
+                    <Switch checked={!!c.isHolding} onCheckedChange={() => handleToggleHoldingStatus(c)} disabled={!!c.parentId} />
+                </div>
+            )
+          }
+        ]}
+        renderMobileCard={(c) => (
+          <Card className="border-border/40 shadow-sm overflow-hidden">
+            <CardContent className="p-4 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="size-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center border shrink-0">
+                    {c.isHolding ? <GitMerge size={20} /> : <Building size={20} />}
+                </div>
+                <div className="min-w-0 flex-1">
+                   <h3 className="font-black text-sm uppercase truncate">{c.name}</h3>
+                   <p className="text-[10px] text-muted-foreground uppercase font-bold">{c.businessField}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-3 border-t">
+                  <div className="space-y-2">
+                      <Label className="text-[8px] font-black uppercase opacity-60">Izin Upgrade</Label>
+                      <div className="flex items-center gap-2"><Switch checked={!!c.canBecomeHolding} onCheckedChange={() => handleToggleCanBecomeHolding(c)} disabled={!!c.parentId} className="scale-75 origin-left" /></div>
+                  </div>
+                  <div className="space-y-2 text-right">
+                      <Label className="text-[8px] font-black uppercase opacity-60">Mode Holding</Label>
+                      <div className="flex items-center justify-end gap-2"><Switch checked={!!c.isHolding} onCheckedChange={() => handleToggleHoldingStatus(c)} disabled={!!c.parentId} className="scale-75" /></div>
+                  </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      />
+    </ResponsivePage>
   );
 }
