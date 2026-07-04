@@ -1,3 +1,4 @@
+
 // src/app/(main)/kbo-appraisal/page.tsx
 "use client";
 
@@ -24,17 +25,17 @@ import {
     DropdownMenuLabel,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from '@/button';
-import { Badge } from '@/badge';
-import { User, MoreHorizontal, ClipboardList, AlertCircle, Maximize2, Minimize2, X, Copy, Eye, RefreshCw, Calendar, Building, BrainCircuit, Search, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { DotsThree, ClipboardText, WarningCircle, CornersOut, CornersIn, X, Copy, Eye, ArrowsClockwise, Calendar, Buildings, Brain, MagnifyingGlass, ArrowRight } from '@phosphor-icons/react';
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
 import type { Employee, AppraisalSetup, KboSetup, Company } from '@/types';
-import { Progress } from '@/progress';
+import { Progress } from '@/components/ui/progress';
 import { parse, isBefore, isAfter, isWithinInterval, format, isValid } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetClose } from '@/sheet';
-import { ScrollArea } from '@/scroll-area';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetClose } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -163,14 +164,14 @@ function KboDetailDialog({ isOpen, onOpenChange, result, setup, kboSetup }: { is
             <SheetContent className={cn("p-0 flex flex-col transition-all duration-300 border-none shadow-2xl", isExpanded ? "w-full sm:max-w-full" : "w-full sm:max-w-xl")}>
                 <SheetHeader className="p-6 pb-2 border-b flex-row items-center justify-between bg-muted/20">
                     <div>
-                        <SheetTitle className="font-black text-xl uppercase tracking-tighter">Detail Skor: {result.subject.name}</SheetTitle>
+                        <SheetTitle className="font-black text-xl tracking-tighter">Detail Skor: {result.subject.name}</SheetTitle>
                         <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">
                            Kategori: <span className="text-primary">{kboSetup.categoryName}</span>
                         </div>
                     </div>
                      <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="hidden sm:flex" onClick={() => setIsExpanded(!isExpanded)} >
-                            {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                            {isExpanded ? <CornersIn size={18} /> : <CornersOut size={18} />}
                         </Button>
                         <SheetClose asChild><Button variant="ghost" size="icon"><X size={20} /></Button></SheetClose>
                      </div>
@@ -205,7 +206,7 @@ function KboDetailDialog({ isOpen, onOpenChange, result, setup, kboSetup }: { is
                                                         <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" asChild>
                                                             <Link href={`/kbo-assessment-form?setupId=${setup!.id}&subjectId=${result.subject.id}&raterId=${rater.raterId}&kboSetupIds=${kboSetup!.id}`} target="_blank"><Eye size={14}/></Link>
                                                         </Button>
-                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => rater.raterId && openConfirmation(rater.raterId, rater.raterName)}><RefreshCw size={14}/></Button>
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => rater.raterId && openConfirmation(rater.raterId, rater.raterName)}><ArrowsClockwise size={14}/></Button>
                                                     </>
                                                 ) : (
                                                     rater.raterId && <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" onClick={() => handleCopyLink(rater.raterId!)}><Copy size={14}/></Button>
@@ -231,7 +232,7 @@ function KboDetailDialog({ isOpen, onOpenChange, result, setup, kboSetup }: { is
          <AlertDialog open={isAlertOpen} onOpenChange={setAlertOpen}>
             <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
                 <AlertDialogHeader>
-                    <AlertDialogTitle className="font-black uppercase tracking-tight text-slate-900">Konfirmasi Reset</AlertDialogTitle>
+                    <AlertDialogTitle className="font-black tracking-tight text-slate-900">Konfirmasi Reset</AlertDialogTitle>
                     <AlertDialogDescription className="text-sm font-medium leading-relaxed">
                         Anda yakin ingin menghapus hasil penilaian dari <strong>{assessmentToDelete?.raterName}</strong>? Tindakan ini tidak bisa dibatalkan.
                     </AlertDialogDescription>
@@ -436,19 +437,19 @@ function KboAppraisalContent() {
       <PageHeader 
         title="Laporan Penilaian KBO"
         description="Monitor progres dan hasil evaluasi kompetensi perilaku (KBO) di seluruh unit bisnis Anda."
-        icon={ClipboardList}
+        icon={ClipboardText}
       />
       
       <ResponsiveToolbar>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex items-center gap-3 flex-1 min-w-0">
              {showCompanyFilter && (
                  <Select value={selectedCompanyId ?? ''} onValueChange={setSelectedCompanyId}>
-                    <SelectTrigger className="h-10 min-w-[180px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><Building className="size-4 mr-2 text-primary" /><SelectValue placeholder="Unit Bisnis" /></SelectTrigger>
+                    <SelectTrigger className="h-10 min-w-[180px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><Buildings className="size-4 mr-2 text-primary" weight="fill" /><SelectValue placeholder="Unit Bisnis" /></SelectTrigger>
                     <SelectContent className="z-[350]">{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                  </Select>
              )}
              <Select value={selectedPeriod ?? ''} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="h-10 min-w-[160px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><Calendar className="size-4 mr-2 text-primary" /><SelectValue placeholder="Periode" /></SelectTrigger>
+              <SelectTrigger className="h-10 min-w-[160px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><Calendar className="size-4 mr-2 text-primary" weight="fill" /><SelectValue placeholder="Periode" /></SelectTrigger>
               <SelectContent className="z-[350]">
                 {availablePeriods.map(p => {
                     const parsedDate = parse(p, 'yyyy-MM', new Date());
@@ -458,11 +459,11 @@ function KboAppraisalContent() {
               </SelectContent>
             </Select>
             <Select value={selectedAppraisalId ?? ''} onValueChange={setSelectedAppraisalId} disabled={!selectedPeriod}>
-              <SelectTrigger className="h-10 min-w-[200px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><ClipboardList className="size-4 mr-2 text-primary" /><SelectValue placeholder="Setup Appraisal" /></SelectTrigger>
+              <SelectTrigger className="h-10 min-w-[200px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><ClipboardText className="size-4 mr-2 text-primary" weight="fill" /><SelectValue placeholder="Setup Appraisal" /></SelectTrigger>
               <SelectContent className="z-[350]">{availableSetupsForPeriod.map(s => <SelectItem key={s.id} value={s.id}>{s.company} / {s.period || `${s.periodStart} - ${s.periodEnd}`}</SelectItem>)}</SelectContent>
             </Select>
             <Select value={selectedKboSetupId ?? ''} onValueChange={setSelectedKboSetupId} disabled={!selectedAppraisalId || availableKboSetupsForAppraisal.length === 0}>
-                <SelectTrigger className="h-10 min-w-[180px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><BrainCircuit className="size-4 mr-2 text-primary" /><SelectValue placeholder="Kompetensi" /></SelectTrigger>
+                <SelectTrigger className="h-10 min-w-[180px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><Brain className="size-4 mr-2 text-primary" weight="fill" /><SelectValue placeholder="Kompetensi" /></SelectTrigger>
                 <SelectContent className="z-[350]">{availableKboSetupsForAppraisal.map(ks => <SelectItem key={ks.id} value={ks.id}>{ks.categoryName}</SelectItem>)}</SelectContent>
             </Select>
         </div>
@@ -470,8 +471,8 @@ function KboAppraisalContent() {
       
       {selectedKboSetupId && (
         <AdaptiveCardGrid complexity="simple">
-            <AdaptiveMetricCard title="Rata-rata Skor" value={dashboardStats.avg.toFixed(1)} icon={BrainCircuit} color="bg-primary/10 text-primary" />
-            <AdaptiveMetricCard title="Tugas Selesai" value={dashboardStats.done} icon={CheckCircle2} description={`${dashboardStats.total} total penilai`} color="bg-emerald-500/10 text-emerald-600" />
+            <AdaptiveMetricCard title="Rata-rata Skor" value={dashboardStats.avg.toFixed(1)} icon={Brain} color="bg-primary/10 text-primary" />
+            <AdaptiveMetricCard title="Tugas Selesai" value={dashboardStats.done} icon={CheckCircle2} description={`${dashboardStats.total} total penilai`} color="bg-emerald-500/10 text-green-600" />
             <AdaptiveMetricCard title="Target Subjek" value={appraisalSubjects.length} icon={User} description="Personil yang dinilai" />
         </AdaptiveCardGrid>
       )}
@@ -485,20 +486,20 @@ function KboAppraisalContent() {
                     { header: "Karyawan", cell: (r) => (
                         <div className="flex items-center gap-3">
                             <Avatar className="size-9 border shadow-sm"><AvatarFallback className="text-[10px] font-black bg-primary/10 text-primary">{r.subject.name.substring(0,2).toUpperCase()}</AvatarFallback></Avatar>
-                            <div className="min-w-0 flex-1"><p className="font-bold text-slate-900 truncate">{r.subject.name}</p><p className="text-[10px] text-muted-foreground uppercase font-black truncate">{r.subject.position}</p></div>
+                            <div className="min-w-0 flex-1"><p className="font-bold text-slate-900 truncate">{r.subject.name}</p><p className="text-[10px] text-muted-foreground font-bold truncate">{r.subject.position}</p></div>
                         </div>
                     )},
                     { header: "Progres Penilaian", cell: (r) => (
                         <div className="flex flex-col gap-1.5 w-full max-w-[120px]">
-                            <div className="flex justify-between items-center text-[9px] font-black text-muted-foreground"><span>PROGRES</span><span>{Math.round((r.ratersDone / r.totalRaters) * 100)}%</span></div>
+                            <div className="flex justify-between items-center text-[9px] font-black text-muted-foreground"><span>Progres</span><span>{Math.round((r.ratersDone / r.totalRaters) * 100)}%</span></div>
                             <Progress value={(r.ratersDone / r.totalRaters) * 100} className="h-1" />
-                            <p className="text-[8px] font-bold text-muted-foreground text-right">{r.ratersDone}/{r.totalRaters} SELESAI</p>
+                            <p className="text-[8px] font-bold text-muted-foreground text-right">{r.ratersDone}/{r.totalRaters} Selesai</p>
                         </div>
                     )},
                     { header: "Skor KBO", cell: (r) => <span className="text-lg font-black text-primary">{r.score !== null ? r.score.toFixed(1) : '-'}</span> },
-                    { header: "Status", cell: (r) => <Badge variant={selectedAppraisal ? getStatusFromPeriod(selectedAppraisal).variant : 'outline'} className="text-[9px] font-black uppercase h-5">{r.status}</Badge> },
+                    { header: "Status", cell: (r) => <Badge variant={selectedAppraisal ? getStatusFromPeriod(selectedAppraisal).variant : 'outline'} className="text-[9px] font-black h-5 border-none">{r.status}</Badge> },
                     { header: "", className: "text-right", cell: (r) => (
-                        <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal className="size-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><DotsThree size={24} weight="bold" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="z-[350]">
                             <DropdownMenuItem onClick={() => setSelectedResultForDetail(r)}><Eye className="size-3.5 mr-2" /> Lihat Rincian Skor</DropdownMenuItem>
                         </DropdownMenuContent></DropdownMenu>
@@ -516,10 +517,10 @@ function KboAppraisalContent() {
                             </div>
                             <div className="flex items-center justify-between pt-3 border-t">
                                 <div className="flex flex-col gap-1 flex-1 max-w-[150px]">
-                                    <div className="flex justify-between text-[8px] font-black text-muted-foreground uppercase"><span>PROGRES</span><span>{r.ratersDone}/{r.totalRaters}</span></div>
+                                    <div className="flex justify-between text-[8px] font-black text-muted-foreground uppercase"><span>Progres</span><span>{r.ratersDone}/{r.totalRaters}</span></div>
                                     <Progress value={(r.ratersDone / r.totalRaters) * 100} className="h-1" />
                                 </div>
-                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-muted-foreground uppercase ml-4">DETAIL <ArrowRight size={10} /></div>
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-muted-foreground uppercase ml-4">Detail <ArrowRight size={10} /></div>
                             </div>
                         </CardContent>
                     </Card>
@@ -528,8 +529,8 @@ function KboAppraisalContent() {
         </div>
       ) : (
         <div className="py-32 text-center border-2 border-dashed rounded-3xl bg-muted/5 opacity-40">
-            <BrainCircuit size={48} className="mx-auto mb-4 text-slate-400" />
-            <p className="font-black uppercase text-[10px] tracking-[0.2em]">Pilih Parameter Laporan</p>
+            <Brain size={48} className="mx-auto mb-4 text-slate-400" />
+            <p className="font-black text-[10px] tracking-[0.2em]">Pilih Parameter Laporan</p>
         </div>
       )}
       <KboDetailDialog isOpen={!!selectedResultForDetail} onOpenChange={(open) => !open && setSelectedResultForDetail(null)} result={selectedResultForDetail} setup={selectedAppraisal || null} kboSetup={selectedKboSetup || null} />

@@ -1,3 +1,4 @@
+
 // src/app/(main)/kbo-assessment-form/page.tsx
 "use client";
 
@@ -11,9 +12,9 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { Button } from '@/button';
-import { Badge } from '@/badge';
-import { Loader2, User, UserCheck, BrainCircuit, ClipboardList, Timer, CheckCircle2, ChevronRight, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, User, UserCheck, Brain, ClipboardText, Timer, CheckCircle, ArrowRight, XCircle } from '@phosphor-icons/react';
 import { useMasterData } from '@/contexts/master-data-context';
 import type { Employee, AppraisalSetup, KboSetup, KboDimension, KboAssessment } from '@/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -219,8 +220,8 @@ function KboAssessmentForm() {
             <ResponsivePage className="flex items-center justify-center min-h-[80vh]">
                 <Card className="max-w-md w-full border-none shadow-2xl overflow-hidden bg-background">
                     <CardHeader className="bg-rose-50 text-center pb-8">
-                        <XCircle size={48} className="text-rose-500 mx-auto mb-4" />
-                        <CardTitle className="font-black text-rose-900 uppercase tracking-tighter">Akses Ditolak</CardTitle>
+                        <XCircle size={48} weight="fill" className="text-rose-500 mx-auto mb-4" />
+                        <CardTitle className="font-black text-rose-900 tracking-tighter">Akses Ditolak</CardTitle>
                         <CardDescription className="text-rose-700 font-bold uppercase text-[10px]">Tautan Tidak Valid atau Kadaluwarsa</CardDescription>
                     </CardHeader>
                     <CardContent className="p-8 text-center text-sm font-medium text-muted-foreground leading-relaxed">
@@ -236,16 +237,15 @@ function KboAssessmentForm() {
             <PageHeader 
                 title="Penilaian Kompetensi"
                 description={`Silakan berikan penilaian objektif berdasarkan perilaku kerja nyata dari subjek bersangkutan.`}
-                icon={ClipboardList}
+                icon={ClipboardText}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                {/* Left Column: Context & Subject (4 cols) */}
                 <div className="lg:col-span-4 space-y-6">
                     <Card className="border-border/40 shadow-sm overflow-hidden bg-background">
                         <CardHeader className="bg-muted/30 border-b p-5">
                             <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
-                                <UserCheck size={14} className="text-primary" /> Subjek & Penilai
+                                <UserCheck size={14} className="text-primary" weight="fill" /> Subjek & Penilai
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 space-y-6">
@@ -254,8 +254,8 @@ function KboAssessmentForm() {
                                     <AvatarFallback className="bg-primary/5 text-primary text-xs font-black uppercase">{subject.name.substring(0, 2)}</AvatarFallback>
                                 </Avatar>
                                 <div className="min-w-0">
-                                    <p className="text-[9px] font-black text-primary uppercase tracking-widest">SUBJEK DINILAI</p>
-                                    <p className="text-base font-black text-slate-900 truncate uppercase tracking-tight">{subject.name}</p>
+                                    <p className="text-[9px] font-black text-primary uppercase tracking-widest">Subjek Dinilai</p>
+                                    <p className="text-base font-black text-slate-900 truncate tracking-tight">{subject.name}</p>
                                     <p className="text-[10px] font-bold text-muted-foreground">{subject.position}</p>
                                 </div>
                             </div>
@@ -265,7 +265,7 @@ function KboAssessmentForm() {
                                     <AvatarFallback className="bg-muted text-muted-foreground text-[10px] font-black uppercase">{rater.name.substring(0, 2)}</AvatarFallback>
                                 </Avatar>
                                 <div className="min-w-0">
-                                    <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">PENILAI (ANDA)</p>
+                                    <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Penilai (Anda)</p>
                                     <p className="text-sm font-bold text-slate-700 truncate">{rater.name}</p>
                                 </div>
                             </div>
@@ -276,13 +276,13 @@ function KboAssessmentForm() {
                          <CardContent className="p-6 space-y-6">
                             <div className="space-y-1">
                                 <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Periode Penilaian</p>
-                                <p className="text-sm font-black text-slate-800 flex items-center gap-2"><Timer size={14} className="text-primary opacity-40"/> {periodLabel}</p>
+                                <p className="text-sm font-black text-slate-800 flex items-center gap-2"><Timer size={14} className="text-primary opacity-40" weight="fill" /> {periodLabel}</p>
                             </div>
                             <div className="space-y-2">
                                 <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Kompetensi Fokus</p>
                                 <div className="flex flex-wrap gap-1.5">
                                     {relevantKboSetups.map(s => (
-                                        <Badge key={s.id} variant="outline" className="text-[9px] font-black uppercase h-5 bg-muted/50 border-none">{s.categoryName}</Badge>
+                                        <Badge key={s.id} variant="outline" className="text-[9px] font-black h-5 bg-muted/50 border-none">{s.categoryName}</Badge>
                                     ))}
                                 </div>
                             </div>
@@ -290,16 +290,14 @@ function KboAssessmentForm() {
                     </Card>
                 </div>
 
-                {/* Right Column: Assessment List (8 cols) */}
                 <div className="lg:col-span-8 space-y-6">
-                    {/* Sticky Scoring Info */}
                     <Card className="sticky top-4 z-20 shadow-xl border-primary/20 bg-background/95 backdrop-blur-lg">
                         <CardContent className="p-4 flex items-center justify-between gap-4">
                             <div className="space-y-0.5">
                                 <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Progres Pengisian</p>
                                 <div className="flex items-center gap-2">
                                     <span className="text-xl font-black text-primary">{Object.keys(selections).length} / {totalKeyBehaviors}</span>
-                                    <span className="text-[10px] font-bold text-muted-foreground">POIN TERISI</span>
+                                    <span className="text-[10px] font-bold text-muted-foreground">Poin Terisi</span>
                                 </div>
                             </div>
                             <div className="text-right space-y-0.5">
@@ -315,7 +313,7 @@ function KboAssessmentForm() {
                                 <div className="flex items-center gap-3 px-1">
                                     <div className="size-8 rounded-xl bg-primary text-white flex items-center justify-center text-xs font-black shrink-0">{dimIndex + 1}</div>
                                     <div className="min-w-0">
-                                        <h3 className="font-black text-sm uppercase tracking-tight text-slate-900">{dim.dimension}</h3>
+                                        <h3 className="font-black text-sm text-slate-900">{dim.dimension}</h3>
                                         <p className="text-[11px] text-muted-foreground italic leading-snug line-clamp-1">"{dim.definition}"</p>
                                     </div>
                                 </div>
@@ -378,8 +376,8 @@ function KboAssessmentForm() {
                         <CardFooter className="p-6 border-t bg-muted/5">
                             {isSubmitted ? (
                                 <Alert className="bg-emerald-50 border-emerald-200">
-                                    <CheckCircle2 className="size-4 text-emerald-600" />
-                                    <AlertDescription className="text-xs font-bold text-emerald-800 uppercase">
+                                    <CheckCircle size={16} weight="fill" className="text-emerald-600" />
+                                    <AlertDescription className="text-xs font-bold text-emerald-800 uppercase ml-2">
                                         Terima kasih, data penilaian telah berhasil tersimpan dalam sistem.
                                     </AlertDescription>
                                 </Alert>
@@ -389,7 +387,7 @@ function KboAssessmentForm() {
                                     disabled={loading || !isAllSelected} 
                                     className="w-full font-black uppercase tracking-widest text-[11px] h-12 shadow-xl shadow-primary/20 rounded-2xl active:scale-95 transition-all"
                                 >
-                                    {loading ? <Loader2 className="size-4 animate-spin mr-2" /> : <Save className="size-4 mr-2" />}
+                                    {loading ? <Loader2 className="size-4 animate-spin mr-2" /> : <ClipboardText className="size-4 mr-2" weight="fill" />}
                                     Kirim Penilaian Final
                                 </Button>
                             )}
