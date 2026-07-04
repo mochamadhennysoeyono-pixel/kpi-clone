@@ -5,7 +5,7 @@ import { useState, useMemo, useRef } from "react";
 import { 
     Users, PlusCircle, Search, Filter, Building, 
     MoreHorizontal, Pencil, ShieldCheck, Zap, 
-    Trash2, Send, Loader2, Mail, Briefcase, Network
+    Trash2, Send, Loader2, Mail, Briefcase, Network, ChevronDown
 } from "lucide-react";
 import { 
     ResponsivePage, 
@@ -81,10 +81,15 @@ export default function EmployeesPage() {
   const handleConfirmDelete = async () => {
     if (!employeesToDelete) return;
     setIsLoading(true);
-    await deleteEmployees(employeesToDelete.map(e => e.id));
-    setDeleteDialogOpen(false);
-    setIsLoading(false);
-    fetchData(true);
+    try {
+        await deleteEmployees(employeesToDelete.map(e => e.id));
+        setDeleteDialogOpen(false);
+        fetchData(true);
+    } catch (e: any) {
+        toast({ variant: 'destructive', title: "Gagal Menghapus", description: e.message });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   // --- REUSABLE ADAPTIVE COMPONENTS USAGE ---
@@ -243,14 +248,14 @@ export default function EmployeesPage() {
         isOpen={isSheetOpen}
         onOpenChange={setSheetOpen}
         employee={selectedEmployee}
-        onAdd={(d) => { fetchData(true); }}
-        onSave={(id, d) => { fetchData(true); }}
+        onAdd={() => { fetchData(true); }}
+        onSave={() => { fetchData(true); }}
         quotaInfo={null}
       />
 
       <DeleteConfirmationDialog 
         isOpen={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
         onConfirm={handleConfirmDelete}
         itemName={employeesToDelete?.[0]?.name || ""}
         itemType="Karyawan"
