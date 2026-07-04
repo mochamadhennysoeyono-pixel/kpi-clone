@@ -1,3 +1,4 @@
+
 // src/app/(main)/reports/page.tsx
 "use client";
 
@@ -42,6 +43,7 @@ import {
   Maximize2,
   Minimize2,
   ArrowRight,
+  Search,
 } from "lucide-react";
 import { useMasterData } from "@/contexts/master-data-context";
 import type { KpiData, Company, Employee } from "@/types";
@@ -59,15 +61,18 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { DonutChart } from "@/components/reports/donut-chart";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
-const PageHeader = ({ title, description }) => (
+const PageHeader = ({ title, description }: { title: string, description: string | null }) => (
     <div className="mb-5">
         <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
-        <p className="mt-1 text-sm text-slate-500">{description}</p>
+        {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
     </div>
 );
 
-const StatBlock = ({ title, value, description, icon: Icon, iconColor }) => (
+const StatBlock = ({ title, value, description, icon: Icon, iconColor }: { title: string, value: string, description: string, icon: any, iconColor?: string }) => (
     <div className="p-4">
         <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{title}</p>
@@ -145,7 +150,7 @@ function TeamReportView() {
     }, [mode, trendStartPeriod, trendEndPeriod]);
     
     const { reportData, trendStats } = useMemo(() => {
-         if (!selectedCompanyName) return { reportData: [], trendStats: {} };
+         if (!selectedCompanyName) return { reportData: [], trendStats: { performanceTrend: 0, distribution: { exceeds: 0, achieves: 0, needs: 0 } } };
         if (mode === 'single') {
             let data = singlePeriod ? kpiData.filter(d => d.period === singlePeriod && d.company === selectedCompanyName) : [];
             if (selectedDepartment !== "all") data = data.filter(d => d.department === selectedDepartment);
@@ -155,7 +160,7 @@ function TeamReportView() {
                 const teamIds = new Set(getSubordinateIds(currentUser.id));
                 data = data.filter(d => teamIds.has(d.employeeId));
             }
-            return { reportData: data.map(d => ({...d, employee: employees.find(e => e.id === d.employeeId)})), trendStats: {} };
+            return { reportData: data.map(d => ({...d, employee: employees.find(e => e.id === d.employeeId)})), trendStats: { performanceTrend: 0, distribution: { exceeds: 0, achieves: 0, needs: 0 } } };
         }
 
         const { currentPeriods, previousPeriods } = getDateRanges();
@@ -200,7 +205,7 @@ function TeamReportView() {
         const previousAvg = trendComparisonData.length ? trendComparisonData.reduce((s, d) => s + d.score, 0) / trendComparisonData.length : 0;
         const performanceTrend = previousAvg ? ((currentAvg - previousAvg) / previousAvg) * 100 : (currentAvg > 0 ? 100 : 0);
         
-        const distribution = [...new Map(periodData.map(d => [d.employeeId, d])).values()].reduce((a, d) => ({...a, [d.status === 'Melampaui Target' ? 'exceeds' : d.status === 'Mencapai Target' ? 'achieves' : 'needs']: a[d.status === 'Melampaui Target' ? 'exceeds' : d.status === 'Mencapai Target' ? 'achieves' : 'needs'] + 1}), { exceeds: 0, achieves: 0, needs: 0 });
+        const distribution = [...new Map(periodData.map(d => [d.employeeId, d])).values()].reduce((a, d) => ({...a, [d.status === 'Melampaui Target' ? 'exceeds' : d.status === 'Mencapai Target' ? 'achieves' : 'needs']: a[d.status === 'Melampaui Target' ? 'exceeds' : d.status === 'Mencapai Target' ? 'achieves' : 'needs' as keyof typeof a] + 1}), { exceeds: 0, achieves: 0, needs: 0 });
 
         return { reportData: finalReportData, trendStats: { performanceTrend, distribution } };
     }, [kpiData, selectedCompanyName, mode, singlePeriod, trendStartPeriod, trendEndPeriod, selectedDepartment, selectedPosition, employees, currentUser, getDateRanges, isHoldingAdmin, isManager]);
@@ -216,9 +221,9 @@ function TeamReportView() {
         if (selectedPosition !== 'all') baseData = baseData.filter(d => d.position === selectedPosition);
         const periods = [...new Set(baseData.map(d => d.period))].sort().slice(-12);
         if (periods.length === 0) return [];
-        const avgByPeriod = periods.reduce((acc, p) => {
+        const avgByPeriod: Record<string, number> = periods.reduce((acc, p) => {
             const data = baseData.filter(d => d.period === p); acc[p] = data.length ? data.reduce((s, d) => s + d.score, 0) / data.length : 0; return acc;
-        }, {});
+        }, {} as Record<string, number>);
         return Object.entries(avgByPeriod).map(([p, avg]) => ({ periodLabel: format(parse(p, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId }), date: parse(p, 'yyyy-MM', new Date()), "Rata-rata Skor": avg })).sort((a,b) => a.date.getTime() - b.date.getTime());
     }, [kpiData, selectedCompanyName, selectedDepartment, selectedPosition, isManager, isHoldingAdmin, currentUser, employees]);
         
@@ -243,7 +248,7 @@ function TeamReportView() {
 
     const sortedReportData = useMemo(() => [...(reportData || [])].sort((a,b) => (b.score ?? b.averageScore) - (a.score ?? a.averageScore)), [reportData]);
     const teamStats = useMemo(() => {
-        if(sortedReportData.length === 0) return { averageScore: 0, topPerformer: { name: 'N/A', score: 0 }, lowestPerformer: { name: 'N/A', score: 0 } };
+        if(sortedReportData.length === 0) return { averageScore: 0, topPerformer: { name: 'N/A', score: "0" }, lowestPerformer: { name: 'N/A', score: "0" } };
         return { averageScore: parseFloat((sortedReportData.reduce((s, d) => s + (d.averageScore ?? d.score), 0) / sortedReportData.length).toFixed(1)) || 0,
             topPerformer: { name: sortedReportData[0]?.employeeName, score: (sortedReportData[0]?.averageScore ?? sortedReportData[0]?.score ?? 0).toFixed(1) },
             lowestPerformer: { name: sortedReportData[sortedReportData.length - 1]?.employeeName, score: (sortedReportData[sortedReportData.length-1]?.averageScore ?? sortedReportData[sortedReportData.length-1]?.score ?? 0).toFixed(1) } }
@@ -273,12 +278,12 @@ function TeamReportView() {
                     <Switch id="mode-switch" checked={mode === 'trend'} onCheckedChange={(c) => setMode(c ? 'trend' : 'single')} />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-center gap-2">
-                    {(userRole === 'superadmin' || isHoldingAdmin) && <Select onValueChange={(v) => { setSelectedCompanyId(v); setSelectedDepartment('all'); setSelectedPosition('all'); }} value={selectedCompanyId ?? ""}><SelectTrigger><SelectValue placeholder="Pilih Perusahaan" /></SelectTrigger><SelectContent>{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select>}
-                    <Select value={selectedDepartment} onValueChange={(v) => { setSelectedDepartment(v); setSelectedPosition('all'); }} disabled={!selectedCompanyId}><SelectTrigger><SelectValue placeholder="Semua Departemen" /></SelectTrigger><SelectContent><SelectItem value="all">Semua Departemen</SelectItem>{uniqueCompanyDepartments.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}</SelectContent></Select>
-                    <Select value={selectedPosition} onValueChange={setSelectedPosition} disabled={!selectedDepartment}><SelectTrigger><SelectValue placeholder="Semua Jabatan" /></SelectTrigger><SelectContent><SelectItem value="all">Semua Jabatan</SelectItem>{uniqueCompanyPositions.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}</SelectContent></Select>
+                    {(userRole === 'superadmin' || isHoldingAdmin) && <Select onValueChange={(v) => { setSelectedCompanyId(v); setSelectedDepartment('all'); setSelectedPosition('all'); }} value={selectedCompanyId ?? ""}><SelectTrigger className="h-10 min-w-[180px]"><SelectValue placeholder="Pilih Perusahaan" /></SelectTrigger><SelectContent>{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select>}
+                    <Select value={selectedDepartment} onValueChange={(v) => { setSelectedDepartment(v); setSelectedPosition('all'); }} disabled={!selectedCompanyId}><SelectTrigger className="h-10 min-w-[180px]"><SelectValue placeholder="Semua Departemen" /></SelectTrigger><SelectContent><SelectItem value="all">Semua Departemen</SelectItem>{uniqueCompanyDepartments.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}</SelectContent></Select>
+                    <Select value={selectedPosition} onValueChange={setSelectedPosition} disabled={!selectedDepartment}><SelectTrigger className="h-10 min-w-[180px]"><SelectValue placeholder="Semua Jabatan" /></SelectTrigger><SelectContent><SelectItem value="all">Semua Jabatan</SelectItem>{uniqueCompanyPositions.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}</SelectContent></Select>
                     {mode === 'single' ? 
-                        <Select value={singlePeriod ?? ""} onValueChange={setSinglePeriod} disabled={!availablePeriods.length}><SelectTrigger><SelectValue placeholder="Periode" /></SelectTrigger><SelectContent>{availablePeriods.map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'LLLL yyyy', { locale: localeId })}</SelectItem>)}</SelectContent></Select> : 
-                        <><Select value={trendStartPeriod ?? ""} onValueChange={setTrendStartPeriod}><SelectTrigger><SelectValue placeholder="Periode Mulai" /></SelectTrigger><SelectContent>{[...availablePeriods].sort().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'LLLL yyyy', { locale: localeId })}</SelectItem>)}</SelectContent></Select><Select value={trendEndPeriod ?? ""} onValueChange={setTrendEndPeriod}><SelectTrigger><SelectValue placeholder="Periode Selesai" /></SelectTrigger><SelectContent>{[...availablePeriods].sort().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'LLLL yyyy', { locale: localeId })}</SelectItem>)}</SelectContent></Select></>}
+                        <Select value={singlePeriod ?? ""} onValueChange={setSinglePeriod} disabled={!availablePeriods.length}><SelectTrigger className="h-10 min-w-[180px]"><SelectValue placeholder="Periode" /></SelectTrigger><SelectContent>{availablePeriods.map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'LLLL yyyy', { locale: localeId })}</SelectItem>)}</SelectContent></Select> : 
+                        <><Select value={trendStartPeriod ?? ""} onValueChange={setTrendStartPeriod}><SelectTrigger className="h-10 min-w-[180px]"><SelectValue placeholder="Periode Mulai" /></SelectTrigger><SelectContent>{[...availablePeriods].sort().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'LLLL yyyy', { locale: localeId })}</SelectItem>)}</SelectContent></Select><Select value={trendEndPeriod ?? ""} onValueChange={setTrendEndPeriod}><SelectTrigger className="h-10 min-w-[180px]"><SelectValue placeholder="Periode Selesai" /></SelectTrigger><SelectContent>{[...availablePeriods].sort().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'LLLL yyyy', { locale: localeId })}</SelectItem>)}</SelectContent></Select></>}
                 </div>
             </div>
 
@@ -359,7 +364,159 @@ function TeamReportView() {
 }
 
 function IndividualAnalysisView() {
-    return <div className="text-center text-slate-500 py-20 border border-dashed rounded-lg">Fungsi Analisis Individu sedang dalam tahap refactoring UI.</div>
+    const { currentUser, userRole } = useAuth();
+    const { employees, companies, kpiData, departments, positions } = useMasterData();
+    const router = useRouter();
+    const isMobile = useIsMobile();
+    
+    const [searchTerm, setSearchTerm] = useState("");
+    const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+    const [selectedDepartment, setSelectedDepartment] = useState("all");
+    const [selectedPosition, setSelectedPosition] = useState("all");
+
+    useEffect(() => {
+        if (userRole === 'superadmin' && companies.length > 0) {
+            const activeCompanies = companies.filter(c => c.status === 'Aktif');
+            if (activeCompanies.length > 0) setSelectedCompanyId(activeCompanies[0].id);
+        } else if (currentUser) {
+            const userCompanyData = companies.find(c => c.name === currentUser.company);
+            setSelectedCompanyId(userCompanyData?.id || null);
+        }
+    }, [userRole, currentUser, companies]);
+
+    const userCompany = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
+    const isHoldingAdmin = useMemo(() => userRole === 'manajemen' && !!userCompany?.isHolding, [userRole, userCompany]);
+    const isManager = useMemo(() => (userRole === 'manajemen' || userRole === 'user') && employees.some(e => e.reportsTo === currentUser?.id), [userRole, currentUser, employees]);
+
+    const manageableCompanies = useMemo(() => {
+        if (userRole === 'superadmin') return companies.filter(c => c.status === 'Aktif');
+        if (isHoldingAdmin && userCompany) {
+            const getChildCompanies = (parentId: string): Company[] => companies.filter(c => c.parentId === parentId).flatMap(c => [c, ...getChildCompanies(c.id)]);
+            return [userCompany, ...getChildCompanies(userCompany.id)];
+        }
+        if (userCompany) return [userCompany]; return [];
+    }, [userRole, isHoldingAdmin, userCompany, companies]);
+
+    const selectedCompanyName = useMemo(() => companies.find(c => c.id === selectedCompanyId)?.name, [selectedCompanyId, companies]);
+
+    const uniqueCompanyDepartments = useMemo(() => !selectedCompanyName ? [] : [...new Map(departments.filter(d => d.company === selectedCompanyName).map(d => [d.name, d])).values()], [selectedCompanyName, departments]);
+    const uniqueCompanyPositions = useMemo(() => !selectedCompanyName ? [] : [...new Map(positions.filter(p => p.company === selectedCompanyName && (selectedDepartment === 'all' || p.department === selectedDepartment)).map(p => [p.name, p])).values()], [selectedCompanyName, selectedDepartment, positions]);
+
+    const filteredEmployees = useMemo(() => {
+        if (!selectedCompanyName) return [];
+        let base = employees.filter(e => e.company === selectedCompanyName && e.status === 'Aktif' && e.role !== 'superadmin');
+
+        if (isManager && !isHoldingAdmin && currentUser) {
+            const getSubordinateIds = (managerId: string): string[] => [managerId, ...employees.filter(e => e.reportsTo === managerId).flatMap(e => getSubordinateIds(e.id))];
+            const teamIds = new Set(getSubordinateIds(currentUser.id));
+            base = base.filter(e => teamIds.has(e.id));
+        }
+
+        if (selectedDepartment !== "all") base = base.filter(e => e.department === selectedDepartment);
+        if (selectedPosition !== "all") base = base.filter(e => e.position === selectedPosition);
+        if (searchTerm) base = base.filter(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+        return base.sort((a, b) => a.name.localeCompare(b.name));
+    }, [employees, selectedCompanyName, selectedDepartment, selectedPosition, searchTerm, isManager, isHoldingAdmin, currentUser]);
+
+    const handleViewAnalysis = (employee: Employee) => {
+        const end = new Date();
+        const start = subMonths(end, 5);
+        sessionStorage.setItem('selectedEmployeeAnalysis', JSON.stringify({
+            employee,
+            startPeriod: format(start, 'yyyy-MM'),
+            endPeriod: format(end, 'yyyy-MM')
+        }));
+        router.push(`/reports/${employee.id}`);
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="p-4 border border-slate-200 rounded-2xl bg-white shadow-sm space-y-4">
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                        <Input 
+                            placeholder="Cari nama karyawan..." 
+                            className="pl-9 h-11 bg-slate-50 border-none"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {(userRole === 'superadmin' || isHoldingAdmin) && (
+                            <Select onValueChange={(v) => { setSelectedCompanyId(v); setSelectedDepartment('all'); setSelectedPosition('all'); }} value={selectedCompanyId ?? ""}>
+                                <SelectTrigger className="w-[180px] h-11"><SelectValue placeholder="Perusahaan" /></SelectTrigger>
+                                <SelectContent>{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                            </Select>
+                        )}
+                        <Select value={selectedDepartment} onValueChange={(v) => { setSelectedDepartment(v); setSelectedPosition('all'); }} disabled={!selectedCompanyId}>
+                            <SelectTrigger className="w-[160px] h-11"><SelectValue placeholder="Departemen" /></SelectTrigger>
+                            <SelectContent><SelectItem value="all">Semua Departemen</SelectItem>{uniqueCompanyDepartments.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select value={selectedPosition} onValueChange={setSelectedPosition} disabled={!selectedDepartment}>
+                            <SelectTrigger className="w-[160px] h-11"><SelectValue placeholder="Jabatan" /></SelectTrigger>
+                            <SelectContent><SelectItem value="all">Semua Jabatan</SelectItem>{uniqueCompanyPositions.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredEmployees.map(emp => {
+                    const latestKpi = kpiData
+                        .filter(d => d.employeeId === emp.id)
+                        .sort((a,b) => b.period.localeCompare(a.period))[0];
+
+                    return (
+                        <Card key={emp.id} className="hover:shadow-md transition-all border-slate-100 group overflow-hidden">
+                            <CardContent className="p-5 flex flex-col gap-4">
+                                <div className="flex items-center gap-4">
+                                    <Avatar className="size-12 border-2 border-white shadow-sm">
+                                        <AvatarFallback className="bg-primary/10 text-primary font-black text-xs">
+                                            {emp.name.substring(0, 2).toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="min-w-0">
+                                        <h4 className="font-bold text-slate-900 truncate text-sm">{emp.name}</h4>
+                                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-tight truncate">{emp.position}</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                                    <div className="space-y-0.5">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Skor Terakhir</p>
+                                        <p className="text-xl font-black text-primary">{latestKpi?.score.toFixed(1) || '-'}</p>
+                                    </div>
+                                    {latestKpi && (
+                                        <Badge variant="outline" className="text-[9px] font-black h-5 border-slate-200 bg-white">
+                                            {format(parse(latestKpi.period, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId })}
+                                        </Badge>
+                                    )}
+                                </div>
+
+                                <Button 
+                                    onClick={() => handleViewAnalysis(emp)}
+                                    className="w-full font-bold h-10 rounded-xl group-hover:bg-primary group-hover:text-white transition-all active:scale-95"
+                                    variant="outline"
+                                >
+                                    Analisis Detail <ArrowRight className="ml-2 size-3.5" />
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
+            </div>
+            
+            {filteredEmployees.length === 0 && (
+                <div className="text-center py-20 bg-slate-50 border-2 border-dashed rounded-3xl opacity-40">
+                    <Users size={48} className="mx-auto mb-4 text-slate-400" />
+                    <p className="font-bold text-slate-600">Tidak ada karyawan ditemukan</p>
+                    <p className="text-xs text-slate-400 mt-1">Coba sesuaikan filter atau pencarian Anda.</p>
+                </div>
+            )}
+        </div>
+    );
 }
 
 export function ReportDetailView({ kpiData, onClose }: { kpiData: KpiData, onClose: () => void }) {
