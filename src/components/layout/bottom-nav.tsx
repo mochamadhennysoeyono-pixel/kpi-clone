@@ -14,7 +14,12 @@ import {
   Settings,
   LayoutGrid,
   ChevronLeft,
-  MoreHorizontal
+  MoreHorizontal,
+  Home,
+  BarChart3,
+  ClipboardCheck,
+  ShieldCheck,
+  Activity
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSubMenu } from './submenu-context';
@@ -67,10 +72,8 @@ export function BottomNav() {
   const dynamicItems = React.useMemo(() => {
     if (userRole === 'superadmin' || isPortal) return [];
     
-    // Get items relevant to the current module
     const allItems = getNavItems(userRole, hasSubordinates, userCompany, userSubscriptionPlan, false, currentUser, okrs, activeModule);
     
-    // Flatten links from subItems if a group is active
     let links: any[] = [];
     allItems.forEach((item: any) => {
         if (item.href) {
@@ -80,16 +83,14 @@ export function BottomNav() {
         }
     });
 
-    // Strategy: Show up to 4 items + Portal, or 3 items + More + Portal
     const finalItems = [];
     if (links.length > 4) {
         finalItems.push(...links.slice(0, 3));
-        finalItems.push({ label: 'Menu', iconName: 'more', type: 'more' });
+        finalItems.push({ label: 'Lainnya', iconName: 'more', type: 'more' });
     } else {
         finalItems.push(...links);
     }
     
-    // Always add Portal at the end
     finalItems.push({ label: 'Portal', href: '/portal', iconName: 'portal' });
     
     return finalItems;
@@ -97,10 +98,10 @@ export function BottomNav() {
 
   const classicBottomItems = React.useMemo(() => {
     return [
-        { href: '/dashboard', label: 'Admin', iconName: '/dashboard' },
-        { href: '/appraisal-dashboard', label: 'Appraisal', iconName: '/appraisal-dashboard' },
-        { href: '/reports', label: 'Laporan', iconName: '/reports' },
-        { href: '/kbo-appraisal', label: 'KBO', iconName: '/kbo-appraisal' },
+        { href: '/dashboard', label: 'Dashboard', icon: Home },
+        { href: '/appraisal-dashboard', label: 'Appraisal', icon: Activity },
+        { href: '/reports', label: 'Laporan', icon: BarChart3 },
+        { href: '/kbo-appraisal', label: 'KBO', icon: ClipboardCheck },
     ];
   }, []);
 
@@ -111,32 +112,49 @@ export function BottomNav() {
   // --- RENDER CLASSIC (SUPERADMIN) ---
   if (userRole === 'superadmin') {
     return (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] h-16 bg-background/80 backdrop-blur-sm border-t rounded-t-2xl shadow-2xl">
-            <div className="relative grid grid-cols-5 items-center h-full w-full p-1">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] h-[72px] bg-background/95 backdrop-blur-xl border-t border-border/40 pb-safe shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
+            <div className="relative grid grid-cols-5 items-center h-full w-full px-2">
                 {classicBottomItems.slice(0, 2).map((item) => {
-                    const Icon = iconMap[item.iconName || 'default'] || ListTodo;
+                    const Icon = item.icon;
                     const isActive = pathname === item.href;
                     return (
-                        <Link key={item.href} href={item.href} className="flex flex-1 items-center justify-center w-full h-full">
-                            <div className={cn("relative flex flex-col items-center justify-center w-full h-full text-xs transition-all", isActive ? "text-primary scale-110" : "text-muted-foreground opacity-60")}>
-                                <Icon className="h-6 w-6" />
+                        <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95">
+                            <div className={cn(
+                                "p-1.5 rounded-lg transition-colors",
+                                isActive ? "text-primary bg-primary/10" : "text-muted-foreground opacity-60"
+                            )}>
+                                <Icon size={20} />
                             </div>
+                            <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-primary" : "text-muted-foreground")}>
+                                {item.label}
+                            </span>
                         </Link>
                     )
                 })}
-                <div className="col-start-3 flex justify-center">
-                    <button onClick={handleMenuClick} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[calc(50%+8px)] w-16 h-16 bg-primary rounded-full flex items-center justify-center shadow-xl transform transition-transform duration-200 hover:scale-110">
-                        <LayoutGrid className="h-7 w-7 text-primary-foreground" />
+                
+                <div className="flex justify-center -translate-y-4">
+                    <button 
+                        onClick={handleMenuClick} 
+                        className="size-14 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20 ring-4 ring-background transition-transform active:scale-90"
+                    >
+                        <LayoutGrid size={24} />
                     </button>
                 </div>
+
                 {classicBottomItems.slice(2, 4).map((item) => {
-                    const Icon = iconMap[item.iconName || 'default'] || Settings;
+                    const Icon = item.icon;
                     const isActive = pathname === item.href;
                     return (
-                        <Link key={item.href} href={item.href} className="flex flex-1 items-center justify-center w-full h-full">
-                            <div className={cn("relative flex flex-col items-center justify-center w-full h-full text-xs transition-all", isActive ? "text-primary scale-110" : "text-muted-foreground opacity-60")}>
-                                <Icon className="h-6 w-6" />
+                        <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95">
+                            <div className={cn(
+                                "p-1.5 rounded-lg transition-colors",
+                                isActive ? "text-primary bg-primary/10" : "text-muted-foreground opacity-60"
+                            )}>
+                                <Icon size={20} />
                             </div>
+                            <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-primary" : "text-muted-foreground")}>
+                                {item.label}
+                            </span>
                         </Link>
                     )
                 })}
@@ -147,7 +165,7 @@ export function BottomNav() {
 
   // --- RENDER FLAT (MANAJEMEN / USER) ---
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] h-16 bg-background/95 backdrop-blur-md border-t shadow-[0_-8px_30px_rgb(0,0,0,0.08)]">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] h-[72px] bg-background/95 backdrop-blur-xl border-t border-border/40 pb-safe shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
         <div className="flex items-center justify-around h-full w-full px-2">
             {dynamicItems.map((item, idx) => {
                 if (item.type === 'more') {
@@ -157,8 +175,8 @@ export function BottomNav() {
                             onClick={handleMenuClick}
                             className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-90"
                         >
-                            <div className="p-2 rounded-xl bg-muted/50">
-                                <LayoutGrid size={22} className="text-muted-foreground" />
+                            <div className="p-1.5 rounded-lg text-muted-foreground opacity-60">
+                                <LayoutGrid size={20} />
                             </div>
                             <span className="text-[9px] font-bold text-muted-foreground">Menu</span>
                         </button>
@@ -179,14 +197,14 @@ export function BottomNav() {
                         )}
                     >
                         <div className={cn(
-                            "p-2 rounded-xl transition-colors",
+                            "p-1.5 rounded-lg transition-colors",
                             isActive ? "bg-primary/10" : "bg-transparent",
-                            isPortalLink && "bg-slate-100"
+                            isPortalLink && "bg-muted/50 border"
                         )}>
-                            <Icon size={isPortalLink ? 20 : 22} className={cn(isActive ? "text-primary" : "opacity-70", isPortalLink && "text-slate-600 stroke-[3px]")} />
+                            <Icon size={isPortalLink ? 18 : 20} className={cn(isActive ? "text-primary" : "opacity-70", isPortalLink && "text-foreground stroke-[2.5px]")} />
                         </div>
                         <span className={cn(
-                            "text-[9px] font-bold",
+                            "text-[9px] font-bold tracking-tight",
                             isActive ? "text-primary" : "opacity-60"
                         )}>
                             {item.label}
