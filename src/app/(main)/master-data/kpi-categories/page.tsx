@@ -1,34 +1,19 @@
 // src/app/(main)/master-data/kpi-categories/page.tsx
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { PlusCircle, MoreHorizontal, ChevronDown, Trash2, Upload, Download, FileSpreadsheet, Lock, Building, Filter, FolderKanban } from "lucide-react";
+  PlusCircle,
+  MoreHorizontal,
+  ChevronDown,
+  Trash2,
+  Lock,
+  Building,
+  Filter,
+  FolderKanban,
+  Search,
+  Pencil,
+} from "lucide-react";
 import type { KpiCategory } from "@/types";
 import { KpiCategoryFormDialog } from "@/components/master-data/kpi-categories/kpi-category-form-dialog";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
@@ -37,18 +22,35 @@ import { useMasterData } from "@/contexts/master-data-context";
 import { useAuth } from "@/contexts/auth-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DEFAULT_KPI_CATEGORIES } from "@/lib/default-data";
+import { ResponsivePage, ResponsiveToolbar } from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { AdaptiveTable } from "@/components/ui/adaptive-table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function KpiCategoriesPage() {
   const { companies, kpiCategories, addKpiCategory, updateKpiCategory, deleteKpiCategories } = useMasterData();
   const { currentUser, userRole } = useAuth();
+  const { toast } = useToast();
 
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<KpiCategory | undefined>(undefined);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [categoriesToDelete, setCategoriesToDelete] = useState<KpiCategory[] | null>(null);
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
-  const { toast } = useToast();
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState("");
   
   const defaultCategoryIds = useMemo(() => new Set(DEFAULT_KPI_CATEGORIES.map(c => c.id)), []);
 
@@ -61,8 +63,18 @@ export default function KpiCategoriesPage() {
     } else if (currentUser) {
       cats = cats.filter(c => c.company === currentUser.company);
     }
-    return [...DEFAULT_KPI_CATEGORIES, ...cats];
-  }, [kpiCategories, currentUser, userRole, selectedCompanyFilter, defaultCategoryIds]);
+
+    let result = [...DEFAULT_KPI_CATEGORIES, ...cats];
+
+    if (searchTerm) {
+        result = result.filter(c => 
+            c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            c.code.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }
+
+    return result;
+  }, [kpiCategories, currentUser, userRole, selectedCompanyFilter, defaultCategoryIds, searchTerm]);
 
   const handleSelectAll = (checked: boolean | "indeterminate") => {
     const selectableIds = filteredCategories.filter(c => !defaultCategoryIds.has(c.id)).map(c => c.id);
@@ -107,10 +119,15 @@ export default function KpiCategoriesPage() {
 
     const dataToSave = { ...categoryData, company: companyToSave };
 
-    if (categoryData.id) {
-        await updateKpiCategory(categoryData.id, dataToSave);
-    } else {
-        await addKpiCategory(dataToSave);
+    try {
+        if (categoryData.id) {
+            await updateKpiCategory(categoryData.id, dataToSave);
+        } else {
+            await addKpiCategory(dataToSave);
+        }
+        setDialogOpen(false);
+    } catch (e: any) {
+        toast({ variant: "destructive", title: "Gagal", description: e.message });
     }
   };
 
@@ -130,142 +147,148 @@ export default function KpiCategoriesPage() {
   };
   
   return (
-    <div className="w-full min-w-0 space-y-6">
-      <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
-        <CardHeader className="px-4 sm:px-6">
-          <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6">
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-              <div className="p-2 bg-primary/10 rounded-lg shrink-0">
-                <FolderKanban className="size-6 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <CardTitle className="font-headline text-xl sm:text-2xl text-foreground">
-                    Kategori KPI
-                </CardTitle>
-                <CardDescription className="text-sm leading-relaxed max-w-full break-words">
-                   Definisikan dan kelola kategori untuk Indikator Kinerja Utama. Menampilkan {filteredCategories.length} data.
-                </CardDescription>
-              </div>
-            </div>
-             <div className="flex flex-wrap items-center gap-2 shrink-0 self-end xl:self-center">
-                {selectedRowIds.length > 0 && (
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-10 gap-1 shadow-sm">
-                            <ChevronDown className="ml-1 h-3.5 w-3.5" />
-                            Aksi Massal ({selectedRowIds.length})
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="z-[350]">
-                        <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Pilih Aksi</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive font-bold" onClick={openBulkDeleteDialog}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Hapus Pilihan
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-                )}
-                <Button size="sm" className="h-10 gap-1 font-bold shadow-md" onClick={handleAddCategory}>
-                  <PlusCircle className="h-3.5 w-3.5" />
-                  <span className="whitespace-nowrap">Tambah Kategori</span>
+    <ResponsivePage>
+      <PageHeader 
+        title="Kategori KPI"
+        description="Kelola kategori standar dan kustom sebagai landasan pengelompokan indikator kinerja."
+        icon={FolderKanban}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedRowIds.length > 0 && (
+                <Button variant="outline" size="sm" className="h-9 sm:h-10 text-destructive font-bold" onClick={openBulkDeleteDialog}>
+                    <Trash2 className="size-4 mr-2" /> Hapus ({selectedRowIds.length})
                 </Button>
-             </div>
+            )}
+            <Button onClick={handleAddCategory} className="font-bold shadow-lg h-9 sm:h-10">
+                <PlusCircle className="size-4" />
+                Tambah Kategori
+            </Button>
           </div>
-        </CardHeader>
-        <CardContent className="px-4 sm:px-6 pt-2">
-          {userRole === 'superadmin' && (
-            <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 border rounded-xl bg-muted/30 max-w-full">
-              <div className="flex flex-1 items-center gap-2 min-w-0">
-                <Building className="size-4 text-primary shrink-0" />
-                <Select value={selectedCompanyFilter} onValueChange={setSelectedCompanyFilter}>
-                    <SelectTrigger className="w-full md:w-[280px] bg-background">
-                    <SelectValue placeholder="Filter Perusahaan" />
-                    </SelectTrigger>
-                    <SelectContent className="z-[350]">
+        }
+      />
+
+      <ResponsiveToolbar>
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input 
+            placeholder="Cari kategori..." 
+            className="pl-9 h-10 border-none shadow-none bg-background/50 focus-visible:ring-primary/20"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        {userRole === 'superadmin' && (
+            <Select value={selectedCompanyFilter} onValueChange={setSelectedCompanyFilter}>
+                <SelectTrigger className="w-full sm:w-[240px] h-10 bg-background border-none shadow-sm">
+                    <Building className="size-4 mr-2 text-primary" />
+                    <SelectValue placeholder="Semua Klien" />
+                </SelectTrigger>
+                <SelectContent className="z-[350]">
                     <SelectItem value="all">Semua Perusahaan & Global</SelectItem>
-                    {companies.map(c => (
-                        <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                    ))}
-                    </SelectContent>
-                </Select>
+                    {companies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                </SelectContent>
+            </Select>
+        )}
+      </ResponsiveToolbar>
+
+      <AdaptiveTable 
+        data={filteredCategories}
+        keyExtractor={(c) => c.id}
+        columns={[
+          {
+            header: "Kategori",
+            cell: (c) => (
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center border shrink-0">
+                  <FolderKanban className="size-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-900 truncate">{c.name}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-tight">{c.code}</p>
+                </div>
               </div>
-            </div>
-          )}
-          <div className="w-full overflow-hidden min-w-0 rounded-xl border shadow-sm">
-            <div className="overflow-x-auto w-full">
-                <Table className="min-w-[800px]">
-                    <TableHeader className="bg-muted/50">
-                    <TableRow>
-                        <TableHead className="w-[40px]">
-                            <Checkbox
-                                checked={selectedRowIds.length > 0 && selectedRowIds.length === filteredCategories.filter(c => !defaultCategoryIds.has(c.id)).length && filteredCategories.filter(c => !defaultCategoryIds.has(c.id)).length > 0}
-                                onCheckedChange={(checked) => handleSelectAll(checked)}
-                                aria-label="Pilih semua"
-                            />
-                        </TableHead>
-                        <TableHead className="w-[120px]">Kode</TableHead>
-                        <TableHead>Nama Kategori</TableHead>
-                        {userRole === 'superadmin' && <TableHead>Konteks</TableHead>}
-                        <TableHead>Status</TableHead>
-                        <TableHead>Deskripsi</TableHead>
-                        <TableHead className="text-right">Aksi</TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {filteredCategories.map((category) => {
-                        const isDefault = defaultCategoryIds.has(category.id);
-                        return (
-                        <TableRow key={category.id} data-state={selectedRowIds.includes(category.id) && "selected"} className="hover:bg-muted/5 group">
-                            <TableCell>
-                                <Checkbox
-                                    checked={selectedRowIds.includes(category.id)}
-                                    onCheckedChange={() => handleRowSelect(category.id)}
-                                    aria-label={`Pilih ${category.name}`}
-                                    disabled={isDefault}
-                                />
-                            </TableCell>
-                            <TableCell className="font-mono text-sm font-bold text-primary">{category.code}</TableCell>
-                            <TableCell className="font-bold text-slate-900">{category.name}</TableCell>
-                            {userRole === 'superadmin' && (
-                                <TableCell>
-                                    {isDefault ? <Badge variant="secondary" className="text-[8px] font-black uppercase">GLOBAL</Badge> : <span className="text-xs font-semibold">{category.company}</span>}
-                                </TableCell>
-                            )}
-                            <TableCell>
-                            <Badge variant={category.status === "Aktif" ? "default" : "outline"} className="text-[10px] uppercase font-black px-1.5 h-5">
-                                {category.status}
-                            </Badge>
-                            </TableCell>
-                            <TableCell className="text-xs text-muted-foreground leading-relaxed max-w-xs truncate">{category.description}</TableCell>
-                            <TableCell className="text-right">
-                            {isDefault ? (
-                                <div className="flex justify-end pr-4"><Lock className="size-4 text-muted-foreground/30" /></div>
-                            ) : (
-                                <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
-                                    <MoreHorizontal className="size-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="z-[350]">
-                                    <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Opsi Kategori</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => handleEditCategory(category)}>Ubah Detail</DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(category)}>Hapus</DropdownMenuItem>
-                                </DropdownMenuContent>
-                                </DropdownMenu>
-                            )}
-                            </TableCell>
-                        </TableRow>
-                        )
-                    })}
-                    </TableBody>
-                </Table>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            )
+          },
+          {
+             header: "Konteks",
+             cell: (c) => (
+                defaultCategoryIds.has(c.id) 
+                    ? <Badge variant="secondary" className="text-[8px] font-black uppercase border-none h-4">GLOBAL</Badge> 
+                    : <span className="text-xs font-semibold text-slate-600">{c.company}</span>
+             )
+          },
+          {
+            header: "Status",
+            cell: (c) => (
+              <Badge variant={c.status === 'Aktif' ? 'default' : 'outline'} className="text-[9px] uppercase font-black h-5 border-none">
+                {c.status}
+              </Badge>
+            )
+          },
+          {
+            header: "Deskripsi",
+            accessorKey: "description",
+            className: "text-muted-foreground text-xs leading-relaxed max-w-xs truncate",
+            hideOnTablet: true,
+          },
+          {
+            header: "",
+            className: "text-right",
+            cell: (c) => (
+                defaultCategoryIds.has(c.id) ? (
+                    <div className="flex justify-end pr-4 opacity-20"><Lock className="size-4" /></div>
+                ) : (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal className="size-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="z-[350]">
+                            <DropdownMenuItem onClick={() => handleEditCategory(c)}><Pencil className="size-3.5 mr-2" />Ubah</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(c)}><Trash2 className="size-3.5 mr-2" />Hapus</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )
+            )
+          }
+        ]}
+        renderMobileCard={(c) => {
+            const isDefault = defaultCategoryIds.has(c.id);
+            return (
+                <Card className="border-border/40 shadow-sm overflow-hidden bg-background">
+                    <CardContent className="p-4 space-y-4">
+                        <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="size-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center border shrink-0">
+                                    <FolderKanban size={20} />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="font-black text-sm uppercase truncate">{c.name}</h3>
+                                    <p className="text-[10px] text-muted-foreground font-bold">{c.code}</p>
+                                </div>
+                            </div>
+                            <Badge variant={c.status === 'Aktif' ? 'default' : 'outline'} className="text-[8px] font-black h-4 border-none">{c.status}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2 italic">{c.description}</p>
+                        <div className="flex items-center justify-between pt-3 border-t">
+                            <div className="text-[9px] font-black uppercase text-muted-foreground">Konteks: {isDefault ? "Global" : c.company}</div>
+                            <div className="flex gap-2">
+                                {isDefault ? (
+                                    <Badge variant="outline" className="text-[8px] font-black gap-1.5 border-none bg-muted/50"><Lock size={10}/> TERKUNCI</Badge>
+                                ) : (
+                                    <>
+                                        <Button variant="ghost" size="sm" className="h-8 font-bold text-[9px] uppercase" onClick={() => handleEditCategory(c)}>EDIT</Button>
+                                        <Button variant="ghost" size="sm" className="h-8 font-bold text-[9px] uppercase text-destructive" onClick={() => openDeleteDialog(c)}>HAPUS</Button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            );
+        }}
+      />
+      
       <KpiCategoryFormDialog 
         isOpen={isDialogOpen}
         onOpenChange={setDialogOpen}
@@ -274,13 +297,14 @@ export default function KpiCategoriesPage() {
         kpiCategories={kpiCategories}
         companies={companies}
       />
+
       <DeleteConfirmationDialog
         isOpen={isDeleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDelete}
-        itemName={categoriesToDelete?.length === 1 ? categoriesToDelete[0].name : `${categoriesToDelete?.length} item`}
+        itemName={categoriesToDelete?.length === 1 ? categoriesToDelete[0].name : `${categoriesToDelete?.length || 0} kategori`}
         itemType="kategori KPI"
       />
-    </div>
+    </ResponsivePage>
   );
 }

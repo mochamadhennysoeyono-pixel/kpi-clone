@@ -20,18 +20,17 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { PlusCircle, MoreHorizontal, BrainCircuit, Maximize2, Minimize2, Eye, ClipboardPen, X, Copy, ChevronDown, Trash2, Download, Building, Filter, Search, Pencil } from "lucide-react";
+import { PlusCircle, MoreHorizontal, BrainCircuit, Maximize2, Minimize2, Eye, ClipboardPen, X, Copy, ChevronDown, Trash2, Download, Building, Filter, Search, Pencil, LayoutGrid, CheckSquare } from "lucide-react";
 import type { KboSetup, Company } from "@/types";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import { useMasterData } from "@/contexts/master-data-context";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { KboSetupFormSheet } from "@/components/master-data/kbo/kbo-setup-form-sheet";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetClose } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -39,6 +38,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ResponsivePage, ResponsiveToolbar } from "@/components/ui/adaptive-layout";
 import { PageHeader } from "@/components/ui/page-header";
+import { AdaptiveCardGrid } from "@/components/ui/adaptive-card";
 import { Input } from "@/components/ui/input";
 
 
@@ -175,7 +175,10 @@ const KboSimulationView = forwardRef<HTMLDivElement, { setup: KboSetup }>(({ set
                         {dim.keyBehaviors.map((kb, index) => {
                             const kbId = `${dim.id}-${index}`;
                             return (
-                                <Card key={kbId} className="border-border/40 shadow-sm group hover:border-primary/20 transition-all bg-background">
+                                <Card key={kbId} className={cn(
+                                    "border-border/40 shadow-sm group hover:border-primary/20 transition-all bg-background",
+                                    selections[kbId] && "bg-primary/[0.02] border-primary/10"
+                                )}>
                                     <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                         <p className="text-xs font-bold text-slate-700 flex-1 leading-relaxed">{kb.value}</p>
                                         <RadioGroup
@@ -377,11 +380,15 @@ export default function KboCompetenciesPage() {
         delete dataToSave.position;
     }
     
-    if (isNew) {
-      delete dataToSave.id;
-      await addKboSetup(dataToSave);
-    } else {
-      await updateKboSetup(data.id!, dataToSave);
+    try {
+        if (isNew) {
+            delete dataToSave.id;
+            await addKboSetup(dataToSave);
+        } else {
+            await updateKboSetup(data.id!, dataToSave);
+        }
+    } catch (e: any) {
+        toast({ variant: "destructive", title: "Gagal", description: e.message });
     }
   };
 
@@ -404,7 +411,7 @@ export default function KboCompetenciesPage() {
     <ResponsivePage>
       <PageHeader 
         title="Pustaka Kompetensi (KBO)"
-        description="Pusat pengelolaan dimensi dan perilaku kunci berdasarkan kategori Core, Generic, dan Specific."
+        description="Kelola seluruh dimensi perilaku dan indikator penilaian kompetensi di tingkat holding maupun cabang."
         icon={BrainCircuit}
         actions={
             <div className="flex flex-wrap items-center gap-2">
@@ -479,7 +486,7 @@ export default function KboCompetenciesPage() {
                        </div>
                        
                        {setups.length > 0 ? (
-                           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                           <AdaptiveCardGrid complexity="medium">
                                {setups.map(setup => {
                                    const totalKeyBehaviors = setup.dimensions.reduce((sum, dim) => sum + dim.keyBehaviors.length, 0);
                                    const isSelected = selectedRowIds.includes(setup.id);
@@ -509,7 +516,7 @@ export default function KboCompetenciesPage() {
                                                             </Button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end" className="z-[350]">
-                                                            <DropdownMenuLabel className="text-[10px] uppercase opacity-60 font-black">Manajemen Set</DropdownMenuLabel>
+                                                            <DropdownMenuLabel className="text-[10px] font-black uppercase opacity-60 font-black">Manajemen Set</DropdownMenuLabel>
                                                             <DropdownMenuItem onClick={() => handleViewDetails(setup)} className="text-xs"><Eye className="size-3.5 mr-2"/> Lihat Rincian</DropdownMenuItem>
                                                             <DropdownMenuItem onClick={() => handleViewSimulation(setup)} className="text-xs"><ClipboardPen className="size-3.5 mr-2"/> Simulasi Penilaian</DropdownMenuItem>
                                                             <DropdownMenuItem onClick={() => handleEditItem(setup)} className="text-xs"><Pencil className="size-3.5 mr-2"/> Ubah Deskripsi</DropdownMenuItem>
@@ -529,7 +536,7 @@ export default function KboCompetenciesPage() {
                                        </Card>
                                    )
                                })}
-                           </div>
+                           </AdaptiveCardGrid>
                        ) : (
                            <div className="py-20 text-center border-2 border-dashed rounded-3xl opacity-20">
                                <p className="font-bold uppercase text-[10px] tracking-widest italic">Belum ada data pengaturan</p>
