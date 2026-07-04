@@ -1,71 +1,39 @@
 
-/* src/app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-
-    --primary: 222 47% 11%; /* #0f172a */
-    --primary-foreground: 0 0% 98%;
-
-    --secondary: 160 84% 39%; 
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215 9% 47%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 210 40% 9.8%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    
-    --ring: 222 47% 11%;
-
-    --radius: 0.75rem;
-  }
-
-  .dark {
-    --background: 222 47% 11%;
+    --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
 
-    --card: 222 47% 14%;
+    --card: 240 10% 5.9%; /* Surface-1 */
     --card-foreground: 0 0% 98%;
 
-    --popover: 222 47% 11%;
+    --popover: 240 10% 5.9%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 222 83% 58%; /* #2563EB */
+    --primary: 248 98% 61%; /* Stripe Indigo #533afd */
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 160 84% 39%;
+    --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 9% 57%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 222 83% 58%;
+    --border: 240 3.7% 15.9%; /* Linear Hairline */
+    --input: 240 3.7% 15.9%;
+    --ring: 248 98% 61%;
+
+    --radius: 0.75rem;
   }
 }
 
@@ -74,31 +42,23 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#010102] text-[#f7f8f8] selection:bg-primary/30 selection:text-white;
+    font-feature-settings: "ss01", "ss02", "cv01", "tnum";
+  }
+  
+  /* Standardizing Tabular Numerics for all numeric data */
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 
 @layer utilities {
     .animate-fade-in {
-        animation: fadeIn 0.5s ease-in-out;
+        animation: fadeIn 0.5s ease-in-out forwards;
     }
 
     @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .no-scrollbar::-webkit-scrollbar {
-        display: none;
-    }
-    .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 }
