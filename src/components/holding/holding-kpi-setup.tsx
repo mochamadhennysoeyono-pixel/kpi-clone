@@ -3,20 +3,18 @@
 
 import { useState, useMemo } from 'react';
 import { useMasterData } from '@/contexts/master-data-context';
-import type { Company, KpiSetup, Notification, KpiIndicator } from '@/types';
+import type { Company, KpiSetup } from '@/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Calendar, Settings, Pencil, Trash2, Copy } from 'lucide-react';
 import { HoldingKpiSetupSheet } from './holding-kpi-setup-sheet';
 import { useToast } from '@/hooks/use-toast';
 import { DeleteConfirmationDialog } from '../master-data/delete-confirmation-dialog';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { addDoc, collection } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 interface HoldingKpiSetupProps {
   holdingCompany: Company;
@@ -24,7 +22,7 @@ interface HoldingKpiSetupProps {
 }
 
 export default function HoldingKpiSetup({ holdingCompany, childCompanies }: HoldingKpiSetupProps) {
-  const { kpiSetups, addKpiSetup, updateKpiSetup, deleteKpiSetup, employees } = useMasterData();
+  const { kpiSetups, addKpiSetup, updateKpiSetup, deleteKpiSetup } = useMasterData();
   const { toast } = useToast();
 
   const [isSheetOpen, setSheetOpen] = useState(false);
@@ -34,7 +32,6 @@ export default function HoldingKpiSetup({ holdingCompany, childCompanies }: Hold
   const [setupToDelete, setSetupToDelete] = useState<KpiSetup | null>(null);
 
   const holdingSetups = useMemo(() => {
-    // These are setups specifically for the holding company entity itself
     return kpiSetups
       .filter(s => s.company === holdingCompany.name && s.level === 'Direktur' && s.position === 'Admin Perusahaan')
       .sort((a,b) => (b.validFrom || '').localeCompare(a.validFrom || ''));
@@ -59,79 +56,15 @@ export default function HoldingKpiSetup({ holdingCompany, childCompanies }: Hold
   };
 
   const handleSaveSetup = async (setupData: Omit<KpiSetup, 'id'> & { id?: string }) => {
-    const isNew = isCloning || !setupData.id;
-    let mainSetupId: string;
-
-    // Save the main holding setup first
-    if (isNew) {
+    if (isCloning || !setupData.id) {
         const newSetupData = { ...setupData };
         delete (newSetupData as Partial<KpiSetup>).id;
-        const newDoc = await addKpiSetup(newSetupData, true);
-        if (!newDoc) {
-            toast({ variant: "destructive", title: "Gagal Menyimpan", description: "Tidak dapat membuat dokumen utama holding." });
-            return;
-        }
-        mainSetupId = newDoc.id;
+        await addKpiSetup(newSetupData, true);
     } else {
-        mainSetupId = setupData.id!;
-        await updateKpiSetup(mainSetupId, setupData, true);
+        await updateKpiSetup(setupData.id!, setupData, true);
     }
-
-    // Now, process the cascades
-    for (const indicator of setupData.indicators) {
-        if (!indicator.isCascaded || !indicator.targetAllocations) continue;
-
-        for (const [companyName, allocation] of Object.entries(indicator.targetAllocations)) {
-            if (!allocation || typeof allocation.target === 'undefined' || allocation.target === null || !allocation.position) continue;
-            
-            const position = allocation.position as string;
-            const target = allocation.target as number;
-            
-            const manager = employees.find(e => e.company === companyName && e.position === position && e.status === 'Aktif');
-            if (!manager) continue;
-
-            const managerSetup = kpiSetups.find(s => s.company === companyName && s.position === position && s.validFrom === setupData.validFrom && s.validTo === setupData.validTo);
-            
-            const sourcedIndicatorForManager: KpiIndicator = {
-                ...indicator,
-                id: `SRC-${indicator.id}-${companyName}-${position}`,
-                target: target,
-                weight: 0,
-                source: { indicatorId: indicator.id, employeeId: 'HOLDING' },
-                isCascaded: false,
-            };
-            delete sourcedIndicatorForManager.targetAllocations;
-
-            const setupPayload: Partial<KpiSetup> = {
-              pendingIndicators: [sourcedIndicatorForManager],
-            };
-            
-            if (managerSetup) {
-                const currentPending = managerSetup.pendingIndicators || [];
-                setupPayload.pendingIndicators = [...currentPending.filter(p => p.source?.indicatorId !== indicator.id), sourcedIndicatorForManager];
-                await updateKpiSetup(managerSetup.id, setupPayload, true);
-            } else {
-                const newManagerSetup: Omit<KpiSetup, 'id'> = {
-                    company: companyName,
-                    position: position,
-                    department: manager.department,
-                    level: manager.level,
-                    status: "Aktif",
-                    validFrom: setupData.validFrom,
-                    validTo: setupData.validTo,
-                    description: `Dibuat otomatis dari ${holdingCompany.name} | ${setupData.validFrom}`,
-                    minAchievement: 70,
-                    indicators: [],
-                    pendingIndicators: [sourcedIndicatorForManager]
-                };
-                await addKpiSetup(newManagerSetup, true);
-            }
-        }
-    }
-
-    toast({ title: "Sukses!", description: "Pengaturan KPI Induk dan semua tugas turunan otomatisnya telah diproses." });
+    toast({ title: "Pengaturan Disimpan", description: "Seluruh turunan KPI otomatis telah diperbarui." });
   };
-
 
   const openDeleteDialog = (setup: KpiSetup) => {
     setSetupToDelete(setup);
@@ -149,86 +82,101 @@ export default function HoldingKpiSetup({ holdingCompany, childCompanies }: Hold
   const formatPeriod = (dateString: string) => {
     if (!dateString) return 'N/A';
     try {
-      // Assuming yyyy-MM format
-      return format(new Date(dateString + '-02'), "MMM yyyy", { locale: id });
-    } catch (e) {
-      return dateString;
-    }
+      return format(parse(dateString, "yyyy-MM", new Date()), "MMM yyyy", { locale: localeId });
+    } catch (e) { return dateString; }
   };
-
 
   return (
     <>
-      <div className="flex items-center justify-end gap-2 mb-4">
-        <Button size="sm" className="h-9 gap-1" onClick={handleAddSetup}>
-          <PlusCircle className="h-3.5 w-3.5" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Buat Pengaturan Induk
-          </span>
+      <div className="flex justify-end mb-6">
+        <Button onClick={handleAddSetup} className="font-bold shadow-lg h-10 px-6 active:scale-95 transition-all">
+          <PlusCircle className="mr-2 size-4" />
+          Buat Setup Induk
         </Button>
       </div>
 
-       <Accordion type="single" collapsible className="w-full">
-            {holdingSetups.map((setup) => (
-              <AccordionItem value={setup.id} key={setup.id}>
-                <AccordionTrigger>
-                    <div className="flex items-center justify-between w-full pr-4">
-                        <div className="text-left">
-                            <p className="font-semibold">{setup.description || "Pengaturan KPI Induk"}</p>
-                            <p className="text-sm text-muted-foreground">Periode: {formatPeriod(setup.validFrom)} - {formatPeriod(setup.validTo)}</p>
-                        </div>
-                        <Badge variant={setup.status === "Aktif" ? "default" : "outline"}>
-                            {setup.status}
-                        </Badge>
-                    </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                    <div className="pl-4 pr-4 pb-4">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Indikator</TableHead>
-                                    <TableHead>Target</TableHead>
-                                    <TableHead className="text-right">Bobot</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {setup.indicators.map(indicator => (
-                                    <TableRow key={indicator.id}>
-                                        <TableCell className="font-medium">{indicator.indicator}</TableCell>
-                                        <TableCell>{indicator.target.toLocaleString()} {indicator.targetFormat === 'Persentase' ? '%' : indicator.unit}</TableCell>
-                                        <TableCell className="text-right">{indicator.weight}%</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                        <div className="mt-4 flex justify-end">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button aria-haspopup="true" size="icon" variant="ghost">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Buka menu</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                  <DropdownMenuItem onClick={() => handleEditSetup(setup)}>Ubah Pengaturan</DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleDuplicateSetup(setup)}>Duplikat Pengaturan</DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(setup)}>Hapus</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                        </div>
-                    </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-        </Accordion>
-        {holdingSetups.length === 0 && (
-            <div className="text-center text-muted-foreground py-10 border rounded-lg">
-                <p>Belum ada Pengaturan KPI untuk Holding.</p>
-            </div>
-        )}
+       <div className="space-y-4">
+            {holdingSetups.length > 0 ? (
+                <Accordion type="single" collapsible className="w-full">
+                    {holdingSetups.map((setup) => (
+                    <AccordionItem value={setup.id} key={setup.id} className="border rounded-2xl mb-4 overflow-hidden bg-background shadow-sm">
+                        <AccordionTrigger className="px-6 py-5 hover:no-underline group">
+                            <div className="flex items-center justify-between w-full pr-4">
+                                <div className="text-left flex items-start gap-4">
+                                    <div className="p-2.5 bg-primary/5 rounded-xl text-primary group-hover:scale-110 transition-transform hidden sm:block">
+                                        <Calendar size={20} />
+                                    </div>
+                                    <div className="space-y-0.5">
+                                        <p className="font-black text-slate-900 tracking-tight">{setup.description || "Pengaturan KPI Induk"}</p>
+                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                                            <span>Siklus: {formatPeriod(setup.validFrom)} - {formatPeriod(setup.validTo)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <Badge variant={setup.status === "Aktif" ? "default" : "outline"} className="font-black text-[9px] uppercase h-5 border-none">
+                                    {setup.status}
+                                </Badge>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-6 pb-6 pt-2">
+                            <div className="rounded-xl border shadow-sm overflow-hidden bg-muted/5">
+                                <Table>
+                                    <TableHeader className="bg-muted/30">
+                                        <TableRow className="hover:bg-transparent border-none">
+                                            <TableHead className="text-[10px] font-black uppercase py-4">Indikator Strategis</TableHead>
+                                            <TableHead className="text-[10px] font-black uppercase">Target Total</TableHead>
+                                            <TableHead className="text-right text-[10px] font-black uppercase">Bobot</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {setup.indicators.map(indicator => (
+                                            <TableRow key={indicator.id} className="border-border/40">
+                                                <TableCell className="font-bold text-sm py-4">
+                                                    {indicator.indicator}
+                                                    <p className="text-[10px] text-muted-foreground font-medium italic mt-1 leading-relaxed">{indicator.measurement}</p>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <span className="font-mono text-xs font-bold text-slate-700">
+                                                        {indicator.target.toLocaleString()} {indicator.targetFormat === 'Persentase' ? '%' : indicator.unit}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <Badge className="bg-primary/5 text-primary border-none font-black text-[10px] h-5">{indicator.weight}%</Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                            
+                            <div className="mt-4 flex justify-end gap-2">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-9 gap-2 font-bold text-muted-foreground">
+                                            <MoreHorizontal className="size-4" />
+                                            <span>Opsi Manajemen</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="z-[350]">
+                                        <DropdownMenuLabel className="text-[10px] font-black uppercase opacity-60">Aksi Setup</DropdownMenuLabel>
+                                        <DropdownMenuItem onClick={() => handleEditSetup(setup)}><Pencil size={14} className="mr-2"/> Ubah Pengaturan</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleDuplicateSetup(setup)}><Copy size={14} className="mr-2"/> Duplikat (Kloning)</DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(setup)}><Trash2 size={14} className="mr-2"/> Hapus Setup</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                    ))}
+                </Accordion>
+            ) : (
+                <div className="py-32 text-center border-2 border-dashed rounded-[2rem] bg-muted/10">
+                    <Settings size={48} className="mx-auto mb-4 opacity-10" />
+                    <p className="font-black uppercase text-[10px] tracking-[0.2em] text-slate-400">Belum Ada Setup Aktif</p>
+                </div>
+            )}
+        </div>
 
       <HoldingKpiSetupSheet
         isOpen={isSheetOpen}

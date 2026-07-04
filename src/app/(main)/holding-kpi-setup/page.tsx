@@ -6,8 +6,10 @@ import type { Company } from '@/types';
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
 import HoldingKpiSetup from '@/components/holding/holding-kpi-setup';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Settings, GitMerge } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ResponsivePage } from '@/components/ui/adaptive-layout';
+import { PageHeader } from '@/components/ui/page-header';
 
 export default function HoldingKpiSetupPage() {
     const { currentUser, userRole } = useAuth();
@@ -25,11 +27,11 @@ export default function HoldingKpiSetupPage() {
 
     useEffect(() => {
         if (userRole === 'superadmin' && holdingCompanies.length > 0) {
-            setSelectedHoldingId(holdingCompanies[0].id);
+            if (!selectedHoldingId) setSelectedHoldingId(holdingCompanies[0].id);
         } else if (userCompany) {
             setSelectedHoldingId(userCompany.id);
         }
-    }, [userRole, userCompany, holdingCompanies]);
+    }, [userRole, userCompany, holdingCompanies, selectedHoldingId]);
 
     const displayCompany = useMemo(() => {
         if (!selectedHoldingId) return null;
@@ -46,56 +48,40 @@ export default function HoldingKpiSetupPage() {
         return getAllDescendants(displayCompany.id);
     }, [displayCompany, companies]);
 
-
     if (userRole !== 'superadmin' && !userCompany?.isHolding) {
-        return (
-            <Card className="shadow-lg mb-6">
-                <CardHeader>
-                    <CardTitle>Akses Ditolak</CardTitle>
-                    <CardDescription>Halaman ini hanya untuk admin perusahaan holding.</CardDescription>
-                </CardHeader>
-            </Card>
-        );
+        return <div className="p-20 text-center font-black uppercase text-xs opacity-40 italic">Akses Ditolak. Halaman khusus Holding Company.</div>;
     }
-    
-     if (!displayCompany) {
-         return (
-             <Card className="shadow-lg mb-6 overflow-hidden">
-                <CardHeader className="bg-primary text-primary-foreground dark:bg-card rounded-t-lg">
-                    <CardTitle className="dark:text-white">Tidak Ada Perusahaan Holding</CardTitle>
-                    <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground">Tidak ada perusahaan holding yang terdaftar atau aktif untuk ditampilkan.</CardDescription>
-                </CardHeader>
-            </Card>
-        );
-    }
-    
+
     return (
-         <div className="space-y-6">
-            <Card className="shadow-lg mb-6 overflow-hidden">
-                <CardHeader className="bg-primary text-primary-foreground dark:bg-card rounded-t-lg">
-                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                        <div>
-                            <CardTitle className="font-headline dark:text-white">Pengaturan KPI Induk</CardTitle>
-                            <CardDescription className="text-primary-foreground/80 dark:text-muted-foreground">
-                                Definisikan KPI di tingkat holding untuk diturunkan ke anak perusahaan.
-                            </CardDescription>
-                        </div>
-                        {userRole === 'superadmin' && holdingCompanies.length > 0 && (
-                            <Select onValueChange={setSelectedHoldingId} value={selectedHoldingId ?? ''}>
-                                <SelectTrigger className="w-full sm:w-[250px] bg-background/20 text-primary-foreground hover:bg-background/30 dark:bg-muted dark:text-foreground dark:hover:bg-muted/80">
-                                    <SelectValue placeholder="Pilih Holding Company..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {holdingCompanies.map(c => (
-                                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        )}
-                    </div>
-                </CardHeader>
-            </Card>
-            <HoldingKpiSetup holdingCompany={displayCompany} childCompanies={childCompanies} />
-        </div>
+         <ResponsivePage>
+            <PageHeader 
+                title="Pengaturan KPI Induk"
+                description="Definisikan KPI di tingkat holding sebagai jangkar strategi untuk diturunkan ke seluruh anak perusahaan."
+                icon={Settings}
+                actions={
+                    userRole === 'superadmin' && holdingCompanies.length > 0 && (
+                        <Select onValueChange={setSelectedHoldingId} value={selectedHoldingId ?? ''}>
+                            <SelectTrigger className="w-full sm:w-[250px] bg-background">
+                                <SelectValue placeholder="Pilih Holding Company..." />
+                            </SelectTrigger>
+                            <SelectContent className="z-[350]">
+                                {holdingCompanies.map(c => (
+                                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )
+                }
+            />
+
+            {displayCompany ? (
+                <HoldingKpiSetup holdingCompany={displayCompany} childCompanies={childCompanies} />
+            ) : (
+                <div className="py-24 text-center border-2 border-dashed rounded-3xl opacity-20">
+                    <Settings size={48} className="mx-auto mb-4" />
+                    <p className="font-bold uppercase text-xs">Pilih induk perusahaan untuk mengelola KPI</p>
+                </div>
+            )}
+        </ResponsivePage>
     );
 }
