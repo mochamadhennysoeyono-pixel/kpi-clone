@@ -35,7 +35,6 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { 
     AdaptiveCardGrid, 
-    AdaptiveMetricCard, 
 } from "@/components/ui/adaptive-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,6 +50,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
+import { cn } from "@/lib/utils";
 
 export default function MediaLibraryPage() {
   const { mediaFiles, addMediaFile, deleteMediaFile, companies } = useMasterData();
