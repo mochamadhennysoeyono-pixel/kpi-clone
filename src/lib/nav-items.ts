@@ -1,4 +1,3 @@
-
 // src/lib/nav-items.ts
 import React from 'react';
 import type { UserRole, Company, SubscriptionPlan, Employee, OKR, ModuleId } from "@/types";
@@ -16,7 +15,7 @@ import {
     SlidersHorizontal,
     Database,
     Buildings,
-    ChartLine,
+    ChartLineUp,
     Briefcase,
     Users,
     GitFork,
@@ -46,7 +45,13 @@ import {
     ShoppingCart,
     CaretLeft,
     DotsThreeOutline,
-    ListChecks
+    ListChecks,
+    IdentificationBadge,
+    ChartLine,
+    Tray,
+    Stack,
+    AddressBook,
+    FileSearch
 } from "@phosphor-icons/react";
 
 export const iconMap: { [key: string]: React.ElementType } = {
@@ -58,7 +63,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
 
     // --- Manajemen Sistem (Superadmin) ---
     '/admin-management': ShieldCheckered,
-    '/company-admin-management': UserPlus,
+    '/company-admin-management': IdentificationBadge,
     '/activation-management': SelectionCheck,
     '/subscription-management': Crown,
     '/subscription-logs': ClockCounterClockwise,
@@ -68,22 +73,22 @@ export const iconMap: { [key: string]: React.ElementType } = {
     'manajemen-fitur': Lightning,
 
     // --- Pondasi Data ---
-    'pusat-data': Database,
+    'pusat-data': Stack,
     '/master-data/company': Buildings,
     '/master-data/departments': ChartLine,
     '/master-data/positions': Briefcase,
-    '/master-data/employees': Users,
+    '/master-data/employees': AddressBook,
     '/master-data/hierarchy': GitFork,
     '/master-data/kpi-categories': Folders,
     '/master-data/kbo-categories': BookBookmark,
     '/master-data/kbo-competencies': Brain,
-    '/master-data/kpi-data': Database,
+    '/master-data/kpi-data': FileSearch,
     '/master-data/company-objectives': Target,
     '/media-library': Image,
 
     // --- Pusat Holding ---
     'pusat-holding': TreeStructure,
-    '/holding-dashboard': ChartBar,
+    '/holding-dashboard': ChartLineUp,
     '/holding-kpi-setup': Gear,
     '/holding-group-management': Users,
     '/holding-management': TreeStructure,
@@ -131,7 +136,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
     // --- Dokumen ---
     'manajemen-dokumen': Files,
     '/document-management/templates': FileText,
-    '/document-management/contracts': Files,
+    '/document-management/contracts': Tray,
 
     // --- Lainnya ---
     '/subscription-status': Crown,

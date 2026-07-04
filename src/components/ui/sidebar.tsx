@@ -1,10 +1,9 @@
-
 // src/components/ui/sidebar.tsx
 "use client";
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, X, ChevronDown, Menu, ChevronLeft, LayoutGrid, Folders } from "lucide-react";
+import { CaretLeft, CaretDown, SignOut, Layout, Folders } from "@phosphor-icons/react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -12,7 +11,6 @@ import { cn } from "@/lib/utils";
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
 import { getNavItems, iconMap, getActiveModuleFromPath } from '@/lib/nav-items';
-import type { Employee, OKR, ModuleId } from "@/types";
 import {
   Collapsible,
   CollapsibleContent,
@@ -24,7 +22,7 @@ import { ScrollArea } from "./scroll-area";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { Avatar, AvatarFallback } from "./avatar";
 
-/** AppSidebar component - Optimized for Bright Industrial Utility */
+/** AppSidebar component - Optimized for Bright Industrial Utility with Phosphor Gradients */
 function MotionNav() {
   const { isOpen, setIsOpen } = useSidebar();
   const pathname = usePathname();
@@ -62,7 +60,7 @@ function MotionNav() {
         animate={isMobile ? { x: isOpen ? 0 : "-100%" } : { width: isOpen ? 260 : 80 }}
         transition={{ type: "spring", stiffness: 400, damping: 40 }}
         className={cn(
-          "flex flex-col h-screen sticky left-0 top-0 z-50 border-r bg-card",
+          "flex flex-col h-screen sticky left-0 top-0 z-50 border-r bg-card no-print",
           isMobile ? "fixed h-full border-none shadow-2xl" : ""
         )}
         onMouseEnter={() => !isMobile && setIsOpen(true)}
@@ -89,7 +87,7 @@ function MotionNav() {
                   exit={{ opacity: 0, scale: 0.8 }}
                   className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary"
                 >
-                  <LayoutGrid size={18} />
+                  <Layout size={18} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -114,15 +112,15 @@ function MotionNav() {
                                                 isGroupActive ? "text-primary bg-primary/5 font-bold" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                             )}
                                         >
-                                            <div className="flex size-5 items-center justify-center shrink-0">
-                                              <Icon size={18} />
+                                            <div className="flex size-5 items-center justify-center shrink-0 transition-transform group-hover:scale-125 group-hover:rotate-6">
+                                              <Icon size={20} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
                                             </div>
                                             {(isOpen || isMobile) && (
                                                 <span className="flex-1 font-medium tracking-tight text-sm">
                                                     {item.label}
                                                 </span>
                                             )}
-                                             {(isOpen || isMobile) && <ChevronDown size={12} className="opacity-30 group-data-[state=open]:rotate-180 transition-transform" />}
+                                             {(isOpen || isMobile) && <CaretDown size={12} className="opacity-30 group-data-[state=open]:rotate-180 transition-transform" weight="bold" />}
                                         </button>
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>
@@ -134,7 +132,7 @@ function MotionNav() {
                                                       <li key={subItem.href}>
                                                           <Link href={subItem.href} className={cn(
                                                               "block pl-4 pr-3 py-2 text-sm font-medium tracking-tight transition-all",
-                                                              isSubActive ? "text-primary bg-primary/5 font-bold" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                              isSubActive ? "text-primary bg-primary/5 font-bold" : "text-muted-foreground hover:text-foreground"
                                                           )}>
                                                               {subItem.label}
                                                           </Link>
@@ -158,8 +156,8 @@ function MotionNav() {
                                     isActive ? "bg-primary text-white shadow-lg shadow-primary/20 font-bold" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                 )}
                             >
-                                <div className="flex size-5 items-center justify-center shrink-0">
-                                    <Icon size={18} />
+                                <div className="flex size-5 items-center justify-center shrink-0 transition-transform group-hover:scale-125 group-hover:rotate-6">
+                                    <Icon size={20} weight="fill" style={{ fill: isActive ? "white" : "url(#brand-gradient)" }} />
                                 </div>
                                 {(isOpen || isMobile) && (
                                     <span className="font-medium tracking-tight text-sm">
@@ -189,7 +187,7 @@ function MotionNav() {
                   <div className="flex-1 text-left min-w-0">
                     <p className="text-[11px] font-black text-foreground truncate uppercase tracking-tighter">{currentUser?.name}</p>
                     <div className="flex items-center gap-1.5 text-[9px] font-bold text-muted-foreground group-hover:text-destructive transition-colors">
-                        <LogOut size={10} />
+                        <SignOut size={10} weight="bold" />
                         <span>Log Out</span>
                     </div>
                   </div>

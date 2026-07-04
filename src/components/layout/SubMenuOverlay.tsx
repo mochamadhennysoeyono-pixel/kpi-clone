@@ -1,9 +1,9 @@
-
+// src/components/layout/SubMenuOverlay.tsx
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, SquaresFour, CaretLeft } from "@phosphor-icons/react";
-import { Folders } from "lucide-react";
+import { Folders } from "@phosphor-icons/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
@@ -149,14 +149,14 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                         )}>
                                             <div className={cn(
                                                 "size-9 flex items-center justify-center transition-all duration-300",
-                                                isActive ? "scale-110" : "group-hover/item:scale-110"
+                                                isActive ? "scale-110" : "group-hover/item:scale-125 group-hover/item:rotate-12"
                                             )}>
                                                 {IconComponent && (
                                                     <IconComponent 
                                                         size={28} 
                                                         weight="fill" 
                                                         style={{ fill: "url(#brand-gradient)" }} 
-                                                        className={cn(isActive ? "opacity-100" : "opacity-40 grayscale group-hover/item:grayscale-0 group-hover/item:opacity-100")}
+                                                        className={cn(isActive ? "opacity-100" : "opacity-100 grayscale-0")}
                                                     />
                                                 )}
                                             </div>
