@@ -24,7 +24,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Determine Midtrans Snap URL based on environment
   const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true';
   const snapUrl = isProduction
     ? "https://app.midtrans.com/snap/snap.js"
@@ -41,7 +40,7 @@ export default function RootLayout({
       <body className={cn("font-sans antialiased", GeistSans.className)}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="light"
           enableSystem={false}
           disableTransitionOnChange
         >
@@ -52,7 +51,6 @@ export default function RootLayout({
           </AuthProvider>
         </ThemeProvider>
         
-        {/* Load Midtrans Snap Script */}
         <Script 
           src={snapUrl} 
           data-client-key={clientKey}

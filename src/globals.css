@@ -21,24 +21,24 @@ body {
 
 @layer base {
   :root {
-    --background: 240 10% 1%; 
-    --foreground: 0 0% 98%;
-    --card: 240 6% 6%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 6% 8%;
-    --popover-foreground: 0 0% 98%;
+    --background: 0 0% 100%; 
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 98%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
     --primary: 248 98% 61%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 240 4% 16%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 65%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
     --accent: 248 98% 61%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84% 60%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 4% 15%;
-    --input: 240 4% 15%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
     --ring: 248 98% 61%;
     --radius: 0.75rem;
   }
@@ -50,23 +50,8 @@ body {
     }
 
     @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .animate-spin-slow {
-      animation: spin 3s linear infinite;
-    }
-    
-    .h-dvh {
-        height: 100vh;
-        height: 100dvh;
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 }
 
@@ -79,8 +64,5 @@ body {
   }
   .no-print {
     display: none !important;
-  }
-  .page-break-after {
-    page-break-after: always;
   }
 }

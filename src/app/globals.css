@@ -4,36 +4,36 @@
 
 @layer base {
   :root {
-    /* Linear Deep Dark Canvas #010102 */
-    --background: 240 10% 1%; 
-    --foreground: 0 0% 98%;
+    /* Bright Canvas - Vercel/Stripe Style */
+    --background: 0 0% 100%; 
+    --foreground: 240 10% 3.9%;
 
-    /* Surface-1 (Linear/Vercel Card) #0f1011 */
-    --card: 240 6% 6%;
-    --card-foreground: 0 0% 98%;
+    /* Surface-1 (Light Gray) #fafafa */
+    --card: 0 0% 98%;
+    --card-foreground: 240 10% 3.9%;
 
-    --popover: 240 6% 8%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
 
     /* Stripe Electric Indigo #533afd */
     --primary: 248 98% 61%;
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 240 4% 16%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
 
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 65%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
 
     --accent: 248 98% 61%;
-    --accent-foreground: 0 0% 98%;
+    --accent-foreground: 240 5.9% 10%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Linear Hairline Border #23252a */
-    --border: 240 4% 15%;
-    --input: 240 4% 15%;
+    /* Thin Hairline Border #ebebeb */
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
     --ring: 248 98% 61%;
 
     --radius: 0.75rem;
@@ -45,16 +45,14 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-[#f7f8f8] antialiased selection:bg-primary/30 selection:text-white font-sans;
-    font-feature-settings: "ss01", "ss02", "cv01", "tnum"; /* Enforce Tabular Numerics & Geometric Alternates */
+    @apply bg-background text-foreground antialiased selection:bg-primary/20 font-sans;
+    font-feature-settings: "ss01", "ss02", "cv01", "tnum";
   }
   
-  /* Stripe-style Tabular Numbers for all numeric data */
   .tnum {
     font-variant-numeric: tabular-nums;
   }
 
-  /* Linear-style sharp headlines */
   h1, h2, h3, h4 {
     @apply tracking-tighter;
   }
@@ -70,8 +68,7 @@
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Custom Stripe Shadow for floating elements */
     .shadow-stripe {
-        box-shadow: 0 8px 30px rgb(0,55,112,0.12);
+        box-shadow: 0 8px 30px rgb(0,55,112,0.08);
     }
 }

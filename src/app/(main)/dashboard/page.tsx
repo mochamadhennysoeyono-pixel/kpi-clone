@@ -55,9 +55,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { cn } from "@/lib/utils";
 
-// Industrial Palette
-const CHART_COLORS = ["#533afd", "#334155", "#475569", "#64748b", "#94a3b8"];
-const BAR_CHART_FILL = "#533afd";
+// Industrial Palette - Light Edition
+const CHART_COLORS = ["#533afd", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0"];
 
 export default function AdminDashboardPage() {
   const { companies, employees, subscriptionPlans, subscriptionLogs } = useMasterData();
@@ -125,97 +124,97 @@ export default function AdminDashboardPage() {
   if (!isClient) return null;
 
   return (
-    <ResponsivePage className="max-w-[1600px]">
+    <ResponsivePage>
       <PageHeader 
         title="Workbench Bisnis" 
         description="Pusat kendali operasional dan monitoring kesehatan ekosistem klien."
         icon={LayoutDashboard}
         actions={
-            <Button asChild variant="outline" className="font-bold border-[#23252a] bg-[#0f1011] shadow-sm h-8 px-4 text-[10px] active:scale-95 transition-all">
+            <Button asChild variant="outline" className="font-bold border-border bg-background shadow-sm h-9 px-4 text-[11px] active:scale-95 transition-all">
                 <Link href="/subscription-logs" className="flex items-center gap-2">
-                    <Activity className="size-3.5 opacity-70" />
+                    <Activity className="size-3.5 text-primary" />
                     <span>Audit System Log</span>
                 </Link>
             </Button>
         }
       />
 
-      {/* Integrated Industrial Grid for Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 border border-[#23252a] rounded-xl overflow-hidden bg-[#0f1011] divide-x divide-y md:divide-y-0 divide-[#23252a]">
-          <div className="p-5 sm:p-6 space-y-2 group hover:bg-[#141516] transition-colors">
-              <div className="flex items-center gap-2 text-[#8a8f98] font-black text-[9px] uppercase tracking-[0.2em]">
+      <div className="grid grid-cols-2 md:grid-cols-4 border border-border rounded-2xl overflow-hidden bg-card divide-x divide-y md:divide-y-0 divide-border shadow-sm">
+          <div className="p-5 sm:p-8 space-y-2 group hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-2 text-muted-foreground font-black text-[9px] uppercase tracking-[0.2em]">
                 <Wallet size={12} className="text-primary" /> Estimasi Pendapatan
               </div>
               <div className="flex items-baseline gap-2">
-                  <h3 className="text-xl sm:text-2xl font-black text-white tnum">Rp {(stats.totalRevenue / 1000000).toFixed(1)}jt</h3>
-                  <span className="text-[9px] font-bold text-green-400 tnum">+12%</span>
+                  <h3 className="text-xl sm:text-3xl font-black text-foreground tnum">Rp {(stats.totalRevenue / 1000000).toFixed(1)}jt</h3>
+                  <span className="text-[10px] font-bold text-green-600 tnum">+12%</span>
               </div>
-              <p className="text-[8px] font-bold text-muted-foreground uppercase opacity-40">Nilai paket aktif tahunan</p>
+              <p className="text-[9px] font-bold text-muted-foreground/60 uppercase">Nilai paket aktif tahunan</p>
           </div>
-          <div className="p-5 sm:p-6 space-y-2 group hover:bg-[#141516] transition-colors">
-              <div className="flex items-center gap-2 text-[#8a8f98] font-black text-[9px] uppercase tracking-[0.2em]">
+          <div className="p-5 sm:p-8 space-y-2 group hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-2 text-muted-foreground font-black text-[9px] uppercase tracking-[0.2em]">
                 <Crown size={12} className="text-primary" /> Klien Berbayar
               </div>
-              <h3 className="text-xl sm:text-2xl font-black text-white tnum">{stats.activePaidSubscribers}</h3>
-              <p className="text-[8px] font-bold text-muted-foreground uppercase opacity-40">Entitas non-trial</p>
+              <h3 className="text-xl sm:text-3xl font-black text-foreground tnum">{stats.activePaidSubscribers}</h3>
+              <p className="text-[9px] font-bold text-muted-foreground/60 uppercase">Entitas non-trial</p>
           </div>
-          <div className="p-5 sm:p-6 space-y-2 group hover:bg-[#141516] transition-colors">
-              <div className="flex items-center gap-2 text-[#8a8f98] font-black text-[9px] uppercase tracking-[0.2em]">
+          <div className="p-5 sm:p-8 space-y-2 group hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-2 text-muted-foreground font-black text-[9px] uppercase tracking-[0.2em]">
                 <Users size={12} /> Total Pengguna
               </div>
-              <h3 className="text-xl sm:text-2xl font-black text-white tnum">{stats.totalUsers}</h3>
-              <p className="text-[8px] font-bold text-muted-foreground uppercase opacity-40">Akun staff aktif global</p>
+              <h3 className="text-xl sm:text-3xl font-black text-foreground tnum">{stats.totalUsers}</h3>
+              <p className="text-[9px] font-bold text-muted-foreground/60 uppercase">Akun staff aktif global</p>
           </div>
-          <div className="p-5 sm:p-6 space-y-2 group hover:bg-[#141516] transition-colors">
-              <div className="flex items-center gap-2 text-[#8a8f98] font-black text-[9px] uppercase tracking-[0.2em]">
+          <div className="p-5 sm:p-8 space-y-2 group hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-2 text-muted-foreground font-black text-[9px] uppercase tracking-[0.2em]">
                 <AlertCircle size={12} className={cn(stats.pendingCount > 0 ? "text-rose-500" : "")} /> Butuh Aktivasi
               </div>
-              <h3 className={cn("text-xl sm:text-2xl font-black tnum", stats.pendingCount > 0 ? "text-rose-500" : "text-white")}>{stats.pendingCount}</h3>
-              <p className="text-[8px] font-bold text-muted-foreground uppercase opacity-40">Pendaftaran tertunda</p>
+              <h3 className={cn("text-xl sm:text-3xl font-black tnum", stats.pendingCount > 0 ? "text-rose-500" : "text-foreground")}>{stats.pendingCount}</h3>
+              <p className="text-[9px] font-bold text-muted-foreground/60 uppercase">Pendaftaran tertunda</p>
           </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-10">
         <div className="lg:col-span-8">
             <AdaptiveInsightCard 
                 title="Sebaran Portfolio Klien" 
                 description="Dominasi paket langganan antar unit bisnis"
                 icon={TrendingUp}
             >
-                <div className="flex flex-col sm:flex-row items-center h-[320px]">
+                <div className="flex flex-col sm:flex-row items-center h-[350px]">
                     <div className="w-full sm:w-1/2 h-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie 
                                     data={planDistributionData} 
-                                    innerRadius={70} 
-                                    outerRadius={95} 
-                                    paddingAngle={5} 
+                                    innerRadius={75} 
+                                    outerRadius={105} 
+                                    paddingAngle={4} 
                                     dataKey="value"
-                                    stroke="none"
+                                    stroke="#fff"
+                                    strokeWidth={2}
                                 >
                                     {planDistributionData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
                                 </Pie>
                                 <Tooltip 
                                     contentStyle={{ 
-                                        backgroundColor: '#0f1011', 
-                                        borderRadius: '8px', 
-                                        border: '1px solid #23252a',
+                                        backgroundColor: '#fff', 
+                                        borderRadius: '12px', 
+                                        border: '1px solid #ebebeb',
                                         fontSize: '11px',
-                                        color: '#f7f8f8'
+                                        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.05)'
                                     }} 
                                 />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
-                    <div className="w-full sm:w-1/2 grid grid-cols-1 gap-1.5 pl-0 sm:pl-8">
+                    <div className="w-full sm:w-1/2 grid grid-cols-1 gap-2 pl-0 sm:pl-10">
                         {planDistributionData.map((item, i) => (
-                            <div key={i} className="flex items-center justify-between p-2 rounded-lg border border-transparent hover:border-[#23252a] hover:bg-[#141516] transition-all">
-                                <div className="flex items-center gap-2.5">
-                                    <div className="size-2 rounded-full" style={{ backgroundColor: item.fill }} />
-                                    <span className="text-[11px] font-medium text-[#8a8f98]">{item.name}</span>
+                            <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-transparent hover:border-border hover:bg-muted/30 transition-all">
+                                <div className="flex items-center gap-3">
+                                    <div className="size-2.5 rounded-full" style={{ backgroundColor: item.fill }} />
+                                    <span className="text-xs font-bold text-foreground/70 uppercase tracking-tight">{item.name}</span>
                                 </div>
-                                <span className="text-[11px] font-black text-white tnum">{item.value} Unit</span>
+                                <span className="text-xs font-black text-foreground tnum">{item.value} Unit</span>
                             </div>
                         ))}
                     </div>
@@ -229,15 +228,15 @@ export default function AdminDashboardPage() {
                 description="Persentase pemakaian slot karyawan"
                 icon={Users}
             >
-                <div className="h-[320px] pt-2 space-y-5">
+                <div className="h-[350px] pt-4 space-y-6">
                     {quotaUsageData.map((item, i) => (
-                        <div key={i} className="space-y-1.5">
-                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-tight">
-                                <span className="text-[#8a8f98] truncate pr-4">{item.name}</span>
-                                <span className="text-white tnum">{item.label}</span>
+                        <div key={i} className="space-y-2">
+                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                <span className="text-muted-foreground truncate pr-6">{item.name}</span>
+                                <span className="text-foreground tnum">{item.label}</span>
                             </div>
-                            <div className="h-1 w-full bg-[#18191a] rounded-full overflow-hidden">
-                                <div className="h-full bg-primary" style={{ width: `${item.usage}%` }} />
+                            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                <div className="h-full bg-primary transition-all duration-500" style={{ width: `${item.usage}%` }} />
                             </div>
                         </div>
                     ))}
@@ -246,38 +245,38 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-4">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-10 mt-10">
         <div className="space-y-4">
             <div className="flex items-center justify-between px-1">
-                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#62666d] flex items-center gap-2">
-                    <Clock className="size-3.5 text-rose-500" /> System Alerts: Expiring
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+                    <Clock className="size-3.5 text-rose-500" /> System Alerts: Expiring Soon
                 </h2>
-                <Link href="/master-data/company" className="text-[9px] font-black text-primary hover:underline uppercase tracking-tighter">Kelola Klien <ArrowRight size={10} className="inline ml-1" /></Link>
+                <Link href="/master-data/company" className="text-[10px] font-black text-primary hover:underline uppercase tracking-tighter">Kelola Klien <ArrowRight size={10} className="inline ml-1" /></Link>
             </div>
-            <div className="border border-[#23252a] rounded-xl overflow-hidden bg-[#0f1011]">
+            <div className="border border-border rounded-2xl overflow-hidden bg-card shadow-sm">
                 <Table>
-                    <TableHeader className="bg-[#18191a]">
-                        <TableRow className="border-[#23252a]">
-                            <TableHead className="text-[9px] font-black uppercase py-3">Nama Klien</TableHead>
-                            <TableHead className="text-[9px] font-black uppercase text-right pr-6">Status Kedaluwarsa</TableHead>
+                    <TableHeader className="bg-muted/30">
+                        <TableRow className="border-border">
+                            <TableHead className="text-[10px] font-black uppercase py-4 px-6">Nama Klien</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase text-right pr-8">Status Kedaluwarsa</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {expiringSoon.length > 0 ? expiringSoon.map(c => (
-                            <TableRow key={c.id} className="border-[#23252a] hover:bg-[#141516]">
-                                <TableCell className="py-4">
-                                    <div className="font-bold text-xs text-white">{c.name}</div>
-                                    <div className="text-[9px] font-medium text-muted-foreground uppercase mt-0.5 font-mono">{format(new Date(c.subscriptionExpiryDate!), "d MMM yyyy")}</div>
+                            <TableRow key={c.id} className="border-border hover:bg-muted/20">
+                                <TableCell className="py-5 px-6">
+                                    <div className="font-bold text-sm text-foreground">{c.name}</div>
+                                    <div className="text-[10px] font-medium text-muted-foreground uppercase mt-1 font-mono tracking-tight">{format(new Date(c.subscriptionExpiryDate!), "d MMM yyyy")}</div>
                                 </TableCell>
-                                <TableCell className="text-right pr-6">
-                                    <Badge variant="destructive" className="font-black text-[9px] uppercase h-5 border-none px-2 rounded-md">
+                                <TableCell className="text-right pr-8">
+                                    <Badge variant="destructive" className="font-black text-[9px] uppercase h-6 border-none px-2.5 rounded-full shadow-sm">
                                         {c.daysLeft.split(' ')[0]} Hari Lagi
                                     </Badge>
                                 </TableCell>
                             </TableRow>
                         )) : (
                             <TableRow>
-                                <TableCell colSpan={2} className="h-32 text-center text-[10px] font-medium text-[#62666d] italic">Sistem aman, tidak ada paket kritis.</TableCell>
+                                <TableCell colSpan={2} className="h-40 text-center text-xs font-medium text-muted-foreground italic">Sistem aman, tidak ada paket kritis dalam waktu dekat.</TableCell>
                             </TableRow>
                         )}
                     </TableBody>
@@ -287,38 +286,43 @@ export default function AdminDashboardPage() {
 
         <div className="space-y-4">
             <div className="flex items-center justify-between px-1">
-                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#62666d] flex items-center gap-2">
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
                     <History className="size-3.5 text-primary" /> Live Audit Trail
                 </h2>
-                <Link href="/subscription-logs" className="text-[9px] font-black text-primary hover:underline uppercase tracking-tighter">Semua Log <ArrowRight size={10} className="inline ml-1" /></Link>
+                <Link href="/subscription-logs" className="text-[10px] font-black text-primary hover:underline uppercase tracking-tighter">Semua Log <ArrowRight size={10} className="inline ml-1" /></Link>
             </div>
-            <div className="border border-[#23252a] rounded-xl overflow-hidden bg-[#0f1011]">
+            <div className="border border-border rounded-2xl overflow-hidden bg-card shadow-sm">
                 <Table>
-                    <TableHeader className="bg-[#18191a]">
-                        <TableRow className="border-[#23252a]">
-                            <TableHead className="text-[9px] font-black uppercase py-3">Aktivitas</TableHead>
-                            <TableHead className="text-[9px] font-black uppercase text-right pr-6">Nilai (IDR)</TableHead>
+                    <TableHeader className="bg-muted/30">
+                        <TableRow className="border-border">
+                            <TableHead className="text-[10px] font-black uppercase py-4 px-6">Aktivitas</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase text-right pr-8">Nilai (IDR)</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {latestActivity.map(log => (
-                            <TableRow key={log.id} className="border-[#23252a] hover:bg-[#141516]">
-                                <TableCell className="py-4">
+                            <TableRow key={log.id} className="border-border hover:bg-muted/20">
+                                <TableCell className="py-5 px-6">
                                     <div className="flex items-center gap-2">
-                                        <div className="text-xs font-bold text-white">{log.companyName}</div>
-                                        <Badge variant="outline" className="text-[7px] h-3.5 px-1 font-black bg-[#18191a] border-none text-[#8a8f98] uppercase">{log.action}</Badge>
+                                        <div className="text-sm font-bold text-foreground">{log.companyName}</div>
+                                        <Badge variant="outline" className="text-[8px] h-4 px-1.5 font-black bg-muted border-none text-muted-foreground uppercase">{log.action}</Badge>
                                     </div>
-                                    <div className="text-[9px] font-medium text-muted-foreground uppercase mt-0.5 font-mono">
+                                    <div className="text-[10px] font-medium text-muted-foreground uppercase mt-1 font-mono tracking-tight">
                                         {log.timestamp?.toDate ? format(log.timestamp.toDate(), "d MMM, HH:mm") : "N/A"}
                                     </div>
                                 </TableCell>
-                                <TableCell className="text-right pr-6">
-                                    <span className="font-mono text-xs font-black text-primary tnum">
+                                <TableCell className="text-right pr-8">
+                                    <span className="font-mono text-sm font-black text-primary tnum">
                                         {log.amount.toLocaleString('id-ID')}
                                     </span>
                                 </TableCell>
                             </TableRow>
                         ))}
+                        {latestActivity.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={2} className="h-40 text-center text-xs font-medium text-muted-foreground italic">Belum ada aktivitas tercatat.</TableCell>
+                            </TableRow>
+                        )}
                     </TableBody>
                 </Table>
             </div>
