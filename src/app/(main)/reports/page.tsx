@@ -211,7 +211,11 @@ function TeamReportView() {
         const previousAvg = trendComparisonData.length ? trendComparisonData.reduce((s, d) => s + d.score, 0) / trendComparisonData.length : 0;
         const performanceTrend = previousAvg ? ((currentAvg - previousAvg) / previousAvg) * 100 : (currentAvg > 0 ? 100 : 0);
         
-        const distribution = [...new Map(periodData.map(d => [d.employeeId, d])).values()].reduce((a, d) => ({...a, [d.status === 'Melampaui Target' ? 'exceeds' : d.status === 'Mencapai Target' ? 'achieves' : 'needs']: a[d.status === 'Melampaui Target' ? 'exceeds' : d.status === 'Mencapai Target' ? 'achieves' : 'needs' as keyof typeof a] + 1}), { exceeds: 0, achieves: 0, needs: 0 });
+        const distribution = [...new Set(periodData.map(d => d.employeeId))].reduce((a, eid) => {
+            const d = periodData.find(pd => pd.employeeId === eid)!;
+            const statusKey = d.status === 'Melampaui Target' ? 'exceeds' : d.status === 'Mencapai Target' ? 'achieves' : 'needs';
+            return { ...a, [statusKey]: a[statusKey as keyof typeof a] + 1 };
+        }, { exceeds: 0, achieves: 0, needs: 0 });
 
         return { reportData: finalReportData, trendStats: { performanceTrend, distribution } };
     }, [kpiData, selectedCompanyName, mode, singlePeriod, trendStartPeriod, trendEndPeriod, selectedDepartment, selectedPosition, employees, currentUser, getDateRanges, isHoldingAdmin, isManager]);
@@ -238,7 +242,7 @@ function TeamReportView() {
         await updateKpiData(data.id, { approvalStatus: 'Disetujui', approvedBy: currentUser.name, approvedAt: new Date().toISOString() });
         toast({ title: 'KPI Disetujui', description: `Pencapaian KPI untuk ${data.employeeName} telah disetujui.` });
     };
-    useEffect(() => { setSelectedKpiDataForDetail(null); }, [selectedCompanyId, selectedDepartment, selectedPosition, singlePeriod, trendStartPeriod, trendEndPeriod, mode]);
+    useEffect(() => { setSelectedKpiDataForDetail(null); }, [selectedCompanyId, selectedDepartment, setSelectedPosition, singlePeriod, trendStartPeriod, trendEndPeriod, mode]);
 
     const manageableCompanies = useMemo(() => {
         if (userRole === 'superadmin') return companies.filter(c => c.status === 'Aktif');
@@ -456,30 +460,30 @@ function IndividualAnalysisView() {
 
     return (
         <Card className="border-2 border-primary/20 shadow-xl overflow-hidden rounded-2xl animate-fade-in">
-            <CardHeader className="bg-primary/5 p-8 border-b border-primary/10">
+            <CardHeader className="bg-primary/5 p-5 sm:p-8 border-b border-primary/10">
                 <div className="flex items-center gap-4">
-                    <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm">
-                        <UserSearch size={24} />
+                    <div className="size-10 sm:size-12 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm shrink-0">
+                        <UserSearch size={20} className="sm:size-6" />
                     </div>
                     <div className="space-y-1">
-                        <CardTitle className="text-2xl font-black tracking-tight text-slate-800">Filter Analisis Kinerja Individu</CardTitle>
-                        <CardDescription className="text-slate-500 font-medium">Pilih karyawan dan rentang waktu untuk melihat analisis kinerja.</CardDescription>
+                        <CardTitle className="text-xl sm:text-2xl font-black tracking-tight text-slate-800">Filter Analisis Kinerja Individu</CardTitle>
+                        <CardDescription className="text-slate-500 font-medium text-xs sm:text-sm">Pilih karyawan dan rentang waktu untuk melihat analisis kinerja.</CardDescription>
                     </div>
                 </div>
             </CardHeader>
 
-            <CardContent className="p-8 space-y-10 bg-background">
+            <CardContent className="p-5 sm:p-8 space-y-6 sm:space-y-10 bg-background">
                 {/* Row 1: The Selects */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                     <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                        <Label className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                             <Building size={12} /> Perusahaan
                         </Label>
                         <Select 
                             onValueChange={(v) => { setSelectedCompanyId(v); setSelectedDepartment('all'); setSelectedPosition('all'); setSelectedEmployeeId('all'); }} 
                             value={selectedCompanyId ?? ""}
                         >
-                            <SelectTrigger className="h-12 border-slate-200 bg-slate-50/50 font-bold focus:ring-primary/20">
+                            <SelectTrigger className="h-10 sm:h-12 border-slate-200 bg-slate-50/50 font-bold focus:ring-primary/20 text-xs sm:text-sm">
                                 <SelectValue placeholder="Pilih Perusahaan" />
                             </SelectTrigger>
                             <SelectContent className="z-[300]">
@@ -489,7 +493,7 @@ function IndividualAnalysisView() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                        <Label className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                             <Network size={12} /> Departemen
                         </Label>
                         <Select 
@@ -497,7 +501,7 @@ function IndividualAnalysisView() {
                             onValueChange={(v) => { setSelectedDepartment(v); setSelectedPosition('all'); setSelectedEmployeeId('all'); }} 
                             disabled={!selectedCompanyId}
                         >
-                            <SelectTrigger className="h-12 border-slate-200 bg-slate-50/50 font-bold focus:ring-primary/20">
+                            <SelectTrigger className="h-10 sm:h-12 border-slate-200 bg-slate-50/50 font-bold focus:ring-primary/20 text-xs sm:text-sm">
                                 <SelectValue placeholder="Pilih Departemen" />
                             </SelectTrigger>
                             <SelectContent className="z-[300]">
@@ -508,7 +512,7 @@ function IndividualAnalysisView() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                        <Label className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                             <Briefcase size={12} /> Jabatan
                         </Label>
                         <Select 
@@ -516,7 +520,7 @@ function IndividualAnalysisView() {
                             onValueChange={(v) => { setSelectedPosition(v); setSelectedEmployeeId('all'); }} 
                             disabled={selectedDepartment === 'all'}
                         >
-                            <SelectTrigger className="h-12 border-slate-200 bg-slate-50/50 font-bold focus:ring-primary/20">
+                            <SelectTrigger className="h-10 sm:h-12 border-slate-200 bg-slate-50/50 font-bold focus:ring-primary/20 text-xs sm:text-sm">
                                 <SelectValue placeholder="Pilih Jabatan" />
                             </SelectTrigger>
                             <SelectContent className="z-[300]">
@@ -527,7 +531,7 @@ function IndividualAnalysisView() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                        <Label className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                             <User size={12} /> Karyawan
                         </Label>
                         <Select 
@@ -535,7 +539,7 @@ function IndividualAnalysisView() {
                             onValueChange={setSelectedEmployeeId} 
                             disabled={filteredEmployees.length === 0}
                         >
-                            <SelectTrigger className="h-12 border-slate-200 bg-slate-50/50 font-bold focus:ring-primary/20">
+                            <SelectTrigger className="h-10 sm:h-12 border-slate-200 bg-slate-50/50 font-bold focus:ring-primary/20 text-xs sm:text-sm">
                                 <SelectValue placeholder="Pilih Karyawan" />
                             </SelectTrigger>
                             <SelectContent className="z-[300]">
@@ -547,12 +551,12 @@ function IndividualAnalysisView() {
                 </div>
 
                 {/* Row 2: Periods & Action */}
-                <div className="p-8 rounded-2xl bg-muted/20 border border-dashed border-primary/20 relative group">
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-end">
+                <div className="p-5 sm:p-8 rounded-2xl bg-muted/20 border border-dashed border-primary/20 relative group">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-end">
                         <div className="md:col-span-4 space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">Periode Mulai</Label>
+                            <Label className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-primary ml-1">Periode Mulai</Label>
                             <Select value={startPeriod} onValueChange={setStartPeriod} disabled={availablePeriods.length === 0}>
-                                <SelectTrigger className="h-12 bg-background border-slate-200 font-bold">
+                                <SelectTrigger className="h-10 sm:h-12 bg-background border-slate-200 font-bold text-xs sm:text-sm">
                                     <Calendar className="size-4 mr-2 text-slate-400" />
                                     <SelectValue placeholder="Pilih Bulan..." />
                                 </SelectTrigger>
@@ -565,9 +569,9 @@ function IndividualAnalysisView() {
                         </div>
 
                         <div className="md:col-span-4 space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">Periode Selesai</Label>
+                            <Label className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-primary ml-1">Periode Selesai</Label>
                             <Select value={endPeriod} onValueChange={setEndPeriod} disabled={availablePeriods.length === 0}>
-                                <SelectTrigger className="h-12 bg-background border-slate-200 font-bold">
+                                <SelectTrigger className="h-10 sm:h-12 bg-background border-slate-200 font-bold text-xs sm:text-sm">
                                     <Calendar className="size-4 mr-2 text-slate-400" />
                                     <SelectValue placeholder="Pilih Bulan..." />
                                 </SelectTrigger>
@@ -583,7 +587,7 @@ function IndividualAnalysisView() {
                             <Button 
                                 onClick={handleRunAnalysis}
                                 disabled={selectedEmployeeId === 'all' || !startPeriod || !endPeriod}
-                                className="w-full h-12 font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20 group-hover:scale-[1.02] transition-all duration-300"
+                                className="w-full h-10 sm:h-12 font-black uppercase tracking-widest text-[10px] sm:text-xs shadow-xl shadow-primary/20 group-hover:scale-[1.01] transition-all duration-300"
                             >
                                 <TrendingUp className="mr-2 size-4" />
                                 Jalankan Analisis

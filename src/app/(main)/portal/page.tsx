@@ -367,22 +367,24 @@ export default function PortalPage() {
     if (!currentUser) return null;
 
     return (
-        <div className="max-w-7xl mx-auto space-y-10 animate-fade-in pb-20">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="max-w-7xl mx-auto space-y-6 sm:space-y-10 animate-fade-in pb-20">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
                 <div className="lg:col-span-4 space-y-6">
                     <Card className="shadow-2xl border-none overflow-hidden bg-slate-900 text-white relative">
-                        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none"><Building size={150} /></div>
-                        <CardHeader className="relative z-10 p-8">
+                        <div className="absolute top-0 right-0 p-4 sm:p-8 opacity-10 pointer-events-none"><Building size={150} /></div>
+                        <CardHeader className="relative z-10 p-6 sm:p-8">
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="size-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center"><Building size={32} className="text-white" /></div>
+                                <div className="size-12 sm:size-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shrink-0">
+                                    <Building className="size-6 sm:size-8 text-white" />
+                                </div>
                                 <div className="space-y-1 min-w-0">
-                                    <h2 className="text-xl font-black truncate">{company?.name || 'N/A'}</h2>
-                                    <Badge variant="outline" className="text-white/60 border-white/20 text-[9px] font-black uppercase tracking-widest">{company?.businessField}</Badge>
+                                    <h2 className="text-lg sm:text-xl font-black truncate">{company?.name || 'N/A'}</h2>
+                                    <Badge variant="outline" className="text-white/60 border-white/20 text-[8px] sm:text-[9px] font-black uppercase tracking-widest">{company?.businessField}</Badge>
                                 </div>
                             </div>
                             <Separator className="bg-white/10 mb-6" />
                             <div className="space-y-4 text-sm">
-                                <div className="flex items-center gap-3"><LucideUser className="size-4 text-white/50" /><span className="font-bold opacity-90">{currentUser.name}</span></div>
+                                <div className="flex items-center gap-3"><LucideUser className="size-4 text-white/50" /><span className="font-bold opacity-90 truncate">{currentUser.name}</span></div>
                                 <div className="flex items-center gap-3"><Mail className="size-4 text-white/50" /><span className="opacity-70 truncate">{currentUser.email}</span></div>
                             </div>
                         </CardHeader>
@@ -392,40 +394,36 @@ export default function PortalPage() {
                     {isManagement && (
                         <div className="space-y-4">
                              <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 ml-1"><Database size={12} /> Pondasi Data</h3>
-                             <AdminDataCard label="Setup Master Data" description="Kelola personil, departemen, dan hierarki" icon={Settings} href="/master-data/employees" color="bg-indigo-600" />
-                        </div>
-                    )}
-
-                    {isManagement && (
-                        <div className="space-y-4">
-                            <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 ml-1"><GitMerge size={12} /> Manajemen Grup</h3>
-                            {company?.isHolding ? (
-                                <AdminDataCard label="Manajemen Grup" description="Kelola anak perusahaan dan unit bisnis" icon={Building} onClick={() => setIsGroupDialogOpen(true)} color="bg-rose-500" />
-                            ) : (
-                                company?.canBecomeHolding && (
-                                    <Card className="border-dashed bg-primary/5">
-                                        <CardContent className="p-6 text-center space-y-4">
-                                            <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary"><GitMerge size={24} /></div>
-                                            <div className="space-y-1"><p className="text-xs font-bold uppercase">Upgrade ke Holding</p><p className="text-[10px] text-muted-foreground leading-relaxed">Kelola banyak cabang dalam satu pintu.</p></div>
-                                            <Button onClick={handleUpgradeToHolding} disabled={isUpgrading} variant="outline" size="sm" className="w-full text-[10px] font-black uppercase border-primary/20 h-9">{isUpgrading ? <Loader2 className="size-3 animate-spin mr-2" /> : null}Upgrade Sekarang</Button>
-                                        </CardContent>
-                                    </Card>
-                                )
-                            )}
+                             <div className="grid grid-cols-1 gap-3">
+                                <AdminDataCard label="Setup Master Data" description="Kelola personil, departemen, dan hierarki" icon={Settings} href="/master-data/employees" color="bg-indigo-600" />
+                                {company?.isHolding ? (
+                                    <AdminDataCard label="Manajemen Grup" description="Kelola anak perusahaan dan unit bisnis" icon={Building} onClick={() => setIsGroupDialogOpen(true)} color="bg-rose-500" />
+                                ) : (
+                                    company?.canBecomeHolding && (
+                                        <Card className="border-dashed bg-primary/5">
+                                            <CardContent className="p-6 text-center space-y-4">
+                                                <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary"><GitMerge size={24} /></div>
+                                                <div className="space-y-1"><p className="text-xs font-bold uppercase">Upgrade ke Holding</p><p className="text-[10px] text-muted-foreground leading-relaxed">Kelola banyak cabang dalam satu pintu.</p></div>
+                                                <Button onClick={handleUpgradeToHolding} disabled={isUpgrading} variant="outline" size="sm" className="w-full text-[10px] font-black uppercase border-primary/20 h-9">{isUpgrading ? <Loader2 className="size-3 animate-spin mr-2" /> : null}Upgrade Sekarang</Button>
+                                            </CardContent>
+                                        </Card>
+                                    )
+                                )}
+                             </div>
                         </div>
                     )}
                 </div>
 
                 <div className="lg:col-span-8 space-y-8">
                     <div className="space-y-1">
-                        <h1 className="text-4xl font-black tracking-tighter text-slate-900">Halo, {currentUser.name.split(' ')[0]} 👋</h1>
-                        <p className="text-slate-500 text-lg">Silakan pilih modul yang ingin Anda akses.</p>
+                        <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-slate-900">Halo, {currentUser.name.split(' ')[0]} 👋</h1>
+                        <p className="text-slate-500 text-base sm:text-lg">Silakan pilih modul yang ingin Anda akses.</p>
                     </div>
 
                     {activeModules.length > 0 && (
                         <div className="space-y-4">
                             <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2"><ShieldCheck className="size-4" /> Modul Aktif</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                 {activeModules.map(m => (
                                     <ModuleCard key={m.id} config={m} subscription={company?.moduleSubscriptions?.[m.id]} isManagement={isManagement} onActivateRequest={(mod) => { setSelectedModule(mod); setIsSubDialogOpen(true); }} />
                                 ))}
@@ -436,7 +434,7 @@ export default function PortalPage() {
                     {isManagement && (
                         <div className="space-y-4">
                              <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2"><Plus size={14} /> Layanan Tambahan (Add-ons)</h3>
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                 <Card className="border-2 border-primary/10 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group">
                                     <CardHeader>
                                         <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 w-fit mb-4 group-hover:scale-110 transition-transform"><Shield size={24} /></div>
@@ -461,7 +459,7 @@ export default function PortalPage() {
                     {availableModules.length > 0 && isManagement && (
                         <div className="space-y-4">
                             <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2"><LayoutGrid size={14} /> Modul Tersedia</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                 {availableModules.map(m => (
                                     <ModuleCard key={m.id} config={m} subscription={company?.moduleSubscriptions?.[m.id]} isManagement={isManagement} onActivateRequest={(mod) => { setSelectedModule(mod); setIsSubDialogOpen(true); }} />
                                 ))}
@@ -476,13 +474,13 @@ export default function PortalPage() {
             {company && <GroupManagementDialog isOpen={isGroupDialogOpen} onOpenChange={setIsGroupDialogOpen} holdingCompany={company} childCompanies={childCompanies} />}
 
             <Dialog open={isMgmtDialogOpen} onOpenChange={setIsMgmtDialogOpen}>
-                <DialogContent className="max-w-5xl h-[85vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl bg-white z-[200]">
+                <DialogContent className="max-w-5xl h-[90vh] md:h-[85vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl bg-white z-[200]">
                     <DialogHeader className="p-6 pb-2 shrink-0 bg-background border-b sticky top-0 z-10">
                         <DialogTitle className="font-headline font-black text-xl uppercase tracking-tighter">Manajemen Tim Admin</DialogTitle>
                         <DialogDescription className="text-xs font-bold text-primary">Kapasitas Maksimal: {mgmtLimit} Akun Admin</DialogDescription>
                     </DialogHeader>
                     <div className="flex-1 overflow-y-auto no-scrollbar">
-                         <div className="p-4">
+                         <div className="p-2 sm:p-4">
                             <CompanyAdminManagementPage onQuotaFull={() => { setIsMgmtConfigOpen(true); }} />
                          </div>
                     </div>
@@ -527,3 +525,4 @@ export default function PortalPage() {
         </div>
     );
 }
+

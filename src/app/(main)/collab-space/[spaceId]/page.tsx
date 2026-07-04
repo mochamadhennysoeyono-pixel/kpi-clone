@@ -1,3 +1,4 @@
+
 // src/app/(main)/collab-space/[spaceId]/page.tsx
 "use client";
 
@@ -85,7 +86,7 @@ const colorThemes: Record<string, {
     'amber-500': { 
         header: 'bg-amber-600', 
         badge: 'bg-amber-500/20 text-amber-100',
-        iconBg: 'bg-amber-50 dark:bg-amber-900/20', 
+        iconBg: 'bg-emerald-50 dark:bg-amber-900/20', 
         iconText: 'text-amber-600', 
         hoverBg: 'group-hover:bg-amber-600',
         accentText: 'text-amber-600',
@@ -120,24 +121,24 @@ function FeatureIcon({ icon: Icon, label, onClick, theme, badgeCount }: { icon: 
                 onClick();
             }}
             className={cn(
-                "flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border-2 transition-all duration-300 group relative",
+                "flex flex-col items-center justify-center gap-2 sm:gap-3 p-4 sm:p-6 rounded-2xl border-2 transition-all duration-300 group relative",
                 "bg-background hover:bg-muted border-transparent hover:shadow-md active:scale-95"
             )}
         >
             {badgeCount && badgeCount > 0 ? (
-                <div className="absolute top-4 right-4 bg-red-500 text-white text-[10px] font-black h-5 w-5 rounded-full flex items-center justify-center animate-bounce shadow-md ring-2 ring-background">
+                <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-500 text-white text-[9px] sm:text-[10px] font-black h-4 w-4 sm:h-5 sm:w-5 rounded-full flex items-center justify-center animate-bounce shadow-md ring-2 ring-background">
                     {badgeCount > 9 ? '9+' : badgeCount}
                 </div>
             ) : null}
             <div className={cn(
-                "p-4 rounded-xl transition-all duration-300",
+                "p-3 sm:p-4 rounded-xl transition-all duration-300",
                 theme.iconBg,
                 theme.hoverBg,
                 "group-hover:text-white group-hover:scale-110"
             )}>
-                <Icon className={cn("h-8 w-8", theme.iconText, "group-hover:text-white transition-colors")} />
+                <Icon className={cn("size-6 sm:size-8", theme.iconText, "group-hover:text-white transition-colors")} />
             </div>
-            <span className="font-bold text-sm text-muted-foreground group-hover:text-foreground">{label}</span>
+            <span className="font-bold text-[11px] sm:text-sm text-muted-foreground group-hover:text-foreground line-clamp-1">{label}</span>
         </button>
     );
 }
@@ -255,7 +256,7 @@ export default function CollabSpaceDetailPage() {
     return (
         <div className={cn(
             "flex flex-col h-full min-w-0 animate-fade-in",
-            (activeFeature !== 'chat' && activeFeature !== 'daily-tasks') && "space-y-6 pb-20 md:pb-6"
+            (activeFeature !== 'chat' && activeFeature !== 'daily-tasks') && "space-y-4 sm:space-y-6 pb-20 md:pb-6"
         )}>
             {/* Header Breadcrumb */}
             <div className={cn(
@@ -268,10 +269,10 @@ export default function CollabSpaceDetailPage() {
                         else setActiveFeature('dashboard');
                     }} className="-ml-2 h-8 px-2 text-muted-foreground text-xs flex items-center hover:bg-muted rounded-md transition-colors">
                         <ChevronLeft className="mr-1 h-4 w-4" />
-                        {activeFeature === 'dashboard' ? 'Daftar Ruangan' : 'Dashboard'}
+                        {activeFeature === 'dashboard' ? 'Ruangan' : 'Dash'}
                     </button>
                     <Separator orientation="vertical" className="h-4" />
-                    <h1 className="font-bold text-sm text-foreground truncate max-w-[150px] sm:max-w-none">{space.name}</h1>
+                    <h1 className="font-bold text-sm text-foreground truncate max-w-[120px] sm:max-w-none">{space.name}</h1>
                 </div>
                 <div className="flex items-center gap-2">
                     <button 
@@ -281,7 +282,7 @@ export default function CollabSpaceDetailPage() {
                     >
                         <Users className="size-3 text-primary" />
                         <span className="text-[10px] uppercase font-black text-foreground/70">
-                            {space.memberIds.length} Anggota
+                            {space.memberIds.length} <span className="hidden sm:inline">Anggota</span>
                         </span>
                     </button>
                 </div>
@@ -293,15 +294,15 @@ export default function CollabSpaceDetailPage() {
                     <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
                         <LayoutGrid size={120} />
                     </div>
-                    <CardHeader className="relative z-10 p-6">
+                    <CardHeader className="relative z-10 p-5 sm:p-6">
                         <div className="flex justify-between items-start">
-                            <div className="space-y-1">
-                                <CardTitle className="text-xl md:text-2xl font-headline leading-tight">{space.name}</CardTitle>
-                                <CardDescription className="text-primary-foreground/80 line-clamp-2 md:line-clamp-none">
+                            <div className="space-y-1 min-w-0 pr-4">
+                                <CardTitle className="text-lg sm:text-2xl font-headline leading-tight truncate">{space.name}</CardTitle>
+                                <CardDescription className="text-primary-foreground/80 line-clamp-2 text-xs sm:text-sm">
                                     {space.description}
                                 </CardDescription>
                             </div>
-                            <Badge variant="secondary" className={cn("border-none backdrop-blur-md shrink-0", activeTheme.badge)}>
+                            <Badge variant="secondary" className={cn("border-none backdrop-blur-md shrink-0 text-[10px]", activeTheme.badge)}>
                                 {space.status === 'active' ? 'Aktif' : 'Arsip'}
                             </Badge>
                         </div>
@@ -311,7 +312,7 @@ export default function CollabSpaceDetailPage() {
 
             {/* Content Area */}
             {activeFeature === 'dashboard' ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 animate-fade-in">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 animate-fade-in">
                     {features.map(f => (
                         <FeatureIcon 
                             key={f.id}
@@ -336,14 +337,14 @@ export default function CollabSpaceDetailPage() {
                         )}>
                             <div className="flex items-center gap-2">
                                 <div className={cn("p-1.5 rounded-lg", activeTheme.iconBg)}>
-                                    {ActiveIcon && <ActiveIcon className={cn("h-4 w-4", activeTheme.iconText)} />}
+                                    {ActiveIcon && <ActiveIcon className={cn("size-3.5", activeTheme.iconText)} />}
                                 </div>
-                                <span className={cn("text-[10px] font-black uppercase tracking-widest", activeTheme.accentText)}>
+                                <span className={cn("text-[9px] sm:text-[10px] font-black uppercase tracking-widest", activeTheme.accentText)}>
                                     {activeFeature.replace('-', ' ')}
                                 </span>
                             </div>
-                            <Button variant="ghost" size="sm" onClick={() => handleFeatureClick('dashboard')} className="hover:bg-background h-8 px-3 text-xs">
-                                <X className="h-3.5 w-3.5 mr-1.5" /> Tutup
+                            <Button variant="ghost" size="sm" onClick={() => handleFeatureClick('dashboard')} className="hover:bg-background h-7 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs">
+                                <X className="size-3 sm:size-3.5 mr-1.5" /> Tutup
                             </Button>
                         </div>
                     )}
@@ -440,3 +441,4 @@ export default function CollabSpaceDetailPage() {
         </div>
     );
 }
+

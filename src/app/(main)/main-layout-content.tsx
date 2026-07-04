@@ -1,3 +1,4 @@
+
 // src/app/(main)/main-layout-content.tsx
 "use client";
 
@@ -66,7 +67,7 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex h-screen bg-white text-foreground overflow-hidden">
+    <div className="flex h-screen bg-white text-foreground overflow-hidden relative">
       {!hideSidebar && <AppSidebar />}
       
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden relative">
@@ -74,11 +75,11 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
         
         <div className="flex-1 min-h-0 overflow-hidden flex flex-col relative">
             <ScrollArea className="flex-1 w-full">
-                <main className="w-full min-w-0">
+                <main className="w-full min-w-0 overflow-x-hidden">
                     <div className={cn(
-                        "p-4 sm:p-6 lg:p-10 w-full min-w-0 overflow-hidden",
+                        "p-4 sm:p-6 lg:p-10 w-full min-w-0",
                         // Menambahkan padding bawah pada mobile agar tidak tertutup bottom nav
-                        !isPortal && "pb-24 md:pb-6", 
+                        isMobile && !isPortal && "pb-24", 
                         isPortal && "lg:p-12 max-w-7xl mx-auto"
                     )}>
                         {contentToRender}
@@ -92,3 +93,4 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
     </div>
   );
 }
+
