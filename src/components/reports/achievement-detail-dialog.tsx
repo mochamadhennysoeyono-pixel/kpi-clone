@@ -4,7 +4,7 @@
 import { useMemo, useState, forwardRef, useEffect, useCallback } from "react";
 import type { KpiData, KpiIndicator, Employee, KpiSetup, CalculationMethod } from "@/types";
 import { useMasterData } from "@/contexts/master-data-context";
-import { Link as LinkIcon, ShieldCheck, ShieldAlert, BadgeInfo, Award, Users, BarChartHorizontal, Activity, ExternalLink } from "lucide-react";
+import { Link as LinkIcon, ShieldCheck, ShieldAlert, BadgeInfo, Award, Users, BarChartHorizontal, Activity, ExternalLink, Calendar, User, Briefcase, FileText } from "lucide-react";
 import { CategoryPerformanceCard, type CategoryScore } from "@/components/reports/category-performance-card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
 import { Alert, AlertDescription } from "../ui/alert";
@@ -12,14 +12,14 @@ import { format, parse, lastDayOfMonth } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Badge } from "../ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "../ui/card";
 import { Label } from "../ui/label";
 import { PerformanceTrendChart } from "./performance-trend-chart";
 import { Button } from "../ui/button";
 import { CycleProgressDialog } from "../kpi/cycle-progress-dialog";
 import { Separator } from "../ui/separator";
-
+import { useBreakpoint } from "@/hooks/use-breakpoint";
+import { AdaptiveCardGrid, AdaptiveMetricCard, AdaptiveInsightCard } from "@/components/ui/adaptive-card";
 
 interface AchievementDetailProps {
   kpiData: KpiData;
@@ -28,7 +28,7 @@ interface AchievementDetailProps {
 
 const AchievementDetailDialog = forwardRef<HTMLDivElement, AchievementDetailProps>(({ kpiData, isDialog }, ref) => {
     const { employees, kpiSetups, kpiCategories, companies, kpiData: allKpiData } = useMasterData();
-    const isMobile = useIsMobile();
+    const { isMobile } = useBreakpoint();
     const [isClient, setIsClient] = useState(false);
     const [cycleProgressState, setCycleProgressState] = useState<{ isOpen: boolean; indicator: KpiIndicator | null }>({ isOpen: false, indicator: null });
 
@@ -36,8 +36,6 @@ const AchievementDetailDialog = forwardRef<HTMLDivElement, AchievementDetailProp
         setIsClient(true);
     }, []);
     
-    // All calculation logic is moved inside the printable component
-    // to ensure it has all the data it needs.
     const employee = useMemo(() => employees.find(e => e.id === kpiData.employeeId), [kpiData.employeeId, employees]);
 
     const myAllKpiData = useMemo(() => {
@@ -146,12 +144,8 @@ const AchievementDetailDialog = forwardRef<HTMLDivElement, AchievementDetailProp
     
             if (indicator.source && (monthlyOverride === undefined || monthlyOverride === null)) {
                 let sourceSetup: KpiSetup | undefined;
-    
                 if (indicator.source.employeeId === 'HOLDING') {
-                    sourceSetup = kpiSetups.find(s => 
-                        s.isHolding && 
-                        s.indicators.some(i => i.id === indicator.source!.indicatorId)
-                    );
+                    sourceSetup = kpiSetups.find(s => s.isHolding && s.indicators.some(i => i.id === indicator.source!.indicatorId));
                 } else if (employee.reportsTo) {
                     const supervisor = employees.find(e => e.id === employee.reportsTo);
                     if (supervisor) {
@@ -165,19 +159,15 @@ const AchievementDetailDialog = forwardRef<HTMLDivElement, AchievementDetailProp
                 }
     
                 const sourceIndicator = sourceSetup?.indicators.find(ind => ind.id === indicator.source!.indicatorId);
-    
                 if (sourceIndicator) {
                     if (indicator.source.employeeId === 'HOLDING') {
                         finalCycleTarget = sourceIndicator.targetAllocations?.[employee.company]?.target ?? 0;
-                    } else { // Sourced from internal supervisor
+                    } else { 
                         const overrides = sourceIndicator.targetOverrides || {};
                         if (overrides[employee.id] !== undefined) {
                             finalCycleTarget = overrides[employee.id];
                         } else {
-                            const teamMates = employees.filter(e => 
-                                e.reportsTo === employee.reportsTo && e.position === employee.position && 
-                                e.department === employee.department && e.status === 'Aktif'
-                            );
+                            const teamMates = employees.filter(e => e.reportsTo === employee.reportsTo && e.position === employee.position && e.department === employee.department && e.status === 'Aktif');
                             const lockedTargetsSum = teamMates.filter(tm => overrides[tm.id] !== undefined).reduce((sum, tm) => sum + (overrides[tm.id] || 0), 0);
                             const unlockedTeamMates = teamMates.filter(tm => overrides[tm.id] === undefined);
                             const remainingSupervisorTarget = sourceIndicator.target - lockedTargetsSum;
@@ -189,11 +179,7 @@ const AchievementDetailDialog = forwardRef<HTMLDivElement, AchievementDetailProp
             
             const cycleDivider = getCycleDivider(indicator.cycle);
             let monthlyTarget = finalCycleTarget / cycleDivider;
-            
-            if (monthlyOverride !== undefined && monthlyOverride !== null) {
-                monthlyTarget = monthlyOverride;
-            }
-            
+            if (monthlyOverride !== undefined && monthlyOverride !== null) monthlyTarget = monthlyOverride;
             finalTargets[indicator.id] = { monthly: monthlyTarget, cycle: finalCycleTarget };
         });
         
@@ -206,103 +192,59 @@ const AchievementDetailDialog = forwardRef<HTMLDivElement, AchievementDetailProp
         const method = indicator.calculationMethod;
         let score: number;
 
-        if (isNaN(actualVal)) {
-            return 0;
-        }
+        if (isNaN(actualVal)) return 0;
 
         switch (method) {
             case 'Target Minimal':
-                if (monthlyTarget <= 0) {
-                    score = actualVal <= 0 ? indicator.weight : 0;
-                } else if (actualVal > monthlyTarget) {
-                    score = 0;
-                } else if (actualVal === monthlyTarget) {
-                    score = indicator.weight * 0.25;
-                } else {
-                    const minScore = indicator.weight * 0.25;
-                    const ratio = (monthlyTarget - actualVal) / monthlyTarget;
-                    score = minScore + ratio * (indicator.weight - minScore);
-                }
+                if (monthlyTarget <= 0) score = actualVal <= 0 ? indicator.weight : 0;
+                else if (actualVal > monthlyTarget) score = 0;
+                else if (actualVal === monthlyTarget) score = indicator.weight * 0.25;
+                else { const minScore = indicator.weight * 0.25; const ratio = (monthlyTarget - actualVal) / monthlyTarget; score = minScore + ratio * (indicator.weight - minScore); }
                 break;
-            case 'Target Mutlak':
-                score = actualVal === monthlyTarget ? indicator.weight : 0;
-                break;
-            case 'Target Limit':
-                score = actualVal <= monthlyTarget ? indicator.weight : 0;
-                break;
+            case 'Target Mutlak': score = actualVal === monthlyTarget ? indicator.weight : 0; break;
+            case 'Target Limit': score = actualVal <= monthlyTarget ? indicator.weight : 0; break;
             case 'Target Maksimal':
             default:
-                if (monthlyTarget === 0) {
-                    score = actualVal === 0 ? indicator.weight : 0;
-                } else {
-                    score = Math.min(actualVal / monthlyTarget, 1) * indicator.weight;
-                }
+                if (monthlyTarget === 0) score = actualVal === 0 ? indicator.weight : 0;
+                else score = Math.min(actualVal / monthlyTarget, 1) * indicator.weight;
                 break;
         }
-        
-        const finalScore = isNaN(score) ? 0 : Math.max(0, Math.min(score, indicator.weight));
-        return finalScore;
+        return isNaN(score) ? 0 : Math.max(0, Math.min(score, indicator.weight));
     }, [distributedTargets]);
 
 
     const calculateAchievementPercentage = (score: number, weight: number): number => {
-      if (weight === 0) {
-        return 0;
-      }
-      const percentage = (score / weight) * 100;
-      return parseFloat(Math.max(0, Math.min(percentage, 1000)).toFixed(1)); // Cap at 1000% just in case
+      if (weight === 0) return 0;
+      return parseFloat(Math.max(0, Math.min((score / weight) * 100, 1000)).toFixed(1));
     };
   
     const groupedIndicators = useMemo(() => {
         if (!currentKpiSetup || !employee) return [];
-        
         const groups: { [key: string]: { code: string, indicators: KpiIndicator[], totalWeight: number } } = {};
-        
         currentKpiSetup.indicators.forEach(indicator => {
             const categoryName = indicator.category;
             if (!groups[categoryName]) {
                 const categoryInfo = kpiCategories.find(c => c.name === categoryName && (c.company === employee.company || c.company === 'Global'));
-                groups[categoryName] = {
-                    code: categoryInfo?.code || 'N/A',
-                    indicators: [],
-                    totalWeight: 0,
-                };
+                groups[categoryName] = { code: categoryInfo?.code || 'N/A', indicators: [], totalWeight: 0 };
             }
             groups[categoryName].indicators.push(indicator);
             groups[categoryName].totalWeight += Number(indicator.weight || 0);
         });
-
-        return Object.entries(groups).map(([name, data]) => ({
-            categoryName: name,
-            categoryCode: data.code,
-            indicators: data.indicators,
-            totalWeight: data.totalWeight
-        }));
+        return Object.entries(groups).map(([name, data]) => ({ categoryName: name, categoryCode: data.code, indicators: data.indicators, totalWeight: data.totalWeight }));
     }, [currentKpiSetup, kpiCategories, employee]);
     
     const categoryScores = useMemo((): CategoryScore[] => {
         if (!currentKpiSetup || !kpiData) return [];
-      
         const categoryData: { [key: string]: { score: number; weight: number } } = {};
-      
         currentKpiSetup.indicators.forEach(indicator => {
-            if (!categoryData[indicator.category]) {
-                categoryData[indicator.category] = { score: 0, weight: 0 };
-            }
-            
+            if (!categoryData[indicator.category]) categoryData[indicator.category] = { score: 0, weight: 0 };
             const achievement = kpiData.achievements.find(a => a.indicatorId === indicator.id);
-            const actualValue = achievement?.actual;
-            const score = calculateScore(indicator, actualValue);
-
-            categoryData[indicator.category].score = (categoryData[indicator.category].score || 0) + (Number(score) || 0);
-            categoryData[indicator.category].weight = (categoryData[indicator.category].weight || 0) + (Number(indicator.weight) || 0);
+            const score = calculateScore(indicator, achievement?.actual);
+            categoryData[indicator.category].score += (Number(score) || 0);
+            categoryData[indicator.category].weight += (Number(indicator.weight) || 0);
         });
-      
         return Object.entries(categoryData).map(([category, { score, weight }]) => ({
-            category,
-            score: parseFloat(score.toFixed(1)),
-            weight: parseFloat(Number(weight).toFixed(1)),
-            achievement: weight > 0 ? parseFloat(((score / weight) * 100).toFixed(1)) : 0,
+            category, score: parseFloat(score.toFixed(1)), weight: parseFloat(Number(weight).toFixed(1)), achievement: weight > 0 ? parseFloat(((score / weight) * 100).toFixed(1)) : 0,
         }));
     }, [kpiData, currentKpiSetup, calculateScore]);
 
@@ -324,224 +266,178 @@ const AchievementDetailDialog = forwardRef<HTMLDivElement, AchievementDetailProp
     
     const calculatedStatus = getStatus(kpiData.score, minAchievementTarget);
 
-    if (!employee) return null;
+    if (!employee || !isClient) return null;
 
     const hasMetMinTarget = kpiData.score >= minAchievementTarget;
 
-    // The actual JSX for the report content
     return (
-        <>
-            <div ref={ref} className="p-4 bg-background text-foreground">
-                <div className="flex justify-between items-start mt-4 rounded-lg border p-4 bg-muted/30">
-                    <div className="space-y-1">
-                        <p className="font-semibold text-lg">{employee.name}</p>
-                        <p className="text-muted-foreground text-sm">{employee.position} / {employee.department}</p>
-                        {kpiData.approvalStatus === 'Disetujui' ? (
-                            <div className="flex flex-col items-start">
-                                <Badge variant="outline" className="border-green-300 bg-green-50 text-green-800">
-                                    <ShieldCheck className="mr-1.5 h-3.5 w-3.5" /> Disetujui
-                                </Badge>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    oleh {kpiData.approvedBy} pada {kpiData.approvedAt ? format(new Date(kpiData.approvedAt), 'd MMM yyyy', { locale: localeId }) : ''}
-                                </p>
+        <div ref={ref} className="space-y-6">
+            <Card className="border-none shadow-none bg-transparent">
+                <CardContent className="p-0 space-y-6">
+                    <Card className="border-l-4 border-primary shadow-md overflow-hidden bg-background">
+                        <CardContent className={isMobile ? "p-5" : "p-8"}>
+                            <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
+                                <div className="space-y-3 min-w-0">
+                                    <div className="flex flex-wrap gap-2">
+                                        <Badge variant="outline" className="text-[10px] font-black uppercase h-5 bg-muted/50 border-none">{kpiData.period}</Badge>
+                                        <Badge variant={kpiData.approvalStatus === 'Disetujui' ? 'default' : 'outline'} className={cn(
+                                            "text-[10px] font-black uppercase h-5 border-none",
+                                            kpiData.approvalStatus === 'Disetujui' ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+                                        )}>
+                                            {kpiData.approvalStatus === 'Disetujui' ? <ShieldCheck size={10} className="mr-1" /> : <ShieldAlert size={10} className="mr-1" />}
+                                            {kpiData.approvalStatus}
+                                        </Badge>
+                                    </div>
+                                    <h2 className={cn("font-black tracking-tighter text-slate-900 leading-tight", isMobile ? "text-xl" : "text-3xl")}>
+                                        {employee.name}
+                                    </h2>
+                                    <p className="text-muted-foreground text-[10px] sm:text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                                        <Briefcase size={12} className="opacity-40" /> {employee.position} <span className="opacity-20">/</span> {employee.department}
+                                    </p>
+                                </div>
+                                <div className="flex flex-col items-end gap-3 flex-shrink-0 w-full sm:w-auto">
+                                    <div className="text-right p-4 rounded-2xl bg-primary/5 border border-primary/10 w-full sm:w-auto">
+                                        <p className="text-[10px] uppercase font-black text-primary/60 tracking-widest mb-1">Skor Akhir KPI</p>
+                                        <p className={cn("font-black text-primary leading-none", isMobile ? "text-4xl" : "text-5xl")}>
+                                            {kpiData.score.toFixed(1)}
+                                        </p>
+                                        <Badge variant={getStatusBadgeVariant(calculatedStatus)} className="mt-2 text-[8px] font-black uppercase">{calculatedStatus}</Badge>
+                                    </div>
+                                </div>
                             </div>
-                        ) : (
-                            <Badge variant="outline" className="border-yellow-300 bg-yellow-50 text-yellow-800">
-                                <ShieldAlert className="mr-1.5 h-3.5 w-3.5" /> Menunggu Persetujuan
-                            </Badge>
-                        )}
-                    </div>
-                    <div className="text-right flex-shrink-0 ml-4">
-                        <p className="text-sm text-muted-foreground">Skor Akhir</p>
-                        <p className="text-3xl font-bold text-primary">{kpiData.score.toFixed(1)}</p>
-                        <Badge variant={getStatusBadgeVariant(calculatedStatus)}>{calculatedStatus}</Badge>
-                    </div>
-                </div>
+                        </CardContent>
+                    </Card>
                     
-                {currentKpiSetup && (
-                    <Alert variant="default" className={`mt-6 ${hasMetMinTarget ? "bg-blue-50 border-blue-300 text-blue-800" : "bg-orange-50 border-orange-300 text-orange-800"}`}>
-                        {hasMetMinTarget ? <Award className="h-4 w-4 !text-blue-600" /> : <BadgeInfo className="h-4 w-4 !text-orange-600" />}
-                        <AlertDescription className="font-medium">
-                            {hasMetMinTarget
-                                ? `Selamat! Anda telah melampaui target minimal KPI (${minAchievementTarget}).`
-                                : `Perhatian! Skor Anda di bawah target minimal KPI (${minAchievementTarget}).`
-                            }
-                        </AlertDescription>
-                    </Alert>
-                )}
+                    {currentKpiSetup && (
+                        <Alert variant="default" className={cn(
+                            "border-none shadow-sm",
+                            hasMetMinTarget ? "bg-blue-50 text-blue-800" : "bg-amber-50 text-amber-800"
+                        )}>
+                            <div className="flex items-center gap-3">
+                                <div className={cn("p-2 rounded-full", hasMetMinTarget ? "bg-blue-100 text-blue-600" : "bg-amber-100 text-amber-600")}>
+                                    {hasMetMinTarget ? <Award size={16} /> : <BadgeInfo size={16} />}
+                                </div>
+                                <AlertDescription className="text-xs font-bold uppercase tracking-tight leading-relaxed">
+                                    {hasMetMinTarget
+                                        ? `Analisis: Skor mencapai target minimal (${minAchievementTarget}%). Pertahankan konsistensi.`
+                                        : `Peringatan: Capaian berada di bawah ambang batas minimal (${minAchievementTarget}%).`
+                                    }
+                                </AlertDescription>
+                            </div>
+                        </Alert>
+                    )}
 
-                {myAllKpiData.length > 0 && <div className="mt-6"><PerformanceTrendChart data={myAllKpiData} /></div>}
-    
-                <div className="space-y-4 mt-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <AdaptiveCardGrid complexity="medium">
                         {categoryScores.map(cs => (
                             <CategoryPerformanceCard key={cs.category} data={cs} />
                         ))}
-                    </div>
-                </div>
-            
-                <h3 className="text-lg font-semibold mb-2 mt-6">Rincian Indikator</h3>
-                    {currentKpiSetup ? (
-                    isMobile ? (
-                        <Accordion type="multiple" className="w-full space-y-4" defaultValue={groupedIndicators.map(g => g.categoryName)}>
-                        {groupedIndicators.map(group => (
-                            <AccordionItem value={group.categoryName} key={group.categoryName} className="border-b-0">
-                                    <Card className="overflow-hidden">
-                                        <AccordionTrigger className="bg-muted/50 p-4">
-                                            <div className="flex justify-between w-full pr-2">
-                                                <span className="font-semibold text-base">{group.categoryName} ({group.categoryCode})</span>
-                                                <Badge variant="outline">Bobot: {group.totalWeight}%</Badge>
+                    </AdaptiveCardGrid>
+
+                    <div className="space-y-4">
+                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1 flex items-center gap-2">
+                            <FileText size={14} className="text-primary" /> Rincian Matriks Indikator
+                        </h3>
+                        {currentKpiSetup ? (
+                            <Accordion type="multiple" className="w-full space-y-4" defaultValue={groupedIndicators.map(g => g.categoryName)}>
+                                {groupedIndicators.map(group => (
+                                    <AccordionItem value={group.categoryName} key={group.categoryName} className="border rounded-2xl overflow-hidden bg-background shadow-sm border-border/40">
+                                        <AccordionTrigger className="bg-muted/30 p-4 hover:no-underline px-6">
+                                            <div className="flex justify-between w-full pr-4">
+                                                <div className="text-left">
+                                                    <span className="font-black text-[10px] uppercase tracking-widest text-primary/60 block mb-1">KATEGORI: {group.categoryCode}</span>
+                                                    <span className="font-black text-sm text-slate-900 uppercase tracking-tight">{group.categoryName}</span>
+                                                </div>
+                                                <Badge variant="outline" className="text-[9px] font-black h-5 border-none bg-background shadow-sm">BOBOT: {group.totalWeight}%</Badge>
                                             </div>
                                         </AccordionTrigger>
-                                        <AccordionContent className="p-0">
-                                            <div className="space-y-4 p-4">
+                                        <AccordionContent className="p-0 border-t border-border/40">
+                                            <div className="divide-y divide-border/40">
                                                 {group.indicators.map((indicator: KpiIndicator) => {
                                                     const achievement = kpiData.achievements.find(a => a.indicatorId === indicator.id);
                                                     const isRollup = indicator.rollup?.enabled && employee?.level !== 'Staff';
-                                                    
                                                     const actualValue = isRollup ? aggregatedValues[indicator.id] : achievement?.actual;
                                                     const score = calculateScore(indicator, actualValue);
                                                     const achievementPercentage = calculateAchievementPercentage(score, indicator.weight);
                                                     const unit = indicator.targetFormat === 'Persentase' ? '%' : (indicator.unit ? ` ${indicator.unit}` : '');
                                                     const monthlyTarget = distributedTargets[indicator.id]?.monthly ?? 0;
-                                                    const displayActualValue = typeof actualValue === 'number' ? `${actualValue.toLocaleString()}${unit}` : "N/A";
                                                     
-
                                                     return (
-                                                        <Card key={indicator.id} className="bg-background">
-                                                            <CardHeader className="pb-2">
-                                                                <CardTitle className="text-sm">{indicator.indicator}</CardTitle>
-                                                                <CardDescription className="text-xs !mt-1">
-                                                                Cara Ukur: {indicator.measurement}
-                                                                </CardDescription>
-                                                            </CardHeader>
-                                                            <CardContent className="space-y-4 text-sm pt-2">
-                                                                <div className="grid grid-cols-2 gap-4">
-                                                                    <div>
-                                                                        <Label className="text-xs text-muted-foreground">Target</Label>
-                                                                        <p className="font-semibold">{monthlyTarget.toLocaleString(undefined, { maximumFractionDigits: 1 })}{unit}</p>
+                                                        <div key={indicator.id} className="p-5 sm:p-6 bg-background group/row transition-colors hover:bg-muted/5">
+                                                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                                                                <div className="lg:col-span-5 space-y-2">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <h4 className="font-black text-xs uppercase text-slate-800 leading-tight">{indicator.indicator}</h4>
+                                                                        {isRollup && <Users size={12} className="text-primary opacity-40" />}
+                                                                        {indicator.cycle !== 'Bulanan' && <Badge variant="outline" className="text-[7px] h-4 font-black bg-primary/5 text-primary border-none uppercase">{indicator.cycle}</Badge>}
                                                                     </div>
-                                                                    <div>
-                                                                        <Label className="text-xs text-muted-foreground">Aktual</Label>
-                                                                        <p className="font-semibold">{displayActualValue}</p>
+                                                                    <p className="text-[10px] text-muted-foreground leading-relaxed font-medium line-clamp-2 italic">
+                                                                        "{indicator.measurement}"
+                                                                    </p>
+                                                                </div>
+                                                                
+                                                                <div className="lg:col-span-5 grid grid-cols-3 gap-4">
+                                                                    <div className="space-y-0.5">
+                                                                        <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Target</p>
+                                                                        <p className="text-xs font-black text-slate-700">{monthlyTarget.toLocaleString('id-ID', { maximumFractionDigits: 1 })}{unit}</p>
                                                                     </div>
-                                                                    <div>
-                                                                        <Label className="text-xs text-muted-foreground">Pencapaian</Label>
-                                                                        <p className="font-semibold text-primary">{achievementPercentage.toFixed(1)}%</p>
+                                                                    <div className="space-y-0.5">
+                                                                        <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Aktual</p>
+                                                                        <p className="text-xs font-black text-slate-900">{(typeof actualValue === 'number' ? actualValue : 0).toLocaleString('id-ID')}{unit}</p>
                                                                     </div>
-                                                                    <div>
-                                                                        <Label className="text-xs text-muted-foreground">Skor</Label>
-                                                                        <p className="font-bold text-lg">{typeof score === 'number' ? score.toFixed(1) : '0.0'}</p>
+                                                                    <div className="space-y-0.5">
+                                                                        <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Capaian</p>
+                                                                        <p className="text-xs font-black text-primary">{achievementPercentage.toFixed(1)}%</p>
                                                                     </div>
                                                                 </div>
-                                                                {(achievement?.keterangan || achievement?.linkBukti || indicator.cycle !== 'Bulanan') && <Separator />}
-                                                                {achievement?.keterangan && (
-                                                                    <div>
-                                                                        <Label className="text-xs text-muted-foreground">Keterangan</Label>
-                                                                        <p className="text-xs">{achievement.keterangan}</p>
+
+                                                                <div className="lg:col-span-2 text-right">
+                                                                    <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1">SKOR INDIVIDU</p>
+                                                                    <p className="text-xl font-black text-primary leading-none">{(typeof score === 'number' ? score : 0).toFixed(1)}</p>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            {(achievement?.keterangan || achievement?.linkBukti || indicator.cycle !== 'Bulanan') && (
+                                                                <div className="mt-4 pt-4 border-t border-dashed flex flex-wrap items-center justify-between gap-4">
+                                                                    <div className="flex-1 min-w-[200px]">
+                                                                        {achievement?.keterangan && (
+                                                                            <p className="text-[10px] text-muted-foreground font-medium bg-muted/30 p-2 rounded-lg border border-border/40">
+                                                                                <span className="font-black text-slate-500 uppercase mr-1">Catatan:</span> {achievement.keterangan}
+                                                                            </p>
+                                                                        )}
                                                                     </div>
-                                                                )}
-                                                                {achievement?.linkBukti && (
-                                                                    <div>
-                                                                        <a href={achievement.linkBukti} target="_blank" rel="noopener noreferrer" className="text-xs inline-flex items-center gap-1 text-blue-600 hover:underline">
-                                                                            <ExternalLink className="h-3 w-3"/> Link Bukti
-                                                                        </a>
+                                                                    <div className="flex items-center gap-2">
+                                                                        {achievement?.linkBukti && (
+                                                                            <Button variant="outline" size="sm" className="h-7 text-[9px] font-black uppercase rounded-lg border-primary/20 text-primary gap-1.5" asChild>
+                                                                                <a href={achievement.linkBukti} target="_blank" rel="noopener noreferrer">
+                                                                                    <ExternalLink size={10} /> Link Bukti
+                                                                                </a>
+                                                                            </Button>
+                                                                        )}
+                                                                        {indicator.cycle !== 'Bulanan' && (
+                                                                            <Button variant="outline" size="sm" className="h-7 text-[9px] font-black uppercase rounded-lg gap-1.5" onClick={() => setCycleProgressState({ isOpen: true, indicator: indicator })}>
+                                                                                <Activity size={10} /> Progres Siklus
+                                                                            </Button>
+                                                                        )}
                                                                     </div>
-                                                                )}
-                                                                {indicator.cycle !== 'Bulanan' && (
-                                                                    <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => setCycleProgressState({ isOpen: true, indicator: indicator })}>
-                                                                        <Activity className="mr-2 h-3 w-3" /> Lihat Progres Siklus
-                                                                    </Button>
-                                                                )}
-                                                            </CardContent>
-                                                        </Card>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     )
                                                 })}
                                             </div>
                                         </AccordionContent>
-                                    </Card>
-                                </AccordionItem>
-                        ))}
-                        </Accordion>
-                    ) : (
-                        <Accordion type="multiple" className="w-full" defaultValue={groupedIndicators.map(g => g.categoryName)}>
-                            {groupedIndicators.map(group => (
-                                <AccordionItem value={group.categoryName} key={group.categoryName}>
-                                    <AccordionTrigger>
-                                        <div className="flex justify-between w-full pr-2">
-                                            <span className="font-semibold text-base">{group.categoryName} ({group.categoryCode})</span>
-                                            <Badge variant="outline">Total Bobot: {group.totalWeight}%</Badge>
-                                        </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent>
-                                        <div className="overflow-x-auto">
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow>
-                                                        <TableHead className="w-[30%]">Indikator</TableHead>
-                                                        <TableHead>Target</TableHead>
-                                                        <TableHead>Aktual</TableHead>
-                                                        <TableHead>Pencapaian</TableHead>
-                                                        <TableHead>Keterangan</TableHead>
-                                                        <TableHead>Bukti</TableHead>
-                                                        <TableHead className="text-right">Skor</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {group.indicators.map((indicator: KpiIndicator) => {
-                                                        const achievement = kpiData.achievements.find(a => a.indicatorId === indicator.id);
-                                                        const isRollup = indicator.rollup?.enabled && employee?.level !== 'Staff';
-                                                        
-                                                        const actualValue = isRollup ? aggregatedValues[indicator.id] : achievement?.actual;
-                                                        const score = calculateScore(indicator, actualValue);
-                                                        const achievementPercentage = calculateAchievementPercentage(score, indicator.weight);
-                                                        const unit = indicator.targetFormat === 'Persentase' ? '%' : (indicator.unit ? ` ${indicator.unit}` : '');
-                                                        const monthlyTarget = distributedTargets[indicator.id]?.monthly ?? 0;
-                                                        const displayActualValue = typeof actualValue === 'number' ? `${actualValue.toLocaleString()}${unit}` : "N/A";
-                                                        
-                
-                                                        return (
-                                                            <TableRow key={indicator.id}>
-                                                                <TableCell className="font-medium text-xs">
-                                                                    <p>{indicator.indicator}</p>
-                                                                    <p className="text-muted-foreground font-normal">Cara Ukur: {indicator.measurement}</p>
-                                                                    {indicator.cycle !== 'Bulanan' && (
-                                                                        <Button variant="link" size="sm" className="text-xs h-auto p-0 mt-1" onClick={() => setCycleProgressState({ isOpen: true, indicator: indicator })}>
-                                                                            <Activity className="mr-1 h-3 w-3" /> Progres Siklus
-                                                                        </Button>
-                                                                    )}
-                                                                </TableCell>
-                                                                <TableCell className="text-xs">{monthlyTarget.toLocaleString(undefined, { maximumFractionDigits: 1 })}{unit}</TableCell>
-                                                                <TableCell className="text-xs">{displayActualValue}</TableCell>
-                                                                <TableCell className="text-xs font-semibold">{achievementPercentage.toFixed(1)}%</TableCell>
-                                                                <TableCell className="text-xs whitespace-normal break-words max-w-[250px]">{achievement?.keterangan || '-'}</TableCell>
-                                                                <TableCell>
-                                                                    {achievement?.linkBukti ? (
-                                                                        <a href={achievement.linkBukti} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                                                                            <ExternalLink className="h-4 w-4" />
-                                                                        </a>
-                                                                    ) : '-'}
-                                                                </TableCell>
-                                                                <TableCell className="text-right font-bold text-xs">
-                                                                    {typeof score === 'number' ? score.toFixed(1) : '0.0'}
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        )
-                                                    })}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                    </AccordionContent>
-                                </AccordionItem>
-                            ))}
-                        </Accordion>
-                    )
-                ) : (
-                    <div className="text-center text-muted-foreground py-10">
-                        Pengaturan KPI untuk posisi ini tidak ditemukan.
+                                    </AccordionItem>
+                                ))}
+                            </Accordion>
+                        ) : (
+                            <div className="text-center py-20 border-2 border-dashed rounded-3xl opacity-30">
+                                <Search size={40} className="mx-auto mb-2" />
+                                <p className="font-bold text-xs uppercase tracking-widest">Data Tidak Ditemukan</p>
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
+                </CardContent>
+            </Card>
 
             {cycleProgressState.isOpen && cycleProgressState.indicator && employee && (
                 <CycleProgressDialog
@@ -554,7 +450,7 @@ const AchievementDetailDialog = forwardRef<HTMLDivElement, AchievementDetailProp
                     kpiSetup={currentKpiSetup}
                 />
             )}
-        </>
+        </div>
     );
 });
 AchievementDetailDialog.displayName = "AchievementDetailDialog";

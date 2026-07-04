@@ -5,14 +5,16 @@ import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarIcon, User, ChevronLeft } from "lucide-react";
+import { CalendarIcon, User, ChevronLeft, TrendingUp, BarChart3, Clock } from "lucide-react";
 import { format, parse } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import type { Employee, KpiData } from "@/types";
 import { useMasterData } from "@/contexts/master-data-context";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import TeamPerformanceTrendChart from "@/components/reports/team-performance-trend-chart";
 import { ReportDetailView } from '@/app/(main)/reports/page';
+import { ResponsivePage } from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { AdaptiveCardGrid, AdaptiveMetricCard, AdaptiveInsightCard } from "@/components/ui/adaptive-card";
 
 interface StoredAnalysisData {
     employee: Employee;
@@ -39,7 +41,6 @@ export default function ReportDetailPage() {
                 router.replace('/reports');
             }
         } else {
-             console.warn("No analysis data found in session storage. Redirecting...");
              router.replace('/reports');
         }
     }, [router]);
@@ -87,76 +88,79 @@ export default function ReportDetailPage() {
     const { employee, startPeriod, endPeriod } = analysisData;
 
     return (
-      <>
-        <div className="space-y-6">
-            <Card>
-                <CardHeader>
-                   <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                         <div>
-                            <Button variant="ghost" size="sm" onClick={handleBack} className="mb-2 -ml-2 self-start">
-                                <ChevronLeft className="mr-2 h-4 w-4" />
-                                Kembali ke Laporan
-                            </Button>
-                             <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-4">
-                                <CardTitle className="text-lg font-semibold leading-none tracking-tight">Analisis Kinerja: {employee.name}</CardTitle>
-                                <p className="text-sm text-muted-foreground">
-                                    Rata-Rata Skor: <span className="font-bold text-primary text-lg">{analysisResult.averageScore.toFixed(1)}</span>
-                                </p>
-                            </div>
-                            <CardDescription className="text-sm text-muted-foreground p-0 pt-1">
-                                Periode: {format(parse(startPeriod, "yyyy-MM", new Date()), "MMM yyyy", { locale: localeId })} - {format(parse(endPeriod, "yyyy-MM", new Date()), "MMM yyyy", { locale: localeId })}
-                            </CardDescription>
-                         </div>
-                    </div>
-                </CardHeader>
-                 <CardContent>
-                     <div className="flex flex-col sm:flex-row justify-between items-start gap-4 p-4 border rounded-lg bg-muted/30">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                                <User className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold">{employee.name}</h3>
-                                <p className="text-sm text-muted-foreground">{employee.position} / {employee.department}</p>
-                            </div>
-                        </div>
-                    </div>
-                 </CardContent>
-            </Card>
+      <ResponsivePage>
+            <div className="flex flex-col gap-6">
+                <Button variant="ghost" onClick={handleBack} className="-ml-4 hover:bg-muted font-bold text-[10px] uppercase tracking-widest text-muted-foreground w-fit px-4">
+                    <ChevronLeft className="mr-2 h-4 w-4" /> Kembali ke Daftar
+                </Button>
 
-            <TeamPerformanceTrendChart chartData={analysisResult.chartData} />
-            
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-base font-semibold">Rincian Skor per Bulan</CardTitle>
-                    <CardDescription>Klik kartu untuk melihat rincian pencapaian bulanan.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {analysisResult.trendData.map(data => (
-                            <Card 
-                                key={data.period} 
-                                className="text-center p-3 rounded-lg border bg-background hover:bg-muted transition-colors cursor-pointer"
-                                onClick={() => setSelectedDetail(data)}
-                            >
-                                <CardHeader className="p-0"><CardTitle className="text-xs text-muted-foreground">{format(parse(data.period, "yyyy-MM", new Date()), "LLLL", { locale: localeId })}</CardTitle></CardHeader>
-                                <CardContent className="p-0 pt-1">
-                                    <p className="text-2xl font-bold">{data.score.toFixed(1)}</p>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-        {selectedDetail && (
-          <ReportDetailView 
-            kpiData={selectedDetail}
-            onClose={() => setSelectedDetail(null)}
-          />
-        )}
-      </>
+                <PageHeader 
+                    title={`Analisis Performa: ${employee.name}`}
+                    description={`Visualisasi tren pencapaian target periode ${format(parse(startPeriod, "yyyy-MM", new Date()), "MMM yyyy", { locale: localeId })} - ${format(parse(endPeriod, "yyyy-MM", new Date()), "MMM yyyy", { locale: localeId })}`}
+                    icon={User}
+                />
+
+                <AdaptiveCardGrid complexity="simple">
+                    <AdaptiveMetricCard 
+                        title="Rata-Rata Skor" 
+                        value={analysisResult.averageScore.toFixed(1)} 
+                        icon={BarChart3}
+                        color="bg-primary/10 text-primary"
+                    />
+                    <AdaptiveMetricCard 
+                        title="Total Periode" 
+                        value={analysisResult.trendData.length} 
+                        icon={CalendarIcon}
+                        description="Bulan terdata"
+                    />
+                    <AdaptiveMetricCard 
+                        title="Capaian Tertinggi" 
+                        value={Math.max(...analysisResult.trendData.map(d => d.score)).toFixed(1)} 
+                        icon={TrendingUp}
+                        color="bg-emerald-500/10 text-emerald-600"
+                    />
+                    <AdaptiveMetricCard 
+                        title="Status Terakhir" 
+                        value={analysisResult.trendData[analysisResult.trendData.length-1].status} 
+                        icon={Clock}
+                        color="bg-blue-500/10 text-blue-600"
+                    />
+                </AdaptiveCardGrid>
+
+                <AdaptiveCardGrid complexity="complex">
+                    <AdaptiveInsightCard title="Tren Skor Bulanan" icon={TrendingUp} description="Perkembangan skor dari waktu ke waktu">
+                        <div className="h-[350px] pt-4">
+                            <TeamPerformanceTrendChart chartData={analysisResult.chartData} />
+                        </div>
+                    </AdaptiveInsightCard>
+
+                    <AdaptiveInsightCard title="Rincian Laporan Per Bulan" icon={Clock} description="Klik kartu untuk melihat rincian pencapaian">
+                        <ScrollArea className="h-[350px] pr-4">
+                            <div className="grid grid-cols-2 gap-3 py-2">
+                                {analysisResult.trendData.map(data => (
+                                    <button 
+                                        key={data.period} 
+                                        onClick={() => setSelectedDetail(data)}
+                                        className="text-center p-3 rounded-xl border bg-background hover:bg-muted/50 hover:border-primary/20 transition-all group"
+                                    >
+                                        <p className="text-[10px] font-black uppercase text-muted-foreground group-hover:text-primary transition-colors">
+                                            {format(parse(data.period, "yyyy-MM", new Date()), "LLLL", { locale: localeId })}
+                                        </p>
+                                        <p className="text-2xl font-black mt-1 text-slate-800">{data.score.toFixed(1)}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    </AdaptiveInsightCard>
+                </AdaptiveCardGrid>
+            </div>
+
+            {selectedDetail && (
+                <ReportDetailView 
+                    kpiData={selectedDetail}
+                    onClose={() => setSelectedDetail(null)}
+                />
+            )}
+      </ResponsivePage>
     );
 }
-
-    

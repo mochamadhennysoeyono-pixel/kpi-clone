@@ -61,25 +61,25 @@ import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { format, parse, isBefore, addMonths, subMonths, startOfMonth, isValid } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { DonutChart } from "@/components/reports/donut-chart";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ResponsivePage, ResponsiveToolbar } from "@/components/ui/adaptive-layout";
 import { PageHeader } from "@/components/ui/page-header";
 import { AdaptiveCardGrid, AdaptiveMetricCard, AdaptiveInsightCard } from "@/components/ui/adaptive-card";
 import { AdaptiveTable } from "@/components/ui/adaptive-table";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
+import { usePageContext } from "@/contexts/page-context";
 
 function TeamReportView() {
     const { currentUser, userRole } = useAuth();
     const { kpiData, companies, employees, updateKpiData, departments, positions } = useMasterData();
     const { toast } = useToast();
-    const isMobile = useIsMobile();
+    const { isMobile } = useBreakpoint();
     const router = useRouter();
     
     const [mode, setMode] = useState<'single' | 'trend'>('single');
@@ -100,7 +100,7 @@ function TeamReportView() {
             const activeCompanies = companies.filter(c => c.status === 'Aktif');
             if (activeCompanies.length > 0) setSelectedCompanyId(activeCompanies[0].id);
         } else if (currentUser) {
-            const userCompanyData = companies.find(c => c.name === currentUser.company);
+            const userCompanyData = companies.find((c) => c.name === currentUser.company);
             setSelectedCompanyId(userCompanyData?.id || null);
         }
     }, [userRole, currentUser, companies]);
@@ -251,8 +251,12 @@ function TeamReportView() {
     
     const handleViewDetails = (data: any) => {
         if (mode === 'single') {
-            if (isMobile) { sessionStorage.setItem('selectedKpiDetail', JSON.stringify(data)); router.push(`/reports/detail/${data.id}`); }
-            else { setSelectedKpiDataForDetail(data); }
+            if (isMobile) { 
+                sessionStorage.setItem('selectedKpiDetail', JSON.stringify(data)); 
+                router.push(`/reports/detail/${data.id}`); 
+            } else { 
+                setSelectedKpiDataForDetail(data); 
+            }
         } else if (data.employee && trendStartPeriod && trendEndPeriod) {
             sessionStorage.setItem('selectedEmployeeAnalysis', JSON.stringify({ employee: data.employee, startPeriod: trendStartPeriod, endPeriod: trendEndPeriod }));
             router.push(`/reports/${data.employee.id}`);
@@ -295,7 +299,7 @@ function TeamReportView() {
                             <div className="h-[300px] pt-4"><TeamPerformanceTrendChart chartData={chartData} /></div>
                         </AdaptiveInsightCard>
                          {mode === 'trend' && (
-                            <AdaptiveInsightCard title="Distribusi Kelayakan" icon={LayoutGrid} description="Berdasarkan status terakhir">
+                            <AdaptiveInsightCard title="Distribusi Status" icon={LayoutGrid} description="Berdasarkan status rata-rata terakhir">
                                 <div className="h-[300px] pt-4"><DonutChart data={trendStats?.distribution as any} /></div>
                             </AdaptiveInsightCard>
                         )}
@@ -416,15 +420,15 @@ function IndividualAnalysisView() {
             <CardHeader className="bg-primary/5 p-8 border-b">
                 <div className="flex items-center gap-4">
                     <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm"><UserSearch size={24} /></div>
-                    <div className="space-y-1"><CardTitle className="text-2xl font-black tracking-tight">Analis Performa Personal</CardTitle><CardDescription className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Pilih karyawan dan rentang waktu untuk simulasi data.</CardDescription></div>
+                    <div className="space-y-1"><CardTitle className="text-2xl font-black tracking-tight">Simulator Performa Personal</CardTitle><CardDescription className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Pilih karyawan dan rentang waktu untuk menjalankan analisa data.</CardDescription></div>
                 </div>
             </CardHeader>
             <CardContent className="p-8 space-y-10">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Unit Bisnis</Label><Select onValueChange={(v) => { setSelectedCompanyId(v); setSelectedDepartment('all'); setSelectedEmployeeId('all'); }} value={selectedCompanyId ?? ""}><SelectTrigger className="h-12 font-bold"><SelectValue /></SelectTrigger><SelectContent className="z-[350]">{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
                     <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Karyawan</Label><Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId} disabled={filteredEmployees.length === 0}><SelectTrigger className="h-12 font-bold"><SelectValue placeholder="Pilih Karyawan..." /></SelectTrigger><SelectContent className="z-[350]">{filteredEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Periode Mulai</Label><Select value={startPeriod} onValueChange={setStartPeriod}><SelectTrigger className="h-12 font-bold"><SelectValue placeholder="Pilih Bulan..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Periode Selesai</Label><Select value={endPeriod} onValueChange={setEndPeriod}><SelectTrigger className="h-12 font-bold"><SelectValue placeholder="Pilih Bulan..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Mulai</Label><Select value={startPeriod} onValueChange={setStartPeriod}><SelectTrigger className="h-12 font-bold"><SelectValue placeholder="Pilih Bulan..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Selesai</Label><Select value={endPeriod} onValueChange={setEndPeriod}><SelectTrigger className="h-12 font-bold"><SelectValue placeholder="Pilih Bulan..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
                 </div>
                 <Button onClick={handleRunAnalysis} disabled={selectedEmployeeId === 'all' || !startPeriod || !endPeriod} className="w-full h-12 font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20"><TrendingUp size={16} className="mr-2" /> Jalankan Analisis Performa</Button>
             </CardContent>
@@ -455,15 +459,15 @@ export function ReportDetailView({ kpiData, onClose }: { kpiData: KpiData, onClo
 export default function ReportsPage() {
     const { setPageContext } = usePageContext();
     const [activeTab, setActiveTab] = useState("team");
-    useEffect(() => { setPageContext('Laporan Kinerja', null); }, [setPageContext]);
+    useEffect(() => { setPageContext('Pusat Analisis Laporan', null); }, [setPageContext]);
 
     return (
       <ResponsivePage>
-        <PageHeader title="Pusat Laporan & Analitik" description="Monitor pencapaian target dan analisis tren pertumbuhan kinerja seluruh tim." icon={FilePieChart} />
+        <PageHeader title="Pusat Analisis Laporan" description="Monitor pencapaian target dan analisis tren pertumbuhan kinerja di seluruh unit bisnis." icon={FilePieChart} />
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 max-w-[400px] bg-muted/30 p-1 rounded-xl mb-6">
-                <TabsTrigger value="team" className="font-bold text-xs rounded-lg">Laporan Agregat Tim</TabsTrigger>
-                <TabsTrigger value="individual" className="font-bold text-xs rounded-lg">Analisis Individu</TabsTrigger>
+                <TabsTrigger value="team" className="font-bold text-xs rounded-lg uppercase tracking-tight">Laporan Agregat Tim</TabsTrigger>
+                <TabsTrigger value="individual" className="font-bold text-xs rounded-lg uppercase tracking-tight">Analisa Individu</TabsTrigger>
             </TabsList>
             <TabsContent value="team" className="m-0 border-none space-y-6"><TeamReportView /></TabsContent>
             <TabsContent value="individual" className="m-0 border-none"><IndividualAnalysisView /></TabsContent>

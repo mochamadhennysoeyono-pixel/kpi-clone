@@ -25,12 +25,15 @@ import type { KpiSetup, KpiData, KpiIndicator, Employee, Company } from "@/types
 import { getYear, startOfYear, endOfYear, parse, isWithinInterval, lastDayOfMonth } from "date-fns";
 import { CycleReportCard } from "@/components/cycle-reports/cycle-report-card";
 import { usePageContext } from "@/contexts/page-context";
-import { GitMerge, Building, ChevronLeft, X, Maximize2, Minimize2, Activity } from 'lucide-react';
+import { GitMerge, Building, X, Maximize2, Minimize2, Activity, Calendar, Filter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import CycleDetailViewContent from '@/components/cycle-reports/cycle-detail-dialog-content';
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { ResponsivePage, ResponsiveToolbar } from "@/components/ui/adaptive-layout";
+import { PageHeader } from "@/components/ui/page-header";
+import { AdaptiveCardGrid } from "@/components/ui/adaptive-card";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
 
 export type CyclicalIndicator = KpiIndicator & {
   setupId: string;
@@ -59,33 +62,37 @@ function CycleDetailView({ report, onBack }: { report: ReportData, onBack: () =>
 
     useEffect(() => {
       setIsMounted(true);
-      return () => {};
+      const body = document.body;
+      body.style.overflow = 'hidden';
+      return () => { body.style.overflow = 'auto'; };
     }, []);
 
     if (!isMounted) return null;
 
     return createPortal(
-         <div className="fixed inset-0 z-50 flex justify-end bg-black/60">
+         <div className="fixed inset-0 z-[500] flex justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 no-print">
             <div className={cn(
-                "relative bg-background shadow-xl h-full transition-all duration-300 flex flex-col",
-                isExpanded ? "w-full" : "w-full md:w-[550px] lg:w-1/3"
+                "relative bg-background shadow-2xl h-full transition-all duration-300 flex flex-col",
+                isExpanded ? "w-full" : "w-full md:w-[600px] lg:w-[45%]"
             )}>
                 <div className="flex items-center justify-between p-4 border-b bg-muted/50 sticky top-0 z-10">
-                    <h2 className="font-semibold text-foreground">Rincian Laporan Siklus</h2>
-                    <div className="flex items-center gap-2">
-                        <button
-                            className="hidden sm:flex p-2 rounded-md hover:bg-accent"
+                    <h2 className="font-bold text-slate-800">Rincian Laporan Siklus</h2>
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hidden sm:flex"
                             onClick={() => setIsExpanded(!isExpanded)}
                             >
                             {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-                        </button>
-                        <button className="p-2 rounded-md hover:bg-accent" onClick={onBack}>
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={onBack}>
                             <X size={18} />
-                        </button>
+                        </Button>
                     </div>
                 </div>
                 <ScrollArea className="flex-1">
-                    <div className="p-4">
+                    <div className="p-4 sm:p-6">
                         <CycleDetailViewContent report={report} />
                     </div>
                 </ScrollArea>
@@ -101,7 +108,7 @@ export default function CycleReportsPage() {
   const { companies, kpiSetups, kpiData, employees } = useMasterData();
   const { setPageContext } = usePageContext();
   const router = useRouter();
-  const isMobile = useIsMobile();
+  const { isMobile } = useBreakpoint();
 
   const userCompany = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
   
@@ -109,11 +116,6 @@ export default function CycleReportsPage() {
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [selectedReport, setSelectedReport] = useState<ReportData | null>(null);
   const [activeTab, setActiveTab] = useState('internal');
-  
-  const isManager = useMemo(() => {
-    if (!currentUser || (userRole !== 'user' && userRole !== 'manajemen')) return false;
-    return employees.some(e => e.reportsTo === currentUser.id);
-  }, [currentUser, userRole, employees]);
 
   const isHoldingAdmin = useMemo(() => {
     if (userRole === 'superadmin') return true;
@@ -332,95 +334,87 @@ export default function CycleReportsPage() {
     }, [selectedCompanyId, selectedYear, activeTab]);
 
   return (
-      <>
-        <div className="container mx-auto space-y-6 pt-6">
-            <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
-            <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                        <Activity className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                        <CardTitle className="font-headline text-2xl">Laporan Progres Siklus KPI</CardTitle>
-                        <CardDescription>
-                            Pantau progres indikator KPI jangka panjang (Triwulan, Semester, Tahunan).
-                        </CardDescription>
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {showCompanyFilter && (
-                    <Select onValueChange={setSelectedCompanyId} value={selectedCompanyId ?? ""}>
-                        <SelectTrigger className="w-full sm:w-[200px]">
-                        <SelectValue placeholder="Pilih Perusahaan" />
-                        </SelectTrigger>
-                        <SelectContent>
-                        {manageableCompanies.map(c => (
-                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
-                    )}
-                    <Select onValueChange={setSelectedYear} value={selectedYear ?? ""}>
-                        <SelectTrigger className="w-full sm:w-[160px]">
-                        <SelectValue placeholder="Pilih Tahun" />
-                        </SelectTrigger>
-                        <SelectContent>
-                        {availableYears.map(year => (
-                            <SelectItem key={year} value={year}>{`Tahun ${year}`}</SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                </div>
-            </CardHeader>
-            </Card>
+      <ResponsivePage>
+            <PageHeader 
+                title="Laporan Progres Siklus"
+                description="Pantau pencapaian kumulatif untuk indikator KPI berjangka panjang (Triwulan, Semester, Tahunan)."
+                icon={Activity}
+            />
 
-            <div className="flex-1 min-h-0">
+            <ResponsiveToolbar>
+                <div className="flex flex-1 items-center gap-2 min-w-0">
+                    <Filter className="size-4 text-muted-foreground hidden sm:block shrink-0" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full sm:w-auto">
+                        {showCompanyFilter && (
+                            <Select onValueChange={setSelectedCompanyId} value={selectedCompanyId ?? ""}>
+                                <SelectTrigger className="w-full sm:w-[200px] h-10 bg-background border-none">
+                                    <Building className="size-4 mr-2 text-primary" />
+                                    <SelectValue placeholder="Pilih Perusahaan" />
+                                </SelectTrigger>
+                                <SelectContent className="z-[350]">
+                                    {manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        )}
+                        <Select onValueChange={setSelectedYear} value={selectedYear ?? ""}>
+                            <SelectTrigger className="w-full sm:w-[160px] h-10 bg-background border-none">
+                                <Calendar className="size-4 mr-2 text-primary" />
+                                <SelectValue placeholder="Pilih Tahun" />
+                            </SelectTrigger>
+                            <SelectContent className="z-[350]">
+                                {availableYears.map(year => <SelectItem key={year} value={year}>{`Tahun ${year}`}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+            </ResponsiveToolbar>
+
+            <div className="w-full">
                 {selectedCompanyId && selectedYear ? (
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="internal"><Building className="mr-2 h-4 w-4" />Laporan Internal</TabsTrigger>
-                    <TabsTrigger value="holding" disabled={!isHoldingAdmin}><GitMerge className="mr-2 h-4 w-4" />Laporan Turunan Holding</TabsTrigger>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 max-w-[500px] mb-8 bg-muted/30 p-1 rounded-xl">
+                        <TabsTrigger value="internal" className="font-bold text-xs rounded-lg uppercase tracking-tight">
+                            <Building className="mr-2 h-4 w-4" /> Laporan Internal
+                        </TabsTrigger>
+                        <TabsTrigger value="holding" disabled={!isHoldingAdmin} className="font-bold text-xs rounded-lg uppercase tracking-tight">
+                            <GitMerge className="mr-2 h-4 w-4" /> Laporan Turunan Holding
+                        </TabsTrigger>
                     </TabsList>
-                    <ScrollArea className="flex-1 mt-4">
-                        <TabsContent value="internal">
+                    
+                    <TabsContent value="internal" className="m-0 border-none">
                         {reports.length > 0 ? (
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            <AdaptiveCardGrid complexity="medium">
                                 {reports.map(report => (
                                     <CycleReportCard key={report.indicator.id} report={report} onClick={() => handleReportClick(report)} />
                                 ))}
-                            </div>
+                            </AdaptiveCardGrid>
                             ) : (
-                                <Card><CardContent className="p-10 text-center text-muted-foreground">Tidak ada laporan siklus internal untuk filter ini.</CardContent></Card>
+                                <Card className="border-dashed"><CardContent className="p-20 text-center text-muted-foreground italic">Tidak ada laporan siklus internal untuk filter ini.</CardContent></Card>
                             )}
-                        </TabsContent>
-                        <TabsContent value="holding">
+                    </TabsContent>
+                    <TabsContent value="holding" className="m-0 border-none">
                             {reports.length > 0 ? (
-                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                <AdaptiveCardGrid complexity="medium">
                                     {reports.map(report => (
                                         <CycleReportCard key={report.indicator.id} report={report} onClick={() => handleReportClick(report)} />
                                     ))}
-                                </div>
+                                </AdaptiveCardGrid>
                             ) : (
-                                <Card><CardContent className="p-10 text-center text-muted-foreground">Tidak ada laporan siklus turunan dari holding untuk filter ini.</CardContent></Card>
+                                <Card className="border-dashed"><CardContent className="p-20 text-center text-muted-foreground italic">Tidak ada laporan siklus turunan holding untuk filter ini.</CardContent></Card>
                             )}
-                        </TabsContent>
-                    </ScrollArea>
+                    </TabsContent>
                 </Tabs>
                 ) : (
-                <Card>
-                    <CardContent className="p-10 text-center text-muted-foreground">
-                        Silakan pilih perusahaan dan tahun untuk melihat laporan.
-                    </CardContent>
-                </Card>
+                <div className="py-32 text-center border-2 border-dashed rounded-3xl bg-muted/5 opacity-40">
+                    <Calendar size={48} className="mx-auto mb-4 text-slate-400" />
+                    <p className="font-black uppercase text-[10px] tracking-[0.2em]">Pilih Parameter Laporan</p>
+                </div>
                 )}
             </div>
-        </div>
         
-        {selectedReport && (
-            <CycleDetailView report={selectedReport} onBack={() => setSelectedReport(null)} />
-        )}
-      </>
+            {selectedReport && (
+                <CycleDetailView report={selectedReport} onBack={() => setSelectedReport(null)} />
+            )}
+      </ResponsivePage>
   );
 }
