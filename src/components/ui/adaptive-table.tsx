@@ -85,13 +85,13 @@ export function AdaptiveTable<T>({
     <div className={cn("rounded-xl border shadow-sm overflow-hidden bg-background", className)}>
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow>
+          <TableHeader className="bg-muted/30">
+            <TableRow className="border-b">
               {columns.map((col, idx) => (
                 <TableHead 
                   key={idx} 
                   className={cn(
-                    "text-[10px] font-black uppercase tracking-wider py-4 px-6",
+                    "text-[11px] font-bold text-muted-foreground py-4 px-6",
                     col.hideOnTablet && isTablet && "hidden",
                     col.className
                   )}
@@ -103,7 +103,7 @@ export function AdaptiveTable<T>({
           </TableHeader>
           <TableBody>
             {data.map((item) => (
-              <TableRow key={keyExtractor(item)} className="hover:bg-muted/5 transition-colors group">
+              <TableRow key={keyExtractor(item)} className="hover:bg-muted/5 transition-colors group border-b last:border-0">
                 {columns.map((col, idx) => (
                   <TableCell 
                     key={idx} 

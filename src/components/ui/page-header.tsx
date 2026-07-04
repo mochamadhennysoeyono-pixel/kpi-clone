@@ -23,15 +23,15 @@ export function PageHeader({ title, description, icon: Icon, actions, className 
       "lg:flex-row lg:items-center lg:justify-between",
       className
     )}>
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-4 min-w-0">
         {Icon && (
-          <div className="p-2 bg-primary/5 rounded-lg shrink-0 border border-primary/10 shadow-stripe">
-            <Icon className="size-5 text-primary" />
+          <div className="size-11 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-900 shadow-stripe shrink-0">
+            <Icon size={24} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
           </div>
         )}
         <div className="min-w-0 space-y-0.5">
           <h1 className={cn(
-            "font-black tracking-tighter text-foreground leading-tight",
+            "font-black tracking-tight text-slate-900 leading-tight",
             "text-lg sm:text-xl md:text-2xl" 
           )}>
             {title}
@@ -39,7 +39,7 @@ export function PageHeader({ title, description, icon: Icon, actions, className 
           {description && (
             <p className={cn(
               "text-muted-foreground font-medium leading-relaxed max-w-2xl",
-              "text-[10px] sm:text-xs"
+              "text-[11px] sm:text-xs"
             )}>
               {description}
             </p>

@@ -1,20 +1,19 @@
-
 // src/app/(main)/admin-management/page.tsx
 "use client";
 
 import { useState, useMemo } from "react";
 import {
   PlusCircle,
-  MoreHorizontal,
+  DotsThreeOutlineVertical,
   User,
-  ShieldCheck,
-  Send,
-  Loader2,
-  Pencil,
-  Trash2,
-  Mail,
-  ChevronDown,
-} from "lucide-react";
+  ShieldCheckered,
+  PaperPlaneTilt,
+  CircleNotch,
+  PencilSimple,
+  Trash,
+  EnvelopeSimple,
+  CaretDown,
+} from "@phosphor-icons/react";
 import type { Employee, LoginStatus } from "@/types";
 import { EmployeeFormSheet } from "@/components/master-data/employees/employee-form-sheet";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
@@ -26,7 +25,6 @@ import { db } from "@/lib/firebase/client";
 import { doc, setDoc, collection } from "firebase/firestore";
 import { 
     ResponsivePage, 
-    ResponsiveToolbar 
 } from "@/components/ui/adaptive-layout";
 import { PageHeader } from "@/components/ui/page-header";
 import { AdaptiveTable } from "@/components/ui/adaptive-table";
@@ -68,12 +66,6 @@ export default function AdminManagementPage() {
   };
 
   const handleAddSuperAdmin = async (data: Omit<Employee, 'id' | 'password'>) => {
-    toast({
-        variant: 'destructive',
-        title: 'Aksi Dilarang',
-        description: 'Pembuatan akun login baru harus dilakukan melalui backend.',
-    });
-    
     try {
         const docRef = doc(collection(db, 'employees'));
         const dataToSave: Omit<Employee, 'id' | 'password'> = {
@@ -90,7 +82,7 @@ export default function AdminManagementPage() {
         };
         await setDoc(docRef, dataToSave);
         await fetchData();
-        toast({ title: "Data Dibuat", description: "Data superadmin baru telah disimpan." });
+        toast({ title: "Superadmin Dibuat", description: "Akun baru telah berhasil didaftarkan." });
     } catch (e: any) {
         toast({ variant: 'destructive', title: 'Gagal', description: e.message });
     }
@@ -112,20 +104,20 @@ export default function AdminManagementPage() {
     }
   };
 
-  const handleSendInvitation = async (email: string) => {
+  const handleSendInvitation = async (email: string, name: string) => {
     setIsSendingInvitation(email);
-    const result = await sendPasswordReset(email);
+    const result = await sendPasswordReset(email, name);
     setIsSendingInvitation(null);
     if (result.success) {
-      toast({ title: "Email Terkirim" });
+      toast({ title: "Email Terkirim", description: `Tautan reset telah dikirim ke ${email}` });
     }
   };
   
   const getLoginStatusBadge = (status: LoginStatus) => {
     switch (status) {
-        case "Active": return "bg-green-100 text-green-800 border-green-200";
-        case "Invited": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-        default: return "bg-gray-100 text-gray-800 border-gray-200";
+        case "Active": return "bg-green-50 text-green-700 border-green-100";
+        case "Invited": return "bg-amber-50 text-amber-700 border-amber-100";
+        default: return "bg-slate-50 text-slate-600 border-slate-100";
     }
   }
 
@@ -137,11 +129,11 @@ export default function AdminManagementPage() {
     <ResponsivePage>
       <PageHeader 
         title="Manajemen Superadmin"
-        description="Kelola pengguna dengan hak akses tertinggi di sistem."
-        icon={ShieldCheck}
+        description="Kelola otoritas tertinggi sistem dan pengaturan akses admin global."
+        icon={ShieldCheckered}
         actions={
-          <Button onClick={handleAddEmployee} className="font-bold shadow-lg h-9 sm:h-10">
-            <PlusCircle className="size-4" />
+          <Button onClick={handleAddEmployee} className="font-bold shadow-stripe h-10 px-5 active:scale-95 transition-all">
+            <PlusCircle className="size-4 mr-2" weight="fill" />
             Tambah Superadmin
           </Button>
         }
@@ -152,17 +144,17 @@ export default function AdminManagementPage() {
         keyExtractor={(e) => e.id}
         columns={[
           {
-            header: "Superadmin",
+            header: "Profil Superadmin",
             cell: (e) => (
               <div className="flex items-center gap-3">
-                <Avatar className="size-9 border shadow-sm">
-                  <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-black uppercase">
+                <Avatar className="size-10 border-2 border-slate-50 shadow-sm shrink-0">
+                  <AvatarFallback className="bg-primary/5 text-primary text-[11px] font-black uppercase">
                     {e.name.substring(0, 2)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="font-bold text-slate-900 truncate">{e.name}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-medium truncate">{e.email}</p>
+                  <p className="text-[11px] text-muted-foreground font-medium truncate">{e.email}</p>
                 </div>
               </div>
             )
@@ -170,15 +162,15 @@ export default function AdminManagementPage() {
           {
             header: "Status Akun",
             cell: (e) => (
-              <Badge variant={e.status === "Aktif" ? "default" : "outline"} className="text-[9px] uppercase font-black">
+              <Badge variant={e.status === "Aktif" ? "default" : "outline"} className="font-bold h-6 px-2.5 border-none shadow-sm">
                 {e.status}
               </Badge>
             )
           },
           {
-            header: "Login",
+            header: "Akses Login",
             cell: (e) => (
-              <Badge variant="outline" className={cn("text-[9px] uppercase font-bold h-5", getLoginStatusBadge(e.loginStatus))}>
+              <Badge variant="outline" className={cn("text-[10px] font-black uppercase h-6 px-2 border", getLoginStatusBadge(e.loginStatus))}>
                 {e.loginStatus}
               </Badge>
             )
@@ -189,20 +181,23 @@ export default function AdminManagementPage() {
             cell: (e) => (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" disabled={isSendingInvitation === e.email}>
-                    {isSendingInvitation === e.email ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
+                  <Button variant="ghost" size="icon" className="rounded-xl h-9 w-9 hover:bg-slate-50" disabled={isSendingInvitation === e.email}>
+                    {isSendingInvitation === e.email ? <CircleNotch className="size-4 animate-spin" /> : <DotsThreeOutlineVertical className="size-4" weight="bold" />}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleEditEmployee(e)}><Pencil className="size-3.5 mr-2" />Ubah</DropdownMenuItem>
+                <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-2xl border-none p-2">
+                  <DropdownMenuLabel className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Opsi Akun</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => handleEditEmployee(e)} className="p-2.5 rounded-lg cursor-pointer">
+                    <PencilSimple className="size-4 mr-3 opacity-60" weight="bold" /> Ubah Data
+                  </DropdownMenuItem>
                   {e.loginStatus !== 'No Login' && (
-                    <DropdownMenuItem onClick={() => handleSendInvitation(e.email)}>
-                      <Send className="mr-2 size-3.5" /> Kirim Reset Sandi
+                    <DropdownMenuItem onClick={() => handleSendInvitation(e.email, e.name)} className="p-2.5 rounded-lg cursor-pointer">
+                      <PaperPlaneTilt className="mr-3 size-4 opacity-60" weight="bold" /> Kirim Reset Sandi
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(e)} disabled={e.id === currentUser?.id}>
-                    <Trash2 className="size-3.5 mr-2" /> Hapus
+                  <DropdownMenuSeparator className="bg-slate-100" />
+                  <DropdownMenuItem className="p-2.5 rounded-lg cursor-pointer text-destructive focus:bg-destructive/5 focus:text-destructive font-bold" onClick={() => openDeleteDialog(e)} disabled={e.id === currentUser?.id}>
+                    <Trash className="size-4 mr-3" weight="bold" /> Hapus Permanen
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -210,24 +205,24 @@ export default function AdminManagementPage() {
           }
         ]}
         renderMobileCard={(e) => (
-          <Card className="border-border/40 shadow-sm">
-            <CardContent className="p-4 space-y-4">
+          <Card className="border-slate-100 shadow-sm overflow-hidden">
+            <CardContent className="p-5 space-y-5">
               <div className="flex items-center gap-4">
-                <Avatar className="size-11 border-2 border-primary/10 shadow-sm">
+                <Avatar className="size-14 border-4 border-slate-50 shadow-sm">
                   <AvatarFallback className="bg-primary/5 text-primary text-xs font-black uppercase">{e.name.substring(0, 2)}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                   <h3 className="font-black text-sm truncate uppercase tracking-tight">{e.name}</h3>
-                   <p className="text-[10px] text-muted-foreground truncate">{e.email}</p>
+                   <h3 className="font-black text-base truncate text-slate-900 leading-tight">{e.name}</h3>
+                   <p className="text-[11px] text-muted-foreground truncate mt-1">{e.email}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 pt-3 border-t">
-                  <Badge variant={e.status === "Aktif" ? "default" : "outline"} className="text-[8px] font-black uppercase">{e.status}</Badge>
-                  <Badge variant="outline" className={cn("text-[8px] font-black uppercase", getLoginStatusBadge(e.loginStatus))}>{e.loginStatus}</Badge>
+              <div className="flex items-center gap-2 pt-4 border-t border-slate-50">
+                  <Badge variant={e.status === "Aktif" ? "default" : "outline"} className="text-[9px] font-black h-5 border-none shadow-sm">{e.status}</Badge>
+                  <Badge variant="outline" className={cn("text-[9px] font-black h-5 border", getLoginStatusBadge(e.loginStatus))}>{e.loginStatus}</Badge>
               </div>
               <div className="flex gap-2 pt-2">
-                  <Button variant="outline" size="sm" className="flex-1 font-bold text-[10px] h-8" onClick={() => handleEditEmployee(e)}>UBAH</Button>
-                  <Button variant="ghost" size="sm" className="flex-1 font-bold text-[10px] h-8 text-destructive" onClick={() => openDeleteDialog(e)} disabled={e.id === currentUser?.id}>HAPUS</Button>
+                  <Button variant="outline" size="sm" className="flex-1 font-bold h-9 rounded-xl border-slate-200" onClick={() => handleEditEmployee(e)}>Ubah</Button>
+                  <Button variant="ghost" size="sm" className="flex-1 font-bold h-9 rounded-xl text-destructive hover:bg-destructive/5" onClick={() => openDeleteDialog(e)} disabled={e.id === currentUser?.id}>Hapus</Button>
               </div>
             </CardContent>
           </Card>
