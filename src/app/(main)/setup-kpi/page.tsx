@@ -184,24 +184,24 @@ export default function SetupKpiPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
-        <CardHeader>
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <CardHeader className="px-4 sm:px-6">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
             <div className="flex items-start gap-3 flex-1 min-w-0">
                 <div className="p-2 bg-primary/10 rounded-lg shrink-0">
                     <Settings className="size-6 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <CardTitle className="font-headline text-xl sm:text-2xl text-foreground truncate">
+                    <CardTitle className="font-headline text-xl sm:text-2xl text-foreground">
                         Pengaturan KPI
                     </CardTitle>
-                    <CardDescription className="text-sm leading-relaxed">
+                    <CardDescription className="text-sm leading-relaxed max-w-full">
                         Kelola konfigurasi KPI untuk berbagai peran dan departemen.
                     </CardDescription>
                 </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 shrink-0 self-end lg:self-center">
+            <div className="flex flex-wrap items-center gap-2 shrink-0 self-end xl:self-center">
                 <KpiBulkActions filteredSetups={filteredSetups} />
                 <Button size="sm" className="h-10 gap-1 font-bold shadow-md" onClick={() => handleAddSetup()}>
                     <PlusCircle className="h-3.5 w-3.5" />
@@ -209,8 +209,8 @@ export default function SetupKpiPage() {
                 </Button>
             </div>
           </div>
-        </Header>
-        <CardContent className="pt-6">
+        </CardHeader>
+        <CardContent className="px-4 sm:px-6 pt-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6 p-4 border rounded-xl bg-muted/30">
                {showCompanyFilter && (
                 <div className="space-y-1.5">

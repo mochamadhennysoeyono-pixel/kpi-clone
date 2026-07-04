@@ -696,24 +696,24 @@ export default function EmployeesPage() {
   const showCompanyFilter = userRole === 'superadmin' || isHoldingAdmin;
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
-        <CardHeader>
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <CardHeader className="px-4 sm:px-6">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
             <div className="flex items-start gap-3 flex-1 min-w-0">
                 <div className="p-2 bg-primary/10 rounded-lg shrink-0">
                     <Users className="size-6 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <CardTitle className="font-headline text-xl sm:text-2xl text-foreground truncate">
+                    <CardTitle className="font-headline text-xl sm:text-2xl text-foreground">
                         Data Karyawan
                     </CardTitle>
-                    <CardDescription className="text-sm leading-relaxed">
+                    <CardDescription className="text-sm leading-relaxed max-w-full">
                         Kelola data karyawan di perusahaan Anda. Menampilkan {filteredEmployees.length} data.
                     </CardDescription>
                 </div>
             </div>
-             <div className="flex flex-wrap items-center gap-2 shrink-0 self-end lg:self-center">
+             <div className="flex flex-wrap items-center gap-2 shrink-0 self-end xl:self-center">
                 {selectedRowIds.length > 0 && (
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -768,7 +768,7 @@ export default function EmployeesPage() {
              </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-6">
+        <CardContent className="px-4 sm:px-6 pt-6">
             {quotaInfo?.message && (
                 <Alert variant={quotaInfo.userLimitReached && quotaInfo.managementLimitReached ? "destructive" : "default"} className="mb-6">
                     <AlertCircle className="h-4 w-4 shrink-0" />
