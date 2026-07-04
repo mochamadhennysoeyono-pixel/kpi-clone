@@ -1,7 +1,7 @@
 // src/app/(main)/setup-kpi/page.tsx
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -22,22 +22,26 @@ import {
 import { PlusCircle, MoreHorizontal, ChevronDown, CalendarDays, BellRing, Settings, Building, Filter, Network, Briefcase } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { KpiSetup, Company, KpiIndicator, KpiIndicatorCycle } from '@/types';
+import type { KpiSetup, Company, KpiIndicator } from '@/types';
 import { KpiSetupSheet } from '@/components/setup-kpi/kpi-setup-sheet';
 import { DeleteConfirmationDialog } from '@/components/master-data/delete-confirmation-dialog';
 import { useMasterData } from '@/contexts/master-data-context';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/auth-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import KpiBulkActions from '@/components/kpi/kpi-bulk-actions';
+import { ResponsivePage, ResponsiveToolbar } from '@/components/ui/adaptive-layout';
+import { PageHeader } from '@/components/ui/page-header';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 
 export default function SetupKpiPage() {
   const { kpiSetups, addKpiSetup, updateKpiSetup, deleteKpiSetup, companies, employees } = useMasterData();
   const { currentUser, userRole } = useAuth();
   const { toast } = useToast();
+  const { isMobile } = useBreakpoint();
 
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('all');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
@@ -184,148 +188,134 @@ export default function SetupKpiPage() {
   };
 
   return (
-    <div className="w-full min-w-0 space-y-6">
-      <Card className="shadow-lg border-t-4 border-primary mb-6 overflow-hidden">
-        <CardHeader className="px-4 sm:px-6">
-          <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6">
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-                <div className="p-2 bg-primary/10 rounded-lg shrink-0">
-                    <Settings className="size-6 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <CardTitle className="font-headline text-xl sm:text-2xl text-foreground">
-                        Pengaturan KPI
-                    </CardTitle>
-                    <CardDescription className="text-sm leading-relaxed max-w-full break-words">
-                        Kelola konfigurasi KPI untuk berbagai peran dan departemen.
-                    </CardDescription>
-                </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 shrink-0 self-end xl:self-center">
+    <ResponsivePage>
+      <PageHeader 
+        title="Pengaturan KPI"
+        description="Definisikan dan kelola parameter KPI untuk berbagai posisi di seluruh unit bisnis."
+        icon={Settings}
+        actions={
+            <div className="flex flex-wrap items-center gap-2">
                 <KpiBulkActions filteredSetups={filteredSetups} />
-                <Button size="sm" className="h-10 gap-1 font-bold shadow-md" onClick={() => handleAddSetup()}>
-                    <PlusCircle className="h-3.5 w-3.5" />
-                    <span className="whitespace-nowrap">Buat Pengaturan</span>
+                <Button size="sm" className="h-9 sm:h-10 gap-1 font-bold shadow-lg active:scale-95 transition-all" onClick={() => handleAddSetup()}>
+                    <PlusCircle className="h-4 w-4" />
+                    Buat Pengaturan
                 </Button>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="px-4 sm:px-6 pt-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6 p-4 border rounded-xl bg-muted/30">
-               {showCompanyFilter && (
-                <div className="space-y-1.5">
-                    <p className="text-[10px] font-black uppercase text-muted-foreground ml-1">Perusahaan</p>
-                    <Select value={selectedCompanyFilter || 'all'} onValueChange={(value) => { setSelectedCompanyFilter(value); setSelectedDepartment('all'); setSelectedPosition('all'); }}>
-                        <SelectTrigger className="bg-background">
-                            <Building className="size-3.5 mr-2 text-primary shrink-0" />
-                            <SelectValue placeholder="Semua Perusahaan" />
-                        </SelectTrigger>
-                        <SelectContent className="z-[350]">
-                            <SelectItem value="all">Semua Perusahaan</SelectItem>
-                            {manageableCompanies.map(c => (
-                            <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-              )}
-              <div className="space-y-1.5">
-                  <p className="text-[10px] font-black uppercase text-muted-foreground ml-1">Departemen</p>
-                  <Select value={selectedDepartment} onValueChange={(value) => { setSelectedDepartment(value); setSelectedPosition('all'); }} disabled={departmentOptions.length === 0}>
-                    <SelectTrigger className="bg-background">
-                        <Network className="size-3.5 mr-2 text-muted-foreground shrink-0" />
-                        <SelectValue placeholder="Semua Departemen" />
+        }
+      />
+
+      <ResponsiveToolbar>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex items-center gap-3 flex-1 min-w-0">
+            {(userRole === 'superadmin' || isHoldingAdmin) && (
+                <Select value={selectedCompanyFilter} onValueChange={(v) => { setSelectedCompanyFilter(v); setSelectedDepartment('all'); setSelectedPosition('all'); }}>
+                    <SelectTrigger className="w-full lg:w-[200px] h-9 bg-background border-none shadow-sm text-[11px] font-black uppercase">
+                        <Building size={14} className="mr-2 text-primary" />
+                        <SelectValue placeholder="Perusahaan" />
                     </SelectTrigger>
                     <SelectContent className="z-[350]">
-                        <SelectItem value="all">Semua Departemen</SelectItem>
-                        {departmentOptions.map(d => (
-                        <SelectItem key={d} value={d}>{d}</SelectItem>
-                        ))}
+                        <SelectItem value="all">Semua Perusahaan</SelectItem>
+                        {manageableCompanies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
                     </SelectContent>
-                    </Select>
-              </div>
-              <div className="space-y-1.5">
-                  <p className="text-[10px] font-black uppercase text-muted-foreground ml-1">Jabatan</p>
-                  <Select value={selectedPosition} onValueChange={setSelectedPosition} disabled={positionOptions.length === 0}>
-                    <SelectTrigger className="bg-background">
-                        <Briefcase className="size-3.5 mr-2 text-muted-foreground shrink-0" />
-                        <SelectValue placeholder="Semua Jabatan" />
-                    </SelectTrigger>
-                    <SelectContent className="z-[350]">
-                        <SelectItem value="all">Semua Jabatan</SelectItem>
-                        {positionOptions.map(p => (
-                        <SelectItem key={p} value={p}>{p}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-              </div>
-            </div>
-          
-          <div className="w-full min-w-0">
-            <Accordion type="single" collapsible className="w-full">
+                </Select>
+            )}
+            <Select value={selectedDepartment} onValueChange={(v) => { setSelectedDepartment(v); setSelectedPosition('all'); }} disabled={!selectedCompanyFilter}>
+                <SelectTrigger className="w-full lg:w-[200px] h-9 bg-background border-none shadow-sm text-[11px] font-black uppercase">
+                    <Network size={14} className="mr-2 text-primary" />
+                    <SelectValue placeholder="Departemen" />
+                </SelectTrigger>
+                <SelectContent className="z-[350]">
+                    <SelectItem value="all">Semua Departemen</SelectItem>
+                    {departmentOptions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+            </Select>
+            <Select value={selectedPosition} onValueChange={setSelectedPosition} disabled={selectedDepartment === 'all'}>
+                <SelectTrigger className="w-full lg:w-[200px] h-9 bg-background border-none shadow-sm text-[11px] font-black uppercase">
+                    <Briefcase size={14} className="mr-2 text-primary" />
+                    <SelectValue placeholder="Jabatan" />
+                </SelectTrigger>
+                <SelectContent className="z-[350]">
+                    <SelectItem value="all">Semua Jabatan</SelectItem>
+                    {positionOptions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                </SelectContent>
+            </Select>
+        </div>
+      </ResponsiveToolbar>
+
+      <div className="pt-4">
+        {filteredSetups.length > 0 ? (
+            <Accordion type="single" collapsible className="w-full space-y-4">
               {filteredSetups.map((setup) => (
-                <AccordionItem value={setup.id} key={setup.id} className="border rounded-xl mb-3 overflow-hidden bg-background shadow-sm">
-                  <AccordionTrigger className="px-4 py-4 hover:no-underline">
+                <AccordionItem value={setup.id} key={setup.id} className="border rounded-2xl overflow-hidden bg-background shadow-sm border-border/40">
+                  <AccordionTrigger className={cn(
+                      "px-4 py-4 hover:no-underline transition-all group",
+                      isMobile ? "p-3" : "px-6"
+                  )}>
                       <div className="flex items-center justify-between w-full pr-4">
                           <div className="text-left grid gap-0.5 min-w-0 flex-1">
-                              <p className="font-bold text-slate-900 truncate">{setup.position} ({setup.level})</p>
-                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-tight truncate">
+                              <p className="font-black text-slate-900 truncate uppercase tracking-tight">{setup.position}</p>
+                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-widest truncate">
                                   <span>{setup.department}</span>
-                                  {(userRole === 'superadmin' || isHoldingAdmin) && (
+                                  <span className="opacity-30">•</span>
+                                  <span>{setup.level}</span>
+                                  {showCompanyFilter && (
                                       <>
                                           <span className="opacity-30">•</span>
-                                          <span className="text-primary">{setup.company}</span>
+                                          <span className="text-primary/70">{setup.company}</span>
                                       </>
                                   )}
                               </div>
-                              <div className="flex items-center text-[10px] font-medium text-muted-foreground gap-1.5 pt-1.5">
+                              <div className="flex items-center text-[9px] font-black uppercase text-muted-foreground gap-1.5 pt-2 tracking-tighter">
                                   <CalendarDays className="size-3" />
-                                  <span>{formatPeriod(setup.validFrom)} - {formatPeriod(setup.validTo)}</span>
+                                  <span>Berlaku: {formatPeriod(setup.validFrom)} - {formatPeriod(setup.validTo)}</span>
                               </div>
                           </div>
                           <div className="flex items-center gap-3 shrink-0">
                               {!!setup.pendingIndicators?.length && (
                                   <TooltipProvider>
-                                  <Tooltip>
-                                      <TooltipTrigger asChild>
-                                          <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100 animate-pulse">
-                                              <BellRing className="size-3.5" />
-                                              <span className="text-[10px] font-black">{setup.pendingIndicators.length} BARU</span>
-                                          </div>
-                                      </TooltipTrigger>
-                                      <TooltipContent className="z-[350]">
-                                      <p>Ada KPI turunan baru yang perlu ditinjau.</p>
-                                      </TooltipContent>
-                                  </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div className="flex items-center gap-1 text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 animate-pulse">
+                                                <BellRing className="size-3" />
+                                                <span className="text-[9px] font-black">{setup.pendingIndicators.length} BARU</span>
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="z-[350]"><p>Ada KPI turunan baru yang perlu ditinjau.</p></TooltipContent>
+                                    </Tooltip>
                                   </TooltipProvider>
                               )}
-                              <Badge variant={setup.status === "Aktif" ? "default" : "outline"} className="text-[9px] uppercase font-black px-1.5 h-5">
+                              <Badge variant={setup.status === "Aktif" ? "default" : "outline"} className="text-[8px] uppercase font-black px-1.5 h-4 border-none">
                                   {setup.status}
                               </Badge>
                           </div>
                       </div>
                   </AccordionTrigger>
-                  <AccordionContent>
-                      <div className="px-4 pb-4">
-                          {setup.description && (
-                              <p className="text-xs text-muted-foreground mb-4 bg-muted/20 p-3 rounded-lg border border-dashed">{setup.description}</p>
-                          )}
-                           <div className="w-full overflow-hidden min-w-0 rounded-lg border">
+                  <AccordionContent className="p-0 border-t border-border/40">
+                      <div className={cn(isMobile ? "p-3" : "p-6")}>
+                           <div className="w-full overflow-hidden min-w-0 rounded-xl border border-border/40 bg-muted/5">
                               <div className="overflow-x-auto w-full">
-                                <Table className="min-w-[500px]">
-                                    <TableHeader className="bg-muted/30">
-                                        <TableRow>
-                                            <TableHead className="text-[10px] font-bold uppercase">Indikator</TableHead>
-                                            <TableHead className="text-[10px] font-bold uppercase">Target</TableHead>
-                                            <TableHead className="text-right text-[10px] font-bold uppercase">Bobot</TableHead>
+                                <Table>
+                                    <TableHeader className="bg-muted/20">
+                                        <TableRow className="border-none">
+                                            <TableHead className="text-[9px] font-black uppercase py-4">Indikator Kinerja</TableHead>
+                                            <TableHead className="text-[9px] font-black uppercase text-center">Target</TableHead>
+                                            <TableHead className="text-right text-[9px] font-black uppercase pr-6">Bobot</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {setup.indicators.map(indicator => (
-                                            <TableRow key={indicator.id} className="hover:bg-muted/5">
-                                                <TableCell className="font-bold text-xs py-3">{indicator.indicator}</TableCell>
-                                                <TableCell className="text-xs font-medium">{indicator.target} {indicator.targetFormat === 'Persentase' ? '%' : indicator.unit}</TableCell>
-                                                <TableCell className="text-right font-black text-primary text-xs">{indicator.weight}%</TableCell>
+                                            <TableRow key={indicator.id} className="hover:bg-background transition-colors border-border/40">
+                                                <TableCell className="py-4">
+                                                    <p className="font-bold text-xs text-slate-800">{indicator.indicator}</p>
+                                                    <p className="text-[9px] text-muted-foreground font-medium italic mt-1 line-clamp-1">{indicator.measurement}</p>
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    <span className="text-[10px] font-black text-slate-600 bg-background px-2 py-0.5 rounded border border-border/40">
+                                                        {indicator.target} {indicator.targetFormat === 'Persentase' ? '%' : indicator.unit}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="text-right pr-6">
+                                                    <span className="font-black text-primary text-xs">{indicator.weight}%</span>
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -335,17 +325,16 @@ export default function SetupKpiPage() {
                           <div className="mt-4 flex justify-end gap-2">
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <Button aria-haspopup="true" size="sm" variant="ghost" className="h-8 gap-2 font-bold text-muted-foreground">
-                                      <MoreHorizontal className="size-4" />
-                                      <span>Pilihan Aksi</span>
+                                    <Button variant="ghost" size="sm" className="h-8 gap-2 font-black text-[9px] uppercase text-muted-foreground hover:text-foreground">
+                                      <MoreHorizontal className="size-3.5" /> Opsi Manajemen
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="z-[350]">
-                                    <DropdownMenuLabel className="text-[10px] uppercase opacity-60">Manajemen Setup</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => handleEditSetup(setup)} className="text-xs">Ubah Pengaturan</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDuplicateSetup(setup)} className="text-xs">Duplikat Pengaturan</DropdownMenuItem>
+                                    <DropdownMenuLabel className="text-[10px] font-black uppercase opacity-60">Pilih Aksi</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => handleEditSetup(setup)} className="text-xs"><Pencil className="size-3.5 mr-2"/> Ubah Pengaturan</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleDuplicateSetup(setup)} className="text-xs"><PlusCircle className="size-3.5 mr-2"/> Duplikat (Clone)</DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-destructive font-bold text-xs" onClick={() => openDeleteDialog(setup)}>Hapus Pengaturan</DropdownMenuItem>
+                                    <DropdownMenuItem className="text-destructive font-bold text-xs" onClick={() => openDeleteDialog(setup)}><Trash2 className="size-3.5 mr-2"/> Hapus Permanen</DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                           </div>
@@ -354,16 +343,15 @@ export default function SetupKpiPage() {
                 </AccordionItem>
               ))}
             </Accordion>
-          </div>
-           {filteredSetups.length === 0 && (
-              <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-xl">
-                  <Settings className="size-10 mx-auto mb-3 opacity-20" />
-                  <p className="font-bold text-xs uppercase tracking-widest">Tidak ada pengaturan ditemukan</p>
-                  <p className="text-[10px] mt-1">Coba sesuaikan filter atau buat pengaturan baru.</p>
-              </div>
-           )}
-        </CardContent>
-      </Card>
+        ) : (
+            <div className="text-center py-32 border-2 border-dashed rounded-3xl bg-muted/10 opacity-30">
+                <Settings size={48} className="mx-auto mb-4" />
+                <p className="font-black uppercase text-[10px] tracking-[0.2em]">Belum Ada Pengaturan</p>
+                <p className="text-xs font-medium mt-1">Buat setup KPI pertama Anda untuk memulai penilaian.</p>
+            </div>
+        )}
+      </div>
+
       <KpiSetupSheet
         isOpen={isSheetOpen}
         onOpenChange={setSheetOpen}
@@ -379,6 +367,6 @@ export default function SetupKpiPage() {
         itemName={`pengaturan untuk ${setupToDelete?.position}`}
         itemType="pengaturan KPI"
       />
-    </div>
+    </ResponsivePage>
   );
 }

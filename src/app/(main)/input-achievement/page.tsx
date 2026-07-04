@@ -53,7 +53,11 @@ import {
   X, 
   ExternalLink,
   FileUp,
-  Link2
+  Link2,
+  Building,
+  Network,
+  Briefcase,
+  Target
 } from "lucide-react";
 import { useMasterData } from "@/contexts/master-data-context";
 import type { Employee, KpiIndicator, KpiData, PerformanceStatus, KpiAchievement, KpiIndicatorCycle, KpiSetup, Company, TargetOverride, CalculationMethod } from "@/types";
@@ -62,18 +66,21 @@ import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/auth-context";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useIsMobile } from '@/hooks/use-mobile';
 import { storage } from '@/lib/firebase/client';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ResponsivePage, ResponsiveToolbar } from '@/components/ui/adaptive-layout';
+import { PageHeader } from '@/components/ui/page-header';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { AdaptiveCardGrid } from '@/components/ui/adaptive-card';
 
 function InputAchievementContent() {
   const { currentUser, userRole } = useAuth();
   const { companies, employees, kpiSetups, kpiData, addOrUpdateKpiData, addOrUpdateTargetOverride, targetOverrides, updateKpiSetup, fetchData, departments, positions } = useMasterData();
   const { toast } = useToast();
   const searchParams = useSearchParams();
-  const isMobile = useIsMobile();
+  const { isMobile } = useBreakpoint();
 
   const userCompanyFromMaster = useMemo(() => {
     const employeeRecord = employees.find(e => e.id === currentUser?.id);
@@ -189,9 +196,7 @@ function InputAchievementContent() {
 
   const kpiSetup = useMemo(() => {
     if (!selectedEmployee) return null;
-
     const periodDate = parse(formattedPeriod, 'yyyy-MM', new Date());
-
     return kpiSetups.find(s => {
       const isMatchRole = s.position === selectedEmployee.position &&
                           s.department === selectedEmployee.department &&
@@ -199,136 +204,72 @@ function InputAchievementContent() {
                           s.level === selectedEmployee.level &&
                           s.status === "Aktif";
       if (!isMatchRole) return false;
-
       const validFrom = s.validFrom ? parse(s.validFrom, 'yyyy-MM', new Date()) : null;
       const validTo = s.validTo ? lastDayOfMonth(parse(s.validTo, 'yyyy-MM', new Date())) : null;
-
-      if (validFrom && validTo) {
-        return periodDate >= validFrom && periodDate <= validTo;
-      }
-      return false;
+      return validFrom && validTo && periodDate >= validFrom && periodDate <= validTo;
     });
   }, [selectedEmployee, kpiSetups, formattedPeriod]);
   
   const aggregatedValues = useMemo(() => {
     const supervisor = selectedEmployee;
-    if (!kpiSetup || !supervisor || !['Supervisor', 'Manager', 'Direktur'].includes(supervisor.level)) {
-        return {};
-    }
-
+    if (!kpiSetup || !supervisor || !['Supervisor', 'Manager', 'Direktur'].includes(supervisor.level)) return {};
     const supervisorRollupIndicators = kpiSetup.indicators.filter(ind => ind.rollup?.enabled);
-    if (supervisorRollupIndicators.length === 0) {
-        return {};
-    }
-
+    if (supervisorRollupIndicators.length === 0) return {};
     const subordinates = employees.filter(e => e.reportsTo === supervisor.id && e.status === 'Aktif');
-    if (subordinates.length === 0) {
-        return {};
-    }
-    
+    if (subordinates.length === 0) return {};
     const subordinateIds = subordinates.map(e => e.id);
-    
-    const subordinateKpiDataForPeriod = kpiData.filter(
-        d => subordinateIds.includes(d.employeeId) && d.period === formattedPeriod
-    );
-
+    const subordinateKpiDataForPeriod = kpiData.filter(d => subordinateIds.includes(d.employeeId) && d.period === formattedPeriod);
     const aggregatedResult: { [supervisorIndicatorId: string]: number } = {};
     const periodDate = parse(formattedPeriod, 'yyyy-MM', new Date());
 
     supervisorRollupIndicators.forEach(supIndicator => {
         const values: number[] = [];
-        
         subordinateKpiDataForPeriod.forEach(subData => {
             const subEmployee = employees.find(e => e.id === subData.employeeId);
             if (!subEmployee) return;
-
             const subKpiSetup = kpiSetups.find(s => {
-                 const isMatch = s.company === subData.company &&
-                                s.position === subData.position &&
-                                s.department === subData.department &&
-                                subEmployee.level === s.level && 
-                                s.status === 'Aktif';
+                 const isMatch = s.company === subData.company && s.position === subData.position && s.department === subData.department && subEmployee.level === s.level && s.status === 'Aktif';
                 if (!isMatch) return false;
-                
                 const validFrom = s.validFrom ? parse(s.validFrom, 'yyyy-MM', new Date()) : null;
                 const validTo = s.validTo ? lastDayOfMonth(parse(s.validTo, 'yyyy-MM', new Date())) : null;
-
-                if (validFrom && validTo) {
-                    return periodDate >= validFrom && periodDate <= validTo;
-                }
-                return false;
+                return validFrom && validTo && periodDate >= validFrom && periodDate <= validTo;
             });
             if (!subKpiSetup) return;
-            
             const sourcedIndicator = subKpiSetup.indicators.find(subInd => subInd.source?.indicatorId === supIndicator.id);
-
             if (sourcedIndicator) {
                 const achievement = subData.achievements.find(ach => ach.indicatorId === sourcedIndicator.id);
-                if (achievement && typeof achievement.actual === 'number') {
-                    values.push(achievement.actual);
-                }
+                if (achievement && typeof achievement.actual === 'number') values.push(achievement.actual);
             }
         });
-
         if (values.length > 0) {
-            if (supIndicator.rollup?.method === 'SUM') {
-                aggregatedResult[supIndicator.id] = values.reduce((sum, val) => sum + val, 0);
-            } else if (supIndicator.rollup?.method === 'AVERAGE') {
-                aggregatedResult[supIndicator.id] = values.reduce((sum, val) => sum + val, 0) / values.length;
-            }
+            if (supIndicator.rollup?.method === 'SUM') aggregatedResult[supIndicator.id] = values.reduce((sum, val) => sum + val, 0);
+            else if (supIndicator.rollup?.method === 'AVERAGE') aggregatedResult[supIndicator.id] = values.reduce((sum, val) => sum + val, 0) / values.length;
         }
     });
-    
     return aggregatedResult;
   }, [selectedEmployee, kpiSetup, employees, kpiData, formattedPeriod, kpiSetups]);
 
  useEffect(() => {
   const initialAchievements: { [key: string]: Partial<KpiAchievement> } = {};
   const initialModes: Record<string, 'upload' | 'link'> = {};
-
   if (kpiSetup && selectedEmployee) {
-    if (currentOverrides) {
-      Object.entries(currentOverrides.overrides).forEach(([indicatorId, overrideValue]) => {
-        initialAchievements[indicatorId] = {
-          ...initialAchievements[indicatorId],
-          indicatorId,
-          monthlyTargetOverride: overrideValue,
-        };
-      });
-    }
-
+    if (currentOverrides) Object.entries(currentOverrides.overrides).forEach(([indicatorId, overrideValue]) => { initialAchievements[indicatorId] = { ...initialAchievements[indicatorId], indicatorId, monthlyTargetOverride: overrideValue }; });
     if (existingDataForPeriod?.achievements && Array.isArray(existingDataForPeriod.achievements)) {
       existingDataForPeriod.achievements.forEach((ach) => {
         const id = ach.indicatorId;
         if (!id) return;
-        initialAchievements[id] = {
-          ...(initialAchievements[id] ?? {}),
-          ...ach,
-        };
-        // Deduce mode: if it's a firebase URL, likely upload. Else link.
-        if (ach.linkBukti?.includes('firebasestorage.googleapis.com')) {
-            initialModes[id] = 'upload';
-        } else if (ach.linkBukti) {
-            initialModes[id] = 'link';
-        } else {
-            initialModes[id] = 'upload'; // Default
-        }
+        initialAchievements[id] = { ...(initialAchievements[id] ?? {}), ...ach };
+        if (ach.linkBukti?.includes('firebasestorage.googleapis.com')) initialModes[id] = 'upload';
+        else if (ach.linkBukti) initialModes[id] = 'link';
+        else initialModes[id] = 'upload';
       });
     }
-
     kpiSetup.indicators.forEach((indicator) => {
       const id = indicator.id;
-      if (!initialAchievements[id]) {
-          initialAchievements[id] = {
-            indicatorId: id,
-          };
-      }
-      if (!initialModes[id]) {
-          initialModes[id] = 'upload';
-      }
+      if (!initialAchievements[id]) initialAchievements[id] = { indicatorId: id };
+      if (!initialModes[id]) initialModes[id] = 'upload';
     });
   }
-
   setAchievements(initialAchievements);
   setEvidenceModes(initialModes);
 }, [existingDataForPeriod, kpiSetup, aggregatedValues, selectedEmployee, currentOverrides]);
@@ -347,16 +288,12 @@ function InputAchievementContent() {
 
   const departmentOptions = useMemo(() => {
     let options: string[] = [];
-    if (isManager && !isHoldingAdmin) {
-        options = teamMembers.map(e => e.department);
-    } else {
+    if (isManager && !isHoldingAdmin) options = teamMembers.map(e => e.department);
+    else {
         const companyNames = manageableCompanies.map(c => c.name);
         let relevantDepartments;
-        if (selectedCompanyFilter && selectedCompanyFilter !== 'all') {
-            relevantDepartments = departments.filter(d => d.company === selectedCompanyFilter);
-        } else {
-            relevantDepartments = departments.filter(d => companyNames.includes(d.company));
-        }
+        if (selectedCompanyFilter && selectedCompanyFilter !== 'all') relevantDepartments = departments.filter(d => d.company === selectedCompanyFilter);
+        else relevantDepartments = departments.filter(d => companyNames.includes(d.company));
         options = relevantDepartments.map(d => d.name);
     }
     return [...new Set(options)].filter((opt): opt is string => !!opt);
@@ -364,21 +301,13 @@ function InputAchievementContent() {
 
   const positionOptions = useMemo(() => {
     let options: string[] = [];
-    if (isManager && !isHoldingAdmin) {
-        options = teamMembers.map(e => e.position);
-    } else {
+    if (isManager && !isHoldingAdmin) options = teamMembers.map(e => e.position);
+    else {
         let relevantPositions = positions;
         const companyNames = manageableCompanies.map(c => c.name);
-        
-        if (selectedCompanyFilter && selectedCompanyFilter !== 'all') {
-            relevantPositions = relevantPositions.filter(p => p.company === selectedCompanyFilter);
-        } else {
-            relevantPositions = relevantPositions.filter(p => companyNames.includes(p.company));
-        }
-        
-        if (selectedDepartment && selectedDepartment !== 'all') {
-            relevantPositions = relevantPositions.filter(p => p.department === selectedDepartment);
-        }
+        if (selectedCompanyFilter && selectedCompanyFilter !== 'all') relevantPositions = relevantPositions.filter(p => p.company === selectedCompanyFilter);
+        else relevantPositions = relevantPositions.filter(p => companyNames.includes(p.company));
+        if (selectedDepartment && selectedDepartment !== 'all') relevantPositions = relevantPositions.filter(p => p.department === selectedDepartment);
         options = relevantPositions.map(p => p.name);
     }
     return [...new Set(options)].filter((opt): opt is string => !!opt);
@@ -386,37 +315,23 @@ function InputAchievementContent() {
 
   const employeeOptions = useMemo(() => {
     let filtered: Employee[] = [];
-
     if (userRole === 'manajemen' || userRole === 'superadmin') {
       filtered = employees;
       const companyNames = manageableCompanies.map(c => c.name);
-      if (selectedCompanyFilter !== 'all') {
-        filtered = filtered.filter(e => e.company === selectedCompanyFilter);
-      } else {
-        filtered = filtered.filter(e => companyNames.includes(e.company));
-      }
-
-      if(selectedDepartment && selectedDepartment !== 'all') {
-        filtered = filtered.filter(e => e.department === selectedDepartment);
-      }
-      if(selectedPosition && selectedPosition !== 'all') {
-        filtered = filtered.filter(e => e.position === selectedPosition);
-      }
+      if (selectedCompanyFilter !== 'all') filtered = filtered.filter(e => e.company === selectedCompanyFilter);
+      else filtered = filtered.filter(e => companyNames.includes(e.company));
+      if(selectedDepartment && selectedDepartment !== 'all') filtered = filtered.filter(e => e.department === selectedDepartment);
+      if(selectedPosition && selectedPosition !== 'all') filtered = filtered.filter(e => e.position === selectedPosition);
     } else if (isManager && currentUser) {
       let teamFiltered = teamMembers;
-      if(selectedPosition && selectedPosition !== 'all') {
-        teamFiltered = teamFiltered.filter(e => e.position === selectedPosition);
-      }
+      if(selectedPosition && selectedPosition !== 'all') teamFiltered = teamFiltered.filter(e => e.position === selectedPosition);
       return teamFiltered;
     }
-    
     return filtered.filter(e => e.status === 'Aktif');
   }, [employees, selectedCompanyFilter, selectedDepartment, selectedPosition, userRole, isManager, currentUser, manageableCompanies, teamMembers]);
   
   useEffect(() => {
-    if (userRole === 'superadmin' && selectedEmployee) {
-      setSelectedCompanyFilter(selectedEmployee.company);
-    }
+    if (userRole === 'superadmin' && selectedEmployee) setSelectedCompanyFilter(selectedEmployee.company);
   }, [selectedEmployee, userRole]);
 
   const handleCompanyChange = (companyName: string) => {
@@ -446,793 +361,294 @@ function InputAchievementContent() {
   };
   
   const handleAchievementChange = (indicatorId: string, field: keyof KpiAchievement, value: string | number | boolean | null) => {
-    setAchievements(prev => ({
-      ...prev,
-      [indicatorId]: {
-        ...prev[indicatorId],
-        indicatorId,
-        [field]: value,
-      }
-    }));
+    setAchievements(prev => ({ ...prev, [indicatorId]: { ...prev[indicatorId], indicatorId, [field]: value } }));
   };
 
   const getCycleDivider = (cycle: KpiIndicatorCycle): number => {
-    switch(cycle) {
-        case 'Bulanan': return 1;
-        case '3 Bulan': return 3;
-        case '6 Bulan': return 6;
-        case '1 Tahun': return 12;
-        default:
-            return 1;
-    }
-}
+    switch(cycle) { case 'Bulanan': return 1; case '3 Bulan': return 3; case '6 Bulan': return 6; case '1 Tahun': return 12; default: return 1; }
+  }
 
   const distributedTargets = useMemo(() => {
     const finalTargets: { [indicatorId: string]: { monthly: number; cycle: number; isLocked: boolean } } = {};
     if (!kpiSetup || !selectedEmployee) return finalTargets;
-    
     const periodDate = parse(formattedPeriod, 'yyyy-MM', new Date());
-
     kpiSetup.indicators.forEach(indicator => {
         let finalCycleTarget = indicator.target;
         let isLockedBySupervisor = false;
-        
         if (indicator.source) {
             let sourceSetup: KpiSetup | undefined;
-            if (indicator.source.employeeId === 'HOLDING') {
-                 sourceSetup = kpiSetups.find(s => 
-                    s.isHolding && 
-                    s.indicators.some(i => i.id === indicator.source!.indicatorId)
-                );
-
-            } else if (selectedEmployee.reportsTo) {
+            if (indicator.source.employeeId === 'HOLDING') sourceSetup = kpiSetups.find(s => s.isHolding && s.indicators.some(i => i.id === indicator.source!.indicatorId));
+            else if (selectedEmployee.reportsTo) {
                 const supervisor = employees.find(e => e.id === selectedEmployee.reportsTo);
                 if (supervisor) {
-                    sourceSetup = kpiSetups.find(s => 
-                        s.company === supervisor.company && s.position === supervisor.position && 
-                        s.department === supervisor.department && s.level === supervisor.level && s.status === 'Aktif' &&
-                        (s.validFrom ? parse(s.validFrom, 'yyyy-MM', new Date()) : new Date(0)) <= periodDate &&
-                        (s.validTo ? lastDayOfMonth(parse(s.validTo, 'yyyy-MM', new Date())) : new Date()) >= periodDate
-                    );
+                    sourceSetup = kpiSetups.find(s => s.company === supervisor.company && s.position === supervisor.position && s.department === supervisor.department && s.level === supervisor.level && s.status === 'Aktif' && (s.validFrom ? parse(s.validFrom, 'yyyy-MM', new Date()) : new Date(0)) <= periodDate && (s.validTo ? lastDayOfMonth(parse(s.validTo, 'yyyy-MM', new Date())) : new Date()) >= periodDate);
                 }
             }
-            
             const sourceIndicator = sourceSetup?.indicators.find(ind => ind.id === indicator.source!.indicatorId);
             if (sourceIndicator) {
-                if (indicator.source.employeeId === 'HOLDING') {
-                     finalCycleTarget = sourceIndicator.targetAllocations?.[selectedEmployee.company]?.target ?? 0;
-                } else {
-                     const overrides = sourceIndicator.targetOverrides || {};
+                if (indicator.source.employeeId === 'HOLDING') finalCycleTarget = sourceIndicator.targetAllocations?.[selectedEmployee.company]?.target ?? 0;
+                else {
+                    const overrides = sourceIndicator.targetOverrides || {};
                     isLockedBySupervisor = overrides[selectedEmployee.id] !== undefined;
-
-                    if (isLockedBySupervisor) {
-                        finalCycleTarget = overrides[selectedEmployee.id]!;
-                    } else {
-                        let teamMatesForDistribution: Employee[] = [];
-                        let totalSourceTarget = sourceIndicator.target;
-                        
-                        if (selectedEmployee.reportsTo) {
-                            teamMatesForDistribution = employees.filter(e =>
-                                e.reportsTo === selectedEmployee.reportsTo &&
-                                e.position === selectedEmployee.position &&
-                                e.department === selectedEmployee.department &&
-                                e.status === 'Aktif'
-                            );
-                        }
-                        
-                        const lockedTeamMates = teamMatesForDistribution.filter(tm => overrides[tm.id] !== undefined && overrides[tm.id] !== null);
-                        const lockedTargetsSum = lockedTeamMates.reduce((sum, tm) => sum + (overrides[tm.id] || 0), 0);
-                        
-                        const unlockedTeamMates = teamMatesForDistribution.filter(tm => overrides[tm.id] === undefined || overrides[tm.id] === null);
-                        const remainingTarget = totalSourceTarget - lockedTargetsSum;
-                        
-                        const count = unlockedTeamMates.length > 0 ? unlockedTeamMates.length : 1;
-                        finalCycleTarget = remainingTarget / count;
+                    if (isLockedBySupervisor) finalCycleTarget = overrides[selectedEmployee.id]!;
+                    else {
+                        let teamMates = employees.filter(e => e.reportsTo === selectedEmployee.reportsTo && e.position === selectedEmployee.position && e.department === selectedEmployee.department && e.status === 'Aktif');
+                        const lockedTargetsSum = teamMates.filter(tm => overrides[tm.id] !== undefined && overrides[tm.id] !== null).reduce((sum, tm) => sum + (overrides[tm.id] || 0), 0);
+                        const unlockedCount = teamMates.filter(tm => overrides[tm.id] === undefined || overrides[tm.id] === null).length || 1;
+                        finalCycleTarget = (sourceIndicator.target - lockedTargetsSum) / unlockedCount;
                     }
                 }
             }
         }
-        
         const cycleDivider = getCycleDivider(indicator.cycle);
         let monthlyTarget = finalCycleTarget / cycleDivider;
         let isLockedByMonthlyOverride = false;
-        
         const monthlyOverride = currentOverrides?.overrides[indicator.id];
-        if (monthlyOverride !== undefined && monthlyOverride !== null) {
-            monthlyTarget = monthlyOverride;
-            isLockedByMonthlyOverride = true; 
-        }
-        
-        finalTargets[indicator.id] = {
-            monthly: monthlyTarget,
-            cycle: finalCycleTarget,
-            isLocked: isLockedBySupervisor || isLockedByMonthlyOverride,
-        };
+        if (monthlyOverride !== undefined && monthlyOverride !== null) { monthlyTarget = monthlyOverride; isLockedByMonthlyOverride = true; }
+        finalTargets[indicator.id] = { monthly: monthlyTarget, cycle: finalCycleTarget, isLocked: isLockedBySupervisor || isLockedByMonthlyOverride };
     });
-
     return finalTargets;
 }, [kpiSetup, selectedEmployee, employees, kpiSetups, formattedPeriod, currentOverrides]);
 
-  const calculateIndicatorScore = useCallback((
-    actual: number | undefined,
-    target: number,
-    weight: number,
-    method: CalculationMethod | undefined
-  ): number => {
-    const actualVal = Number(actual);
-    const targetVal = Number(target);
-    const weightVal = Number(weight);
-  
-    if (isNaN(actualVal) || isNaN(targetVal) || isNaN(weightVal)) {
-      return 0;
-    }
-  
+  const calculateIndicatorScore = useCallback((actual: number | undefined, target: number, weight: number, method: CalculationMethod | undefined): number => {
+    const act = Number(actual); const trg = Number(target); const w = Number(weight);
+    if (isNaN(act) || isNaN(trg) || isNaN(w)) return 0;
     let score = 0;
-  
     switch (method) {
-      case 'Target Minimal': {
-        if (targetVal <= 0) {
-            score = actualVal <= 0 ? weightVal : 0;
-            break;
-        }
-        const minScore = weightVal * 0.25;
-        if (actualVal > targetVal) { score = 0; }
-        else if (actualVal === targetVal) { score = minScore; }
-        else if (actualVal <= 0) { score = weightVal; }
-        else { const ratio = (targetVal - actualVal) / targetVal; score = minScore + ratio * (weightVal - minScore); }
+      case 'Target Minimal':
+        if (trg <= 0) score = act <= 0 ? w : 0;
+        else if (act > trg) score = 0;
+        else if (act === trg) score = w * 0.25;
+        else { const ratio = (trg - act) / trg; score = (w * 0.25) + ratio * (w * 0.75); }
         break;
-      }
-      case 'Target Mutlak':
-        score = actualVal === targetVal ? weightVal : 0;
-        break;
-      case 'Target Limit':
-        score = actualVal <= targetVal ? weightVal : 0;
-        break;
-      case 'Target Maksimal':
-      default:
-        if (targetVal === 0) {
-          score = actualVal === 0 ? weightVal : 0;
-        } else {
-          score = Math.min(actualVal / targetVal, 1) * weightVal;
-        }
+      case 'Target Mutlak': score = act === trg ? w : 0; break;
+      case 'Target Limit': score = act <= trg ? w : 0; break;
+      case 'Target Maksimal': default:
+        if (trg === 0) score = act === 0 ? w : 0;
+        else score = Math.min(act / trg, 1) * w;
         break;
     }
-  
-    const safeScore = isFinite(score) && !isNaN(score) ? score : 0;
-    return parseFloat(safeScore.toFixed(1));
+    return parseFloat((isFinite(score) && !isNaN(score) ? score : 0).toFixed(1));
   }, []);
-
-
 
   const totalScore = useMemo(() => {
     if (!kpiSetup) return 0;
-    
     const total = kpiSetup.indicators.reduce((sum, indicator) => {
       const isRollup = indicator.rollup?.enabled && ['Supervisor', 'Manager', 'Direktur'].includes(selectedEmployee?.level || 'Staff');
       const rawValue = isRollup ? aggregatedValues[indicator.id] : achievements[indicator.id]?.actual;
-      
       const numericActual = (rawValue === undefined || rawValue === null || rawValue === '' || isNaN(parseFloat(String(rawValue)))) ? 0 : parseFloat(String(rawValue));
-      const monthlyTarget = distributedTargets[indicator.id]?.monthly ?? 0;
-      
-      const score = calculateIndicatorScore(numericActual, monthlyTarget, indicator.weight, indicator.calculationMethod);
-      
-      return sum + (isNaN(score) ? 0 : score);
+      return sum + calculateIndicatorScore(numericActual, distributedTargets[indicator.id]?.monthly ?? 0, indicator.weight, indicator.calculationMethod);
     }, 0);
-  
     return parseFloat(total.toFixed(1));
   }, [achievements, kpiSetup, distributedTargets, aggregatedValues, selectedEmployee, calculateIndicatorScore]);
 
-
-  const getStatus = (score: number, minAchievement: number): PerformanceStatus => {
-    const excellentThreshold = minAchievement * 1.1;
-    if (score >= excellentThreshold) return "Melampaui Target";
-    if (score >= minAchievement) return "Mencapai Target";
-    return "Perlu Peningkatan";
-  }
-
   const handleSave = async () => {
-    if (!selectedEmployee || !kpiSetup) {
-      toast({ variant: "destructive", title: "Gagal Menyimpan", description: "Pastikan karyawan dan pengaturan KPI sudah dipilih dengan benar." });
-      return;
-    }
-    
-    if (isApproved) {
-        toast({ variant: "destructive", title: "Data Terkunci", description: "Data KPI untuk periode ini sudah disetujui dan tidak dapat diubah." });
-        return;
-    }
-
+    if (!selectedEmployee || !kpiSetup) { toast({ variant: "destructive", title: "Gagal", description: "Pilih karyawan & setup terlebih dahulu." }); return; }
+    if (isApproved) { toast({ variant: "destructive", title: "Terkunci", description: "Data periode ini sudah disetujui." }); return; }
     const achievementsPayload: KpiAchievement[] = kpiSetup.indicators.map(indicator => {
-        const isRollupIndicator = !!indicator.rollup?.enabled && ['Supervisor', 'Manager', 'Direktur'].includes(selectedEmployee.level);
+        const isRollup = !!indicator.rollup?.enabled && ['Supervisor', 'Manager', 'Direktur'].includes(selectedEmployee.level);
         const achievement = achievements[indicator.id] || {};
-        const rawActual = isRollupIndicator ? aggregatedValues[indicator.id] : achievement.actual;
+        const rawActual = isRollup ? aggregatedValues[indicator.id] : achievement.actual;
         const actualValue = (rawActual === undefined || rawActual === null || rawActual === '') ? 0 : Number(rawActual);
-
-        const monthlyTarget = distributedTargets[indicator.id]?.monthly ?? 0;
-        const score = calculateIndicatorScore(actualValue, monthlyTarget, indicator.weight, indicator.calculationMethod);
-        
-        const payload: KpiAchievement = {
-            indicatorId: indicator.id,
-            actual: actualValue,
-            keterangan: achievement.keterangan || '',
-            linkBukti: achievement.linkBukti || '',
-            score: score,
-        };
-        
+        const score = calculateIndicatorScore(actualValue, distributedTargets[indicator.id]?.monthly ?? 0, indicator.weight, indicator.calculationMethod);
+        const payload: KpiAchievement = { indicatorId: indicator.id, actual: actualValue, keterangan: achievement.keterangan || '', linkBukti: achievement.linkBukti || '', score };
         const monthlyOverride = currentOverrides?.overrides[indicator.id];
-        if (monthlyOverride !== undefined && monthlyOverride !== null) {
-            payload.monthlyTargetOverride = monthlyOverride;
-        }
-
+        if (monthlyOverride !== undefined && monthlyOverride !== null) payload.monthlyTargetOverride = monthlyOverride;
         return payload;
     });
 
-    const minAchievement = kpiSetup.minAchievement ?? 70;
-
-    const dataPayload: KpiData = {
-        id: existingDataForPeriod?.id || `${selectedEmployee.id}_${formattedPeriod}`,
-        period: formattedPeriod,
-        employeeId: selectedEmployee.id,
-        employeeName: selectedEmployee.name,
-        company: selectedEmployee.company,
-        department: selectedEmployee.department,
-        position: selectedEmployee.position,
-        level: selectedEmployee.level,
-        reportsTo: selectedEmployee.reportsTo,
-        score: parseFloat(totalScore.toFixed(1)),
-        status: getStatus(totalScore, minAchievement),
-        approvalStatus: existingDataForPeriod?.approvalStatus || "Menunggu Persetujuan",
-        achievements: achievementsPayload,
-    };
-
     try {
-        await addOrUpdateKpiData(dataPayload);
-        toast({ title: "Data Disimpan", description: "Pencapaian KPI Anda telah disimpan." });
-    } catch (e: any) {
-        toast({ variant: "destructive", title: "Gagal Menyimpan", description: e.message });
-    }
+        await addOrUpdateKpiData({ id: existingDataForPeriod?.id || `${selectedEmployee.id}_${formattedPeriod}`, period: formattedPeriod, employeeId: selectedEmployee.id, employeeName: selectedEmployee.name, company: selectedEmployee.company, department: selectedEmployee.department, position: selectedEmployee.position, level: selectedEmployee.level, reportsTo: selectedEmployee.reportsTo, score: totalScore, status: getStatus(totalScore, kpiSetup.minAchievement ?? 70), approvalStatus: existingDataForPeriod?.approvalStatus || "Menunggu Persetujuan", achievements: achievementsPayload });
+        toast({ title: "Berhasil Disimpan" });
+    } catch (e: any) { toast({ variant: "destructive", title: "Gagal", description: e.message }); }
   }
 
   const handleCycleTargetOverride = async (indicator: KpiIndicator, newCycleTarget: number | null) => {
-    if (!selectedEmployee || !indicator.source) {
-        toast({ variant: "destructive", title: "Error", description: "Indikator ini tidak dapat diubah." });
-        return;
-    }
-  
-    let sourceSetup: KpiSetup | undefined;
+    if (!selectedEmployee || !indicator.source) return;
     const periodDate = parse(formattedPeriod, 'yyyy-MM', new Date());
-    
-    if (indicator.source.employeeId === 'HOLDING') {
-        sourceSetup = kpiSetups.find(s => s.isHolding && s.indicators.some(i => i.id === indicator.source!.indicatorId));
-    } else {
-        const supervisor = employees.find(e => e.id === selectedEmployee.reportsTo);
-        if (supervisor) {
-            sourceSetup = kpiSetups.find(s =>
-                s.position === supervisor.position && s.department === supervisor.department &&
-                s.company === supervisor.company && s.level === supervisor.level && s.status === 'Aktif' &&
-                (s.validFrom ? parse(s.validFrom, 'yyyy-MM', new Date()) : new Date(0)) <= periodDate &&
-                (s.validTo ? lastDayOfMonth(parse(s.validTo, 'yyyy-MM', new Date())) : new Date()) >= periodDate
-            );
-        }
-    }
-  
-    if (!sourceSetup) {
-        toast({ variant: "destructive", title: "Error", description: "Pengaturan KPI sumber tidak ditemukan." });
-        return;
-    }
-    
+    let sourceSetup = indicator.source.employeeId === 'HOLDING' ? kpiSetups.find(s => s.isHolding && s.indicators.some(i => i.id === indicator.source!.indicatorId)) : employees.find(e => e.id === selectedEmployee.reportsTo) ? kpiSetups.find(s => { const supervisor = employees.find(e => e.id === selectedEmployee.reportsTo)!; return s.company === supervisor.company && s.position === supervisor.position && s.department === supervisor.department && s.level === supervisor.level && s.status === 'Aktif' && (s.validFrom ? parse(s.validFrom, 'yyyy-MM', new Date()) : new Date(0)) <= periodDate && (s.validTo ? lastDayOfMonth(parse(s.validTo, 'yyyy-MM', new Date())) : new Date()) >= periodDate; }) : undefined;
+    if (!sourceSetup) return;
     const updatedSetup = JSON.parse(JSON.stringify(sourceSetup));
-    const sourceIndicatorToUpdate = updatedSetup.indicators.find((i: KpiIndicator) => i.id === indicator.source!.indicatorId);
-    
-    if (!sourceIndicatorToUpdate) {
-        toast({ variant: "destructive", title: "Error", description: "Indikator sumber tidak ditemukan di setup." });
-        return;
-    }
-    
-    if (!sourceIndicatorToUpdate.targetOverrides) {
-        sourceIndicatorToUpdate.targetOverrides = {};
-    }
-  
-    if (newCycleTarget === null || newCycleTarget === undefined) {
-        delete sourceIndicatorToUpdate.targetOverrides[selectedEmployee.id];
-    } else {
-        sourceIndicatorToUpdate.targetOverrides[selectedEmployee.id] = newCycleTarget;
-    }
-  
-    try {
-        await updateKpiSetup(updatedSetup.id, { indicators: updatedSetup.indicators });
-        setEditingCycleTargetId(null);
-        toast({ title: "Target Siklus Diperbarui" });
-        await fetchData();
-    } catch (e: any) {
-        toast({ variant: "destructive", title: "Gagal Memperbarui Target", description: e.message });
-    }
+    const sourceInd = updatedSetup.indicators.find((i: any) => i.id === indicator.source!.indicatorId);
+    if (!sourceInd) return;
+    if (!sourceInd.targetOverrides) sourceInd.targetOverrides = {};
+    if (newCycleTarget === null) delete sourceInd.targetOverrides[selectedEmployee.id];
+    else sourceInd.targetOverrides[selectedEmployee.id] = newCycleTarget;
+    try { await updateKpiSetup(updatedSetup.id, { indicators: updatedSetup.indicators }); setEditingCycleTargetId(null); toast({ title: "Target Diperbarui" }); await fetchData(); } catch (e: any) { toast({ variant: "destructive", title: "Gagal", description: e.message }); }
   };
   
-  const handleTargetOverride = async (indicatorId: string, newMonthlyTarget: number | null) => {
-    if (!selectedEmployeeId) return;
-    setEditingTargetId(null);
-    const overrideDocId = `${selectedEmployeeId}_${formattedPeriod}`;
-    const newOverrides = { ...currentOverrides?.overrides };
-    if (newMonthlyTarget === null || newMonthlyTarget === undefined) {
-      delete newOverrides[indicatorId];
-    } else {
-      newOverrides[indicatorId] = newMonthlyTarget;
-    }
-    try {
-      const payload: TargetOverride = { id: overrideDocId, overrides: newOverrides };
-      await addOrUpdateTargetOverride(payload);
-      toast({ title: "Target Bulanan Disesuaikan" });
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Gagal Memperbarui Target", description: e.message });
-    }
+  const handleTargetOverride = async (indicatorId: string, val: number | null) => {
+    if (!selectedEmployeeId) return; setEditingTargetId(null);
+    const overrides = { ...currentOverrides?.overrides };
+    if (val === null) delete overrides[indicatorId]; else overrides[indicatorId] = val;
+    try { await addOrUpdateTargetOverride({ id: `${selectedEmployeeId}_${formattedPeriod}`, overrides }); toast({ title: "Target Bulanan Disesuaikan" }); } catch (e: any) { toast({ variant: "destructive", title: "Gagal", description: e.message }); }
   };
 
-  const handleEvidenceUpload = (indicatorId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedEmployee) return;
-
-    setIsUploading(prev => ({ ...prev, [indicatorId]: true }));
-    setUploadProgress(prev => ({ ...prev, [indicatorId]: 0 }));
-
-    const storagePath = `kpi_evidence/${selectedEmployee.company}/${selectedEmployee.id}/${formattedPeriod}/${indicatorId}_${file.name}`;
-    const storageRef = ref(storage, storagePath);
+  const handleEvidenceUpload = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file || !selectedEmployee) return;
+    setIsUploading(prev => ({ ...prev, [id]: true }));
+    const storageRef = ref(storage, `kpi_evidence/${selectedEmployee.company}/${selectedEmployee.id}/${formattedPeriod}/${id}_${file.name}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
-
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setUploadProgress(prev => ({ ...prev, [indicatorId]: progress }));
-      },
-      (error) => {
-        console.error("Upload error:", error);
-        toast({ variant: "destructive", title: "Gagal Mengunggah Bukti", description: error.message });
-        setIsUploading(prev => ({ ...prev, [indicatorId]: false }));
-      },
-      async () => {
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        handleAchievementChange(indicatorId, 'linkBukti', downloadURL);
-        setIsUploading(prev => ({ ...prev, [indicatorId]: false }));
-        setUploadProgress(prev => ({ ...prev, [indicatorId]: 0 }));
-        toast({ title: "Bukti Diunggah", description: `File ${file.name} berhasil diunggah.` });
-      }
-    );
+    uploadTask.on("state_changed", (snap) => setUploadProgress(prev => ({ ...prev, [id]: (snap.bytesTransferred / snap.totalBytes) * 100 })), (err) => { toast({ variant: "destructive", title: "Gagal", description: err.message }); setIsUploading(prev => ({ ...prev, [id]: false })); }, async () => { const url = await getDownloadURL(uploadTask.snapshot.ref); handleAchievementChange(id, 'linkBukti', url); setIsUploading(prev => ({ ...prev, [id]: false })); setUploadProgress(prev => ({ ...prev, [id]: 0 })); toast({ title: "Bukti Diunggah" }); });
   };
 
-  const handleRemoveEvidence = async (indicatorId: string) => {
-    const currentUrl = achievements[indicatorId]?.linkBukti;
-    if (!currentUrl) return;
-
-    try {
-        // Attempt to delete from storage if it's a firebase URL
-        if (currentUrl.includes('firebasestorage.googleapis.com')) {
-            const storageRef = ref(storage, currentUrl);
-            await deleteObject(storageRef).catch(err => console.warn("File not found in storage while deleting metadata."));
-        }
-        handleAchievementChange(indicatorId, 'linkBukti', '');
-        toast({ title: "Bukti Dihapus" });
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Gagal Menghapus Bukti', description: error.message });
-    }
+  const handleRemoveEvidence = async (id: string) => {
+    const url = achievements[id]?.linkBukti; if (!url) return;
+    try { if (url.includes('firebasestorage')) await deleteObject(ref(storage, url)); handleAchievementChange(id, 'linkBukti', ''); toast({ title: "Bukti Dihapus" }); } catch (e: any) { toast({ variant: 'destructive', title: 'Gagal', description: e.message }); }
   };
 
-  const isAnyUploading = Object.values(isUploading).some(v => v);
   const canEditTargets = userRole === 'superadmin' || userRole === 'manajemen' || isManager;
-  const showCompanyFilter = userRole === 'superadmin' || isHoldingAdmin;
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">Input Pencapaian KPI</CardTitle>
-          <CardDescription>
-            {isUserOnly
-              ? `Selamat datang, ${selectedEmployee?.name}. Pilih periode untuk menginput pencapaian KPI Anda.`
-              : "Pilih karyawan dan periode untuk memasukkan pencapaian KPI mereka."
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-            {(userRole === 'superadmin' || userRole === 'manajemen') && (
-              <>
-                {showCompanyFilter && (
-                    <div>
-                    <Label htmlFor="company">Perusahaan</Label>
-                    <Select onValueChange={handleCompanyChange} value={selectedCompanyFilter}>
-                        <SelectTrigger id="company">
-                        <SelectValue placeholder="Pilih perusahaan" />
-                        </SelectTrigger>
-                        <SelectContent>
-                        {manageableCompanies.map(c => (
-                            <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
-                    </div>
-                )}
-                <div>
-                  <Label htmlFor="department">Departemen</Label>
-                  <Select onValueChange={handleDepartmentChange} value={selectedDepartment ?? ''} disabled={departmentOptions.length === 0}>
-                    <SelectTrigger id="department">
-                      <SelectValue placeholder="Pilih departemen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departmentOptions.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="position">Jabatan</Label>
-                  <Select onValueChange={handlePositionChange} value={selectedPosition ?? ''} disabled={positionOptions.length === 0}>
-                    <SelectTrigger id="position">
-                      <SelectValue placeholder="Pilih jabatan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {positionOptions.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="employee">Karyawan</Label>
-                  <Select value={selectedEmployeeId ?? ''} onValueChange={handleEmployeeChange} disabled={employeeOptions.length === 0}>
-                    <SelectTrigger id="employee">
-                      <SelectValue placeholder="Pilih karyawan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employeeOptions.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
-            
-            {isManager && !isUserOnly && !showCompanyFilter && (
-               <>
-                 <div>
-                  <Label htmlFor="position-manager">Jabatan Tim</Label>
-                  <Select value={selectedPosition ?? ""} onValueChange={handlePositionChange}>
-                    <SelectTrigger id="position-manager"><SelectValue placeholder="Pilih Jabatan" /></SelectTrigger>
-                    <SelectContent>{positionOptions.map((pos) => (<SelectItem key={pos} value={pos}>{pos}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-                 <div>
-                  <Label htmlFor="employee-manager">Karyawan</Label>
-                  <Select value={selectedEmployeeId ?? ""} onValueChange={handleEmployeeChange} disabled={!selectedPosition}>
-                    <SelectTrigger id="employee-manager"><SelectValue placeholder="Pilih karyawan" /></SelectTrigger>
-                    <SelectContent>{employeeOptions.map((e) => (<SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
-
-            <div>
-              <Label htmlFor="period">Periode</Label>
-               <Popover open={isCalendarOpen} onOpenChange={setCalendarOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !selectedPeriod && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedPeriod ? format(selectedPeriod, "LLLL yyyy", { locale: localeId }) : <span>Pilih bulan</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={selectedPeriod} onSelect={(date) => { if (date) { setSelectedPeriod(date); setCalendarOpen(false); } }} defaultMonth={selectedPeriod} initialFocus captionLayout="dropdown-buttons" fromYear={2020} toYear={new Date().getFullYear() + 5} />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-          {isUserOnly && selectedEmployee && (
-            <div className="flex items-center gap-4 text-sm p-4 border rounded-lg bg-muted/30">
-                <User className="h-6 w-6 text-primary"/>
-                <div>
-                    <p className="font-semibold">{selectedEmployee.name}</p>
-                    <p className="text-muted-foreground">{selectedEmployee.position} / {selectedEmployee.department}</p>
-                </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <ResponsivePage>
+      <PageHeader title="Input Pencapaian KPI" description={isUserOnly ? `Selamat datang, ${selectedEmployee?.name}. Silakan isi data pencapaian Anda.` : "Pusat input realisasi target KPI karyawan."} icon={Target} />
       
+      <ResponsiveToolbar>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex items-center gap-3 flex-1 min-w-0">
+            {showCompanyFilter && (
+                <Select onValueChange={handleCompanyChange} value={selectedCompanyFilter}>
+                    <SelectTrigger className="w-full lg:w-[180px] h-9 bg-background border-none shadow-sm text-[10px] font-black uppercase"><Building size={14} className="mr-2 text-primary" /><SelectValue placeholder="Perusahaan" /></SelectTrigger>
+                    <SelectContent className="z-[350]">{manageableCompanies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent>
+                </Select>
+            )}
+            {!isUserOnly && (
+                <>
+                    <Select onValueChange={handleDepartmentChange} value={selectedDepartment ?? ''} disabled={!selectedCompanyFilter}>
+                        <SelectTrigger className="w-full lg:w-[180px] h-9 bg-background border-none shadow-sm text-[10px] font-black uppercase"><Network size={14} className="mr-2 text-primary" /><SelectValue placeholder="Departemen" /></SelectTrigger>
+                        <SelectContent className="z-[350]">{departmentOptions.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select onValueChange={handlePositionChange} value={selectedPosition ?? ''} disabled={!selectedDepartment}>
+                        <SelectTrigger className="w-full lg:w-[180px] h-9 bg-background border-none shadow-sm text-[10px] font-black uppercase"><Briefcase size={14} className="mr-2 text-primary" /><SelectValue placeholder="Jabatan" /></SelectTrigger>
+                        <SelectContent className="z-[350]">{positionOptions.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={selectedEmployeeId ?? ''} onValueChange={handleEmployeeChange} disabled={!selectedPosition}>
+                        <SelectTrigger className="w-full lg:w-[200px] h-9 bg-background border-none shadow-sm text-[10px] font-black uppercase"><User size={14} className="mr-2 text-primary" /><SelectValue placeholder="Karyawan" /></SelectTrigger>
+                        <SelectContent className="z-[350]">{employeeOptions.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                </>
+            )}
+            <Popover open={isCalendarOpen} onOpenChange={setCalendarOpen}>
+                <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full lg:w-[180px] h-9 bg-background border-none shadow-sm text-[10px] font-black uppercase gap-2"><CalendarIcon size={14} className="text-primary" /> {format(selectedPeriod, "MMM yyyy")}</Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 z-[350]"><Calendar mode="single" selected={selectedPeriod} onSelect={(d) => { if(d){ setSelectedPeriod(d); setCalendarOpen(false); }}} defaultMonth={selectedPeriod} initialFocus /></PopoverContent>
+            </Popover>
+        </div>
+      </ResponsiveToolbar>
+
       {isApproved && (
-        <Alert variant="default" className="bg-green-50 border-green-300 text-green-800">
-            <ShieldCheck className="h-4 w-4 !text-green-600" />
-            <AlertDescription className="font-medium">Data untuk periode ini sudah disetujui dan tidak dapat diubah lagi.</AlertDescription>
-        </Alert>
+        <Alert className="bg-green-50 border-green-200"><ShieldCheck className="h-4 w-4 text-green-600" /><AlertDescription className="text-xs font-bold text-green-800 uppercase">Data periode ini telah disetujui dan terkunci.</AlertDescription></Alert>
       )}
 
-      {selectedEmployee && kpiSetup && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Indikator KPI untuk {kpiSetup.position}</CardTitle>
-            <CardDescription>
-              {existingDataForPeriod ? "Edit pencapaian aktual di bawah ini." : "Masukkan pencapaian aktual untuk setiap indikator. Skor dihitung secara otomatis."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isMobile ? (
-                 <div className="space-y-4">
-                  {kpiSetup.indicators.map((kpi) => {
+      {selectedEmployee && kpiSetup ? (
+        <div className="space-y-6">
+            <AdaptiveCardGrid complexity="complex">
+                {kpiSetup.indicators.map((kpi) => {
                     const achievement = achievements[kpi.id] || {};
-                    const isSourced = !!kpi.source;
-                    const isRollupIndicator = !!kpi.rollup?.enabled && ['Supervisor', 'Manager', 'Direktur'].includes(selectedEmployee?.level || 'Staff');
-                    const rawActual = isRollupIndicator ? aggregatedValues[kpi.id] : achievement.actual;
+                    const isRollup = !!kpi.rollup?.enabled && ['Supervisor', 'Manager', 'Direktur'].includes(selectedEmployee.level);
+                    const rawActual = isRollup ? aggregatedValues[kpi.id] : achievement.actual;
                     const targets = distributedTargets[kpi.id];
                     const monthlyTarget = targets?.monthly ?? 0;
-                    const cycleTarget = targets?.cycle ?? 0;
-                    const isLocked = targets?.isLocked;
-                    const unit = kpi.targetFormat === 'Persentase' ? '%' : kpi.unit ? ` ${kpi.unit}` : '';
+                    const unit = kpi.targetFormat === 'Persentase' ? '%' : (kpi.unit ? ` ${kpi.unit}` : '');
                     const score = calculateIndicatorScore(parseFloat(String(rawActual)) || 0, monthlyTarget, kpi.weight, kpi.calculationMethod);
-                    const finalValueForInput = (rawActual === undefined || rawActual === null || isNaN(rawActual as number)) ? '' : rawActual;
-                    
-                    const evidenceMode = evidenceModes[kpi.id] || 'upload';
+                    const mode = evidenceModes[kpi.id] || 'upload';
 
                     return (
-                        <Card key={kpi.id} className="bg-background">
-                            <CardHeader className="p-3">
-                                <div className="flex justify-between items-start gap-2">
-                                  <h4 className="font-semibold text-sm flex items-center gap-1.5 pr-2">
-                                      {kpi.indicator}
-                                      {!!kpi.rollup?.enabled && <Users className="h-3 w-3 text-muted-foreground" />}
-                                      {isSourced && <LinkIconLucide className="h-3 w-3 text-muted-foreground" />}
-                                  </h4>
-                                  <div className="text-right flex-shrink-0">
-                                      <p className="text-xs text-muted-foreground">Bobot</p>
-                                      <p className="font-bold">{kpi.weight}%</p>
-                                  </div>
+                        <Card key={kpi.id} className="border-border/40 shadow-sm overflow-hidden flex flex-col bg-background">
+                            <CardHeader className="p-4 sm:p-6 bg-muted/20 border-b">
+                                <div className="flex justify-between items-start gap-4">
+                                    <div className="space-y-1 min-w-0">
+                                        <h4 className="font-black text-xs uppercase tracking-tight text-slate-800 leading-snug">{kpi.indicator}</h4>
+                                        <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-70 italic line-clamp-1">{kpi.measurement}</p>
+                                    </div>
+                                    <Badge className="bg-primary/5 text-primary border-none font-black text-[10px] h-5">{kpi.weight}%</Badge>
                                 </div>
-                                {kpi.measurement && <p className="text-xs text-muted-foreground pt-1 border-t">Cara Ukur: {kpi.measurement}</p>}
                             </CardHeader>
-                            <CardContent className="p-3 pt-0 space-y-4">
+                            <CardContent className="p-4 sm:p-6 space-y-5 flex-grow">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label className="text-xs">Target</Label>
-                                         <div className="font-semibold flex items-center gap-2">
-                                            { (editingCycleTargetId === kpi.id || editingTargetId === kpi.id) ? (
-                                                <Input type="number" defaultValue={isSourced ? cycleTarget : monthlyTarget} onBlur={(e) => { const newValue = e.target.value === '' ? null : parseFloat(e.target.value); if (isSourced) handleCycleTargetOverride(kpi, newValue); else handleTargetOverride(kpi.id, newValue); }} className="h-8 text-sm w-24" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} />
+                                    <div className="space-y-1.5">
+                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Target Bulanan</p>
+                                        <div className="flex items-center gap-2">
+                                            {(editingTargetId === kpi.id) ? (
+                                                <Input type="number" defaultValue={monthlyTarget} onBlur={(e) => handleTargetOverride(kpi.id, e.target.value === '' ? null : Number(e.target.value))} className="h-8 text-xs font-bold" autoFocus onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()} />
                                             ) : (
-                                              <div className="flex items-baseline gap-1.5">
-                                                <span>{monthlyTarget.toLocaleString('id-ID', { maximumFractionDigits: 1 })}{unit}</span>
-                                                {kpi.cycle !== 'Bulanan' && <p className="text-muted-foreground text-[10px] whitespace-nowrap">(Siklus: {cycleTarget.toLocaleString('id-ID', { maximumFractionDigits: 1 })}{unit})</p>}
-                                              </div>
+                                                <span className="text-sm font-black text-slate-700">{monthlyTarget.toLocaleString('id-ID')}{unit}</span>
                                             )}
-                                             {canEditTargets && (
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { if (isSourced) { if (isLocked) handleCycleTargetOverride(kpi, null); else setEditingCycleTargetId(kpi.id); } else { if (isLocked) handleTargetOverride(kpi.id, null); else setEditingTargetId(kpi.id); } }} disabled={isApproved}>
-                                                              {isLocked ? <Lock className="h-3 w-3 text-primary" /> : <Pencil className="h-3 w-3" />}
+                                            {canEditTargets && !isApproved && <button onClick={() => setEditingTargetId(kpi.id)} className="text-primary opacity-40 hover:opacity-100 transition-opacity"><Pencil size={10} /></button>}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5 text-right">
+                                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Estimasi Skor</p>
+                                        <p className="text-lg font-black text-primary leading-none">{score.toFixed(1)}</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 pt-2">
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Realisasi Aktual</Label>
+                                        <div className="relative">
+                                            <Input type="number" value={(rawActual === undefined || rawActual === null) ? '' : rawActual} onChange={(e) => handleAchievementChange(kpi.id, 'actual', e.target.value)} disabled={isApproved || isRollup} className={cn("h-11 font-black text-base bg-muted/5 border-none", isRollup && "bg-muted/30 cursor-not-allowed")} />
+                                            {isRollup && <Users className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/30" />}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Keterangan / Link Bukti</Label>
+                                        <div className="space-y-2">
+                                            {achievement.linkBukti ? (
+                                                <div className="flex items-center justify-between p-2 rounded-xl bg-green-50 border border-green-100">
+                                                    <div className="flex items-center gap-2 text-[10px] font-bold text-green-700 truncate">
+                                                        <FileCheck size={14} /> {achievement.linkBukti.includes('firebasestorage') ? 'Berkas Terunggah' : 'Tautan Terlampir'}
+                                                    </div>
+                                                    <div className="flex gap-1">
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-green-700" asChild><a href={achievement.linkBukti} target="_blank" rel="noopener noreferrer"><ExternalLink size={14} /></a></Button>
+                                                        {!isApproved && <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-600" onClick={() => handleRemoveEvidence(kpi.id)}><X size={14} /></Button>}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex gap-2">
+                                                    <Input placeholder="Tautan bukti (opsional)" className="h-9 text-xs bg-muted/5 border-none" value={achievement.linkBukti || ""} onChange={(e) => handleAchievementChange(kpi.id, 'linkBukti', e.target.value)} disabled={isApproved} />
+                                                    {!isApproved && (
+                                                        <>
+                                                            <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => fileInputRefs.current[kpi.id]?.click()} disabled={isUploading[kpi.id]}>
+                                                                {isUploading[kpi.id] ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                                                             </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent><p>{isLocked ? 'Buka kunci & reset target' : 'Edit & kunci target'}</p></TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
+                                                            <input type="file" className="hidden" ref={el => fileInputRefs.current[kpi.id] = el} onChange={(e) => handleEvidenceUpload(kpi.id, e)} />
+                                                        </>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     </div>
-                                     <div>
-                                        <Label className="text-xs">Skor</Label>
-                                        <div className="font-bold text-lg text-primary">{score.toFixed(1)}</div>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor={`actual-${kpi.id}`}>Aktual</Label>
-                                  <Input id={`actual-${kpi.id}`} type="number" value={finalValueForInput} onChange={(e) => handleAchievementChange(kpi.id, 'actual', e.target.value)} disabled={isApproved || isRollupIndicator} className={cn((isRollupIndicator) && "font-bold bg-muted/50 cursor-not-allowed")} placeholder="Input aktual..." />
-                                </div>
-                                 <div className="space-y-2">
-                                  <Label htmlFor={`keterangan-${kpi.id}`}>Keterangan (Opsional)</Label>
-                                  <Input id={`keterangan-${kpi.id}`} value={achievement.keterangan ?? ''} onChange={(e) => handleAchievementChange(kpi.id, 'keterangan', e.target.value)} disabled={isApproved} placeholder="Keterangan tambahan..." />
-                                </div>
-                                 <div className="space-y-2">
-                                  <Label>Bukti Pencapaian</Label>
-                                  <div className="flex flex-col gap-2">
-                                      {achievement.linkBukti ? (
-                                          <div className="flex items-center justify-between p-2 border rounded bg-muted/30">
-                                              <div className="flex items-center gap-2 truncate">
-                                                  {achievement.linkBukti.includes('firebasestorage') ? <FileCheck className="h-4 w-4 text-green-600" /> : <LinkIconLucide className="h-4 w-4 text-blue-600" />}
-                                                  <span className="text-xs truncate">{achievement.linkBukti.includes('firebasestorage') ? 'Bukti Terlampir' : 'Tautan Terlampir'}</span>
-                                              </div>
-                                              <div className="flex items-center gap-1">
-                                                  <Button variant="ghost" size="icon" className="h-7 w-7" asChild><a href={achievement.linkBukti} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-3.5 w-3.5" /></a></Button>
-                                                  {!isApproved && <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleRemoveEvidence(kpi.id)}><X className="h-3.5 w-3.5" /></Button>}
-                                              </div>
-                                          </div>
-                                      ) : (
-                                          <div className="space-y-2">
-                                              <Tabs value={evidenceMode} onValueChange={(v) => setEvidenceModes(prev => ({...prev, [kpi.id]: v as 'upload' | 'link'}))}>
-                                                  <TabsList className="grid w-full grid-cols-2 h-8">
-                                                      <TabsTrigger value="upload" className="text-[10px]"><FileUp className="h-3 w-3 mr-1"/> Upload</TabsTrigger>
-                                                      <TabsTrigger value="link" className="text-[10px]"><Link2 className="h-3 w-3 mr-1"/> Link</TabsTrigger>
-                                                  </TabsList>
-                                              </Tabs>
-                                              
-                                              {evidenceMode === 'upload' ? (
-                                                  <div className="flex items-center gap-2">
-                                                      <Button variant="outline" size="sm" className="w-full text-xs h-9" onClick={() => fileInputRefs.current[kpi.id]?.click()} disabled={isApproved || isUploading[kpi.id]}>
-                                                          {isUploading[kpi.id] ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> : <Upload className="h-3.5 w-3.5 mr-2" />}
-                                                          {isUploading[kpi.id] ? 'Mengunggah...' : 'Pilih File'}
-                                                      </Button>
-                                                      <input type="file" className="hidden" ref={el => fileInputRefs.current[kpi.id] = el} onChange={(e) => handleEvidenceUpload(kpi.id, e)} disabled={isApproved} />
-                                                  </div>
-                                              ) : (
-                                                  <Input 
-                                                      placeholder="https://google-drive.com/..." 
-                                                      className="h-9 text-xs" 
-                                                      value={achievement.linkBukti ?? ''} 
-                                                      onChange={(e) => handleAchievementChange(kpi.id, 'linkBukti', e.target.value)}
-                                                      disabled={isApproved}
-                                                  />
-                                              )}
-                                          </div>
-                                      )}
-                                      {isUploading[kpi.id] && <Progress value={uploadProgress[kpi.id] || 0} className="h-1" />}
-                                  </div>
                                 </div>
                             </CardContent>
                         </Card>
                     );
-                  })}
-                 </div>
-            ) : (
-              <TooltipProvider>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Indikator</TableHead>
-                      <TableHead>Target</TableHead>
-                      <TableHead>Bobot</TableHead>
-                      <TableHead>Aktual</TableHead>
-                      <TableHead>Keterangan</TableHead>
-                      <TableHead className="w-[200px]">Bukti Pencapaian</TableHead>
-                      <TableHead className="text-right">Skor</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                  {kpiSetup.indicators.map((kpi) => {
-                    const achievement = achievements[kpi.id] || {};
-                    const isSourced = !!kpi.source;
-                    const isRollupIndicator = !!kpi.rollup?.enabled && ['Supervisor', 'Manager', 'Direktur'].includes(selectedEmployee?.level || 'Staff');
-                    const rawActual = isRollupIndicator ? aggregatedValues[kpi.id] : achievement.actual;
-                    const targets = distributedTargets[kpi.id];
-                    const monthlyTarget = targets?.monthly ?? 0;
-                    const cycleTarget = targets?.cycle ?? 0;
-                    const isLocked = targets?.isLocked;
-                    const safeActual = parseFloat(String(rawActual)) || 0;
-                    const score = calculateIndicatorScore(safeActual, monthlyTarget, kpi.weight, kpi.calculationMethod);
-                    const finalValueForInput = (rawActual === undefined || rawActual === null || isNaN(rawActual as number)) ? '' : rawActual;
-                    const unit = kpi.targetFormat === 'Persentase' ? '%' : kpi.unit ? ` ${kpi.unit}` : '';
-                    
-                    const evidenceMode = evidenceModes[kpi.id] || 'upload';
-  
-                    const actualInput = (
-                      <Input type="number" value={finalValueForInput} onChange={(e) => handleAchievementChange(kpi.id, 'actual', e.target.value)} disabled={isApproved || isRollupIndicator} className={cn("h-8 text-xs min-w-[80px]", (isRollupIndicator) && "font-bold bg-muted/50 cursor-not-allowed")} />
-                    );
-  
-                    return (
-                      <TableRow key={kpi.id}>
-                        <TableCell className="font-medium text-xs">
-                          <div className="flex flex-col gap-1">
-                            <span className="font-semibold text-sm">{kpi.indicator}</span>
-                            {kpi.measurement && (
-                              <span className="text-[10px] text-muted-foreground leading-tight max-w-[200px]">
-                                <span className="font-medium uppercase tracking-wider text-[9px] block mb-0.5 text-primary/70">Cara Ukur:</span>
-                                {kpi.measurement}
-                              </span>
-                            )}
-                            <div className="flex items-center gap-1.5 mt-1">
-                                {!!kpi.rollup?.enabled && <Users className="h-3 w-3 text-muted-foreground" />}
-                                {isSourced && <LinkIconLucide className="h-3 w-3 text-muted-foreground" />}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          <div className="flex items-center gap-2">
-                            { (editingCycleTargetId === kpi.id || editingTargetId === kpi.id) ? (
-                              <Input type="number" defaultValue={isSourced ? cycleTarget : monthlyTarget} onBlur={(e) => { const newValue = e.target.value === '' ? null : parseFloat(e.target.value); if (isSourced) handleCycleTargetOverride(kpi, newValue); else handleTargetOverride(kpi.id, newValue); }} className="h-8 text-xs w-24" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} />
-                            ) : (
-                              <>
-                                <span className="font-medium min-w-[80px] flex items-baseline gap-1.5">
-                                  {monthlyTarget.toLocaleString('id-ID', { maximumFractionDigits: 1 })}{unit}
-                                  {kpi.cycle !== 'Bulanan' && <span className="text-muted-foreground text-[10px] whitespace-nowrap">(Siklus: {cycleTarget.toLocaleString('id-ID', { maximumFractionDigits: 1 })}{unit})</span>}
-                                </span>
-                                {canEditTargets && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { if (isSourced) { if (isLocked) handleCycleTargetOverride(kpi, null); else setEditingCycleTargetId(kpi.id); } else { if (isLocked) handleTargetOverride(kpi.id, null); else setEditingTargetId(kpi.id); } }} disabled={isApproved}>
-                                        {isLocked ? <Lock className="h-3 w-3 text-primary" /> : <Pencil className="h-3 w-3" />}
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>{isLocked ? 'Buka kunci & reset target' : 'Edit & kunci target'}</p></TooltipContent>
-                                  </Tooltip>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-xs">{kpi.weight}%</TableCell>
-                        <TableCell>{isRollupIndicator ? (<Tooltip><TooltipTrigger asChild>{actualInput}</TooltipTrigger><TooltipContent><p>Dihitung otomatis dari pencapaian tim.</p></TooltipContent></Tooltip>) : actualInput}</TableCell>
-                        <TableCell><Input value={achievements[kpi.id]?.keterangan ?? ''} onChange={(e) => handleAchievementChange(kpi.id, 'keterangan', e.target.value)} disabled={isApproved} className="h-8 text-xs min-w-[150px]" placeholder="Opsional" /></TableCell>
-                        <TableCell>
-                            <div className="flex flex-col gap-1.5">
-                                {achievement.linkBukti ? (
-                                    <div className="flex items-center justify-between p-1 px-2 border rounded-md bg-muted/20">
-                                        {achievement.linkBukti.includes('firebasestorage') ? <FileCheck className="h-3.5 w-3.5 text-green-600 shrink-0" /> : <LinkIconLucide className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
-                                        <div className="flex items-center">
-                                            <Button variant="ghost" size="icon" className="h-6 w-6" asChild><a href={achievement.linkBukti} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-3 w-3" /></a></Button>
-                                            {!isApproved && <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleRemoveEvidence(kpi.id)}><X className="h-3 w-3" /></Button>}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-1.5">
-                                        <div className="flex items-center gap-1 border rounded p-0.5 bg-muted/30">
-                                            <button 
-                                                onClick={() => setEvidenceModes(prev => ({...prev, [kpi.id]: 'upload'}))}
-                                                className={cn("flex-1 text-[10px] py-0.5 rounded transition-all", evidenceMode === 'upload' ? "bg-background shadow-sm font-bold" : "text-muted-foreground")}
-                                            >Upload</button>
-                                            <button 
-                                                onClick={() => setEvidenceModes(prev => ({...prev, [kpi.id]: 'link'}))}
-                                                className={cn("flex-1 text-[10px] py-0.5 rounded transition-all", evidenceMode === 'link' ? "bg-background shadow-sm font-bold" : "text-muted-foreground")}
-                                            >Link</button>
-                                        </div>
-                                        {evidenceMode === 'upload' ? (
-                                            <>
-                                                <Button variant="outline" size="sm" className="h-7 text-[10px] w-full" onClick={() => fileInputRefs.current[kpi.id]?.click()} disabled={isApproved || isUploading[kpi.id]}>
-                                                    {isUploading[kpi.id] ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Upload className="h-3 w-3 mr-1.5" />}
-                                                    {isUploading[kpi.id] ? 'Unggah...' : 'Pilih File'}
-                                                </Button>
-                                                <input type="file" className="hidden" ref={el => fileInputRefs.current[kpi.id] = el} onChange={(e) => handleEvidenceUpload(kpi.id, e)} disabled={isApproved} />
-                                            </>
-                                        ) : (
-                                            <Input 
-                                                placeholder="https://..." 
-                                                className="h-7 text-[10px]" 
-                                                value={achievement.linkBukti ?? ''} 
-                                                onChange={(e) => handleAchievementChange(kpi.id, 'linkBukti', e.target.value)}
-                                                disabled={isApproved}
-                                            />
-                                        )}
-                                    </div>
-                                )}
-                                {isUploading[kpi.id] && <Progress value={uploadProgress[kpi.id] || 0} className="h-1" />}
-                            </div>
-                        </TableCell>
-                        <TableCell className="text-right font-bold text-xs">{score.toFixed(1)}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  </TableBody>
-                </Table>
-              </div>
-              </TooltipProvider>
-            )}
-            <div className="flex justify-between items-center mt-6 pt-4 border-t">
-              <div className="text-xl font-bold">Total Skor: <span className="text-primary">{typeof totalScore === 'number' && !isNaN(totalScore) ? totalScore.toFixed(1) : '0.0'}</span></div>
-              <Button onClick={handleSave} disabled={isApproved || isAnyUploading || (typeof totalScore === 'number' && isNaN(totalScore))}>
-                {isAnyUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                {isAnyUploading ? "Sedang Mengunggah..." : (existingDataForPeriod ? "Simpan Perubahan" : "Simpan Pencapaian")}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                })}
+            </AdaptiveCardGrid>
 
-      {selectedEmployeeId && !kpiSetup && (
-         <Card>
-            <CardHeader><CardTitle className="text-destructive">Pengaturan KPI Tidak Ditemukan</CardTitle></CardHeader>
-            <CardContent>
-                <p>Tidak ada pengaturan KPI yang aktif untuk posisi <strong>{selectedEmployee?.position}</strong>, departemen <strong>{selectedEmployee?.department}</strong>, dan level <strong>{selectedEmployee?.level}</strong> pada periode yang dipilih.</p>
-                <p className="mt-2">Silakan hubungi administrator Anda untuk membuat atau mengaktifkan pengaturan KPI yang sesuai.</p>
-            </CardContent>
-         </Card>
+            <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4 md:static md:translate-x-0 md:max-w-none md:p-0">
+                <Card className="bg-primary text-primary-foreground shadow-2xl rounded-2xl md:rounded-xl border-none">
+                    <CardContent className="p-4 md:p-6 flex items-center justify-between gap-6">
+                        <div className="space-y-0.5">
+                            <p className="text-[10px] font-black uppercase opacity-60 tracking-[0.2em]">Total Skor Akhir</p>
+                            <p className="text-3xl font-black leading-none">{totalScore.toFixed(1)}</p>
+                        </div>
+                        <Button onClick={handleSave} disabled={isApproved || Object.values(isUploading).some(v => v)} className="bg-white text-primary hover:bg-white/90 font-black uppercase tracking-widest text-[10px] h-12 px-8 rounded-xl shadow-xl active:scale-95 transition-all">
+                            <Save className="mr-2 size-4" /> SIMPAN LAPORAN
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+      ) : (
+        <div className="py-32 text-center border-2 border-dashed rounded-3xl bg-muted/5 opacity-40">
+            <Target size={48} className="mx-auto mb-4" />
+            <p className="font-black uppercase text-[10px] tracking-[0.2em]">Pilih Karyawan & Periode</p>
+        </div>
       )}
-    </div>
+    </ResponsivePage>
   );
 }
 
-export default function InputAchievementPage() {
-    return (
-        <React.Suspense fallback={<div>Loading...</div>}>
-            <InputAchievementContent />
-        </React.Suspense>
-    )
-}
+const getStatus = (s: number, min: number): PerformanceStatus => { const ex = min * 1.1; if (s >= ex) return "Melampaui Target"; if (s >= min) return "Mencapai Target"; return "Perlu Peningkatan"; };
+export default function InputAchievementPage() { return <React.Suspense fallback={null}><InputAchievementContent /></React.Suspense>; }
