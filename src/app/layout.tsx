@@ -34,11 +34,11 @@ export default function RootLayout({
 
   return (
     <html 
-      lang="en" 
+      lang="id" 
       className={cn(GeistSans.variable, GeistMono.variable)} 
       suppressHydrationWarning
     >
-      <body className="font-sans antialiased">
+      <body className={cn("font-sans antialiased", GeistSans.className)}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

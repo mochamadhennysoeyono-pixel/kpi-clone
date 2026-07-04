@@ -1,5 +1,5 @@
 import type {Config} from 'tailwindcss';
-import { fontFamily } from "tailwindcss/defaultTheme"
+const { fontFamily } = require("tailwindcss/defaultTheme")
 
 const config: Config = {
   darkMode: ['class'],
@@ -20,6 +20,7 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-geist-sans)", ...fontFamily.sans],
         mono: ["var(--font-geist-mono)", ...fontFamily.mono],
+        headline: ["var(--font-geist-sans)", ...fontFamily.sans],
       },
       colors: {
         border: "hsl(var(--border))",
