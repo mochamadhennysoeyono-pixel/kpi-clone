@@ -1,4 +1,3 @@
-
 // src/app/(main)/collab-space/page.tsx
 "use client";
 
@@ -30,6 +29,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
+import { ResponsivePage, ResponsiveToolbar } from '@/components/ui/adaptive-layout';
+import { PageHeader } from '@/components/ui/page-header';
+import { AdaptiveCardGrid } from '@/components/ui/adaptive-card';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 
 // Static mapping for border and background classes to prevent purging
 const colorStyles: Record<string, { border: string, bg: string }> = {
@@ -45,6 +48,7 @@ export default function CollabSpaceListingPage() {
     const { collabSpaces, employees, companies, deleteCollabSpace, updateCollabSpace } = useMasterData();
     const { currentUser, userRole } = useAuth();
     const { toast } = useToast();
+    const { isMobile } = useBreakpoint();
     
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
@@ -74,37 +78,29 @@ export default function CollabSpaceListingPage() {
         if (!currentUser) return [];
         let spaces = collabSpaces;
         
-        // 1. Visibilitas dasar (Implementasi God View)
         if (userRole === 'superadmin') {
-            // Superadmin can see all spaces within the filter
             if (selectedCompanyId !== 'all') {
                 const companyName = companies.find(c => c.id === selectedCompanyId)?.name;
                 spaces = spaces.filter(s => s.company === companyName);
             }
         } else if (userRole === 'manajemen') {
-            // "God View" for Management role
             if (isHoldingAdmin) {
                 if (selectedCompanyId !== 'all') {
                     const companyName = companies.find(c => c.id === selectedCompanyId)?.name;
                     spaces = spaces.filter(s => s.company === companyName);
                 } else {
-                    // Holding admin sees ALL spaces in their managed group companies
                     const manageableNames = manageableCompanies.map(c => c.name);
                     spaces = spaces.filter(s => manageableNames.includes(s.company));
                 }
             } else {
-                // Regular company admin sees ALL spaces in their company
                 spaces = spaces.filter(s => s.company === currentUser.company);
             }
         } else {
-            // Regular user only sees where they are an explicit member
             spaces = spaces.filter(s => s.memberIds.includes(currentUser.id));
         }
         
-        // 2. Filter Status: Hanya tampilkan yang AKTIF di halaman ini
         spaces = spaces.filter(s => s.status === 'active');
         
-        // 3. Filter Pencarian
         if (searchTerm) {
             spaces = spaces.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
         }
@@ -155,37 +151,25 @@ export default function CollabSpaceListingPage() {
     };
 
     return (
-        <div className="space-y-6">
-            <Card className="shadow-lg border-t-4 border-primary">
-                <CardHeader>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-primary/10 rounded-lg">
-                                <LayoutGrid className="h-6 w-6 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle className="font-headline text-2xl">CollabSpace</CardTitle>
-                                <CardDescription>
-                                    Pusat koordinasi dan eksekusi project tim Anda.
-                                </CardDescription>
-                            </div>
-                        </div>
-                        {canCreate && (
-                            <Button onClick={() => { setSelectedSpace(undefined); setIsFormOpen(true); }} className="shadow-md">
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Buat Ruangan Baru
-                            </Button>
-                        )}
-                    </div>
-                </CardHeader>
-            </Card>
+        <ResponsivePage>
+            <PageHeader 
+                title="CollabSpace"
+                description="Pusat koordinasi dan eksekusi project tim Anda. Kelola tugas harian dan kolaborasi proyek dalam satu wadah."
+                icon={LayoutGrid}
+                actions={canCreate && (
+                    <Button onClick={() => { setSelectedSpace(undefined); setIsFormOpen(true); }} className="font-bold shadow-lg h-9 sm:h-10">
+                        <PlusCircle className="mr-2 size-4" />
+                        Buat Ruangan Baru
+                    </Button>
+                )}
+            />
 
-            <div className="flex flex-col md:flex-row gap-4">
+            <ResponsiveToolbar>
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                     <Input 
                         placeholder="Cari ruangan..." 
-                        className="pl-9 bg-background shadow-sm"
+                        className="pl-9 h-10 border-none bg-background shadow-none focus-visible:ring-primary/20"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -193,12 +177,13 @@ export default function CollabSpaceListingPage() {
                 
                 {showAdminFilters && (
                     <div className="flex items-center gap-2">
-                        <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
+                        <Filter className="size-4 text-muted-foreground hidden sm:block shrink-0" />
                         <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                            <SelectTrigger className="w-full md:w-[240px] bg-background shadow-sm">
-                                <SelectValue placeholder="Filter Perusahaan" />
+                            <SelectTrigger className="w-full md:w-[240px] bg-background border-none h-10">
+                                <Building className="size-3.5 mr-2 text-primary" />
+                                <SelectValue placeholder="Semua Perusahaan" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="z-[350]">
                                 <SelectItem value="all">Semua Ruangan Saya</SelectItem>
                                 {manageableCompanies.map(c => (
                                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
@@ -207,106 +192,79 @@ export default function CollabSpaceListingPage() {
                         </Select>
                     </div>
                 )}
-            </div>
+            </ResponsiveToolbar>
 
             {mySpaces.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+                <AdaptiveCardGrid complexity="medium">
                     {mySpaces.map(space => {
                         const style = colorStyles[space.color] || colorStyles['blue-500'];
                         const isCreator = space.creatorId === currentUser?.id || userRole === 'superadmin';
 
                         return (
-                            <Card key={space.id} className={cn("hover:shadow-md transition-all group overflow-hidden border-t-4 flex flex-col", style.border)}>
-                                <CardHeader className={cn("pb-4 shrink-0", style.bg)}>
+                            <Card key={space.id} className={cn("hover:shadow-md transition-all group overflow-hidden border-t-4 flex flex-col bg-background", style.border)}>
+                                <CardHeader className={cn("pb-4 shrink-0", style.bg, isMobile ? "p-4" : "p-6")}>
                                     <div className="flex justify-between items-start">
                                         <div className="space-y-1 min-w-0">
-                                            <CardTitle className="text-lg group-hover:text-primary transition-colors truncate">{space.name}</CardTitle>
-                                            <div className="flex items-center gap-2 text-[10px] uppercase font-bold text-muted-foreground">
-                                                <Building className="h-3 w-3" />
+                                            <CardTitle className="text-base sm:text-lg group-hover:text-primary transition-colors truncate font-bold leading-tight">{space.name}</CardTitle>
+                                            <div className="flex items-center gap-2 text-[8px] sm:text-[9px] uppercase font-black text-muted-foreground tracking-widest">
+                                                <Building className="size-2.5 sm:size-3" />
                                                 <span className="truncate">{space.company}</span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-1 shrink-0">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-background/50">
-                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    <Button variant="ghost" size="icon" className="size-8 rounded-full hover:bg-background/50">
+                                                        <MoreHorizontal className="size-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
+                                                <DropdownMenuContent align="end" className="z-[350]">
                                                     <DropdownMenuLabel className="text-[10px] uppercase font-black opacity-60">Opsi Ruangan</DropdownMenuLabel>
-                                                    <DropdownMenuItem onClick={() => handleEdit(space)}>
-                                                        <Pencil className="mr-2 h-4 w-4" /> Ubah Rincian
-                                                    </DropdownMenuItem>
-                                                    
+                                                    <DropdownMenuItem onClick={() => handleEdit(space)}><Pencil className="mr-2 h-4 w-4" /> Ubah Rincian</DropdownMenuItem>
                                                     {isCreator && (
-                                                        <>
-                                                            <DropdownMenuItem onClick={() => handleToggleStatus(space)}>
-                                                                {space.status === 'active' ? (
-                                                                    <><CheckCircle2 className="mr-2 h-4 w-4 text-green-600" /> Tandai Selesai</>
-                                                                ) : (
-                                                                    <><RotateCcw className="mr-2 h-4 w-4 text-blue-600" /> Aktifkan Kembali</>
-                                                                )}
-                                                            </DropdownMenuItem>
-                                                        </>
+                                                        <DropdownMenuItem onClick={() => handleToggleStatus(space)}>
+                                                            {space.status === 'active' ? <><CheckCircle2 className="mr-2 h-4 w-4 text-green-600" /> Tandai Selesai</> : <><RotateCcw className="mr-2 h-4 w-4 text-blue-600" /> Aktifkan Kembali</>}
+                                                        </DropdownMenuItem>
                                                     )}
-
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(space)}>
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Hapus Ruangan
-                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(space)}><Trash2 className="mr-2 h-4 w-4" /> Hapus Ruangan</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
                                     </div>
-                                    <CardDescription className="line-clamp-2 pt-2 text-xs min-h-[40px]">
+                                    <CardDescription className="line-clamp-2 pt-2 text-[10px] sm:text-xs min-h-[35px] sm:min-h-[40px] leading-relaxed">
                                         {space.description}
                                     </CardDescription>
                                 </CardHeader>
-                                <CardContent className="pt-4 flex-grow">
-                                    <div className="flex items-center gap-4 text-xs text-muted-foreground font-semibold">
+                                <CardContent className={cn("flex-grow", isMobile ? "p-4" : "p-6")}>
+                                    <div className="flex items-center gap-4 text-[10px] sm:text-xs text-muted-foreground font-bold uppercase tracking-tight">
                                         <div className="flex items-center gap-1.5">
-                                            <Users className="h-3.5 w-3.5" />
-                                            <span>{space.memberIds.length} Anggota Tim</span>
+                                            <Users className="size-3.5" />
+                                            <span>{space.memberIds.length} Anggota</span>
                                         </div>
                                     </div>
                                 </CardContent>
-                                <CardFooter className="bg-muted/30 pt-4 mt-auto">
-                                    <Button asChild className="w-full font-bold shadow-sm rounded-xl">
+                                <CardFooter className="bg-muted/5 pt-4 mt-auto border-t p-4">
+                                    <Button asChild className="w-full font-black text-[10px] sm:text-xs uppercase tracking-widest shadow-sm rounded-xl h-10 sm:h-11">
                                         <Link href={`/collab-space/${space.id}`}>
-                                            Masuk Ruangan <ArrowRight className="ml-2 h-4 w-4" />
+                                            Masuk Ruangan <ArrowRight className="ml-2 size-4" />
                                         </Link>
                                     </Button>
                                 </CardFooter>
                             </Card>
                         );
                     })}
-                </div>
+                </AdaptiveCardGrid>
             ) : (
-                <Card className="border-dashed">
-                    <CardContent className="p-16 text-center text-muted-foreground">
-                        <div className="bg-muted rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                            <LayoutGrid className="h-8 w-8 opacity-20" />
-                        </div>
-                        <p className="font-bold text-foreground/70">Tidak ada project aktif ditemukan.</p>
-                        <p className="text-sm mt-1">Mulai buat ruangan koordinasi baru atau sesuaikan filter pencarian Anda.</p>
-                    </CardContent>
-                </Card>
+                <div className="flex flex-col items-center justify-center py-32 border-2 border-dashed rounded-3xl bg-muted/10">
+                    <div className="p-4 bg-muted rounded-2xl mb-4 opacity-20"><LayoutGrid size={48} /></div>
+                    <p className="text-slate-900 font-black uppercase text-[10px] tracking-[0.2em]">Ruangan Kosong</p>
+                    <p className="text-xs text-muted-foreground mt-2 max-w-[250px] text-center font-medium">Mulai buat ruangan koordinasi baru untuk tim Anda.</p>
+                </div>
             )}
 
-            <CollabSpaceFormSheet 
-                isOpen={isFormOpen}
-                onOpenChange={setIsFormOpen}
-                space={selectedSpace}
-            />
-
-            <DeleteConfirmationDialog 
-                isOpen={isDeleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
-                onConfirm={handleDeleteConfirm}
-                itemName={spaceToDelete?.name || ''}
-                itemType="ruangan project"
-            />
-        </div>
+            <CollabSpaceFormSheet isOpen={isFormOpen} onOpenChange={setIsFormOpen} space={selectedSpace} />
+            <DeleteConfirmationDialog isOpen={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen} onConfirm={handleDeleteConfirm} itemName={spaceToDelete?.name || ''} itemType="ruangan project" />
+        </ResponsivePage>
     );
 }

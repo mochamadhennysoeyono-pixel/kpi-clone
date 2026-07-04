@@ -20,7 +20,9 @@ import {
     Clock,
     CheckCircle2,
     Calendar as CalendarIcon,
-    Building
+    Building,
+    ExternalLink,
+    ArrowRight
 } from 'lucide-react';
 import { 
     Select, 
@@ -29,17 +31,8 @@ import {
     SelectTrigger, 
     SelectValue 
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
     AreaChart, 
     Area, 
@@ -53,10 +46,13 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { format, isBefore, startOfDay, subDays, eachDayOfInterval, isSameDay, getYear, getMonth, parse } from 'date-fns';
+import { format, isBefore, startOfDay, subDays, eachDayOfInterval, isSameDay, getYear, getMonth } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { MultiSelect } from '@/components/ui/multi-select';
-import type { Company } from '@/types';
+import { ResponsivePage, ResponsiveToolbar } from '@/components/ui/adaptive-layout';
+import { PageHeader } from '@/components/ui/page-header';
+import { AdaptiveCardGrid, AdaptiveMetricCard, AdaptiveInsightCard } from '@/components/ui/adaptive-card';
+import { AdaptiveTable } from '@/components/ui/adaptive-table';
 
 export default function CollabTaskReportPage() {
     const { collabSpaces, collabTasks, employees, companies } = useMasterData();
@@ -65,7 +61,7 @@ export default function CollabTaskReportPage() {
     // --- States ---
     const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
     const [selectedSpaceId, setSelectedSpaceId] = useState<string | 'all'>('all');
-    const [selectedMonths, setSelectedMonths] = useState<string[]>([format(new Date(), 'M')]);
+    const [selectedMonths, setSelectedMonths] = useState<string[]>([(getMonth(new Date()) + 1).toString()]);
     const [selectedYears, setSelectedYears] = useState<string[]>([format(new Date(), 'yyyy')]);
     const [searchTerm, setSearchTerm] = useState("");
 
@@ -86,23 +82,13 @@ export default function CollabTaskReportPage() {
         return [];
     }, [userRole, isHoldingAdmin, userCompany, companies]);
 
-    // --- Constants ---
     const monthOptions = [
-        { value: '1', label: 'Januari' },
-        { value: '2', label: 'Februari' },
-        { value: '3', label: 'Maret' },
-        { value: '4', label: 'April' },
-        { value: '5', label: 'Mei' },
-        { value: '6', label: 'Juni' },
-        { value: '7', label: 'Juli' },
-        { value: '8', label: 'Agustus' },
-        { value: '9', label: 'September' },
-        { value: '10', label: 'Oktober' },
-        { value: '11', label: 'November' },
-        { value: '12', label: 'Desember' },
+        { value: '1', label: 'Januari' }, { value: '2', label: 'Februari' }, { value: '3', label: 'Maret' },
+        { value: '4', label: 'April' }, { value: '5', label: 'Mei' }, { value: '6', label: 'Juni' },
+        { value: '7', label: 'Juli' }, { value: '8', label: 'Agustus' }, { value: '9', label: 'September' },
+        { value: '10', label: 'Oktober' }, { value: '11', label: 'November' }, { value: '12', label: 'Desember' },
     ];
 
-    // --- Computed Data: Years ---
     const yearOptions = useMemo(() => {
         const years = new Set<string>();
         years.add(format(new Date(), 'yyyy'));
@@ -113,11 +99,8 @@ export default function CollabTaskReportPage() {
         return Array.from(years).sort((a, b) => b.localeCompare(a)).map(y => ({ label: y, value: y }));
     }, [collabTasks]);
 
-    // --- Computed Data: Filtering ---
     const filteredSpaces = useMemo(() => {
         let spaces = collabSpaces;
-        
-        // 1. Filter by Company (if admin/holding)
         if (showAdminFilters && selectedCompanyId !== 'all') {
             const companyName = companies.find(c => c.id === selectedCompanyId)?.name;
             spaces = spaces.filter(s => s.company === companyName);
@@ -126,429 +109,206 @@ export default function CollabTaskReportPage() {
         } else if (userRole === 'user') {
             spaces = spaces.filter(s => s.memberIds.includes(currentUser?.id || ''));
         }
-
         return spaces;
     }, [collabSpaces, currentUser, userRole, showAdminFilters, selectedCompanyId, companies, isHoldingAdmin]);
 
     const activeSpaceTasks = useMemo(() => {
         let tasks = collabTasks;
-        
-        // Filter by Space
-        if (selectedSpaceId !== 'all') {
-            tasks = tasks.filter(t => t.spaceId === selectedSpaceId);
-        } else {
-            // Scoping based on filtered spaces
+        if (selectedSpaceId !== 'all') tasks = tasks.filter(t => t.spaceId === selectedSpaceId);
+        else {
             const spaceIds = filteredSpaces.map(s => s.id);
             tasks = tasks.filter(t => spaceIds.includes(t.spaceId));
         }
 
-        // Filter by Time (Multi-select aware)
         tasks = tasks.filter(t => {
             const date = t.createdAt?.toDate ? t.createdAt.toDate() : (t.createdAt ? new Date(t.createdAt) : null);
             if (!date) return false;
-
             const matchesYear = selectedYears.length === 0 || selectedYears.includes(getYear(date).toString());
             const matchesMonth = selectedMonths.length === 0 || selectedMonths.includes((getMonth(date) + 1).toString());
-
             return matchesYear && matchesMonth;
         });
-
         return tasks;
     }, [collabTasks, selectedSpaceId, selectedMonths, selectedYears, filteredSpaces]);
 
-    const displayTasks = useMemo(() => {
-        if (!searchTerm) return activeSpaceTasks;
-        return activeSpaceTasks.filter(t => t.title.toLowerCase().includes(searchTerm.toLowerCase()));
-    }, [activeSpaceTasks, searchTerm]);
-
-    // --- Analytics Logic ---
     const stats = useMemo(() => {
         const today = startOfDay(new Date());
         const counts = { total: activeSpaceTasks.length, todo: 0, inProgress: 0, done: 0, overdue: 0, atRisk: 0 };
-        
         activeSpaceTasks.forEach(t => {
             const dueDate = t.dueDate?.toDate ? t.dueDate.toDate() : (t.dueDate ? new Date(t.dueDate) : null);
-            const isDone = t.status === 'done';
-            
-            if (isDone) {
-                counts.done++;
-            } else {
-                if (dueDate && isBefore(dueDate, today)) {
-                    counts.overdue++;
-                } else if (dueDate && isBefore(dueDate, subDays(today, -2))) {
-                    counts.atRisk++;
-                }
-                
-                if (t.status === 'in-progress') counts.inProgress++;
-                else counts.todo++;
+            if (t.status === 'done') counts.done++;
+            else {
+                if (dueDate && isBefore(dueDate, today)) counts.overdue++;
+                else if (dueDate && isBefore(dueDate, addDays(today, 2))) counts.atRisk++;
+                if (t.status === 'in-progress') counts.inProgress++; else counts.todo++;
             }
         });
-
         const efficiency = counts.total > 0 ? Math.round((counts.done / counts.total) * 100) : 0;
         return { ...counts, efficiency };
     }, [activeSpaceTasks]);
 
-    // Trend Data
     const trendData = useMemo(() => {
-        const last7Days = eachDayOfInterval({
-            start: subDays(new Date(), 6),
-            end: new Date()
-        });
-
-        return last7Days.map(day => {
-            const dayTasks = activeSpaceTasks.filter(t => {
-                const completedAt = t.activityLog?.find(log => log.action.includes('Selesai'))?.timestamp?.toDate?.() 
-                                  || (t.status === 'done' ? (t.createdAt?.toDate ? t.createdAt.toDate() : new Date(t.createdAt)) : null);
-                return completedAt && isSameDay(completedAt, day);
-            });
-
-            return {
-                date: format(day, 'dd MMM', { locale: localeId }),
-                completed: dayTasks.length
-            };
-        });
+        const last7Days = eachDayOfInterval({ start: subDays(new Date(), 6), end: new Date() });
+        return last7Days.map(day => ({
+            date: format(day, 'dd MMM', { locale: localeId }),
+            completed: activeSpaceTasks.filter(t => {
+                const compAt = t.activityLog?.find(log => log.action.includes('Selesai'))?.timestamp?.toDate?.() || (t.status === 'done' ? (t.createdAt?.toDate ? t.createdAt.toDate() : new Date(t.createdAt)) : null);
+                return compAt && isSameDay(compAt, day);
+            }).length
+        }));
     }, [activeSpaceTasks]);
 
-    // Workload Data
     const workloadData = useMemo(() => {
-        const memberCounts: Record<string, { name: string, active: number, done: number }> = {};
-        
+        const map: Record<string, { name: string, active: number, done: number }> = {};
         activeSpaceTasks.forEach(t => {
             const ids = t.assigneeIds || (t.assigneeId ? [t.assigneeId] : []);
             ids.forEach(id => {
-                if (!memberCounts[id]) {
+                if (!map[id]) {
                     const emp = employees.find(e => e.id === id);
-                    memberCounts[id] = { name: emp?.name || 'Unknown', active: 0, done: 0 };
+                    map[id] = { name: emp?.name || 'Unknown', active: 0, done: 0 };
                 }
-                if (t.status === 'done') memberCounts[id].done++;
-                else memberCounts[id].active++;
+                if (t.status === 'done') map[id].done++; else map[id].active++;
             });
         });
-
-        return Object.values(memberCounts).sort((a, b) => b.active - a.active).slice(0, 5);
+        return Object.values(map).sort((a, b) => b.active - a.active).slice(0, 5);
     }, [activeSpaceTasks, employees]);
 
-    // Reset space filter when company changes
-    useEffect(() => {
-        setSelectedSpaceId('all');
-    }, [selectedCompanyId]);
+    const displayTasks = useMemo(() => searchTerm ? activeSpaceTasks.filter(t => t.title.toLowerCase().includes(searchTerm.toLowerCase())) : activeSpaceTasks, [activeSpaceTasks, searchTerm]);
 
     return (
-        <div className="space-y-6 pb-10">
-            {/* Header Area */}
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                        <CalendarIcon className="size-6 text-primary" />
-                        Laporan Tugas CollabSpace
-                    </h1>
-                    <p className="text-muted-foreground text-sm font-medium">Analisis efisiensi dan beban kerja tim berdasarkan periode.</p>
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-3 bg-muted/30 p-2.5 rounded-xl border border-border/50">
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                            <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Periode:</Label>
-                            <MultiSelect
-                                options={yearOptions}
-                                value={selectedYears}
-                                onChange={setSelectedYears}
-                                placeholder="Pilih Tahun..."
-                                className="w-[120px] text-xs font-semibold"
-                            />
-                            <MultiSelect
-                                options={monthOptions}
-                                value={selectedMonths}
-                                onChange={setSelectedMonths}
-                                placeholder="Pilih Bulan..."
-                                className="w-[160px] text-xs font-semibold"
-                            />
-                        </div>
+        <ResponsivePage>
+            <PageHeader 
+                title="Laporan Analitik CollabSpace"
+                description="Pantau produktivitas, tren penyelesaian tugas, dan distribusi beban kerja tim Anda."
+                icon={CalendarIcon}
+            />
 
-                        <div className="h-6 w-px bg-border mx-1" />
-
-                        {showAdminFilters && (
-                            <>
-                                <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                                    <SelectTrigger className="w-[180px] h-9 text-xs font-semibold border-none shadow-sm bg-background">
-                                        <Building className="size-3 mr-2 text-primary" />
-                                        <SelectValue placeholder="Pilih Perusahaan" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">Semua Perusahaan</SelectItem>
-                                        {manageableCompanies.map(c => (
-                                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <div className="h-6 w-px bg-border mx-1" />
-                            </>
-                        )}
-
-                        <Select value={selectedSpaceId} onValueChange={setSelectedSpaceId}>
-                            <SelectTrigger className="w-[180px] h-9 text-xs font-semibold border-none shadow-sm bg-background">
-                                <LayoutGrid className="size-3 mr-2 text-primary" />
-                                <SelectValue placeholder="Pilih Ruangan" />
+            <ResponsiveToolbar>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <Label className="text-[10px] font-black uppercase text-muted-foreground shrink-0">Waktu:</Label>
+                        <MultiSelect options={yearOptions} value={selectedYears} onChange={setSelectedYears} placeholder="Tahun" className="w-[100px] h-9 text-[10px]" />
+                        <MultiSelect options={monthOptions} value={selectedMonths} onChange={setSelectedMonths} placeholder="Bulan" className="w-[140px] h-9 text-[10px]" />
+                    </div>
+                    {showAdminFilters && (
+                        <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                            <SelectTrigger className="w-full sm:w-[180px] h-9 border-none bg-background shadow-sm text-[10px] font-black uppercase">
+                                <Building size={14} className="mr-2 text-primary" />
+                                <SelectValue placeholder="Perusahaan" />
                             </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua Ruangan</SelectItem>
-                                {filteredSpaces.map(s => (
-                                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                                ))}
+                            <SelectContent className="z-[350]">
+                                <SelectItem value="all">Semua Perusahaan</SelectItem>
+                                {manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
-                    </div>
+                    )}
+                    <Select value={selectedSpaceId} onValueChange={setSelectedSpaceId}>
+                        <SelectTrigger className="w-full sm:w-[180px] h-9 border-none bg-background shadow-sm text-[10px] font-black uppercase">
+                            <LayoutGrid size={14} className="mr-2 text-primary" />
+                            <SelectValue placeholder="Ruangan" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[350]">
+                            <SelectItem value="all">Semua Ruangan</SelectItem>
+                            {filteredSpaces.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
                 </div>
-            </div>
+            </ResponsiveToolbar>
 
-            {/* Quick Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <MetricCard 
-                    label="Tugas Aktif" 
-                    value={stats.todo + stats.inProgress} 
-                    subValue={`${stats.total} Total Dibuat`} 
-                    icon={Briefcase} 
-                    color="text-blue-600"
-                    bg="bg-blue-50"
-                />
-                <MetricCard 
-                    label="Efisiensi Tim" 
-                    value={`${stats.efficiency}%`} 
-                    subValue="Tingkat Penyelesaian" 
-                    icon={Zap} 
-                    color="text-emerald-600"
-                    bg="bg-emerald-50"
-                />
-                <MetricCard 
-                    label="Keterlambatan" 
-                    value={stats.overdue} 
-                    subValue="Perlu Tindak Lanjut" 
-                    icon={Clock} 
-                    color="text-rose-600"
-                    bg="bg-rose-50"
-                />
-                <MetricCard 
-                    label="Segera Berakhir" 
-                    value={stats.atRisk} 
-                    subValue="Deadline < 2 hari" 
-                    icon={Flame} 
-                    color="text-amber-600"
-                    bg="bg-amber-50"
-                />
-            </div>
+            <AdaptiveCardGrid complexity="simple">
+                <AdaptiveMetricCard title="Tugas Aktif" value={stats.todo + stats.inProgress} icon={Briefcase} description={`${stats.total} total dibuat`} color="bg-blue-500/10 text-blue-600" />
+                <AdaptiveMetricCard title="Efisiensi" value={`${stats.efficiency}%`} icon={Zap} description="Tingkat penyelesaian" color="bg-emerald-500/10 text-emerald-600" />
+                <AdaptiveMetricCard title="Overdue" value={stats.overdue} icon={Clock} description="Tugas terlambat" color="bg-rose-500/10 text-rose-600" />
+                <AdaptiveMetricCard title="At Risk" value={stats.atRisk} icon={Flame} description="Deadline < 2 hari" color="bg-amber-500/10 text-amber-600" />
+            </AdaptiveCardGrid>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Productivity Trend */}
-                <Card className="lg:col-span-2 shadow-sm border-none bg-background">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                            <TrendingUp className="size-4 text-primary" />
-                            Tren Penyelesaian (7 Hari Terakhir)
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-[300px] pt-4">
+            <AdaptiveCardGrid complexity="complex">
+                <AdaptiveInsightCard title="Tren Penyelesaian" icon={TrendingUp} description="Aktivitas 7 hari terakhir">
+                    <div className="h-[250px] pt-4">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={trendData}>
-                                <defs>
-                                    <linearGradient id="colorProd" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2}/>
-                                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                                    </linearGradient>
-                                </defs>
+                                <defs><linearGradient id="colorProd" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2}/><stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/></linearGradient></defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-                                <XAxis 
-                                    dataKey="date" 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{fontSize: 10, fontWeight: 500}} 
-                                />
-                                <YAxis 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{fontSize: 10, fontWeight: 500}} 
-                                />
-                                <RechartsTooltip 
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                />
-                                <Area 
-                                    type="monotone" 
-                                    dataKey="completed" 
-                                    stroke="hsl(var(--primary))" 
-                                    strokeWidth={3}
-                                    fillOpacity={1} 
-                                    fill="url(#colorProd)" 
-                                />
+                                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700}} />
+                                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700}} />
+                                <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                                <Area type="monotone" dataKey="completed" stroke="hsl(var(--primary))" strokeWidth={3} fillOpacity={1} fill="url(#colorProd)" />
                             </AreaChart>
                         </ResponsiveContainer>
-                    </CardContent>
-                </Card>
+                    </div>
+                </AdaptiveInsightCard>
 
-                {/* Workload Analysis */}
-                <Card className="shadow-sm border-none bg-background">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                            <Users className="size-4 text-primary" />
-                            Beban Kerja Tim
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-[300px] pt-4">
+                <AdaptiveInsightCard title="Beban Kerja Tim" icon={Users} description="Distribusi tugas per anggota">
+                    <div className="h-[250px] pt-4">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={workloadData} layout="vertical" margin={{left: -20}}>
                                 <XAxis type="number" hide />
-                                <YAxis 
-                                    dataKey="name" 
-                                    type="category" 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{fontSize: 10, fontWeight: 500}}
-                                    width={80}
-                                />
+                                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700}} width={80} />
                                 <RechartsTooltip cursor={{fill: 'transparent'}} />
                                 <Bar dataKey="active" stackId="a" fill="#3B82F6" radius={[0, 0, 0, 0]} barSize={12} />
                                 <Bar dataKey="done" stackId="a" fill="#22C55E" radius={[0, 4, 4, 0]} barSize={12} />
                             </BarChart>
                         </ResponsiveContainer>
-                        <div className="flex justify-center gap-4 mt-2">
-                            <div className="flex items-center gap-1 text-[9px] font-bold uppercase"><div className="size-2 rounded-full bg-blue-500"/> Aktif</div>
-                            <div className="flex items-center gap-1 text-[9px] font-bold uppercase"><div className="size-2 rounded-full bg-green-500"/> Selesai</div>
+                        <div className="flex justify-center gap-4 mt-4">
+                            <div className="flex items-center gap-1.5 text-[8px] font-black uppercase"><div className="size-2 rounded-full bg-blue-500"/> Aktif</div>
+                            <div className="flex items-center gap-1.5 text-[8px] font-black uppercase"><div className="size-2 rounded-full bg-green-500"/> Selesai</div>
                         </div>
-                    </CardContent>
-                </Card>
-            </div>
+                </AdaptiveInsightCard>
+            </AdaptiveCardGrid>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Table */}
-                <Card className="lg:col-span-8 shadow-sm border-none bg-background">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
-                            <CardTitle className="text-sm font-bold text-foreground">Daftar Tugas & Status</CardTitle>
-                        </div>
-                        <div className="relative w-48">
-                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
-                            <Input 
-                                placeholder="Cari tugas..." 
-                                className="h-8 pl-7 text-xs bg-muted/30 border-none font-medium"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <ScrollArea className="h-[400px]">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="bg-muted/30 hover:bg-muted/30 border-none">
-                                        <TableHead className="text-[10px] font-bold uppercase">Tugas</TableHead>
-                                        <TableHead className="text-[10px] font-bold uppercase text-center">PIC</TableHead>
-                                        <TableHead className="text-[10px] font-bold uppercase">Status</TableHead>
-                                        <TableHead className="text-[10px] font-bold uppercase text-right">Deadline</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {displayTasks.length > 0 ? (
-                                        displayTasks.map(t => {
-                                            const dueDate = t.dueDate?.toDate ? t.dueDate.toDate() : (t.dueDate ? new Date(t.dueDate) : null);
-                                            const isOverdue = !t.status.includes('done') && dueDate && isBefore(dueDate, startOfDay(new Date()));
-                                            const assignee = employees.find(e => e.id === (t.assigneeIds?.[0] || t.assigneeId));
-
-                                            return (
-                                                <TableRow key={t.id} className="group hover:bg-muted/5 border-border/40">
-                                                    <TableCell className="py-4">
-                                                        <p className="font-bold text-sm truncate max-w-[200px]">{t.title}</p>
-                                                        <p className="text-[10px] text-muted-foreground font-medium uppercase">{t.company}</p>
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <Avatar className="size-7 mx-auto ring-2 ring-background">
-                                                            <AvatarFallback className="text-[9px] font-bold bg-primary/10 text-primary">
-                                                                {assignee?.name?.substring(0, 2).toUpperCase() || '?'}
-                                                            </AvatarFallback>
-                                                        </Avatar>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge 
-                                                            variant="outline" 
-                                                            className={cn(
-                                                                "text-[9px] uppercase font-bold border-none h-5",
-                                                                t.status === 'done' ? "bg-green-100 text-green-700" :
-                                                                t.status === 'in-progress' ? "bg-blue-100 text-blue-700" :
-                                                                "bg-slate-100 text-slate-700"
-                                                            )}
-                                                        >
-                                                            {t.status.replace('-', ' ')}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <div className="flex flex-col items-end">
-                                                            <span className={cn("text-xs font-bold", isOverdue ? "text-rose-600" : "text-foreground")}>
-                                                                {dueDate ? format(dueDate, "d MMM yyyy") : '-'}
-                                                            </span>
-                                                            {isOverdue && <Badge className="text-[8px] h-4 bg-rose-600 border-none font-bold">Terlambat</Badge>}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="h-40 text-center text-muted-foreground italic text-xs font-medium">
-                                                Tidak ada data tugas untuk periode ini.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </ScrollArea>
-                    </CardContent>
-                </Card>
-
-                {/* Priority */}
-                <div className="lg:col-span-4">
-                    <Card className="shadow-sm border-none bg-background h-fit">
-                        <CardHeader>
-                            <CardTitle className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Distribusi Prioritas</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <PriorityRow label="High" count={activeSpaceTasks.filter(t => t.priority === 'high').length} total={stats.total} color="bg-rose-500" />
-                            <PriorityRow label="Medium" count={activeSpaceTasks.filter(t => t.priority === 'medium').length} total={stats.total} color="bg-blue-500" />
-                            <PriorityRow label="Low" count={activeSpaceTasks.filter(t => t.priority === 'low').length} total={stats.total} color="bg-slate-400" />
-                        </CardContent>
-                    </Card>
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Detail Daftar Tugas</h3>
+                    <div className="relative w-full max-w-[240px]">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
+                        <Input placeholder="Cari judul tugas..." className="h-8 pl-8 text-[10px] bg-background border-none shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    </div>
                 </div>
+
+                <AdaptiveTable 
+                    data={displayTasks}
+                    keyExtractor={(t) => t.id}
+                    columns={[
+                        { header: "Judul Tugas", cell: (t) => <div className="flex flex-col"><span className="font-bold text-slate-900 text-xs">{t.title}</span><span className="text-[9px] font-bold text-muted-foreground uppercase">{t.company}</span></div> },
+                        { header: "PIC", cell: (t) => <div className="flex items-center gap-2"><Avatar className="size-6"><AvatarFallback className="text-[8px] font-black bg-primary/10 text-primary">{t.assigneeName?.substring(0,2).toUpperCase()}</AvatarFallback></Avatar><span className="text-[10px] font-bold">{t.assigneeName}</span></div> },
+                        { header: "Status", cell: (t) => <Badge variant="outline" className={cn("text-[8px] font-black uppercase h-5 border-none", t.status === 'done' ? "bg-green-100 text-green-700" : t.status === 'in-progress' ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600")}>{t.status.replace('-', ' ')}</Badge> },
+                        { header: "Tenggat", className: "text-right", cell: (t) => {
+                            const dDate = t.dueDate?.toDate?.();
+                            const isOver = dDate && isBefore(dDate, startOfDay(new Date())) && t.status !== 'done';
+                            return <div className="flex flex-col items-end"><span className={cn("text-[10px] font-black", isOver ? "text-rose-600" : "text-slate-600")}>{dDate ? format(dDate, "d MMM yyyy") : '-'}</span>{isOver && <Badge className="text-[7px] font-black h-3.5 bg-rose-600 border-none uppercase">LATE</Badge>}</div>
+                        }}
+                    ]}
+                    renderMobileCard={(t) => (
+                        <Card className="border-border/40 shadow-sm overflow-hidden">
+                            <CardContent className="p-4 space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <div className="min-w-0">
+                                        <h4 className="font-black text-xs uppercase truncate text-slate-800">{t.title}</h4>
+                                        <div className="flex items-center gap-1.5 mt-1">
+                                            <Avatar className="size-4"><AvatarFallback className="text-[6px] font-bold bg-muted">{t.assigneeName?.substring(0,2).toUpperCase()}</AvatarFallback></Avatar>
+                                            <span className="text-[9px] font-bold text-muted-foreground uppercase">{t.assigneeName}</span>
+                                        </div>
+                                    </div>
+                                    <Badge variant="outline" className={cn("text-[8px] h-4 font-black border-none", t.status === 'done' ? "bg-green-50 text-green-600" : "bg-muted")}>{t.status.toUpperCase()}</Badge>
+                                </div>
+                                <div className="flex justify-between items-center pt-3 border-t border-dashed">
+                                    <span className="text-[9px] font-black text-muted-foreground uppercase">Deadline</span>
+                                    <span className="text-[10px] font-black text-slate-700">{t.dueDate ? formatSafeDate(t.dueDate, "d MMM yyyy") : '-'}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+                />
             </div>
-        </div>
+        </ResponsivePage>
     );
 }
 
-function MetricCard({ label, value, subValue, icon: Icon, color, bg }: { label: string, value: string | number, subValue: string, icon: any, color: string, bg: string }) {
-    return (
-        <Card className="border-none shadow-sm overflow-hidden group hover:shadow-md transition-all bg-background">
-            <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">{label}</p>
-                        <h3 className="text-3xl font-bold text-foreground">{value}</h3>
-                        <p className="text-[10px] font-medium text-muted-foreground opacity-60 uppercase">{subValue}</p>
-                    </div>
-                    <div className={cn("p-3 rounded-2xl transition-transform group-hover:scale-110 duration-300", bg)}>
-                        <Icon className={cn("size-5", color)} />
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    );
+function formatSafeDate(date: any, formatStr: string) {
+    const d = date?.toDate?.() || (date ? new Date(date) : null);
+    if (!d || !isValid(d)) return '-';
+    return format(d, formatStr, { locale: localeId });
 }
 
-function PriorityRow({ label, count, total, color }: { label: string, count: number, total: number, color: string }) {
-    const percent = total > 0 ? (count / total) * 100 : 0;
-    return (
-        <div className="space-y-2">
-            <div className="flex justify-between items-center text-[10px] font-bold uppercase">
-                <span>{label} Priority</span>
-                <span className="text-muted-foreground font-medium">{count} Tugas</span>
-            </div>
-            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                <div className={cn("h-full transition-all duration-1000", color)} style={{ width: `${percent}%` }} />
-            </div>
-        </div>
-    );
+function isValid(d: any): d is Date {
+    return d instanceof Date && !isNaN(d.getTime());
 }
