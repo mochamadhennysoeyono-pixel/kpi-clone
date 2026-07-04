@@ -10,6 +10,7 @@ import { usePathname } from "next/navigation";
 import { useSubMenu } from './submenu-context';
 import React from "react";
 import { ScrollArea } from "../ui/scroll-area";
+import { Separator } from "../ui/separator";
 
 interface SubMenuOverlayProps {
   activeGroup: any;
