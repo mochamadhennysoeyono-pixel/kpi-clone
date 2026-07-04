@@ -23,7 +23,7 @@ import { ScrollArea } from "./scroll-area";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { Avatar, AvatarFallback } from "./avatar";
 
-/** AppSidebar component - Optimized for Modern Industrial Utility */
+/** AppSidebar component - Optimized for Bright Industrial Utility */
 function MotionNav() {
   const { isOpen, setIsOpen } = useSidebar();
   const pathname = usePathname();
@@ -61,7 +61,7 @@ function MotionNav() {
         animate={isMobile ? { x: isOpen ? 0 : "-100%" } : { width: isOpen ? 260 : 80 }}
         transition={{ type: "spring", stiffness: 400, damping: 40 }}
         className={cn(
-          "flex flex-col h-screen sticky left-0 top-0 z-50 border-r bg-card", // Matches Surface-1
+          "flex flex-col h-screen sticky left-0 top-0 z-50 border-r bg-card",
           isMobile ? "fixed h-full border-none shadow-2xl" : ""
         )}
         onMouseEnter={() => !isMobile && setIsOpen(true)}
@@ -78,7 +78,7 @@ function MotionNav() {
                   exit={{ opacity: 0, x: -5 }}
                   className="flex items-center gap-2"
                 >
-                  <Image src="/logo.png" alt="Logo" width={110} height={28} className="brightness-200" />
+                  <Image src="/logo.png" alt="Logo" width={110} height={28} />
                 </motion.div>
               ) : (
                 <motion.div
@@ -110,7 +110,7 @@ function MotionNav() {
                                         <button
                                             className={cn(
                                                 "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm w-full text-left transition-all",
-                                                isGroupActive ? "text-primary bg-primary/5 font-bold" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                                                isGroupActive ? "text-primary bg-primary/5 font-bold" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                             )}
                                         >
                                             <div className="flex size-5 items-center justify-center shrink-0">
@@ -126,14 +126,14 @@ function MotionNav() {
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>
                                         {(isOpen || isMobile) && (
-                                          <ul className="ml-7 my-1 border-l border-white/10 space-y-0.5">
+                                          <ul className="ml-7 my-1 border-l border-border space-y-0.5">
                                               {item.subItems.map(subItem => {
                                                   const isSubActive = pathname.startsWith(subItem.href);
                                                   return (
                                                       <li key={subItem.href}>
                                                           <Link href={subItem.href} className={cn(
                                                               "block pl-4 pr-3 py-2 text-sm font-medium tracking-tight transition-all",
-                                                              isSubActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                                                              isSubActive ? "text-primary bg-primary/5 font-bold" : "text-muted-foreground hover:text-foreground"
                                                           )}>
                                                               {subItem.label}
                                                           </Link>
@@ -154,7 +154,7 @@ function MotionNav() {
                                 href={item.href || '#'}
                                 className={cn(
                                     `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all`,
-                                    isActive ? "bg-primary text-white shadow-lg shadow-primary/20 font-bold" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                                    isActive ? "bg-primary text-white shadow-lg shadow-primary/20 font-bold" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                 )}
                             >
                                 <div className="flex size-5 items-center justify-center shrink-0">
@@ -172,15 +172,15 @@ function MotionNav() {
              </ul>
         </ScrollArea>
         
-        <div className="p-4 border-t border-white/5 flex-shrink-0">
+        <div className="p-4 border-t border-border flex-shrink-0">
             <button
                 onClick={() => logout()}
                 className={cn(
                   "flex items-center gap-3 w-full rounded-xl transition-all active:scale-95 group",
-                  isOpen || isMobile ? "p-2 hover:bg-white/5" : "justify-center"
+                  isOpen || isMobile ? "p-2 hover:bg-muted" : "justify-center"
                 )}
             >
-                <Avatar className="size-9 border border-white/10 shrink-0">
+                <Avatar className="size-9 border border-border shrink-0">
                   <AvatarFallback className="bg-primary text-white font-black text-xs">{userInitial}</AvatarFallback>
                 </Avatar>
                 
@@ -209,7 +209,7 @@ export function AppSidebar() {
         <AnimatePresence>
             {isOpen && (
                 <React.Fragment key="sidebar-mobile">
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={toggleSidebar} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]" />
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={toggleSidebar} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
                     <MotionNav />
                 </React.Fragment>
             )}
@@ -223,7 +223,7 @@ export function AppSidebar() {
 export function SidebarTrigger() {
   const { isOpen, setIsOpen } = useSidebar();
   return (
-    <Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)} className="hover:bg-white/5">
+    <Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)} className="hover:bg-muted">
       <Menu className="h-5 w-5" />
     </Button>
   );
