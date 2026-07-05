@@ -95,7 +95,10 @@ function MotionNav() {
         </div>
 
         {/* Navigation Area */}
-        <ScrollArea className="flex-1 px-[20px]">
+        <ScrollArea className={cn(
+            "flex-1 transition-all duration-200",
+            (isOpen || isMobile) ? "px-[20px]" : "px-[13px]"
+        )}>
              <ul className="space-y-[12px] mt-[32px]">
                 {navItems.map((group) => {
                     const isGroup = !!group.subItems;
@@ -110,7 +113,8 @@ function MotionNav() {
                                     <CollapsibleTrigger asChild>
                                         <button
                                             className={cn(
-                                                "group flex items-center gap-[14px] rounded-[12px] px-[16px] h-[54px] text-[14px] w-full text-left transition-all duration-[180ms] ease-out",
+                                                "group flex items-center rounded-[12px] h-[54px] text-[14px] w-full text-left transition-all duration-[180ms] ease-out",
+                                                (isOpen || isMobile) ? "px-[16px] gap-[14px]" : "px-0 justify-center",
                                                 isGroupActive 
                                                     ? "text-[#111827] bg-[#2563eb]/[0.06] font-semibold" 
                                                     : "text-[#475569] font-medium hover:bg-[#2563eb]/[0.03] hover:text-[#334155]"
@@ -158,7 +162,8 @@ function MotionNav() {
                                 <Link
                                     href={group.href || '#'}
                                     className={cn(
-                                        "group flex items-center gap-[14px] rounded-[12px] px-[16px] h-[54px] text-[14px] transition-all duration-[180ms] ease-out",
+                                        "group flex items-center rounded-[12px] h-[54px] text-[14px] transition-all duration-[180ms] ease-out",
+                                        (isOpen || isMobile) ? "px-[16px] gap-[14px]" : "px-0 justify-center",
                                         isStandaloneActive
                                             ? "bg-[#2563eb]/[0.06] text-[#111827] font-semibold" 
                                             : "text-[#475569] font-medium hover:bg-[#2563eb]/[0.03] hover:text-[#334155]"
