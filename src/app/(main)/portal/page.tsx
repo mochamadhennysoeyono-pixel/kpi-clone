@@ -154,7 +154,7 @@ function ModuleCard({
                     <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-slate-50 border border-slate-100">
                         <div className="space-y-0.5">
                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Kapasitas</p>
-                            <p className="text-11px font-bold text-slate-700 truncate">{subscription.quota === -1 ? 'Unlimited' : `${subscription.quota} Staff`}</p>
+                            <p className="text-[11px] font-bold text-slate-700 truncate">{subscription.quota === -1 ? 'Unlimited' : `${subscription.quota} Staff`}</p>
                         </div>
                         <div className="space-y-0.5 text-right">
                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Sisa Masa</p>
@@ -168,11 +168,22 @@ function ModuleCard({
 
             <div className="px-6 pb-6 mt-auto">
                 {isActive ? (
-                    <Button asChild className="w-full h-11 font-black text-[10px] uppercase tracking-widest shadow-lg rounded-xl">
-                        <Link href={config.route}>
-                            Masuk Modul <ArrowRight size={14} className="ml-1.5" strokeWidth={3} />
-                        </Link>
-                    </Button>
+                    <div className="flex flex-col gap-2">
+                        <Button asChild className="w-full h-11 font-black text-[10px] uppercase tracking-widest shadow-lg rounded-xl">
+                            <Link href={config.route}>
+                                Masuk Modul <ArrowRight size={14} className="ml-1.5" strokeWidth={3} />
+                            </Link>
+                        </Button>
+                        {isTrial && isManagement && (
+                            <Button 
+                                onClick={() => onActivateRequest(config)}
+                                variant="outline" 
+                                className="w-full h-9 font-black text-[9px] uppercase tracking-widest rounded-lg border-2 border-slate-100 hover:bg-slate-50 text-primary"
+                            >
+                                <ShoppingCart size={12} className="mr-1.5" strokeWidth={3} /> Upgrade ke Paket Pro
+                            </Button>
+                        )}
+                    </div>
                 ) : (
                     isManagement && (
                         <Button 
