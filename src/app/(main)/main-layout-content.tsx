@@ -1,7 +1,7 @@
 // src/app/(main)/main-layout-content.tsx
 "use client";
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import Header from '@/components/layout/header';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter, usePathname } from 'next/navigation';
@@ -13,10 +13,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePageContext } from '@/contexts/page-context';
 import { cn } from '@/lib/utils';
 import { Ripple } from '@/components/ui/ripple';
+import { getActiveModuleFromPath } from '@/lib/nav-items';
+import type { ModuleId } from '@/types';
 
 export default function MainLayoutContent({ children }: { children: React.ReactNode }) {
-  const { currentUser, isLoading: isAuthLoading } = useAuth();
-  const { isLoading: isMasterDataLoading } = useMasterData();
+  const { currentUser, userRole, isLoading: isAuthLoading } = useAuth();
+  const { companies, isLoading: isMasterDataLoading } = useMasterData();
   const { hideBottomNav } = usePageContext();
   const router = useRouter();
   const { isMobile } = useBreakpoint();
@@ -29,6 +31,26 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
   }, [isAuthLoading, currentUser, router]);
   
   const totalIsLoading = isAuthLoading || isMasterDataLoading;
+
+  // --- ACCESS PROTECTION GUARD ---
+  React.useEffect(() => {
+    if (totalIsLoading || !currentUser || userRole === 'superadmin') return;
+
+    const activeModule = getActiveModuleFromPath(pathname);
+    
+    // Check for core operational modules only
+    const protectedModules: ModuleId[] = ['appraisal', 'lms', 'collabspace'];
+    
+    if (activeModule && protectedModules.includes(activeModule as ModuleId)) {
+      const company = companies.find(c => c.name === currentUser.company);
+      const subscription = company?.moduleSubscriptions?.[activeModule as ModuleId];
+
+      if (!subscription || subscription.status !== 'active') {
+        console.warn(`[Access Guard] Unsubscribed access attempt to ${activeModule} from ${pathname}`);
+        router.replace('/portal');
+      }
+    }
+  }, [pathname, totalIsLoading, currentUser, userRole, companies, router]);
 
   const isPortal = pathname === '/portal';
   const isDocEditor = pathname.startsWith('/document-management/templates/');

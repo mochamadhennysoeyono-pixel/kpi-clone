@@ -127,7 +127,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
 /**
  * Mendeteksi modul aktif berdasarkan path URL saat ini.
  */
-export function getActiveModuleFromPath(pathname: string): ModuleId | null {
+export function getActiveModuleFromPath(pathname: string): ModuleId | 'foundation' | 'holding' | null {
   if (
     pathname.startsWith('/action-center') || 
     pathname.startsWith('/reports') || 
@@ -149,7 +149,7 @@ export function getActiveModuleFromPath(pathname: string): ModuleId | null {
     return 'collabspace';
   }
   
-  if (pathname.startsWith('/master-data')) {
+  if (pathname.startsWith('/master-data') || pathname.startsWith('/media-library')) {
     return 'foundation';
   }
   
@@ -168,7 +168,7 @@ export function getNavItems(
     isMobile: boolean, 
     currentUser?: Employee | null, 
     okrs?: OKR[],
-    activeModule?: ModuleId | null
+    activeModule?: ModuleId | 'foundation' | 'holding' | null
 ) {
     if (!userRole) return [];
 
@@ -226,9 +226,9 @@ export function getNavItems(
             moduleId: 'foundation',
             subItems: [
                 { href: '/master-data/company', label: 'Data Perusahaan', show: capabilities.isSuperAdmin, iconName: '/master-data/company', moduleId: 'foundation' },
-                { href: '/master-data/company-objectives', label: 'Objective Perusahaan', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/master-data/company-objectives', moduleId: 'foundation' },
-                { href: '/master-data/departments', label: 'Departemen', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/master-data/departments', moduleId: 'foundation' },
-                { href: '/master-data/positions', label: 'Jabatan', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/master-data/positions', moduleId: 'foundation' },
+                { href: '/master-data/company-objectives', label: 'Objective Perusahaan', show: true, iconName: '/master-data/company-objectives', moduleId: 'foundation' },
+                { href: '/master-data/departments', label: 'Departemen', show: true, iconName: '/master-data/departments', moduleId: 'foundation' },
+                { href: '/master-data/positions', label: 'Jabatan', show: true, iconName: '/master-data/positions', moduleId: 'foundation' },
                 { href: '/master-data/employees', label: 'Data Karyawan', show: true, iconName: '/master-data/employees', moduleId: 'foundation' },
                 { href: '/master-data/hierarchy', label: 'Struktur Organisasi', show: true, iconName: '/master-data/hierarchy', moduleId: 'foundation' }, 
                 { href: '/media-library', label: 'Media Library', show: true, iconName: '/media-library', moduleId: 'foundation' },
@@ -338,15 +338,16 @@ export function getNavItems(
             label: 'Manajemen Dokumen',
             iconName: 'manajemen-dokumen',
             show: capabilities.canAccessDocs,
+            moduleId: 'documents',
             subItems: [
-                { href: '/document-management/templates', label: 'Template Dokumen', show: true, iconName: '/document-management/templates' },
-                { href: '/document-management/contracts', label: 'Kontrak Kerja', show: true, iconName: '/document-management/contracts' },
+                { href: '/document-management/templates', label: 'Template Dokumen', show: true, iconName: '/document-management/templates', moduleId: 'documents' },
+                { href: '/document-management/contracts', label: 'Kontrak Kerja', show: true, iconName: '/document-management/contracts', moduleId: 'documents' },
             ]
         },
         
-        { href: '/subscription-status', label: 'Status Paket', show: capabilities.isCompanyAdmin, iconName: '/subscription-status' },
-        { href: '/company-admin-management', label: 'Manajemen Admin', show: capabilities.isCompanyAdmin, iconName: '/company-admin-management' },
-        { href: '/settings', label: 'Pengaturan', show: true, iconName: '/settings' },
+        { href: '/subscription-status', label: 'Status Paket', show: capabilities.isCompanyAdmin, iconName: '/subscription-status', moduleId: 'billing' },
+        { href: '/company-admin-management', label: 'Manajemen Admin', show: capabilities.isCompanyAdmin, iconName: '/company-admin-management', moduleId: 'admin' },
+        { href: '/settings', label: 'Pengaturan', show: true, iconName: '/settings', moduleId: 'settings' },
     ];
 
     let visibleItems = allNavItems
@@ -361,11 +362,16 @@ export function getNavItems(
         })
         .filter((item): item is NonNullable<typeof item> => item !== null);
 
+    // --- STRICT CONTEXTUAL FILTERING (Non-Superadmin) ---
     if (activeModule && userRole !== 'superadmin') {
         visibleItems = visibleItems.filter(item => {
+            // Show if main item matches module
             if ((item as any).moduleId === activeModule) return true;
+            // Show if any subitem matches module
             if (item.subItems && item.subItems.some(sub => (sub as any).moduleId === activeModule)) return true;
-            if (!(item as any).moduleId) return true;
+            
+            // Allow essential navigation items to always appear if needed, 
+            // but the user requested ONLY Pondasi Data when in that section.
             return false;
         });
     }
