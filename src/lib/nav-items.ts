@@ -1,180 +1,129 @@
-
 // src/lib/nav-items.ts
-import React from 'react';
 import type { UserRole, Company, SubscriptionPlan, Employee, OKR, ModuleId } from "@/types";
 import { 
-    Speedometer,
-    House,
-    SquaresFour,
-    ShieldCheckered,
-    UserPlus,
+    LayoutDashboard,
+    Home,
+    LayoutGrid,
+    ShieldCheck,
+    UserCheck,
     CheckCircle,
     Crown,
-    ClockCounterClockwise,
-    GitMerge,
-    Lightning,
+    History,
+    GitBranch,
+    Zap,
     Sliders,
-    Stack,
-    Buildings,
-    ChartLineUp,
+    Layers,
+    Building2,
+    BarChart3,
     Briefcase,
     Users,
     GitFork,
-    Folders,
-    BookBookmark,
-    Brain,
-    ChartBar,
+    Folder,
+    BookMarked,
+    BrainCircuit,
+    PieChart,
     Target,
     Image,
-    TreeStructure,
-    ProjectorScreen,
-    ChartPie,
+    Network,
+    MonitorPlay,
     Activity,
-    UserGear,
+    Settings2,
     FilePlus,
-    Gear,
-    BellRinging,
+    Settings,
+    Bell,
     Flag,
     GraduationCap,
     BookOpen,
-    Road,
-    Books,
-    Exam,
+    Map,
+    Library,
+    FileQuestion,
     Files,
     FileText,
-    Envelope,
+    Mail,
     ShoppingCart,
-    CaretLeft,
-    DotsThreeOutline,
-    ListChecks,
-    IdentificationBadge,
-    ChartLine,
-    Tray,
-    AddressBook,
-    FileMagnifyingGlass,
-    Checks
-} from "@phosphor-icons/react";
+    ChevronLeft,
+    MoreHorizontal,
+    ClipboardCheck,
+    UserCircle,
+    LineChart,
+    Inbox,
+    Search,
+    BadgeCheck
+} from "lucide-react";
 
-// iOS System Color Palette (Premium Flat)
-export const iosColors = {
-    blue: "#2563eb",
-    green: "#34C759",
-    indigo: "#5856D6",
-    orange: "#FF9500",
-    pink: "#FF2D55",
-    purple: "#AF52DE",
-    red: "#FF3B30",
-    teal: "#5AC8FA",
-    yellow: "#FFCC00",
-    gray: "#8E8E93",
-    slate: "#475569"
-};
-
+/**
+ * Map ikon menggunakan Lucide React.
+ * Kunci harus sesuai dengan iconName yang didefinisikan di navItems.
+ */
 export const iconMap: { [key: string]: React.ElementType } = {
-    '/dashboard': Speedometer,
-    '/action-center': House,
-    '/portal': SquaresFour,
-    '/beranda': House,
-    '/admin-management': ShieldCheckered,
-    '/company-admin-management': IdentificationBadge,
+    '/dashboard': LayoutDashboard,
+    '/action-center': Home,
+    '/portal': LayoutGrid,
+    '/beranda': Home,
+    '/admin-management': ShieldCheck,
+    '/company-admin-management': UserCheck,
     '/activation-management': CheckCircle,
     '/subscription-management': Crown,
-    '/subscription-logs': ClockCounterClockwise,
-    '/group-management': GitMerge,
-    '/feature-management': Lightning,
+    '/subscription-logs': History,
+    '/group-management': GitBranch,
+    '/feature-management': Zap,
     'manajemen-sistem': Sliders,
-    'manajemen-fitur': Lightning,
-    'pusat-data': Stack,
-    '/master-data/company': Buildings,
-    '/master-data/departments': ChartLine,
+    'manajemen-fitur': Zap,
+    'pusat-data': Layers,
+    '/master-data/company': Building2,
+    '/master-data/departments': Network,
     '/master-data/positions': Briefcase,
-    '/master-data/employees': AddressBook,
+    '/master-data/employees': Users,
     '/master-data/hierarchy': GitFork,
-    '/master-data/kpi-categories': Folders,
-    '/master-data/kbo-categories': BookBookmark,
-    '/master-data/kbo-competencies': Brain,
-    '/master-data/kpi-data': FileMagnifyingGlass,
+    '/master-data/kpi-categories': Folder,
+    '/master-data/kbo-categories': BookMarked,
+    '/master-data/kbo-competencies': BrainCircuit,
+    '/master-data/kpi-data': Search,
     '/master-data/company-objectives': Target,
     '/media-library': Image,
-    'pusat-holding': TreeStructure,
-    '/holding-dashboard': ChartLineUp,
-    '/holding-kpi-setup': Gear,
+    'pusat-holding': Network,
+    '/holding-dashboard': BarChart3,
+    '/holding-kpi-setup': Settings,
     '/holding-group-management': Users,
-    '/holding-management': TreeStructure,
-    '/collab-space': ProjectorScreen,
-    '/collab-space/management': Gear,
-    '/collab-space/reports': ChartPie,
-    'analisis-laporan': ChartBar,
-    '/reports': ChartPie,
+    '/holding-management': Network,
+    '/collab-space': MonitorPlay,
+    '/collab-space/management': Settings2,
+    '/collab-space/reports': PieChart,
+    'analisis-laporan': BarChart3,
+    '/reports': PieChart,
     '/cycle-reports': Activity,
-    '/appraisal-dashboard': ChartBar,
-    '/kbo-appraisal': Checks,
-    'manajemen-kpi': CheckCircle,
-    '/my-performance': UserGear,
+    '/appraisal-dashboard': BarChart3,
+    '/kbo-appraisal': BadgeCheck,
+    'manajemen-kpi': ClipboardCheck,
+    '/my-performance': UserCircle,
     '/input-achievement': FilePlus,
-    '/setup-kpi': Gear,
-    'manajemen-kbo': CheckCircle,
-    '/appraisal-settings': Gear,
+    '/setup-kpi': Settings,
+    'manajemen-kbo': ShieldCheck,
+    '/appraisal-settings': Settings,
     'okr-management': Flag,
     '/okr': Flag,
-    '/okr/reports': ChartBar,
-    '/okr/progress': ListChecks,
+    '/okr/reports': LineChart,
+    '/okr/progress': ClipboardCheck,
     'lms-portal': GraduationCap,
     'lms-user': BookOpen,
     'manajemen-pembelajaran': GraduationCap,
-    '/lms/admin/dashboard': Speedometer,
+    '/lms/admin/dashboard': LayoutDashboard,
     '/lms/admin/courses': BookOpen,
-    '/lms/admin/programs': Road,
-    '/lms/admin/global-catalog': Books,
-    '/lms/admin/quizzes': Exam,
-    '/lms/admin/reports': ChartBar,
+    '/lms/admin/programs': Map,
+    '/lms/admin/global-catalog': Library,
+    '/lms/admin/quizzes': FileQuestion,
+    '/lms/admin/reports': BarChart3,
     '/lms/user/my-learnings': BookOpen,
     'manajemen-dokumen': Files,
     '/document-management/templates': FileText,
-    '/document-management/contracts': Tray,
+    '/document-management/contracts': Inbox,
     '/subscription-status': Crown,
     '/subscription-plans': ShoppingCart,
-    '/settings': Gear,
-    '/memos': Envelope,
-    'default': Folders,
-    'more': DotsThreeOutline,
-    'portal': CaretLeft,
-};
-
-export const getIconColor = (path: string): string => {
-    const p = path.toLowerCase();
-    if (p.includes('admin') || p.includes('management') || p.includes('activation') || p.includes('subscription')) return iosColors.red;
-    if (p.includes('master-data') || p.includes('pusat-data') || p.includes('company')) return iosColors.blue;
-    if (p.includes('holding')) return iosColors.purple;
-    if (p.includes('collab-space')) return iosColors.teal;
-    if (p.includes('report') || p.includes('analysis') || p.includes('appraisal-dashboard')) return iosColors.indigo;
-    if (p.includes('kpi') || p.includes('performance')) return iosColors.green;
-    if (p.includes('kbo') || p.includes('competency')) return iosColors.orange;
-    if (p.includes('okr')) return iosColors.pink;
-    if (p.includes('lms') || p.includes('learning')) return iosColors.yellow;
-    if (p.includes('document') || p.includes('contract')) return iosColors.blue;
-    if (p.includes('action-center') || p.includes('beranda')) return iosColors.blue;
-    if (p.includes('memos')) return iosColors.teal;
-    return iosColors.slate;
-};
-
-export const getActiveModuleFromPath = (path: string): ModuleId | null => {
-    if (path.startsWith('/action-center') || 
-        path.startsWith('/my-performance') || 
-        path.startsWith('/input-achievement') || 
-        path.startsWith('/reports') || 
-        path.startsWith('/setup-kpi') ||
-        path.startsWith('/appraisal') ||
-        path.startsWith('/okr') ||
-        path.startsWith('/kbo-appraisal')
-    ) return 'appraisal';
-    
-    if (path.startsWith('/lms')) return 'lms';
-    if (path.startsWith('/collab-space')) return 'collabspace';
-    if (path.startsWith('/master-data') || path.startsWith('/media-library')) return 'foundation';
-    if (path.startsWith('/holding-dashboard') || path.startsWith('/holding-kpi-setup') || path.startsWith('/holding-group-management')) return 'holding';
-    
-    return null;
+    '/settings': Settings,
+    '/memos': Mail,
+    'default': Folder,
+    'more': MoreHorizontal,
+    'portal': ChevronLeft,
 };
 
 export function getNavItems(

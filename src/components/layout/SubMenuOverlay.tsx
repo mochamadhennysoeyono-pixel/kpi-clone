@@ -2,14 +2,14 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, SquaresFour, CaretLeft, Folders } from "@phosphor-icons/react";
+import { X, LayoutGrid, ChevronLeft, Folder } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import React from "react";
 import { ScrollArea } from "../ui/scroll-area";
 import { useSubMenu } from './submenu-context';
-import { getIconColor } from "@/lib/nav-items";
+import { IconTokens } from "@/lib/icon-tokens";
 
 interface SubMenuOverlayProps {
   activeGroup: any;
@@ -92,11 +92,11 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                             onClick={handleBack}
                             className="size-9 rounded-xl bg-slate-50 flex items-center justify-center hover:bg-slate-100 transition-all active:scale-90 border border-slate-100 shadow-sm"
                         >
-                            <CaretLeft className="size-4 text-slate-900" weight="bold" />
+                            <ChevronLeft className="size-4 text-slate-900" strokeWidth={3} />
                         </button>
                     ) : (
                         <div className="size-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-900 border border-slate-100 shadow-sm">
-                            <SquaresFour size={20} weight="fill" />
+                            <LayoutGrid size={20} strokeWidth={2} />
                         </div>
                     )}
                     <div className="min-w-0">
@@ -112,7 +112,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                     onClick={onClose}
                     className="size-9 rounded-xl bg-slate-50 flex items-center justify-center hover:bg-slate-100 transition-all active:scale-90 border border-slate-100"
                 >
-                    <X className="size-4 text-slate-400" weight="bold" />
+                    <X className="size-4 text-slate-400" strokeWidth={3} />
                 </button>
             </div>
 
@@ -132,9 +132,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                 className="grid grid-cols-3 gap-3"
                             >
                                 {itemsToShow.map((subItem: any) => {
-                                    const IconComponent = (iconMap[subItem.iconName || subItem.href || 'default']) || Folders;
-                                    const itemPath = subItem.href || subItem.label;
-                                    const iconColor = getIconColor(itemPath);
+                                    const IconComponent = (iconMap[subItem.iconName || subItem.href || 'default']) || Folder;
                                     const isLink = !!subItem.href;
                                     const hasSubItems = subItem.subItems && subItem.subItems.length > 0;
                                     const isActive = isLink && (pathname === subItem.href || (subItem.href !== '/' && pathname.startsWith(subItem.href)));
@@ -146,16 +144,12 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                                 ? "bg-white border-primary shadow-lg ring-1 ring-primary/10" 
                                                 : "bg-white border-slate-100 hover:border-slate-300 hover:shadow-stripe"
                                         )}>
-                                            <div className={cn(
-                                                "size-10 flex items-center justify-center transition-all duration-300",
-                                                "group-hover/item:scale-125"
-                                            )}>
+                                            <div className="size-10 flex items-center justify-center transition-colors">
                                                 {IconComponent && (
                                                     <IconComponent 
-                                                        size={32} 
-                                                        weight="fill" 
-                                                        color={iconColor}
-                                                        className={cn(isActive ? "opacity-100" : "opacity-90")}
+                                                        size={IconTokens.size.desktop} 
+                                                        strokeWidth={IconTokens.strokeWidth}
+                                                        color={isActive ? IconTokens.color.active : IconTokens.color.default}
                                                     />
                                                 )}
                                             </div>

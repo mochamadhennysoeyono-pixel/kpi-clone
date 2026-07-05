@@ -1,10 +1,9 @@
-
 // src/components/ui/sidebar.tsx
 "use client";
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CaretDown, SignOut, Folders } from "@phosphor-icons/react";
+import { ChevronDown, LogOut, Folder } from "lucide-react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -12,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
 import { getNavItems, iconMap, getActiveModuleFromPath } from '@/lib/nav-items';
+import { IconTokens } from '@/lib/icon-tokens';
 import {
   Collapsible,
   CollapsibleContent,
@@ -116,11 +116,12 @@ function MotionNav() {
                                                     : "text-[#475569] font-medium hover:bg-[#2563eb]/[0.03] hover:text-[#334155]"
                                             )}
                                         >
-                                            <div className="flex size-[20px] items-center justify-center shrink-0 transition-transform duration-[180ms] group-hover:scale-110">
-                                              {React.createElement(iconMap[group.iconName || 'default'] || Folders, {
-                                                  size: 20,
-                                                  weight: "fill",
-                                                  color: isGroupActive ? "#2563eb" : "#64748B"
+                                            <div className="flex size-[20px] items-center justify-center shrink-0">
+                                              {React.createElement(iconMap[group.iconName || 'default'] || Folder, {
+                                                  size: isMobile ? IconTokens.size.mobile : IconTokens.size.desktop,
+                                                  strokeWidth: IconTokens.strokeWidth,
+                                                  color: isGroupActive ? IconTokens.color.active : IconTokens.color.default,
+                                                  className: "transition-colors duration-180"
                                               })}
                                             </div>
                                             {(isOpen || isMobile) && (
@@ -128,7 +129,7 @@ function MotionNav() {
                                                     {group.label}
                                                 </motion.span>
                                             )}
-                                             {(isOpen || isMobile) && <CaretDown size={12} className="opacity-30 group-data-[state=open]:rotate-180 transition-transform" weight="bold" />}
+                                             {(isOpen || isMobile) && <ChevronDown size={14} className="opacity-30 group-data-[state=open]:rotate-180 transition-transform" strokeWidth={3} />}
                                         </button>
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>
@@ -163,11 +164,12 @@ function MotionNav() {
                                             : "text-[#475569] font-medium hover:bg-[#2563eb]/[0.03] hover:text-[#334155]"
                                     )}
                                 >
-                                    <div className="flex size-[20px] items-center justify-center shrink-0 transition-transform duration-[180ms] group-hover:scale-110">
-                                        {React.createElement(iconMap[group.iconName || 'default'] || Folders, {
-                                            size: 20,
-                                            weight: "fill",
-                                            color: isStandaloneActive ? "#2563eb" : "#64748B"
+                                    <div className="flex size-[20px] items-center justify-center shrink-0">
+                                        {React.createElement(iconMap[group.iconName || 'default'] || Folder, {
+                                            size: isMobile ? IconTokens.size.mobile : IconTokens.size.desktop,
+                                            strokeWidth: IconTokens.strokeWidth,
+                                            color: isStandaloneActive ? IconTokens.color.active : IconTokens.color.default,
+                                            className: "transition-colors duration-180"
                                         })}
                                     </div>
                                     {(isOpen || isMobile) && (
@@ -199,8 +201,8 @@ function MotionNav() {
                 {(isOpen || isMobile) && (
                   <div className="flex-1 text-left min-w-0">
                     <p className="text-[13px] font-bold text-[#111827] truncate tracking-tight">{currentUser?.name}</p>
-                    <div className="flex items-center gap-1.5 text-[10px] font-medium text-[#475569] uppercase transition-colors group-hover:text-destructive tracking-widest">
-                        <SignOut size={12} weight="bold" />
+                    <div className="flex items-center gap-1.5 text-[10px] font-medium text-[#475569] transition-colors group-hover:text-destructive tracking-widest">
+                        <LogOut size={12} strokeWidth={2.5} />
                         <span>Log Out</span>
                     </div>
                   </div>

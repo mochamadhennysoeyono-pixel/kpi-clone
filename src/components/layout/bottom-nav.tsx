@@ -1,4 +1,3 @@
-
 // src/components/layout/bottom-nav.tsx
 'use client';
 
@@ -9,18 +8,20 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
 import {
-  House,
-  ChartBar,
-  Checks,
-  SquaresFour,
-  CaretLeft,
+  Home,
+  BarChart2,
+  CheckCircle,
+  LayoutGrid,
+  ChevronLeft,
   Activity,
-  Folders
-} from '@phosphor-icons/react';
+  Folder,
+  MoreHorizontal
+} from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSubMenu } from './submenu-context';
-import { getNavItems, iconMap, getActiveModuleFromPath, getIconColor } from '@/lib/nav-items';
+import { getNavItems, iconMap, getActiveModuleFromPath } from '@/lib/nav-items';
 import { usePageContext } from '@/contexts/page-context';
+import { IconTokens } from '@/lib/icon-tokens';
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -94,10 +95,10 @@ export function BottomNav() {
 
   const classicBottomItems = React.useMemo(() => {
     return [
-        { href: '/dashboard', label: 'Home', icon: House },
+        { href: '/dashboard', label: 'Home', icon: Home },
         { href: '/appraisal-dashboard', label: 'Appraisal', icon: Activity },
-        { href: '/reports', label: 'Laporan', icon: ChartBar },
-        { href: '/kbo-appraisal', label: 'KBO', icon: Checks },
+        { href: '/reports', label: 'Laporan', icon: BarChart2 },
+        { href: '/kbo-appraisal', label: 'KBO', icon: CheckCircle },
     ];
   }, []);
 
@@ -111,16 +112,19 @@ export function BottomNav() {
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] h-[72px] bg-white/90 backdrop-blur-xl border-t border-slate-100 pb-safe shadow-[0_-8px_30px_rgb(0,0,0,0.04)] no-print">
             <div className="relative grid grid-cols-5 items-center h-full w-full px-2">
                 {classicBottomItems.slice(0, 2).map((item) => {
-                    const Icon = item.icon || Folders;
+                    const Icon = item.icon || Folder;
                     const isActive = pathname === item.href;
-                    const iconColor = getIconColor(item.href);
                     return (
                         <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 group">
                             <div className={cn(
                                 "p-1.5 rounded-lg transition-all duration-300",
-                                isActive ? "bg-primary/5 scale-110" : "group-active:scale-125"
+                                isActive ? "bg-primary/5" : ""
                             )}>
-                                <Icon size={22} weight="fill" color={iconColor} className={cn(isActive ? "opacity-100" : "opacity-90")} />
+                                <Icon 
+                                  size={IconTokens.size.mobile} 
+                                  strokeWidth={IconTokens.strokeWidth} 
+                                  color={isActive ? IconTokens.color.active : IconTokens.color.default}
+                                />
                             </div>
                             <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-primary" : "text-slate-400")}>
                                 {item.label}
@@ -134,21 +138,24 @@ export function BottomNav() {
                         onClick={handleMenuClick} 
                         className="size-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-black/20 ring-4 ring-white transition-transform active:scale-90"
                     >
-                        <SquaresFour size={26} weight="fill" />
+                        <LayoutGrid size={26} strokeWidth={2} />
                     </button>
                 </div>
 
                 {classicBottomItems.slice(2, 4).map((item) => {
-                    const Icon = item.icon || Folders;
+                    const Icon = item.icon || Folder;
                     const isActive = pathname === item.href;
-                    const iconColor = getIconColor(item.href);
                     return (
                         <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 group">
                             <div className={cn(
                                 "p-1.5 rounded-lg transition-all duration-300",
-                                isActive ? "bg-primary/5 scale-110" : "group-active:scale-125"
+                                isActive ? "bg-primary/5" : ""
                             )}>
-                                <Icon size={22} weight="fill" color={iconColor} className={cn(isActive ? "opacity-100" : "opacity-90")} />
+                                <Icon 
+                                  size={IconTokens.size.mobile} 
+                                  strokeWidth={IconTokens.strokeWidth} 
+                                  color={isActive ? IconTokens.color.active : IconTokens.color.default}
+                                />
                             </div>
                             <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-primary" : "text-slate-400")}>
                                 {item.label}
@@ -173,18 +180,17 @@ export function BottomNav() {
                             onClick={handleMenuClick}
                             className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-90 group"
                         >
-                            <div className="p-1.5 rounded-lg transition-all duration-300 group-active:scale-125">
-                                <SquaresFour size={22} weight="fill" color="#8E8E93" className="opacity-90" />
+                            <div className="p-1.5 rounded-lg transition-all duration-300">
+                                <LayoutGrid size={IconTokens.size.mobile} strokeWidth={IconTokens.strokeWidth} color={IconTokens.color.default} />
                             </div>
                             <span className="text-[10px] font-bold text-slate-400">Menu</span>
                         </button>
                     );
                 }
 
-                const RawIcon = item.iconName === 'portal' ? CaretLeft : (iconMap[item.iconName || item.href || 'default'] || Folders);
+                const RawIcon = item.iconName === 'portal' ? ChevronLeft : (iconMap[item.iconName || item.href || 'default'] || Folder);
                 const Icon = RawIcon;
                 const isActive = item.href && (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)));
-                const iconColor = getIconColor(item.href || item.label);
 
                 return (
                     <Link 
@@ -197,9 +203,13 @@ export function BottomNav() {
                     >
                         <div className={cn(
                             "p-1.5 rounded-lg transition-all duration-300",
-                            isActive ? "bg-primary/5 scale-110" : "bg-transparent group-active:scale-125"
+                            isActive ? "bg-primary/5" : "bg-transparent"
                         )}>
-                            <Icon size={22} weight="fill" color={iconColor} className="opacity-100" />
+                            <Icon 
+                              size={IconTokens.size.mobile} 
+                              strokeWidth={IconTokens.strokeWidth} 
+                              color={isActive ? IconTokens.color.active : IconTokens.color.default}
+                            />
                         </div>
                         <span className={cn(
                             "text-[9px] font-bold tracking-tight",
