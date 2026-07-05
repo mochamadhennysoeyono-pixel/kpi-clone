@@ -49,13 +49,12 @@ import {
     IdentificationBadge,
     ChartLine,
     Tray,
-    Stack,
     AddressBook,
     FileMagnifyingGlass,
     Checks
 } from "@phosphor-icons/react";
 
-// iOS System Color Palette
+// iOS System Color Palette (Premium Flat)
 export const iosColors = {
     blue: "#007AFF",
     green: "#34C759",
@@ -142,18 +141,20 @@ export const iconMap: { [key: string]: React.ElementType } = {
 };
 
 export const getIconColor = (path: string): string => {
-    if (path.includes('admin') || path.includes('management') || path.includes('activation')) return iosColors.red;
-    if (path.includes('master-data') || path.includes('foundation') || path.includes('company')) return iosColors.blue;
-    if (path.includes('holding')) return iosColors.purple;
-    if (path.includes('collab-space')) return iosColors.teal;
-    if (path.includes('report') || path.includes('appraisal-dashboard')) return iosColors.indigo;
-    if (path.includes('kpi') || path.includes('performance')) return iosColors.green;
-    if (path.includes('kbo')) return iosColors.orange;
-    if (path.includes('okr')) return iosColors.pink;
-    if (path.includes('lms') || path.includes('learning')) return iosColors.yellow;
-    if (path.includes('document') || path.includes('contract')) return iosColors.blue;
-    if (path.includes('action-center') || path.includes('beranda')) return iosColors.blue;
-    return iosColors.gray;
+    const p = path.toLowerCase();
+    if (p.includes('admin') || p.includes('management') || p.includes('activation') || p.includes('subscription')) return iosColors.red;
+    if (p.includes('master-data') || p.includes('pusat-data') || p.includes('company')) return iosColors.blue;
+    if (p.includes('holding')) return iosColors.purple;
+    if (p.includes('collab-space')) return iosColors.teal;
+    if (p.includes('report') || p.includes('analysis') || p.includes('appraisal-dashboard')) return iosColors.indigo;
+    if (p.includes('kpi') || p.includes('performance')) return iosColors.green;
+    if (p.includes('kbo') || p.includes('competency')) return iosColors.orange;
+    if (p.includes('okr')) return iosColors.pink;
+    if (p.includes('lms') || p.includes('learning')) return iosColors.yellow;
+    if (p.includes('document') || p.includes('contract')) return iosColors.blue;
+    if (p.includes('action-center') || p.includes('beranda')) return iosColors.blue;
+    if (p.includes('memos')) return iosColors.teal;
+    return iosColors.slate;
 };
 
 export const getActiveModuleFromPath = (path: string): ModuleId | null => {
@@ -361,6 +362,8 @@ export function getNavItems(
         
         { href: '/subscription-status', label: 'Status Paket', show: capabilities.isCompanyAdmin, iconName: '/subscription-status' },
         { href: '/company-admin-management', label: 'Manajemen Admin', show: capabilities.isCompanyAdmin, iconName: '/company-admin-management' },
+        { href: '/settings', label: 'Pengaturan', show: true, iconName: '/settings' },
+        { href: '/memos', label: 'Pesan Memo', show: true, iconName: '/memos' },
     ];
 
     let visibleItems = allNavItems
@@ -400,7 +403,9 @@ export function getNavItems(
         'Manajemen KPI', 
         'Manajemen KBO', 
         'Manajemen Pembelajaran', 
-        'Manajemen Dokumen'
+        'Manajemen Dokumen',
+        '/memos',
+        '/settings'
       ],
       manajemen: [
         'Pondasi Data', 
@@ -413,13 +418,15 @@ export function getNavItems(
         'Manajemen Pembelajaran', 
         'Manajemen Dokumen',
         '/subscription-status',
-        '/company-admin-management'
+        '/company-admin-management',
+        '/memos',
+        '/settings'
       ],
       "department-head": [
-        '/action-center', 'Pondasi Data', 'CollabSpace', 'Analisis & Laporan', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal'
+        '/action-center', 'Pondasi Data', 'CollabSpace', 'Analisis & Laporan', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal', '/memos', '/settings'
       ],
       user: [
-        '/action-center', 'CollabSpace', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal'
+        '/action-center', 'CollabSpace', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal', '/memos', '/settings'
       ]
     };
     
