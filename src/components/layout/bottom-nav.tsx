@@ -18,7 +18,7 @@ import {
 } from '@phosphor-icons/react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSubMenu } from './submenu-context';
-import { getNavItems, iconMap, getActiveModuleFromPath } from '@/lib/nav-items';
+import { getNavItems, iconMap, getActiveModuleFromPath, getIconColor } from '@/lib/nav-items';
 import { usePageContext } from '@/contexts/page-context';
 
 export function BottomNav() {
@@ -81,7 +81,7 @@ export function BottomNav() {
     const finalItems = [];
     if (links.length > 4) {
         finalItems.push(...links.slice(0, 3));
-        finalItems.push({ label: 'Lainnya', iconName: 'more', type: 'more' });
+        finalItems.push({ label: 'Menu', iconName: 'more', type: 'more' });
     } else {
         finalItems.push(...links);
     }
@@ -112,13 +112,14 @@ export function BottomNav() {
                 {classicBottomItems.slice(0, 2).map((item) => {
                     const Icon = item.icon || Folders;
                     const isActive = pathname === item.href;
+                    const iconColor = getIconColor(item.href);
                     return (
                         <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 group">
                             <div className={cn(
                                 "p-1.5 rounded-lg transition-all duration-300",
                                 isActive ? "bg-primary/5 scale-110" : "opacity-60 group-active:scale-125"
                             )}>
-                                <Icon size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
+                                <Icon size={22} weight="fill" color={isActive ? iconColor : "#8E8E93"} />
                             </div>
                             <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-primary" : "text-slate-400")}>
                                 {item.label}
@@ -139,13 +140,14 @@ export function BottomNav() {
                 {classicBottomItems.slice(2, 4).map((item) => {
                     const Icon = item.icon || Folders;
                     const isActive = pathname === item.href;
+                    const iconColor = getIconColor(item.href);
                     return (
                         <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 group">
                             <div className={cn(
                                 "p-1.5 rounded-lg transition-all duration-300",
                                 isActive ? "bg-primary/5 scale-110" : "opacity-60 group-active:scale-125"
                             )}>
-                                <Icon size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
+                                <Icon size={22} weight="fill" color={isActive ? iconColor : "#8E8E93"} />
                             </div>
                             <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-primary" : "text-slate-400")}>
                                 {item.label}
@@ -171,7 +173,7 @@ export function BottomNav() {
                             className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-90 group"
                         >
                             <div className="p-1.5 rounded-lg transition-all duration-300 group-active:scale-125">
-                                <SquaresFour size={22} weight="fill" style={{ fill: "url(#brand-gradient)" }} className="opacity-90" />
+                                <SquaresFour size={22} weight="fill" color="#8E8E93" className="opacity-90" />
                             </div>
                             <span className="text-[10px] font-bold text-slate-400">Menu</span>
                         </button>
@@ -181,7 +183,7 @@ export function BottomNav() {
                 const RawIcon = item.iconName === 'portal' ? CaretLeft : (iconMap[item.iconName || item.href || 'default'] || Folders);
                 const Icon = RawIcon;
                 const isActive = item.href && (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)));
-                const isPortalLink = item.iconName === 'portal';
+                const iconColor = getIconColor(item.href || item.label);
 
                 return (
                     <Link 
@@ -194,10 +196,9 @@ export function BottomNav() {
                     >
                         <div className={cn(
                             "p-1.5 rounded-lg transition-all duration-300",
-                            isActive ? "bg-primary/5 scale-110" : "bg-transparent group-active:scale-125",
-                            isPortalLink && "bg-slate-50 border border-slate-100"
+                            isActive ? "bg-primary/5 scale-110" : "bg-transparent group-active:scale-125"
                         )}>
-                            <Icon size={isPortalLink ? 18 : 22} weight="fill" style={{ fill: isPortalLink ? "#171717" : "url(#brand-gradient)" }} className={cn(isActive ? "opacity-100" : "opacity-90")} />
+                            <Icon size={22} weight="fill" color={isActive ? iconColor : "#8E8E93"} className={cn(isActive ? "opacity-100" : "opacity-90")} />
                         </div>
                         <span className={cn(
                             "text-[9px] font-bold tracking-tight",

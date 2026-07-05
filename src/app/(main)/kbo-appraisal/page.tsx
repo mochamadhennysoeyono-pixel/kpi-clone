@@ -1,4 +1,3 @@
-
 // src/app/(main)/kbo-appraisal/page.tsx
 "use client";
 
@@ -255,7 +254,7 @@ function KboAppraisalContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
   const [selectedAppraisalId, setSelectedAppraisalId] = useState<string | null>(null);
   const [selectedKboSetupId, setSelectedKboSetupId] = useState<string | null>(null);
@@ -278,7 +277,7 @@ function KboAppraisalContent() {
     }, [userRole, isHoldingAdmin, userCompany, companies]);
 
     useEffect(() => {
-        if (showCompanyFilter && manageableCompanies.length > 0 && !selectedCompanyId) {
+        if (showCompanyFilter && manageableCompanies.length > 0 && selectedCompanyId === 'all') {
             setSelectedCompanyId(manageableCompanies[0].id);
         } else if (!showCompanyFilter && userCompany) {
             setSelectedCompanyId(userCompany.id);
@@ -511,7 +510,7 @@ function KboAppraisalContent() {
                             <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-3">
                                     <Avatar className="size-10 border-2 border-primary/10 shadow-sm"><AvatarFallback className="font-black text-xs">{r.subject.name.substring(0,2).toUpperCase()}</AvatarFallback></Avatar>
-                                    <div className="min-w-0"><h3 className="font-black text-sm uppercase truncate">{r.subject.name}</h3><p className="text-[10px] font-bold text-muted-foreground">{r.subject.position}</p></div>
+                                    <div className="min-w-0"><h3 className="font-black text-sm truncate uppercase">{r.subject.name}</h3><p className="text-[10px] font-bold text-muted-foreground">{r.subject.position}</p></div>
                                 </div>
                                 <div className="text-right"><p className="text-xl font-black text-primary leading-none">{r.score !== null ? r.score.toFixed(1) : '-'}</p><p className="text-[8px] font-black uppercase text-muted-foreground mt-1">SKOR</p></div>
                             </div>

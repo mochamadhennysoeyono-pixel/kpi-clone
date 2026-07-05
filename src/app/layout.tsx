@@ -56,16 +56,6 @@ export default function RootLayout({
           data-client-key={clientKey}
           strategy="beforeInteractive"
         />
-
-        {/* Global SVG Gradients for Obsidian Glass Aesthetic */}
-        <svg width="0" height="0" className="absolute invisible pointer-events-none">
-          <defs>
-            <linearGradient id="brand-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#09090b" /> {/* Ink Black */}
-              <stop offset="100%" stopColor="#334155" /> {/* Midnight Slate */}
-            </linearGradient>
-          </defs>
-        </svg>
       </body>
     </html>
   );

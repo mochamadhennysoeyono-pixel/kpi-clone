@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import React from "react";
 import { ScrollArea } from "../ui/scroll-area";
 import { useSubMenu } from './submenu-context';
+import { getIconColor } from "@/lib/nav-items";
 
 interface SubMenuOverlayProps {
   activeGroup: any;
@@ -95,7 +96,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                         </button>
                     ) : (
                         <div className="size-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-900 border border-slate-100 shadow-sm">
-                            <SquaresFour size={20} weight="fill" style={{ fill: "url(#brand-gradient)" }} />
+                            <SquaresFour size={20} weight="fill" />
                         </div>
                     )}
                     <div className="min-w-0">
@@ -132,6 +133,8 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                             >
                                 {itemsToShow.map((subItem: any) => {
                                     const IconComponent = (iconMap[subItem.iconName || subItem.href || 'default']) || Folders;
+                                    const itemPath = subItem.href || subItem.label;
+                                    const iconColor = getIconColor(itemPath);
                                     const isLink = !!subItem.href;
                                     const hasSubItems = subItem.subItems && subItem.subItems.length > 0;
                                     const isActive = isLink && (pathname === subItem.href || (subItem.href !== '/' && pathname.startsWith(subItem.href)));
@@ -151,7 +154,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                                     <IconComponent 
                                                         size={32} 
                                                         weight="fill" 
-                                                        style={{ fill: "url(#brand-gradient)" }} 
+                                                        color={iconColor}
                                                         className={cn(isActive ? "opacity-100" : "opacity-90")}
                                                     />
                                                 )}

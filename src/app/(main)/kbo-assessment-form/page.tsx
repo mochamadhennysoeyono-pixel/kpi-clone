@@ -1,4 +1,3 @@
-
 // src/app/(main)/kbo-assessment-form/page.tsx
 "use client";
 
@@ -327,7 +326,7 @@ function KboAssessmentForm() {
                                                 "border-border/40 shadow-sm transition-all group",
                                                 currentVal ? "bg-primary/[0.02] border-primary/10" : "bg-background"
                                             )}>
-                                                <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                                                <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                     <p className="text-xs font-bold text-slate-700 leading-relaxed flex-1">{kb.value}</p>
                                                     <RadioGroup
                                                         onValueChange={(value) => handleSelectionChange(kbId, value)}

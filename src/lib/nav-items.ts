@@ -55,14 +55,26 @@ import {
     Checks
 } from "@phosphor-icons/react";
 
+// iOS System Color Palette
+export const iosColors = {
+    blue: "#007AFF",
+    green: "#34C759",
+    indigo: "#5856D6",
+    orange: "#FF9500",
+    pink: "#FF2D55",
+    purple: "#AF52DE",
+    red: "#FF3B30",
+    teal: "#5AC8FA",
+    yellow: "#FFCC00",
+    gray: "#8E8E93",
+    slate: "#475569"
+};
+
 export const iconMap: { [key: string]: React.ElementType } = {
-    // --- Dashboard & Home ---
     '/dashboard': Speedometer,
     '/action-center': House,
     '/portal': SquaresFour,
     '/beranda': House,
-
-    // --- Manajemen Sistem (Superadmin) ---
     '/admin-management': ShieldCheckered,
     '/company-admin-management': IdentificationBadge,
     '/activation-management': CheckCircle,
@@ -72,8 +84,6 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/feature-management': Lightning,
     'manajemen-sistem': Sliders,
     'manajemen-fitur': Lightning,
-
-    // --- Pondasi Data ---
     'pusat-data': Stack,
     '/master-data/company': Buildings,
     '/master-data/departments': ChartLine,
@@ -86,43 +96,29 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/master-data/kpi-data': FileMagnifyingGlass,
     '/master-data/company-objectives': Target,
     '/media-library': Image,
-
-    // --- Pusat Holding ---
     'pusat-holding': TreeStructure,
     '/holding-dashboard': ChartLineUp,
     '/holding-kpi-setup': Gear,
     '/holding-group-management': Users,
     '/holding-management': TreeStructure,
-
-    // --- CollabSpace ---
     '/collab-space': ProjectorScreen,
     '/collab-space/management': Gear,
     '/collab-space/reports': ChartPie,
-
-    // --- Analisis & Laporan ---
     'analisis-laporan': ChartBar,
     '/reports': ChartPie,
     '/cycle-reports': Activity,
     '/appraisal-dashboard': ChartBar,
     '/kbo-appraisal': Checks,
-
-    // --- Manajemen KPI ---
     'manajemen-kpi': CheckCircle,
     '/my-performance': UserGear,
     '/input-achievement': FilePlus,
     '/setup-kpi': Gear,
-
-    // --- Manajemen KBO ---
     'manajemen-kbo': CheckCircle,
     '/appraisal-settings': Gear,
-
-    // --- OKR ---
     'okr-management': Flag,
     '/okr': Flag,
     '/okr/reports': ChartBar,
     '/okr/progress': ListChecks,
-
-    // --- LMS ---
     'lms-portal': GraduationCap,
     'lms-user': BookOpen,
     'manajemen-pembelajaran': GraduationCap,
@@ -133,13 +129,9 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/lms/admin/quizzes': Exam,
     '/lms/admin/reports': ChartBar,
     '/lms/user/my-learnings': BookOpen,
-
-    // --- Dokumen ---
     'manajemen-dokumen': Files,
     '/document-management/templates': FileText,
     '/document-management/contracts': Tray,
-
-    // --- Lainnya ---
     '/subscription-status': Crown,
     '/subscription-plans': ShoppingCart,
     '/settings': Gear,
@@ -147,6 +139,21 @@ export const iconMap: { [key: string]: React.ElementType } = {
     'default': Folders,
     'more': DotsThreeOutline,
     'portal': CaretLeft,
+};
+
+export const getIconColor = (path: string): string => {
+    if (path.includes('admin') || path.includes('management') || path.includes('activation')) return iosColors.red;
+    if (path.includes('master-data') || path.includes('foundation') || path.includes('company')) return iosColors.blue;
+    if (path.includes('holding')) return iosColors.purple;
+    if (path.includes('collab-space')) return iosColors.teal;
+    if (path.includes('report') || path.includes('appraisal-dashboard')) return iosColors.indigo;
+    if (path.includes('kpi') || path.includes('performance')) return iosColors.green;
+    if (path.includes('kbo')) return iosColors.orange;
+    if (path.includes('okr')) return iosColors.pink;
+    if (path.includes('lms') || path.includes('learning')) return iosColors.yellow;
+    if (path.includes('document') || path.includes('contract')) return iosColors.blue;
+    if (path.includes('action-center') || path.includes('beranda')) return iosColors.blue;
+    return iosColors.gray;
 };
 
 export const getActiveModuleFromPath = (path: string): ModuleId | null => {
