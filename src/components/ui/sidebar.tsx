@@ -63,6 +63,9 @@ function MotionNav() {
           "flex flex-col h-screen sticky left-0 top-0 z-50 border-r bg-white no-print",
           isMobile ? "fixed w-[280px] h-full border-none shadow-2xl" : "border-[#E5E7EB]"
         )}
+        // MOD: Auto-expand on hover
+        onMouseEnter={() => !isMobile && setIsOpen(true)}
+        // MOD: DO NOT include onMouseLeave to ensure it stays expanded
       >
         {/* Header: Logo & Manual Toggle Area (65px height) */}
         <div className="flex items-center px-[13px] sm:px-[20px] flex-shrink-0 h-[65px] border-b border-[#E5E7EB] overflow-hidden relative">
@@ -98,10 +101,13 @@ function MotionNav() {
                 <Button 
                     variant="ghost" 
                     size="icon" 
-                    onClick={toggleSidebar}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsOpen(false); // Manually collapse
+                    }}
                     className="size-8 rounded-lg hover:bg-slate-100 shrink-0 ml-auto hidden md:flex"
                 >
-                    <ChevronLeft size={16} className={cn("transition-transform duration-300", !isOpen && "rotate-180")} strokeWidth={2.5} />
+                    <ChevronLeft size={16} strokeWidth={2.5} />
                 </Button>
             )}
           </div>
@@ -280,4 +286,3 @@ export function SidebarTrigger() {
     </Button>
   );
 }
-
