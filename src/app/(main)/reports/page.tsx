@@ -50,7 +50,8 @@ import {
   Briefcase,
   Network,
   Zap,
-  FilePieChart
+  FilePieChart,
+  Filter
 } from "lucide-react";
 import { useMasterData } from "@/contexts/master-data-context";
 import type { KpiData, Company, Employee } from "@/types";
@@ -83,7 +84,7 @@ function TeamReportView() {
     const router = useRouter();
     
     const [mode, setMode] = useState<'single' | 'trend'>('single');
-    const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+    const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
     const [selectedDepartment, setSelectedDepartment] = useState("all");
     const [selectedPosition, setSelectedPosition] = useState("all");
     const [selectedKpiDataForDetail, setSelectedKpiDataForDetail] = useState<KpiData | null>(null);
@@ -101,7 +102,7 @@ function TeamReportView() {
             if (activeCompanies.length > 0) setSelectedCompanyId(activeCompanies[0].id);
         } else if (currentUser) {
             const userCompanyData = companies.find((c) => c.name === currentUser.company);
-            setSelectedCompanyId(userCompanyData?.id || null);
+            setSelectedCompanyId(userCompanyData?.id || 'all');
         }
     }, [userRole, currentUser, companies]);
 
@@ -277,11 +278,59 @@ function TeamReportView() {
                     <Switch id="mode-switch" checked={mode === 'trend'} onCheckedChange={(c) => setMode(c ? 'trend' : 'single')} />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-center gap-2 w-full">
-                    {(userRole === 'superadmin' || isHoldingAdmin) && <Select onValueChange={(v) => { setSelectedCompanyId(v); setSelectedDepartment('all'); setSelectedPosition('all'); }} value={selectedCompanyId ?? ""}><SelectTrigger className="h-10 min-w-[180px] bg-background"><Building className="size-3.5 mr-2 text-primary" /><SelectValue placeholder="Perusahaan" /></SelectTrigger><SelectContent className="z-[350]">{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select>}
-                    <Select value={selectedDepartment} onValueChange={(v) => { setSelectedDepartment(v); setSelectedPosition('all'); }} disabled={!selectedCompanyId}><SelectTrigger className="h-10 min-w-[180px] bg-background"><Network className="size-3.5 mr-2 text-primary" /><SelectValue placeholder="Semua Departemen" /></SelectTrigger><SelectContent className="z-[350]"><SelectItem value="all">Semua Departemen</SelectItem>{uniqueCompanyDepartments.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}</SelectContent></Select>
-                    {mode === 'single' ? 
-                        <Select value={singlePeriod ?? ""} onValueChange={setSinglePeriod} disabled={!availablePeriods.length}><SelectTrigger className="h-10 min-w-[180px] bg-background"><Calendar className="size-3.5 mr-2 text-primary" /><SelectValue placeholder="Pilih Periode" /></SelectTrigger><SelectContent className="z-[350]">{availablePeriods.map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'LLLL yyyy', { locale: localeId })}</SelectItem>)}</SelectContent></Select> : 
-                        <><Select value={trendStartPeriod ?? ""} onValueChange={setTrendStartPeriod}><SelectTrigger className="h-10 min-w-[150px] bg-background"><Calendar className="size-3.5 mr-2 text-primary" /><SelectValue placeholder="Mulai" /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].sort().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId })}</SelectItem>)}</SelectContent></Select><Select value={trendEndPeriod ?? ""} onValueChange={setTrendEndPeriod}><SelectTrigger className="h-10 min-w-[150px] bg-background"><Calendar className="size-3.5 mr-2 text-primary" /><SelectValue placeholder="Selesai" /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].sort().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId })}</SelectItem>)}</SelectContent></Select></>}
+                    {(userRole === 'superadmin' || isHoldingAdmin) && (
+                        <Select onValueChange={(v) => { setSelectedCompanyId(v); setSelectedDepartment('all'); setSelectedPosition('all'); }} value={selectedCompanyId ?? ""}>
+                            <SelectTrigger className="h-9 min-w-[180px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
+                                <Building className="size-3.5 mr-2 text-primary" />
+                                <SelectValue placeholder="Perusahaan" />
+                            </SelectTrigger>
+                            <SelectContent className="z-[350]">
+                                {manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    )}
+                    <Select value={selectedDepartment} onValueChange={(v) => { setSelectedDepartment(v); setSelectedPosition('all'); }} disabled={!selectedCompanyId}>
+                        <SelectTrigger className="h-9 min-w-[180px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
+                            <Network className="size-3.5 mr-2 text-primary" />
+                            <SelectValue placeholder="Semua Departemen" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[350]">
+                            <SelectItem value="all">Semua Departemen</SelectItem>
+                            {uniqueCompanyDepartments.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    {mode === 'single' ? (
+                        <Select value={singlePeriod ?? ""} onValueChange={setSinglePeriod} disabled={!availablePeriods.length}>
+                            <SelectTrigger className="h-9 min-w-[180px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
+                                <Calendar className="size-3.5 mr-2 text-primary" />
+                                <SelectValue placeholder="Pilih Periode" />
+                            </SelectTrigger>
+                            <SelectContent className="z-[350]">
+                                {availablePeriods.map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'LLLL yyyy', { locale: localeId })}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    ) : (
+                        <>
+                            <Select value={trendStartPeriod ?? ""} onValueChange={setTrendStartPeriod}>
+                                <SelectTrigger className="h-9 min-w-[120px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
+                                    <Calendar className="size-3.5 mr-2 text-primary" />
+                                    <SelectValue placeholder="Mulai" />
+                                </SelectTrigger>
+                                <SelectContent className="z-[350]">
+                                    {[...availablePeriods].sort().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId })}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <Select value={trendEndPeriod ?? ""} onValueChange={setTrendEndPeriod}>
+                                <SelectTrigger className="h-9 min-w-[120px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
+                                    <Calendar className="size-3.5 mr-2 text-primary" />
+                                    <SelectValue placeholder="Selesai" />
+                                </SelectTrigger>
+                                <SelectContent className="z-[350]">
+                                    {[...availablePeriods].sort().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId })}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </>
+                    )}
                 </div>
             </ResponsiveToolbar>
 
@@ -321,7 +370,7 @@ function TeamReportView() {
                             )},
                             { header: "Persetujuan", hideOnTablet: true, cell: (d: any) => <Badge variant="outline" className="text-[8px] font-bold border-none bg-muted/50">{mode === 'trend' ? `App: ${d.approvalStatusSummary}` : d.approvalStatus}</Badge> },
                             { header: "", className: "text-right", cell: (d: any) => (
-                                <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal className="size-4" /></Button></DropdownMenuTrigger>
+                                <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal size={4} /></Button></DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="z-[350]">
                                     <DropdownMenuItem onClick={() => handleViewDetails(d)}><ArrowRight className="size-3.5 mr-2" /> Lihat Analisis</DropdownMenuItem>
                                     {mode === 'single' && <DropdownMenuItem onClick={() => handleApproveAchievement(d)} disabled={d.approvalStatus === 'Disetujui'}><ShieldCheck className="size-3.5 mr-2" /> Setujui KPI</DropdownMenuItem>}
@@ -362,7 +411,7 @@ function IndividualAnalysisView() {
     const { employees, companies, kpiData, departments, positions } = useMasterData();
     const router = useRouter();
     
-    const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+    const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
     const [selectedDepartment, setSelectedDepartment] = useState("all");
     const [selectedPosition, setSelectedPosition] = useState("all");
     const [selectedEmployeeId, setSelectedEmployeeId] = useState("all");
@@ -387,8 +436,8 @@ function IndividualAnalysisView() {
             const activeCompanies = companies.filter(c => c.status === 'Aktif');
             if (activeCompanies.length > 0) setSelectedCompanyId(activeCompanies[0].id);
         } else if (currentUser) {
-            const userCompanyData = companies.find(c => c.name === currentUser.company);
-            setSelectedCompanyId(userCompanyData?.id || null);
+            const userCompanyData = companies.find((c) => c.name === currentUser.company);
+            setSelectedCompanyId(userCompanyData?.id || 'all');
         }
     }, [userRole, currentUser, companies]);
 
@@ -425,12 +474,12 @@ function IndividualAnalysisView() {
             </CardHeader>
             <CardContent className="p-8 space-y-10">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Unit Bisnis</Label><Select onValueChange={(v) => { setSelectedCompanyId(v); setSelectedDepartment('all'); setSelectedEmployeeId('all'); }} value={selectedCompanyId ?? ""}><SelectTrigger className="h-12 font-bold"><SelectValue /></SelectTrigger><SelectContent className="z-[350]">{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Karyawan</Label><Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId} disabled={filteredEmployees.length === 0}><SelectTrigger className="h-12 font-bold"><SelectValue placeholder="Pilih Karyawan..." /></SelectTrigger><SelectContent className="z-[350]">{filteredEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Mulai</Label><Select value={startPeriod} onValueChange={setStartPeriod}><SelectTrigger className="h-12 font-bold"><SelectValue placeholder="Pilih Bulan..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Selesai</Label><Select value={endPeriod} onValueChange={setEndPeriod}><SelectTrigger className="h-12 font-bold"><SelectValue placeholder="Pilih Bulan..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Unit Bisnis</Label><Select onValueChange={(v) => { setSelectedCompanyId(v); setSelectedDepartment('all'); setSelectedEmployeeId('all'); }} value={selectedCompanyId ?? ""}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue /></SelectTrigger><SelectContent className="z-[350]">{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Karyawan</Label><Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId} disabled={filteredEmployees.length === 0}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue placeholder="Pilih Karyawan..." /></SelectTrigger><SelectContent className="z-[350]">{filteredEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Mulai</Label><Select value={startPeriod} onValueChange={setStartPeriod}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue placeholder="Pilih Bulan..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Selesai</Label><Select value={endPeriod} onValueChange={setEndPeriod}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue placeholder="Pilih Bulan..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
                 </div>
-                <Button onClick={handleRunAnalysis} disabled={selectedEmployeeId === 'all' || !startPeriod || !endPeriod} className="w-full h-12 font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20"><TrendingUp size={16} className="mr-2" /> Jalankan Analisis Performa</Button>
+                <Button onClick={handleRunAnalysis} disabled={selectedEmployeeId === 'all' || !startPeriod || !endPeriod} className="w-full h-11 font-black uppercase tracking-widest text-[11px] shadow-xl shadow-primary/20"><TrendingUp size={16} className="mr-2" /> Jalankan Analisis Performa</Button>
             </CardContent>
         </Card>
     );

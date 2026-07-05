@@ -367,9 +367,11 @@ export default function AppraisalDashboardPage() {
     }, [appraisalResults]);
     
     const handleViewDetail = (result: AppraisalResult) => {
-        if (!selectedAppraisal) return;
+        if (!selectedAppraisal && mode === 'single') return;
         sessionStorage.setItem('selectedAppraisalResult', JSON.stringify(result));
-        sessionStorage.setItem('selectedAppraisalSetup', JSON.stringify(selectedAppraisal));
+        if (selectedAppraisal) {
+            sessionStorage.setItem('selectedAppraisalSetup', JSON.stringify(selectedAppraisal));
+        }
         router.push(`/appraisal-dashboard/${result.subject.id}`);
     }
 
@@ -386,11 +388,59 @@ export default function AppraisalDashboardPage() {
                     <Switch id="mode-switch" checked={mode === 'trend'} onCheckedChange={(c) => setMode(c ? 'trend' : 'single')} />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-center gap-2 w-full">
-                    {showCompanyFilter && <Select onValueChange={setSelectedCompanyId} value={selectedCompanyId ?? ""}><SelectTrigger className="h-10 min-w-[200px] bg-background"><Building className="size-3.5 mr-2 text-primary" /><SelectValue placeholder="Perusahaan" /></SelectTrigger><SelectContent className="z-[350]">{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select>}
-                    {mode === 'single' ? 
-                        <Select value={selectedAppraisalId ?? ""} onValueChange={setSelectedAppraisalId} disabled={availableSetupsForCompany.length === 0}><SelectTrigger className="h-10 min-w-[200px] bg-background"><Calendar className="size-3.5 mr-2 text-primary" /><SelectValue placeholder="Pilih Setup" /></SelectTrigger><SelectContent className="z-[350]">{availableSetupsForCompany.map(s => <SelectItem key={s.id} value={s.id}>{s.period || `${s.periodStart} - ${s.periodEnd}`}</SelectItem>)}</SelectContent></Select> : 
-                        <><Select value={trendStartPeriod ?? ""} onValueChange={setTrendStartPeriod}><SelectTrigger className="h-10 min-w-[150px] bg-background"><Calendar className="size-3.5 mr-2 text-primary" /><SelectValue placeholder="Mulai" /></SelectTrigger><SelectContent className="z-[350]">{[...allAvailablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId })}</SelectItem>)}</SelectContent></Select><Select value={trendEndPeriod ?? ""} onValueChange={setTrendEndPeriod}><SelectTrigger className="h-10 min-w-[150px] bg-background"><Calendar className="size-3.5 mr-2 text-primary" /><SelectValue placeholder="Selesai" /></SelectTrigger><SelectContent className="z-[350]">{[...allAvailablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId })}</SelectItem>)}</SelectContent></Select></>}
-                    <Select value={selectedLevel} onValueChange={setSelectedLevel}><SelectTrigger className="h-10 min-w-[150px] bg-background"><Filter className="size-3.5 mr-2 text-primary" /><SelectValue /></SelectTrigger><SelectContent className="z-[350]"><SelectItem value="all">Semua Level</SelectItem>{levelOptions.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent></Select>
+                    {showCompanyFilter && (
+                        <Select onValueChange={setSelectedCompanyId} value={selectedCompanyId ?? ""}>
+                            <SelectTrigger className="h-9 min-w-[180px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
+                                <Building className="size-3.5 mr-2 text-primary" />
+                                <SelectValue placeholder="Perusahaan" />
+                            </SelectTrigger>
+                            <SelectContent className="z-[350]">
+                                {manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    )}
+                    {mode === 'single' ? (
+                        <Select value={selectedAppraisalId ?? ""} onValueChange={setSelectedAppraisalId} disabled={availableSetupsForCompany.length === 0}>
+                            <SelectTrigger className="h-9 min-w-[200px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
+                                <Calendar className="size-3.5 mr-2 text-primary" />
+                                <SelectValue placeholder="Pilih Setup" />
+                            </SelectTrigger>
+                            <SelectContent className="z-[350]">
+                                {availableSetupsForCompany.map(s => <SelectItem key={s.id} value={s.id}>{s.period || `${s.periodStart} - ${s.periodEnd}`}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    ) : (
+                        <>
+                            <Select value={trendStartPeriod ?? ""} onValueChange={setTrendStartPeriod}>
+                                <SelectTrigger className="h-9 min-w-[150px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
+                                    <Calendar className="size-3.5 mr-2 text-primary" />
+                                    <SelectValue placeholder="Mulai" />
+                                </SelectTrigger>
+                                <SelectContent className="z-[350]">
+                                    {[...allAvailablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId })}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <Select value={trendEndPeriod ?? ""} onValueChange={setTrendEndPeriod}>
+                                <SelectTrigger className="h-9 min-w-[150px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
+                                    <Calendar className="size-3.5 mr-2 text-primary" />
+                                    <SelectValue placeholder="Selesai" />
+                                </SelectTrigger>
+                                <SelectContent className="z-[350]">
+                                    {[...allAvailablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId })}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </>
+                    )}
+                    <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+                        <SelectTrigger className="h-9 min-w-[150px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
+                            <Filter className="size-3.5 mr-2 text-primary" />
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="z-[350]">
+                            <SelectItem value="all">Semua Level</SelectItem>
+                            {levelOptions.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
                 </div>
             </ResponsiveToolbar>
 

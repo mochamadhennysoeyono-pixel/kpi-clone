@@ -208,7 +208,7 @@ export default function SetupKpiPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex items-center gap-3 flex-1 min-w-0">
             {(userRole === 'superadmin' || isHoldingAdmin) && (
                 <Select value={selectedCompanyFilter} onValueChange={(v) => { setSelectedCompanyFilter(v); setSelectedDepartment('all'); setSelectedPosition('all'); }}>
-                    <SelectTrigger className="w-full lg:w-[200px] h-9 bg-background border-none shadow-sm text-[11px] font-black uppercase">
+                    <SelectTrigger className="h-9 min-w-[180px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
                         <Building size={14} className="mr-2 text-primary" />
                         <SelectValue placeholder="Perusahaan" />
                     </SelectTrigger>
@@ -219,7 +219,7 @@ export default function SetupKpiPage() {
                 </Select>
             )}
             <Select value={selectedDepartment} onValueChange={(v) => { setSelectedDepartment(v); setSelectedPosition('all'); }} disabled={!selectedCompanyFilter}>
-                <SelectTrigger className="w-full lg:w-[200px] h-9 bg-background border-none shadow-sm text-[11px] font-black uppercase">
+                <SelectTrigger className="h-9 min-w-[180px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
                     <Network size={14} className="mr-2 text-primary" />
                     <SelectValue placeholder="Departemen" />
                 </SelectTrigger>
@@ -229,7 +229,7 @@ export default function SetupKpiPage() {
                 </SelectContent>
             </Select>
             <Select value={selectedPosition} onValueChange={setSelectedPosition} disabled={selectedDepartment === 'all'}>
-                <SelectTrigger className="w-full lg:w-[200px] h-9 bg-background border-none shadow-sm text-[11px] font-black uppercase">
+                <SelectTrigger className="h-9 min-w-[180px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
                     <Briefcase size={14} className="mr-2 text-primary" />
                     <SelectValue placeholder="Jabatan" />
                 </SelectTrigger>

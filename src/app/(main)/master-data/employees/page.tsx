@@ -1,4 +1,4 @@
-
+// src/app/(main)/master-data/employees/page.tsx
 "use client";
 
 import { useState, useMemo, useRef } from "react";
@@ -119,8 +119,8 @@ export default function EmployeesPage() {
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
             <Select value={filterCompany} onValueChange={setFilterCompany}>
-                <SelectTrigger className="w-full sm:w-[200px] h-10 bg-background border-none">
-                    <Building className="size-4 mr-2 text-primary" />
+                <SelectTrigger className="w-full sm:w-[200px] h-9 bg-background border-none text-[11px] font-black uppercase tracking-tight">
+                    <Building className="size-3.5 mr-2 text-primary" />
                     <SelectValue placeholder="Semua Perusahaan" />
                 </SelectTrigger>
                 <SelectContent>

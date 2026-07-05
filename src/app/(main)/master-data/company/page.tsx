@@ -168,7 +168,7 @@ export default function CompanyPage() {
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[200px] h-10 bg-background border-none shadow-sm text-[11px] font-black uppercase">
+                <SelectTrigger className="w-full sm:w-[200px] h-9 bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
                     <Filter className="size-3.5 mr-2 text-primary" />
                     <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -206,12 +206,11 @@ export default function CompanyPage() {
           {
             header: "Koneksi Paket",
             cell: (c) => {
-                const currentPlan = subscriptionPlans.find(p => p.id === c.subscriptionPlanId);
                 return c.parentId ? (
                     <Badge variant="outline" className="text-[9px] gap-1 border-primary/20 text-primary uppercase font-bold"><GitMerge size={10}/> IKUT INDUK</Badge>
                 ) : (
                     <Select value={c.subscriptionPlanId || 'none'} onValueChange={(v) => handlePlanChange(c, v)}>
-                        <SelectTrigger className="h-8 text-[10px] font-black uppercase w-[150px] border-none bg-muted/50">
+                        <SelectTrigger className="h-8 text-[9px] font-black uppercase w-[150px] border-none bg-muted/50">
                             <SelectValue placeholder="Pilih Paket" />
                         </SelectTrigger>
                         <SelectContent className="z-[350]">
