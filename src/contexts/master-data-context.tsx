@@ -183,9 +183,9 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
         const allCompanies = mapSnapshot<Company>(allCompaniesSnap);
         
         let companyNamesToQuery: string[] = [];
-        if (userRole === 'superadmin') {
-            companyNamesToQuery = allCompanies.map(c => c.name);
-        } else {
+        const isSuperadmin = userRole === 'superadmin';
+
+        if (!isSuperadmin) {
             companyNamesToQuery = [currentUser.company];
             const userComp = allCompanies.find(c => c.name === currentUser.company);
             if (userComp?.isHolding) {
@@ -212,9 +212,13 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
         ];
         
         const [scopedSnaps, globalSnaps] = await Promise.all([
-             Promise.all(scopedCollections.map(coll => 
-                getDocs(query(collection(db, coll), where("company", "in", [...companyNamesToQuery, 'Global'])))
-            )),
+             Promise.all(scopedCollections.map(coll => {
+                if (isSuperadmin) {
+                    return getDocs(collection(db, coll));
+                } else {
+                    return getDocs(query(collection(db, coll), where("company", "in", [...companyNamesToQuery, 'Global'])));
+                }
+            })),
              Promise.all(globalCollections.map(coll => 
                 getDocs(collection(db, coll))
             ))
@@ -234,12 +238,16 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
             enrollmentsSnap, memosSnap, modulePricingSnap, addonPricingSnap
         ] = globalSnaps;
 
+        // Extract IDs of accessible employees for secondary filtering layer
+        const accessibleEmployees = mapSnapshot<Employee>(employeesSnap);
+        const accessibleEmployeeIds = new Set(accessibleEmployees.map(e => e.id));
+
         setData(prev => ({
             ...prev,
-            companies: allCompanies,
+            companies: isSuperadmin ? allCompanies : allCompanies.filter(c => companyNamesToQuery.includes(c.name)),
             departments: mapSnapshot<Department>(departmentsSnap),
             positions: mapSnapshot<Position>(positionsSnap),
-            employees: mapSnapshot<Employee>(employeesSnap),
+            employees: accessibleEmployees,
             companyAdmins: mapSnapshot<CompanyAdmin>(companyAdminsSnap),
             companyObjectives: mapSnapshot<CompanyObjective>(companyObjectivesSnap),
             kpiCategories: mapSnapshot<KpiCategory>(kpiCategoriesSnap),
@@ -264,11 +272,15 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
             subscriptionLogs: mapSnapshot<SubscriptionLog>(subscriptionLogsSnap),
             kboAssessments: mapSnapshot<KboAssessment>(kboAssessmentsSnap),
             appraisalTasks: mapSnapshot<AppraisalTask>(appraisalTasksSnap),
-            targetOverrides: mapSnapshot<TargetOverride>(targetOverridesSnap),
-            enrollments: mapSnapshot<any>(enrollmentsSnap).map(e => enrollmentWithMethods(e)),
-            memos: mapSnapshot<Memo>(memosSnap),
             modulePricing: mapSnapshot<ModulePricing>(modulePricingSnap),
             addonPricing: mapSnapshot<AddonPricing>(addonPricingSnap),
+            
+            // SECONDARY ISOLATION LAYER (Filtering global items by allowed member IDs)
+            targetOverrides: mapSnapshot<TargetOverride>(targetOverridesSnap).filter(o => isSuperadmin || accessibleEmployeeIds.has(o.id.split('_')[0])),
+            enrollments: mapSnapshot<any>(enrollmentsSnap)
+                .filter(e => isSuperadmin || accessibleEmployeeIds.has(e.employeeId))
+                .map(e => enrollmentWithMethods(e)),
+            memos: mapSnapshot<Memo>(memosSnap).filter(m => isSuperadmin || m.senderId === currentUser.id || m.recipientId === currentUser.id),
         }));
 
         hasFetchedRef.current = true;
