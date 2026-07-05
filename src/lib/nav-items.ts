@@ -39,7 +39,6 @@ import {
     FileQuestion,
     Files,
     FileText,
-    Mail,
     ShoppingCart,
     ChevronLeft,
     MoreHorizontal,
@@ -49,7 +48,8 @@ import {
     Inbox,
     Search,
     BadgeCheck,
-    Stack
+    Stack,
+    CalendarDays
 } from "lucide-react";
 
 /**
@@ -121,7 +121,6 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/subscription-status': Crown,
     '/subscription-plans': ShoppingCart,
     '/settings': Settings,
-    '/memos': Mail,
     'default': Folder,
     'more': MoreHorizontal,
     'portal': ChevronLeft,
@@ -350,7 +349,6 @@ export function getNavItems(
         { href: '/subscription-status', label: 'Status Paket', show: capabilities.isCompanyAdmin, iconName: '/subscription-status' },
         { href: '/company-admin-management', label: 'Manajemen Admin', show: capabilities.isCompanyAdmin, iconName: '/company-admin-management' },
         { href: '/settings', label: 'Pengaturan', show: true, iconName: '/settings' },
-        { href: '/memos', label: 'Pesan Memo', show: true, iconName: '/memos' },
     ];
 
     let visibleItems = allNavItems
@@ -391,7 +389,6 @@ export function getNavItems(
         'Manajemen KBO', 
         'Manajemen Pembelajaran', 
         'Manajemen Dokumen',
-        '/memos',
         '/settings'
       ],
       manajemen: [
@@ -406,14 +403,13 @@ export function getNavItems(
         'Manajemen Dokumen',
         '/subscription-status',
         '/company-admin-management',
-        '/memos',
         '/settings'
       ],
       "department-head": [
-        '/action-center', 'Pondasi Data', 'CollabSpace', 'Analisis & Laporan', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal', '/memos', '/settings'
+        '/action-center', 'Pondasi Data', 'CollabSpace', 'Analisis & Laporan', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal', '/settings'
       ],
       user: [
-        '/action-center', 'CollabSpace', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal', '/memos', '/settings'
+        '/action-center', 'CollabSpace', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal', '/settings'
       ]
     };
     
@@ -426,7 +422,7 @@ export function getNavItems(
        const indexB = currentSortOrder.indexOf(bKey);
        
        const finalIndexA = indexA === -1 ? 999 : indexA;
-       const finalIndexB = indexB === -1 ? 999 : indexB;
+       const finalIndexB = indexB === -1 ? 999 : finalIndexB;
        
        return finalIndexA - finalIndexB;
    });
