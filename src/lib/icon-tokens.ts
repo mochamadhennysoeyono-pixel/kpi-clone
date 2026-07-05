@@ -2,8 +2,8 @@
 
 /**
  * Enterprise Icon Design Tokens
- * Digunakan untuk standarisasi ikon di seluruh aplikasi (Sidebar, Nav, dsb).
- * Mengikuti filosofi desain Linear, Stripe, dan Vercel.
+ * Digunakan untuk standarisasi ikon di seluruh aplikasi.
+ * Mengikuti filosofi desain Linear dan Stripe.
  */
 export const IconTokens = {
   size: {
@@ -16,12 +16,12 @@ export const IconTokens = {
   strokeWidth: 1.75,
 
   color: {
-    // Normal / Inactive
+    // Normal / Inactive (#64748B)
     default: "#64748B",
-    // Hover state
+    // Hover state (#475569)
     hover: "#475569",
-    // Active state (Primary Brand Color)
-    active: "var(--primary)",
+    // Active state (Primary Brand Blue)
+    active: "#2563eb", 
   },
 
   // Transisi halus namun responsif

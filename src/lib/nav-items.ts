@@ -365,7 +365,6 @@ export function getNavItems(
         visibleItems = visibleItems.filter(item => {
             if ((item as any).moduleId === activeModule) return true;
             if (item.subItems && item.subItems.some(sub => (sub as any).moduleId === activeModule)) return true;
-            // Always keep global settings or generic items
             if (!(item as any).moduleId) return true;
             return false;
         });

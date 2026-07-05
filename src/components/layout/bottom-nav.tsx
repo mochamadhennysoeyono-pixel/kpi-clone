@@ -9,13 +9,11 @@ import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
 import {
   Home,
-  BarChart2,
-  CheckCircle,
   LayoutGrid,
-  ChevronLeft,
   Activity,
   Folder,
-  MoreHorizontal
+  CheckCircle,
+  BarChart2
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSubMenu } from './submenu-context';
@@ -65,7 +63,7 @@ export function BottomNav() {
 
   const isPortal = pathname === '/portal';
 
-  // --- Dynamic Item Calculation for Management/User ---
+  // --- Dynamic Item Calculation ---
   const dynamicItems = React.useMemo(() => {
     if (userRole === 'superadmin' || isPortal) return [];
     
@@ -118,7 +116,7 @@ export function BottomNav() {
                         <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 group">
                             <div className={cn(
                                 "p-1.5 rounded-lg transition-all duration-300",
-                                isActive ? "bg-primary/5" : ""
+                                isActive ? "bg-[#2563eb]/[0.06]" : ""
                             )}>
                                 <Icon 
                                   size={IconTokens.size.mobile} 
@@ -126,7 +124,7 @@ export function BottomNav() {
                                   color={isActive ? IconTokens.color.active : IconTokens.color.default}
                                 />
                             </div>
-                            <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-primary" : "text-slate-400")}>
+                            <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-[#2563eb]" : "text-slate-400")}>
                                 {item.label}
                             </span>
                         </Link>
@@ -136,7 +134,7 @@ export function BottomNav() {
                 <div className="flex justify-center -translate-y-4">
                     <button 
                         onClick={handleMenuClick} 
-                        className="size-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-black/20 ring-4 ring-white transition-transform active:scale-90"
+                        className="size-14 bg-[#111827] text-white rounded-2xl flex items-center justify-center shadow-xl shadow-black/20 ring-4 ring-white transition-transform active:scale-90"
                     >
                         <LayoutGrid size={26} strokeWidth={2} />
                     </button>
@@ -149,7 +147,7 @@ export function BottomNav() {
                         <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 group">
                             <div className={cn(
                                 "p-1.5 rounded-lg transition-all duration-300",
-                                isActive ? "bg-primary/5" : ""
+                                isActive ? "bg-[#2563eb]/[0.06]" : ""
                             )}>
                                 <Icon 
                                   size={IconTokens.size.mobile} 
@@ -157,7 +155,7 @@ export function BottomNav() {
                                   color={isActive ? IconTokens.color.active : IconTokens.color.default}
                                 />
                             </div>
-                            <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-primary" : "text-slate-400")}>
+                            <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-[#2563eb]" : "text-slate-400")}>
                                 {item.label}
                             </span>
                         </Link>
@@ -188,7 +186,7 @@ export function BottomNav() {
                     );
                 }
 
-                const RawIcon = item.iconName === 'portal' ? ChevronLeft : (iconMap[item.iconName || item.href || 'default'] || Folder);
+                const RawIcon = item.iconName === 'portal' ? Home : (iconMap[item.iconName || item.href || 'default'] || Folder);
                 const Icon = RawIcon;
                 const isActive = item.href && (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)));
 
@@ -198,12 +196,12 @@ export function BottomNav() {
                         href={item.href}
                         className={cn(
                             "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95 group",
-                            isActive ? "text-primary" : "text-slate-400"
+                            isActive ? "text-[#2563eb]" : "text-slate-400"
                         )}
                     >
                         <div className={cn(
                             "p-1.5 rounded-lg transition-all duration-300",
-                            isActive ? "bg-primary/5" : "bg-transparent"
+                            isActive ? "bg-[#2563eb]/[0.06]" : "bg-transparent"
                         )}>
                             <Icon 
                               size={IconTokens.size.mobile} 
@@ -213,7 +211,7 @@ export function BottomNav() {
                         </div>
                         <span className={cn(
                             "text-[9px] font-bold tracking-tight",
-                            isActive ? "text-primary" : "opacity-80"
+                            isActive ? "text-[#2563eb]" : "opacity-80"
                         )}>
                             {item.label}
                         </span>

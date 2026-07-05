@@ -141,7 +141,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                         <div className={cn(
                                             "flex flex-col items-center justify-center gap-3 p-4 rounded-xl transition-all duration-300 border group/item active:scale-95",
                                             isActive 
-                                                ? "bg-white border-primary shadow-lg ring-1 ring-primary/10" 
+                                                ? "bg-[#2563eb]/[0.06] border-[#2563eb]/[0.2] shadow-sm" 
                                                 : "bg-white border-slate-100 hover:border-slate-300 hover:shadow-stripe"
                                         )}>
                                             <div className="size-10 flex items-center justify-center transition-colors">
@@ -155,7 +155,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                             </div>
                                             <span className={cn(
                                                 "text-[11px] text-center font-bold tracking-tight leading-tight px-0.5 transition-colors",
-                                                isActive ? "text-primary" : "text-slate-500 group-hover/item:text-slate-900"
+                                                isActive ? "text-[#2563eb]" : "text-slate-500 group-hover/item:text-slate-900"
                                             )}>
                                                 {subItem.label}
                                             </span>
