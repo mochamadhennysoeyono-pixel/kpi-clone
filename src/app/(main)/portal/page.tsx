@@ -532,13 +532,14 @@ export default function PortalPage() {
                                     Sekali Bayar. Berlaku selamanya tanpa biaya perpanjangan tahunan.
                                 </AlertDescription>
                             </Alert>
+
+                            {/* Footer integrated into scrollable area */}
+                            <div className="flex gap-3 pt-6 border-t">
+                                <DialogClose asChild><Button variant="ghost" className="flex-1 font-black text-[10px] uppercase">Batal</Button></DialogClose>
+                                <Button className="flex-1 font-black uppercase tracking-widest text-[10px] h-12 shadow-lg" onClick={handleBuyMgmtAddon}>Beli Sekarang</Button>
+                            </div>
                         </div>
                     </ScrollArea>
-
-                    <DialogFooter className="p-8 pt-4 flex gap-3 border-t shrink-0 bg-slate-50/50">
-                        <DialogClose asChild><Button variant="ghost" className="flex-1 font-black text-[10px] uppercase">Batal</Button></DialogClose>
-                        <Button className="flex-1 font-black uppercase tracking-widest text-[10px] h-12 shadow-lg" onClick={handleBuyMgmtAddon}>Beli Sekarang</Button>
-                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </ResponsivePage>
