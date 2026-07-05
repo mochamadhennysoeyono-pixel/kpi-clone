@@ -30,7 +30,7 @@ import { cn } from '@/lib/utils';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 function LiveClock() {
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
@@ -76,16 +76,11 @@ export default function Header() {
         <div className="flex items-center gap-3">
           {isMobile ? (
             <div className="flex items-center gap-3">
-                {/* Hamburger menu hidden for mobile as requested */}
                 <Image src="/logo.png" alt="Logo" width={90} height={24} priority />
             </div>
           ) : (
             <div className="flex items-center gap-4">
-                {!isOpen && (
-                    <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)} className="hover:bg-muted">
-                        <Menu className="size-5" />
-                    </Button>
-                )}
+                <SidebarTrigger />
                 {userRole !== 'superadmin' && !isPortal && (
                     <Button 
                         variant="ghost" 
@@ -143,3 +138,4 @@ export default function Header() {
     </header>
   );
 }
+

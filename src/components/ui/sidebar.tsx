@@ -3,7 +3,7 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, LogOut, Folder } from "lucide-react";
+import { ChevronDown, LogOut, Folder, ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -21,10 +21,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ScrollArea } from "./scroll-area";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { Avatar, AvatarFallback } from "./avatar";
+import { Button } from "./button";
 
-/** AppSidebar component - Enterprise Premium Expanding Sidebar */
+/** AppSidebar component - Enterprise Premium Manual Expanding Sidebar */
 function MotionNav() {
-  const { isOpen, setIsOpen } = useSidebar();
+  const { isOpen, setIsOpen, toggleSidebar } = useSidebar();
   const pathname = usePathname();
   const { currentUser, userRole, logout } = useAuth();
   const { employees, companies, subscriptionPlans, okrs } = useMasterData();
@@ -62,35 +63,47 @@ function MotionNav() {
           "flex flex-col h-screen sticky left-0 top-0 z-50 border-r bg-white no-print",
           isMobile ? "fixed w-[280px] h-full border-none shadow-2xl" : "border-[#E5E7EB]"
         )}
-        onMouseEnter={() => !isMobile && setIsOpen(true)}
-        onMouseLeave={() => !isMobile && setIsOpen(false)}
       >
-        {/* Header: Logo Area (65px height) */}
-        <div className="flex items-center px-[20px] flex-shrink-0 h-[65px] border-b border-[#E5E7EB]">
-          <div className="flex items-center justify-center min-h-[32px] w-full">
-            <AnimatePresence mode="wait">
-              {isOpen || isMobile ? (
-                <motion.div
-                  key="full-logo"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex items-center justify-start w-full"
+        {/* Header: Logo & Manual Toggle Area (65px height) */}
+        <div className="flex items-center px-[13px] sm:px-[20px] flex-shrink-0 h-[65px] border-b border-[#E5E7EB] overflow-hidden relative">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3 min-w-0">
+                <AnimatePresence mode="wait">
+                {isOpen || isMobile ? (
+                    <motion.div
+                    key="full-logo"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center justify-start shrink-0"
+                    >
+                    <Image src="/logo.png" alt="Logo" width={110} height={28} priority className="object-contain" />
+                    </motion.div>
+                ) : (
+                    <motion.div
+                    key="mini-logo"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="size-10 rounded-xl bg-white border border-[#E5E7EB] flex items-center justify-center shadow-sm shrink-0"
+                    >
+                    <Image src="/favicon.png" alt="Logo" width={24} height={24} priority />
+                    </motion.div>
+                )}
+                </AnimatePresence>
+            </div>
+
+            {/* Manual Toggle Button (Desktop Only) */}
+            {(isOpen || isMobile) && (
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={toggleSidebar}
+                    className="size-8 rounded-lg hover:bg-slate-100 shrink-0 ml-auto hidden md:flex"
                 >
-                  <Image src="/logo.png" alt="Logo" width={110} height={28} priority className="object-contain" />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="mini-logo"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="size-10 rounded-xl bg-white border border-[#E5E7EB] flex items-center justify-center shadow-sm"
-                >
-                  <Image src="/favicon.png" alt="Logo" width={24} height={24} priority />
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    <ChevronLeft size={16} className={cn("transition-transform duration-300", !isOpen && "rotate-180")} strokeWidth={2.5} />
+                </Button>
+            )}
           </div>
         </div>
 
@@ -129,7 +142,7 @@ function MotionNav() {
                                               })}
                                             </div>
                                             {(isOpen || isMobile) && (
-                                                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 tracking-tight">
+                                                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 tracking-tight truncate">
                                                     {group.label}
                                                 </motion.span>
                                             )}
@@ -178,7 +191,7 @@ function MotionNav() {
                                         })}
                                     </div>
                                     {(isOpen || isMobile) && (
-                                        <span className="tracking-tight">
+                                        <span className="tracking-tight truncate">
                                         {group.label}
                                         </span>
                                     )}
@@ -208,7 +221,7 @@ function MotionNav() {
                     <p className="text-[13px] font-bold text-[#111827] truncate tracking-tight">{currentUser?.name}</p>
                     <div className="flex items-center gap-1.5 text-[10px] font-medium text-[#475569] transition-colors group-hover:text-destructive tracking-widest">
                         <LogOut size={12} strokeWidth={2.5} />
-                        <span>Log Out</span>
+                        <span>LOG OUT</span>
                     </div>
                   </div>
                 )}
@@ -260,10 +273,11 @@ export function AppSidebar() {
 }
 
 export function SidebarTrigger() {
-  const { isOpen, setIsOpen } = useSidebar();
+  const { isOpen, setIsOpen, toggleSidebar } = useSidebar();
   return (
-    <Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)} className="hover:bg-slate-100 rounded-xl transition-colors">
-      <Image src="/favicon.png" alt="Menu" width={20} height={20} className={cn("transition-transform duration-300", isOpen && "rotate-180")} />
+    <Button variant="ghost" size="icon" onClick={toggleSidebar} className="hover:bg-slate-100 rounded-xl transition-colors">
+      <Menu size={20} className={cn("transition-transform duration-300", isOpen && "rotate-90")} />
     </Button>
   );
 }
+
