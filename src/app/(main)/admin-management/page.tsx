@@ -1,29 +1,23 @@
-
 // src/app/(main)/admin-management/page.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   PlusCircle,
   DotsThreeOutlineVertical,
-  User,
   ShieldCheckered,
   PaperPlaneTilt,
   CircleNotch,
   PencilSimple,
   Trash,
-  EnvelopeSimple,
-  CaretDown,
 } from "@phosphor-icons/react";
-import type { SuperAdmin, LoginStatus } from "@/types";
+import type { SuperAdmin, LoginStatus, Employee } from "@/types";
 import { EmployeeFormSheet } from "@/components/master-data/employees/employee-form-sheet";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useMasterData } from "@/contexts/master-data-context";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
-import { db } from "@/lib/firebase/client";
-import { doc, setDoc, collection } from "firebase/firestore";
 import { 
     ResponsivePage, 
 } from "@/components/ui/adaptive-layout";
@@ -46,19 +40,23 @@ export default function AdminManagementPage() {
   const { currentUser, userRole, addSuperAdmin, sendPasswordReset } = useAuth();
   const { superadmins, deleteSuperadmins, fetchData } = useMasterData();
   const [isSheetOpen, setSheetOpen] = useState(false);
-  const [selectedAdmin, setSelectedAdmin] = useState<Partial<SuperAdmin> | undefined>(undefined);
+  const [selectedAdmin, setSelectedAdmin] = useState<Partial<Employee> | undefined>(undefined);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [adminToDelete, setAdminToDelete] = useState<SuperAdmin | null>(null);
   const [isSendingInvitation, setIsSendingInvitation] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleAddClick = () => {
-    setSelectedAdmin(undefined);
+    setSelectedAdmin({
+        role: 'superadmin',
+        status: 'Aktif',
+        level: 'Direktur'
+    });
     setSheetOpen(true);
   };
   
   const handleEditAdmin = (admin: SuperAdmin) => {
-    setSelectedAdmin(admin);
+    setSelectedAdmin({ ...admin, role: 'superadmin' } as any);
     setSheetOpen(true);
   };
 
@@ -223,7 +221,7 @@ export default function AdminManagementPage() {
       <EmployeeFormSheet 
         isOpen={isSheetOpen} 
         onOpenChange={setSheetOpen} 
-        employee={selectedAdmin as any} 
+        employee={selectedAdmin} 
         onSave={(id, data) => handleAddSuperAdminAction({ ...data, id })}
         onAdd={handleAddSuperAdminAction}
         quotaInfo={null}

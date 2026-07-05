@@ -28,6 +28,7 @@ import type { Employee, LoginStatus, Company } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMasterData } from '@/contexts/master-data-context';
 import { useAuth } from '@/contexts/auth-context';
+import { cn } from '@/lib/utils';
 
 const employeeSchema = z.object({
   id: z.string().optional(),
@@ -41,7 +42,7 @@ const employeeSchema = z.object({
   reportsTo: z.string().optional().nullable(),
   joinDate: z.string().optional(),
   status: z.enum(['Aktif', 'Tidak Aktif']),
-  role: z.enum(['user', 'manajemen']).default('user'),
+  role: z.enum(['user', 'manajemen', 'superadmin']).default('user'),
 });
 
 type EmployeeFormValues = z.infer<typeof employeeSchema>;
@@ -52,7 +53,7 @@ interface EmployeeFormSheetProps {
   employee?: Partial<Employee>;
   onSave: (id: string, data: Omit<Employee, 'id' | 'loginStatus' | 'password'>) => void;
   onAdd: (data: Omit<Employee, 'id' | 'loginStatus'>) => void;
-  quotaInfo: { 
+  quotaInfo?: { 
     userLimitReached: boolean; 
     managementLimitReached: boolean; 
     message: string;
@@ -69,7 +70,7 @@ export function EmployeeFormSheet({
   onAdd,
   quotaInfo,
 }: EmployeeFormSheetProps) {
-  const { companies, departments, positions, employees } = useMasterData();
+  const { companies, departments, positions, employees: allEmployees } = useMasterData();
   const { currentUser, userRole } = useAuth();
   
   const form = useForm<EmployeeFormValues>({
@@ -96,6 +97,7 @@ export function EmployeeFormSheet({
   const levelForForm = form.watch('level');
 
   const isManagementForm = watchedRole === 'manajemen';
+  const isSuperadminForm = watchedRole === 'superadmin';
 
   const userCompany = useMemo(() => {
     return companies.find(c => c.name === currentUser?.company);
@@ -136,20 +138,16 @@ export function EmployeeFormSheet({
   }, [positions, companyForForm, departmentForForm]);
 
   const supervisorOptions = useMemo(() => {
-    if (!companyForForm || isManagementForm) return [];
+    if (!companyForForm || isManagementForm || isSuperadminForm) return [];
     
     let superiorLevels: Array<Employee['level']> = [];
-    if (levelForForm === 'Staff') {
-        superiorLevels = ['Supervisor', 'Manager', 'Direktur'];
-    } else if (levelForForm === 'Supervisor') {
-        superiorLevels = ['Manager', 'Direktur'];
-    } else if (levelForForm === 'Manager') {
-        superiorLevels = ['Direktur'];
-    }
+    if (levelForForm === 'Staff') superiorLevels = ['Supervisor', 'Manager', 'Direktur'];
+    else if (levelForForm === 'Supervisor') superiorLevels = ['Manager', 'Direktur'];
+    else if (levelForForm === 'Manager') superiorLevels = ['Direktur'];
     
     if (superiorLevels.length === 0) return [];
 
-    return employees.filter(e => {
+    return allEmployees.filter(e => {
         const isSameCompany = e.company === companyForForm;
         const isSuperior = superiorLevels.includes(e.level);
         const isActive = e.status === 'Aktif';
@@ -162,11 +160,9 @@ export function EmployeeFormSheet({
             return isSameCompany && isSameDepartment && isSuperior && isActive && isNotSelf;
         }
     });
-  }, [employees, companyForForm, departmentForForm, levelForForm, employee, isManagementForm]);
+  }, [allEmployees, companyForForm, departmentForForm, levelForForm, employee, isManagementForm, isSuperadminForm]);
   
   useEffect(() => {
-    const defaultCompany = (userRole !== 'superadmin' && currentUser) ? currentUser?.company || '' : '';
-    
     if (isOpen) {
       if (employee) {
         form.reset({
@@ -175,6 +171,7 @@ export function EmployeeFormSheet({
           role: employee.role || 'user',
         } as any);
       } else {
+        const defaultCompany = (userRole !== 'superadmin' && currentUser) ? currentUser?.company || '' : '';
         form.reset({
           id: undefined,
           name: '',
@@ -193,19 +190,6 @@ export function EmployeeFormSheet({
     }
   }, [employee, form, isOpen, userRole, currentUser]);
 
-  const handleCompanyChange = (companyName: string) => {
-    form.setValue('company', companyName);
-    form.setValue('department', '');
-    form.setValue('position', '');
-    form.setValue('reportsTo', '');
-  }
-  
-  const handleDepartmentChange = (departmentName: string) => {
-    form.setValue('department', departmentName);
-    form.setValue('position', '');
-    form.setValue('reportsTo', '');
-  }
-
   const onSubmit = (data: EmployeeFormValues) => {
     const dataToSave = { 
         ...data,
@@ -220,8 +204,6 @@ export function EmployeeFormSheet({
     }
     onOpenChange(false);
   };
-  
-  const isCompanyDropdownDisabled = !canChangeCompany;
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -230,15 +212,19 @@ export function EmployeeFormSheet({
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
             <SheetHeader>
               <SheetTitle>
-                  {isManagementForm 
+                  {isSuperadminForm 
+                    ? (employee?.id ? 'Ubah Data Superadmin' : 'Tambah Superadmin Baru')
+                    : isManagementForm 
                     ? (employee?.id ? 'Ubah Akun Manajemen' : 'Tambah Admin Baru')
                     : (employee?.id ? 'Ubah Data Karyawan' : 'Tambah Karyawan Baru')
                   }
               </SheetTitle>
               <SheetDescription>
-                {isManagementForm 
-                    ? "Lengkapi formulir ini untuk menambahkan rekan tim Manajemen yang akan membantu mengelola dashboard perusahaan."
-                    : "Lengkapi formulir di bawah ini. Akun yang dibuat melalui menu ini otomatis memiliki peran Staff (User)."
+                {isSuperadminForm
+                  ? "Menambahkan akun dengan otoritas penuh ke seluruh sistem dan data klien."
+                  : isManagementForm 
+                  ? "Lengkapi formulir ini untuk menambahkan rekan tim Manajemen yang akan membantu mengelola dashboard perusahaan."
+                  : "Lengkapi formulir di bawah ini. Akun yang dibuat melalui menu ini otomatis memiliki peran Staff (User)."
                 }
               </SheetDescription>
             </SheetHeader>
@@ -292,34 +278,41 @@ export function EmployeeFormSheet({
                     />
                 </div>
                 
-                <FormField
-                  control={form.control}
-                  name="company"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Perusahaan</FormLabel>
-                       <Select 
-                          onValueChange={handleCompanyChange} 
-                          value={field.value} 
-                          disabled={isCompanyDropdownDisabled && !!employee?.id}
-                       >
-                          <FormControl>
-                            <SelectTrigger className={(isCompanyDropdownDisabled && !!employee?.id) ? "bg-muted/50 cursor-not-allowed" : ""}>
-                              <SelectValue placeholder="Pilih perusahaan" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {manageableCompanies.map(c => (
-                                <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {!isSuperadminForm && (
+                  <FormField
+                    control={form.control}
+                    name="company"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Perusahaan</FormLabel>
+                        <Select 
+                            onValueChange={(val) => {
+                                field.onChange(val);
+                                form.setValue('department', '');
+                                form.setValue('position', '');
+                                form.setValue('reportsTo', '');
+                            }} 
+                            value={field.value} 
+                            disabled={!canChangeCompany && !!employee?.id}
+                        >
+                            <FormControl>
+                              <SelectTrigger className={(!canChangeCompany && !!employee?.id) ? "bg-muted/50 cursor-not-allowed" : ""}>
+                                <SelectValue placeholder="Pilih perusahaan" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {manageableCompanies.map(c => (
+                                  <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
-                {!isManagementForm && (
+                {!isManagementForm && !isSuperadminForm && (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
@@ -329,7 +322,11 @@ export function EmployeeFormSheet({
                             <FormItem>
                             <FormLabel>Departemen</FormLabel>
                             <Select 
-                                onValueChange={(value) => handleDepartmentChange(value)}
+                                onValueChange={(value) => {
+                                    field.onChange(value);
+                                    form.setValue('position', '');
+                                    form.setValue('reportsTo', '');
+                                }}
                                 value={field.value}
                                 disabled={!companyForForm}
                             >
@@ -398,7 +395,7 @@ export function EmployeeFormSheet({
                         </FormItem>
                     )}
                     />
-                    {(levelForForm === 'Staff' || levelForForm === 'Supervisor' || levelForForm === 'Manager') && (
+                    {levelForForm !== 'Direktur' && (
                         <FormField
                             control={form.control}
                             name="reportsTo"
