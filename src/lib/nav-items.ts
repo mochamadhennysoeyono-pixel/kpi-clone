@@ -1,3 +1,4 @@
+
 // src/lib/nav-items.ts
 import React from 'react';
 import type { UserRole, Company, SubscriptionPlan, Employee, OKR, ModuleId } from "@/types";
@@ -13,7 +14,7 @@ import {
     GitMerge,
     Lightning,
     Sliders,
-    Database,
+    Stack,
     Buildings,
     ChartLineUp,
     Briefcase,

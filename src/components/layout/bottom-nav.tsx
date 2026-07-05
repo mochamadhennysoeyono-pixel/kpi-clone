@@ -1,3 +1,4 @@
+
 // src/components/layout/bottom-nav.tsx
 'use client';
 
@@ -117,9 +118,9 @@ export function BottomNav() {
                         <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 group">
                             <div className={cn(
                                 "p-1.5 rounded-lg transition-all duration-300",
-                                isActive ? "bg-primary/5 scale-110" : "opacity-60 group-active:scale-125"
+                                isActive ? "bg-primary/5 scale-110" : "group-active:scale-125"
                             )}>
-                                <Icon size={22} weight="fill" color={isActive ? iconColor : "#8E8E93"} />
+                                <Icon size={22} weight="fill" color={iconColor} className={cn(isActive ? "opacity-100" : "opacity-90")} />
                             </div>
                             <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-primary" : "text-slate-400")}>
                                 {item.label}
@@ -145,9 +146,9 @@ export function BottomNav() {
                         <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 group">
                             <div className={cn(
                                 "p-1.5 rounded-lg transition-all duration-300",
-                                isActive ? "bg-primary/5 scale-110" : "opacity-60 group-active:scale-125"
+                                isActive ? "bg-primary/5 scale-110" : "group-active:scale-125"
                             )}>
-                                <Icon size={22} weight="fill" color={isActive ? iconColor : "#8E8E93"} />
+                                <Icon size={22} weight="fill" color={iconColor} className={cn(isActive ? "opacity-100" : "opacity-90")} />
                             </div>
                             <span className={cn("text-[9px] font-bold tracking-tight", isActive ? "text-primary" : "text-slate-400")}>
                                 {item.label}
@@ -198,11 +199,11 @@ export function BottomNav() {
                             "p-1.5 rounded-lg transition-all duration-300",
                             isActive ? "bg-primary/5 scale-110" : "bg-transparent group-active:scale-125"
                         )}>
-                            <Icon size={22} weight="fill" color={isActive ? iconColor : "#8E8E93"} className={cn(isActive ? "opacity-100" : "opacity-90")} />
+                            <Icon size={22} weight="fill" color={iconColor} className="opacity-100" />
                         </div>
                         <span className={cn(
                             "text-[9px] font-bold tracking-tight",
-                            isActive ? "text-primary" : "opacity-60"
+                            isActive ? "text-primary" : "opacity-80"
                         )}>
                             {item.label}
                         </span>

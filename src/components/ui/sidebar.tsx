@@ -1,3 +1,4 @@
+
 // src/components/ui/sidebar.tsx
 "use client";
 
@@ -97,7 +98,8 @@ function MotionNav() {
         <ScrollArea className="flex-1 px-3">
              <ul className="space-y-1.5 mt-6">
                 {navItems.map((item) => {
-                    const Icon = iconMap[item.iconName || 'default'] || Folders;
+                    const RawIcon = iconMap[item.iconName || 'default'] || Folders;
+                    const Icon = RawIcon;
                     const isGroupActive = item.subItems ? item.subItems.some(sub => pathname.startsWith(sub.href)) : false;
                     const isActive = item.href ? pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)) : isGroupActive;
                     const iconColor = getIconColor(item.href || item.label);
@@ -114,7 +116,7 @@ function MotionNav() {
                                             )}
                                         >
                                             <div className="flex size-5 items-center justify-center shrink-0 transition-transform group-hover:scale-125">
-                                              {Icon && <Icon size={22} weight="fill" color={isGroupActive ? iconColor : "#8E8E93"} className={cn(isGroupActive ? "opacity-100" : "opacity-80 group-hover:opacity-100")} />}
+                                              {Icon && <Icon size={22} weight="fill" color={iconColor} className="opacity-100" />}
                                             </div>
                                             {(isOpen || isMobile) && (
                                                 <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 font-bold tracking-tight text-[11px]">
@@ -158,7 +160,7 @@ function MotionNav() {
                                 )}
                             >
                                 <div className="flex size-5 items-center justify-center shrink-0 transition-transform group-hover:scale-125">
-                                    {Icon && <Icon size={22} weight="fill" color={isActive ? iconColor : "#8E8E93"} className={cn(isActive ? "opacity-100" : "opacity-80 group-hover:opacity-100")} />}
+                                    {Icon && <Icon size={22} weight="fill" color={iconColor} className="opacity-100" />}
                                 </div>
                                 {(isOpen || isMobile) && (
                                     <span className="font-bold tracking-tight text-[11px]">
