@@ -116,7 +116,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                 </button>
             </div>
 
-            {/* Obsidian Grid Area */}
+            {/* Content Area */}
             <div className="flex-1 min-h-0 bg-[#fafafa]">
                 <ScrollArea className="h-full">
                     <div className="p-5 pb-16">
@@ -141,7 +141,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                         <div className={cn(
                                             "flex flex-col items-center justify-center gap-3 p-4 rounded-xl transition-all duration-300 border group/item active:scale-95",
                                             isActive 
-                                                ? "bg-[#F1F5F9] border-slate-200 shadow-sm" 
+                                                ? "bg-[#F3F4F6] border-slate-200 shadow-sm" 
                                                 : "bg-white border-slate-100 hover:border-slate-300 hover:shadow-stripe"
                                         )}>
                                             <div className="size-10 flex items-center justify-center transition-colors">

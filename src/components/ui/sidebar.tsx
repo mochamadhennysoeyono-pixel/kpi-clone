@@ -116,8 +116,8 @@ function MotionNav() {
                                                 "group flex items-center rounded-[12px] h-[54px] text-[14px] w-full text-left transition-all duration-[180ms] ease-out",
                                                 (isOpen || isMobile) ? "px-[16px] gap-[14px]" : "px-0 justify-center",
                                                 isGroupActive 
-                                                    ? "text-[#111827] bg-[#F1F5F9] font-semibold" 
-                                                    : "text-[#475569] font-medium hover:bg-[#F8FAFC] hover:text-[#334155]"
+                                                    ? "text-[#111827] bg-[#F3F4F6] font-semibold" 
+                                                    : "text-[#475569] font-medium hover:bg-[#F9FAFB] hover:text-[#334155]"
                                             )}
                                         >
                                             <div className="flex size-[20px] items-center justify-center shrink-0">
@@ -165,8 +165,8 @@ function MotionNav() {
                                         "group flex items-center rounded-[12px] h-[54px] text-[14px] transition-all duration-[180ms] ease-out",
                                         (isOpen || isMobile) ? "px-[16px] gap-[14px]" : "px-0 justify-center",
                                         isStandaloneActive
-                                            ? "bg-[#F1F5F9] text-[#111827] font-semibold" 
-                                            : "text-[#475569] font-medium hover:bg-[#F8FAFC] hover:text-[#334155]"
+                                            ? "bg-[#F3F4F6] text-[#111827] font-semibold" 
+                                            : "text-[#475569] font-medium hover:bg-[#F9FAFB] hover:text-[#334155]"
                                     )}
                                 >
                                     <div className="flex size-[20px] items-center justify-center shrink-0">
@@ -241,7 +241,14 @@ export function AppSidebar() {
                         transition={{ type: "spring", stiffness: 400, damping: 40 }}
                         className="fixed top-0 left-0 h-full z-[101]"
                     >
-                        <MotionNav />
+                        <motion.nav
+                            initial={false}
+                            className={cn(
+                                "flex flex-col h-screen sticky left-0 top-0 z-50 border-r bg-white no-print fixed w-[280px] h-full border-none shadow-2xl"
+                            )}
+                        >
+                            <MotionNav />
+                        </motion.nav>
                     </motion.div>
                 </React.Fragment>
             )}

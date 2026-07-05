@@ -116,7 +116,7 @@ export function BottomNav() {
                         <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 group">
                             <div className={cn(
                                 "p-1.5 rounded-lg transition-all duration-300",
-                                isActive ? "bg-[#F1F5F9]" : ""
+                                isActive ? "bg-[#F3F4F6]" : ""
                             )}>
                                 <Icon 
                                   size={IconTokens.size.mobile} 
@@ -147,7 +147,7 @@ export function BottomNav() {
                         <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95 group">
                             <div className={cn(
                                 "p-1.5 rounded-lg transition-all duration-300",
-                                isActive ? "bg-[#F1F5F9]" : ""
+                                isActive ? "bg-[#F3F4F6]" : ""
                             )}>
                                 <Icon 
                                   size={IconTokens.size.mobile} 
@@ -201,7 +201,7 @@ export function BottomNav() {
                     >
                         <div className={cn(
                             "p-1.5 rounded-lg transition-all duration-300",
-                            isActive ? "bg-[#F1F5F9]" : "bg-transparent"
+                            isActive ? "bg-[#F3F4F6]" : "bg-transparent"
                         )}>
                             <Icon 
                               size={IconTokens.size.mobile} 
