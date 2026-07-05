@@ -71,6 +71,7 @@ import { ResponsivePage } from '@/components/ui/adaptive-layout';
 import { PageHeader } from '@/components/ui/page-header';
 import { AdaptiveCardGrid } from '@/components/ui/adaptive-card';
 import { IconTokens } from '@/lib/icon-tokens';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // --- Static Meta for Modules ---
 const MODULE_CATALOG = [
@@ -502,35 +503,39 @@ export default function PortalPage() {
             </Dialog>
 
             <Dialog open={isMgmtConfigOpen} onOpenChange={setIsMgmtConfigOpen}>
-                <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden z-[300]">
-                    <DialogHeader className="p-8 pb-4 bg-slate-50 border-b">
+                <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden z-[300] flex flex-col max-h-[90vh] p-0">
+                    <DialogHeader className="p-8 pb-4 bg-slate-50 border-b shrink-0">
                         <DialogTitle className="font-black text-slate-900 text-xl tracking-tighter flex items-center gap-3"><Shield className="size-6 text-primary" /> Tambah Kuota Admin</DialogTitle>
                         <DialogDescription className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-2">Investasi Add-on Lifetime</DialogDescription>
                     </DialogHeader>
-                    <div className="p-8 space-y-8">
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="space-y-1 min-w-0">
-                                <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Jumlah Akun</h4>
-                                <p className="text-[10px] text-slate-400 font-medium uppercase">Admin tambahan untuk dashboard</p>
+                    
+                    <ScrollArea className="flex-1">
+                        <div className="p-8 space-y-8">
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="space-y-1 min-w-0">
+                                    <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Jumlah Akun</h4>
+                                    <p className="text-[10px] text-slate-400 font-medium uppercase">Admin tambahan untuk dashboard</p>
+                                </div>
+                                <div className="flex items-center bg-slate-100 rounded-xl border border-slate-200 overflow-hidden h-11 shadow-sm shrink-0">
+                                    <button type="button" onClick={() => setMgmtAddQuota(Math.max(1, mgmtAddQuota - 1))} className="px-4 hover:bg-white text-slate-900 transition-colors"><Minus size={16} strokeWidth={3} /></button>
+                                    <input type="number" value={mgmtAddQuota} onChange={(e) => setMgmtAddQuota(Math.max(1, parseInt(e.target.value) || 1))} className="w-12 text-center border-none focus-visible:ring-0 text-sm font-black bg-transparent" />
+                                    <button type="button" onClick={() => setMgmtAddQuota(mgmtAddQuota + 1)} className="px-4 hover:bg-white text-slate-900 transition-colors"><Plus size={16} strokeWidth={3} /></button>
+                                </div>
                             </div>
-                            <div className="flex items-center bg-slate-100 rounded-xl border border-slate-200 overflow-hidden h-11 shadow-sm shrink-0">
-                                <button type="button" onClick={() => setMgmtAddQuota(Math.max(1, mgmtAddQuota - 1))} className="px-4 hover:bg-white text-slate-900 transition-colors"><Minus size={16} strokeWidth={3} /></button>
-                                <input type="number" value={mgmtAddQuota} onChange={(e) => setMgmtAddQuota(Math.max(1, parseInt(e.target.value) || 1))} className="w-12 text-center border-none focus-visible:ring-0 text-sm font-black bg-transparent" />
-                                <button type="button" onClick={() => setMgmtAddQuota(mgmtAddQuota + 1)} className="px-4 hover:bg-white text-slate-900 transition-colors"><Plus size={16} strokeWidth={3} /></button>
+                            <div className="p-6 rounded-2xl bg-[#090e1a] text-white shadow-xl space-y-2">
+                                <div className="flex justify-between items-center opacity-40"><span className="text-[10px] font-black uppercase tracking-[0.2em]">Total Investasi</span><ShoppingCart size={14} /></div>
+                                <p className="text-3xl font-black tracking-tighter">Rp {(mgmtAddQuota * mgmtPricePerUser).toLocaleString('id-ID')}</p>
                             </div>
+                            <Alert className="bg-blue-50 border-blue-100 border-none">
+                                <Info className="size-4 text-primary" strokeWidth={2.5} />
+                                <AlertDescription className="text-[10px] text-blue-900 font-bold uppercase tracking-tight leading-relaxed">
+                                    Sekali Bayar. Berlaku selamanya tanpa biaya perpanjangan tahunan.
+                                </AlertDescription>
+                            </Alert>
                         </div>
-                        <div className="p-6 rounded-2xl bg-[#090e1a] text-white shadow-xl space-y-2">
-                             <div className="flex justify-between items-center opacity-40"><span className="text-[10px] font-black uppercase tracking-[0.2em]">Total Investasi</span><ShoppingCart size={14} /></div>
-                             <p className="text-3xl font-black tracking-tighter">Rp {(mgmtAddQuota * mgmtPricePerUser).toLocaleString('id-ID')}</p>
-                        </div>
-                        <Alert className="bg-blue-50 border-blue-100 border-none">
-                            <Info className="size-4 text-primary" strokeWidth={2.5} />
-                            <AlertDescription className="text-[10px] text-blue-900 font-bold uppercase tracking-tight leading-relaxed">
-                                Sekali Bayar. Berlaku selamanya tanpa biaya perpanjangan tahunan.
-                            </AlertDescription>
-                        </Alert>
-                    </div>
-                    <DialogFooter className="p-8 pt-0 flex gap-3">
+                    </ScrollArea>
+
+                    <DialogFooter className="p-8 pt-4 flex gap-3 border-t shrink-0 bg-slate-50/50">
                         <DialogClose asChild><Button variant="ghost" className="flex-1 font-black text-[10px] uppercase">Batal</Button></DialogClose>
                         <Button className="flex-1 font-black uppercase tracking-widest text-[10px] h-12 shadow-lg" onClick={handleBuyMgmtAddon}>Beli Sekarang</Button>
                     </DialogFooter>
