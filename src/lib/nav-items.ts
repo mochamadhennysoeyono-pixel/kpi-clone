@@ -65,9 +65,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/subscription-management': Crown,
     '/subscription-logs': History,
     '/group-management': GitBranch,
-    '/feature-management': Zap,
     'manajemen-sistem': Sliders,
-    'manajemen-fitur': Zap,
     'pusat-data': Layers,
     '/master-data/company': Building2,
     '/master-data/departments': Network,
@@ -214,7 +212,6 @@ export function getNavItems(
                 { href: '/subscription-management', label: 'Manajemen Langganan', show: true, iconName: '/subscription-management' },
                 { href: '/subscription-logs', label: 'Pusat Log Langganan', show: true, iconName: '/subscription-logs' },
                 { href: '/group-management', label: 'Manajemen Holding', show: true, iconName: '/group-management' },
-                { href: '/feature-management', label: 'Manajemen Fitur', show: true, iconName: 'manajemen-fitur' },
             ]
         },
 
