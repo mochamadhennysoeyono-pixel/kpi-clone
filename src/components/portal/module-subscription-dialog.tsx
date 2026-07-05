@@ -1,4 +1,3 @@
-
 // src/components/portal/module-subscription-dialog.tsx
 "use client";
 
@@ -27,7 +26,9 @@ import type { ModuleId, Company } from '@/types';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { differenceInDays, parseISO } from 'date-fns';
+import { differenceInDays, parseISO, format } from 'date-fns';
+import { id as localeId } from 'date-fns/locale';
+import { Progress } from '../ui/progress';
 
 interface ModuleSubscriptionDialogProps {
   isOpen: boolean;
@@ -46,7 +47,7 @@ export function ModuleSubscriptionDialog({
     mode = 'activate',
     onConfirm 
 }: ModuleSubscriptionDialogProps) {
-    const { modulePricing } = useMasterData();
+    const { modulePricing, addonPricing } = useMasterData();
     const [staffQuota, setStaffQuota] = useState(10);
     const [durationMonths, setDurationMonths] = useState<1 | 6 | 12>(12);
     const [isLoading, setIsLoading] = useState(false);
@@ -342,4 +343,3 @@ export function ModuleSubscriptionDialog({
         </Dialog>
     );
 }
-
