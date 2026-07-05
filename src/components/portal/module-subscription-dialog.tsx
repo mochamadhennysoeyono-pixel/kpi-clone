@@ -115,16 +115,15 @@ export function ModuleSubscriptionDialog({
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl p-0 overflow-hidden border-none shadow-2xl flex flex-col h-full max-h-[90vh]">
-                <DialogHeader className="p-4 px-6 flex flex-row items-center justify-between bg-muted/20 border-b shrink-0 space-y-0">
+                <DialogHeader className="p-4 px-6 bg-muted/20 border-b shrink-0 flex flex-col space-y-1">
                     <div className="flex items-center gap-2">
                         <div className={cn("p-1.5 rounded-lg", module.bg, module.color)}>
                             {React.createElement(module.icon, { size: 14 })}
                         </div>
-                        <DialogTitle className="text-xl font-black uppercase tracking-tighter">
+                        <DialogTitle className="text-xl font-black uppercase tracking-tighter text-slate-900">
                             Konfigurasi Paket: {module.name}
                         </DialogTitle>
                     </div>
-                    <DialogClose asChild><Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><X size={18} /></Button></DialogClose>
                 </DialogHeader>
 
                 <ScrollArea className="flex-1 min-h-0 bg-background">
@@ -270,4 +269,3 @@ export function ModuleSubscriptionDialog({
         </Dialog>
     );
 }
-

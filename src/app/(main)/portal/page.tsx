@@ -154,7 +154,7 @@ function ModuleCard({
                     <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-slate-50 border border-slate-100">
                         <div className="space-y-0.5">
                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Kapasitas</p>
-                            <p className="text-[11px] font-bold text-slate-700 truncate">{subscription.quota === -1 ? 'Unlimited' : `${subscription.quota} Staff`}</p>
+                            <p className="text-11px font-bold text-slate-700 truncate">{subscription.quota === -1 ? 'Unlimited' : `${subscription.quota} Staff`}</p>
                         </div>
                         <div className="space-y-0.5 text-right">
                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Sisa Masa</p>
@@ -491,12 +491,9 @@ export default function PortalPage() {
 
             <Dialog open={isMgmtDialogOpen} onOpenChange={setIsMgmtDialogOpen}>
                 <DialogContent className="max-w-5xl h-[90vh] md:h-[85vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl bg-white z-[200]">
-                    <DialogHeader className="p-6 pb-2 shrink-0 bg-muted/20 border-b flex flex-row items-center justify-between space-y-0">
-                        <div className="space-y-0.5">
-                            <DialogTitle className="font-black text-xl tracking-tighter uppercase">Manajemen Tim Admin</DialogTitle>
-                            <DialogDescription className="text-[10px] font-bold text-primary uppercase tracking-widest">Kapasitas Maksimal: {mgmtLimit} Akun Admin</DialogDescription>
-                        </div>
-                        <DialogClose asChild><Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><X size={18} /></Button></DialogClose>
+                    <DialogHeader className="p-6 pb-2 shrink-0 bg-muted/20 border-b flex flex-col space-y-0.5">
+                        <DialogTitle className="font-black text-xl tracking-tighter uppercase text-slate-900">Manajemen Tim Admin</DialogTitle>
+                        <DialogDescription className="text-[10px] font-bold text-primary uppercase tracking-widest">Kapasitas Maksimal: {mgmtLimit} Akun Admin</DialogDescription>
                     </DialogHeader>
                     <div className="flex-1 overflow-y-auto no-scrollbar min-w-0 bg-[#fafafa]">
                          <div className="p-4 w-full min-w-0">
@@ -508,12 +505,11 @@ export default function PortalPage() {
 
             <Dialog open={isMgmtConfigOpen} onOpenChange={setIsMgmtConfigOpen}>
                 <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden z-[300] flex flex-col h-full max-h-[85vh] p-0">
-                    <DialogHeader className="p-6 pb-2 bg-muted/20 border-b shrink-0 flex flex-row items-center justify-between space-y-0">
-                        <div className="space-y-0.5">
-                            <DialogTitle className="font-black text-slate-900 text-xl tracking-tighter uppercase flex items-center gap-3"><Shield className="size-6 text-primary" strokeWidth={2.5} /> Tambah Kuota Admin</DialogTitle>
-                            <DialogDescription className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em]">Investasi Add-on Lifetime</DialogDescription>
-                        </div>
-                        <DialogClose asChild><Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><X size={18} /></Button></DialogClose>
+                    <DialogHeader className="p-6 pb-2 bg-muted/20 border-b shrink-0 flex flex-col space-y-0.5 text-left">
+                        <DialogTitle className="font-black text-slate-900 text-xl tracking-tighter uppercase flex items-center gap-3">
+                            <Shield className="size-6 text-primary" strokeWidth={2.5} /> Tambah Kuota Admin
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em]">Investasi Add-on Lifetime</DialogDescription>
                     </DialogHeader>
                     
                     <ScrollArea className="flex-1 min-h-0 bg-background">
@@ -551,4 +547,3 @@ export default function PortalPage() {
         </ResponsivePage>
     );
 }
-
