@@ -12,7 +12,6 @@ import {
     GitBranch,
     Zap,
     Sliders,
-    Layers,
     Building2,
     BarChart3,
     Briefcase,
@@ -30,7 +29,6 @@ import {
     Settings2,
     FilePlus,
     Settings,
-    Bell,
     Flag,
     GraduationCap,
     BookOpen,
@@ -54,7 +52,7 @@ import {
 
 /**
  * Map ikon menggunakan Lucide React (Outline style).
- * Kunci harus sesuai dengan iconName yang didefinisikan di navItems.
+ * Sesuai standar Enterprise SaaS (Linear, Stripe).
  */
 export const iconMap: { [key: string]: React.ElementType } = {
     '/dashboard': LayoutDashboard,
@@ -352,10 +350,10 @@ export function getNavItems(
     ];
 
     let visibleItems = allNavItems
-        .filter(item => (item as any).show)
+        .filter(item => (item as any).show !== false)
         .map(item => {
             if (item.subItems) {
-                const visibleSubItems = item.subItems.filter(sub => (sub as any).show);
+                const visibleSubItems = item.subItems.filter(sub => (sub as any).show !== false);
                 if (visibleSubItems.length === 0) return null;
                 return { ...item, subItems: visibleSubItems };
             }
@@ -367,6 +365,8 @@ export function getNavItems(
         visibleItems = visibleItems.filter(item => {
             if ((item as any).moduleId === activeModule) return true;
             if (item.subItems && item.subItems.some(sub => (sub as any).moduleId === activeModule)) return true;
+            // Always keep global settings or generic items
+            if (!(item as any).moduleId) return true;
             return false;
         });
     }
@@ -422,7 +422,7 @@ export function getNavItems(
        const indexB = currentSortOrder.indexOf(bKey);
        
        const finalIndexA = indexA === -1 ? 999 : indexA;
-       const finalIndexB = indexB === -1 ? 999 : finalIndexB;
+       const finalIndexB = indexB === -1 ? 999 : indexB;
        
        return finalIndexA - finalIndexB;
    });
