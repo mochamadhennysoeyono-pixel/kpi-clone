@@ -33,7 +33,8 @@ import {
     Layers,
     FileText,
     Bot,
-    X
+    X,
+    UserPlus
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -82,7 +83,6 @@ const MODULE_CATALOG = [
         description: 'Manajemen Kinerja terintegrasi (KPI, KBO, & OKR) untuk pertumbuhan tim.',
         icon: ClipboardCheck,
         color: 'text-primary',
-        bg: 'bg-primary/5',
         route: '/action-center',
     },
     {
@@ -91,7 +91,6 @@ const MODULE_CATALOG = [
         description: 'Portal pembelajaran mandiri dan program pengembangan kompetensi.',
         icon: GraduationCap,
         color: 'text-primary',
-        bg: 'bg-primary/5',
         route: '/lms/user/my-learnings',
     },
     {
@@ -100,7 +99,6 @@ const MODULE_CATALOG = [
         description: 'Pusat koordinasi tugas harian dan kolaborasi project tim.',
         icon: LayoutGrid,
         color: 'text-primary',
-        bg: 'bg-primary/5',
         route: '/collab-space',
     }
 ];
@@ -109,12 +107,14 @@ function ModuleCard({
     config, 
     subscription, 
     isManagement,
-    onActivateRequest
+    onActivateRequest,
+    onAddQuotaRequest
 }: { 
     config: typeof MODULE_CATALOG[0], 
     subscription?: ModuleSubscription, 
     isManagement: boolean,
-    onActivateRequest: (m: any) => void
+    onActivateRequest: (m: any) => void,
+    onAddQuotaRequest: (m: any) => void
 }) {
     const isActive = subscription?.status === 'active';
     const isExpired = subscription?.status === 'expired';
@@ -174,14 +174,24 @@ function ModuleCard({
                                 Masuk Modul <ArrowRight size={14} className="ml-1.5" strokeWidth={3} />
                             </Link>
                         </Button>
-                        {isTrial && isManagement && (
-                            <Button 
-                                onClick={() => onActivateRequest(config)}
-                                variant="outline" 
-                                className="w-full h-9 font-black text-[9px] uppercase tracking-widest rounded-lg border-2 border-slate-100 hover:bg-slate-50 text-primary"
-                            >
-                                <ShoppingCart size={12} className="mr-1.5" strokeWidth={3} /> Upgrade ke Paket Pro
-                            </Button>
+                        {isManagement && (
+                            isTrial ? (
+                                <Button 
+                                    onClick={() => onActivateRequest(config)}
+                                    variant="outline" 
+                                    className="w-full h-9 font-black text-[9px] uppercase tracking-widest rounded-lg border-2 border-slate-100 hover:bg-slate-50 text-primary"
+                                >
+                                    <ShoppingCart size={12} className="mr-1.5" strokeWidth={3} /> Upgrade ke Paket Pro
+                                </Button>
+                            ) : (
+                                <Button 
+                                    onClick={() => onAddQuotaRequest(config)}
+                                    variant="outline" 
+                                    className="w-full h-9 font-black text-[9px] uppercase tracking-widest rounded-lg border-2 border-slate-100 hover:bg-slate-50 text-primary"
+                                >
+                                    <UserPlus size={12} className="mr-1.5" strokeWidth={3} /> Tambah Kuota User
+                                </Button>
+                            )
                         )}
                     </div>
                 ) : (
@@ -233,6 +243,7 @@ export default function PortalPage() {
     const { toast } = useToast();
 
     const [isSubDialogOpen, setIsSubDialogOpen] = useState(false);
+    const [dialogMode, setDialogMode] = useState<'activate' | 'add-quota'>('activate');
     const [selectedModule, setSelectedModule] = useState<any>(null);
     const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
     const [isMgmtDialogOpen, setIsMgmtDialogOpen] = useState(false);
@@ -292,13 +303,23 @@ export default function PortalPage() {
 
         try {
             const now = new Date();
-            const expiry = addDays(now, data.duration);
+            let expiryStr: string;
+            
+            // Logika baru: Jika mode add-quota, kita gunakan expiry date yang sudah ada
+            if (dialogMode === 'add-quota' && company.moduleSubscriptions?.[selectedModule.id]) {
+                expiryStr = company.moduleSubscriptions[selectedModule.id].expiryDate;
+            } else {
+                expiryStr = addDays(now, data.duration).toISOString();
+            }
+
+            const currentSub = company.moduleSubscriptions?.[selectedModule.id];
+            const finalQuota = dialogMode === 'add-quota' ? (currentSub?.quota || 0) + data.quota : data.quota;
             
             const newSubscription: any = {
                 status: 'active',
                 type: data.type,
-                quota: data.quota,
-                expiryDate: expiry.toISOString(),
+                quota: finalQuota,
+                expiryDate: expiryStr,
                 activatedAt: now.toISOString()
             };
 
@@ -318,7 +339,7 @@ export default function PortalPage() {
             };
 
             if (data.type === 'paid') {
-                updatePayload.customUserLimit = data.quota;
+                updatePayload.customUserLimit = finalQuota;
             }
 
             await updateCompany(company.id, updatePayload);
@@ -328,16 +349,16 @@ export default function PortalPage() {
                 companyName: company.name,
                 company: company.name,
                 moduleId: selectedModule.id,
-                planName: `Modul ${selectedModule.name}`,
+                planName: dialogMode === 'add-quota' ? `Tambah ${data.quota} User - ${selectedModule.name}` : `Modul ${selectedModule.name}`,
                 action: data.type === 'trial' ? 'TRIAL' : 'UPGRADE',
                 amount: data.totalPrice,
                 startDate: now.toISOString(),
-                endDate: expiry.toISOString(),
+                endDate: expiryStr,
                 performedBy: currentUser?.name || 'System',
                 timestamp: serverTimestamp()
             });
 
-            toast({ title: "Berhasil!", description: data.type === 'trial' ? `Masa trial Modul ${selectedModule.name} aktif.` : `Modul ${selectedModule.name} berhasil dibeli.` });
+            toast({ title: "Berhasil!", description: dialogMode === 'add-quota' ? "Kuota berhasil ditambahkan." : (data.type === 'trial' ? `Masa trial Modul ${selectedModule.name} aktif.` : `Modul ${selectedModule.name} berhasil dibeli.`) });
             await fetchData(true);
         } catch (error: any) {
             toast({ variant: 'destructive', title: "Gagal", description: error.message });
@@ -450,7 +471,14 @@ export default function PortalPage() {
                             </h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                 {activeModules.map(m => (
-                                    <ModuleCard key={m.id} config={m} subscription={company?.moduleSubscriptions?.[m.id]} isManagement={isManagement} onActivateRequest={(mod) => { setSelectedModule(mod); setIsSubDialogOpen(true); }} />
+                                    <ModuleCard 
+                                        key={m.id} 
+                                        config={m} 
+                                        subscription={company?.moduleSubscriptions?.[m.id]} 
+                                        isManagement={isManagement} 
+                                        onActivateRequest={(mod) => { setDialogMode('activate'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
+                                        onAddQuotaRequest={(mod) => { setDialogMode('add-quota'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
+                                    />
                                 ))}
                             </div>
                         </div>
@@ -488,7 +516,14 @@ export default function PortalPage() {
                             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2 ml-1"><Layers size={14} /> Modul Tersedia</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 {availableModules.map(m => (
-                                    <ModuleCard key={m.id} config={m} subscription={company?.moduleSubscriptions?.[m.id]} isManagement={isManagement} onActivateRequest={(mod) => { setSelectedModule(mod); setIsSubDialogOpen(true); }} />
+                                    <ModuleCard 
+                                        key={m.id} 
+                                        config={m} 
+                                        subscription={company?.moduleSubscriptions?.[m.id]} 
+                                        isManagement={isManagement} 
+                                        onActivateRequest={(mod) => { setDialogMode('activate'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
+                                        onAddQuotaRequest={(mod) => { setDialogMode('add-quota'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
+                                    />
                                 ))}
                             </div>
                         </div>
@@ -496,7 +531,14 @@ export default function PortalPage() {
                 </div>
             </div>
 
-            <ModuleSubscriptionDialog isOpen={isSubDialogOpen} onOpenChange={setIsSubDialogOpen} module={selectedModule} company={company || null} onConfirm={handleActivateModule} />
+            <ModuleSubscriptionDialog 
+                isOpen={isSubDialogOpen} 
+                onOpenChange={setIsSubDialogOpen} 
+                module={selectedModule} 
+                company={company || null} 
+                mode={dialogMode}
+                onConfirm={handleActivateModule} 
+            />
 
             {company && <GroupManagementDialog isOpen={isGroupDialogOpen} onOpenChange={setIsGroupDialogOpen} holdingCompany={company} childCompanies={childCompanies} />}
 
@@ -547,7 +589,7 @@ export default function PortalPage() {
                                 </AlertDescription>
                             </Alert>
 
-                            <div className="flex gap-3 pt-6 border-t">
+                            <div className="flex gap-3 pt-6">
                                 <DialogClose asChild><Button variant="ghost" className="flex-1 font-black text-[10px] uppercase">Batal</Button></DialogClose>
                                 <Button className="flex-1 font-black uppercase tracking-widest text-[10px] h-12 shadow-lg" onClick={handleBuyMgmtAddon}>Beli Sekarang</Button>
                             </div>
@@ -558,3 +600,4 @@ export default function PortalPage() {
         </ResponsivePage>
     );
 }
+
