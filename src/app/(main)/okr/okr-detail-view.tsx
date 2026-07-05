@@ -19,8 +19,8 @@ import { cn } from '@/lib/utils';
 import { ResponsivePage } from '@/components/ui/adaptive-layout';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { AdaptiveCardGrid, AdaptiveMetricCard, AdaptiveInsightCard } from '@/components/ui/adaptive-card';
-import { Avatar, AvatarFallback } from '../ui/avatar';
-import { Separator } from '../ui/separator';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
 const PriorityBadge = ({ priority }: { priority: OKR['priority'] }) => {
     const variant = priority === 'Crucial' ? 'destructive' : priority === 'Medium' ? 'secondary' : 'outline';

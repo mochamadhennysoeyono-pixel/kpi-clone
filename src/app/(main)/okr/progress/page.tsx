@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { 
   Target, 
@@ -41,6 +41,8 @@ import { ResponsivePage } from '@/components/ui/adaptive-layout';
 import { PageHeader } from '@/components/ui/page-header';
 import { AdaptiveCardGrid, AdaptiveInsightCard } from '@/components/ui/adaptive-card';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
 // Helper to safely convert dates
 const safeToDate = (dateVal: any): Date | null => {
@@ -56,10 +58,6 @@ const formatSafeDate = (date: any, formatStr: string) => {
     if (!d || !isValid(d)) return 'N/A';
     return format(d, formatStr, { locale: localeId });
 };
-
-function isValid(d: any): d is Date {
-    return d instanceof Date && !isNaN(d.getTime());
-}
 
 // --- Detail View with Adaptive Layout ---
 function UserOkrDetailView({ okr, onBack }: { okr: OKR; onBack: () => void }) {
