@@ -48,11 +48,12 @@ import {
     LineChart,
     Inbox,
     Search,
-    BadgeCheck
+    BadgeCheck,
+    Stack
 } from "lucide-react";
 
 /**
- * Map ikon menggunakan Lucide React.
+ * Map ikon menggunakan Lucide React (Outline style).
  * Kunci harus sesuai dengan iconName yang didefinisikan di navItems.
  */
 export const iconMap: { [key: string]: React.ElementType } = {
@@ -69,7 +70,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/feature-management': Zap,
     'manajemen-sistem': Sliders,
     'manajemen-fitur': Zap,
-    'pusat-data': Layers,
+    'pusat-data': Stack,
     '/master-data/company': Building2,
     '/master-data/departments': Network,
     '/master-data/positions': Briefcase,
@@ -125,6 +126,42 @@ export const iconMap: { [key: string]: React.ElementType } = {
     'more': MoreHorizontal,
     'portal': ChevronLeft,
 };
+
+/**
+ * Mendeteksi modul aktif berdasarkan path URL saat ini.
+ */
+export function getActiveModuleFromPath(pathname: string): ModuleId | null {
+  if (
+    pathname.startsWith('/action-center') || 
+    pathname.startsWith('/reports') || 
+    pathname.startsWith('/cycle-reports') || 
+    pathname.startsWith('/appraisal') || 
+    pathname.startsWith('/kbo-appraisal') || 
+    pathname.startsWith('/input-achievement') || 
+    pathname.startsWith('/setup-kpi') ||
+    pathname.startsWith('/okr')
+  ) {
+    return 'appraisal';
+  }
+  
+  if (pathname.startsWith('/lms')) {
+    return 'lms';
+  }
+  
+  if (pathname.startsWith('/collab-space')) {
+    return 'collabspace';
+  }
+  
+  if (pathname.startsWith('/master-data')) {
+    return 'foundation';
+  }
+  
+  if (pathname.startsWith('/holding')) {
+    return 'holding';
+  }
+
+  return null;
+}
 
 export function getNavItems(
     userRole: UserRole, 
