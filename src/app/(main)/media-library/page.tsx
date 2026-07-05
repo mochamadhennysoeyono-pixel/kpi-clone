@@ -26,7 +26,7 @@ import { storage } from "@/lib/firebase/client";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import type { MediaFile, MediaCategory, Company } from "@/types";
 import { Progress } from "@/components/ui/progress";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { 
     ResponsivePage, 
@@ -81,8 +81,18 @@ export default function MediaLibraryPage() {
     return [];
   }, [userRole, isHoldingAdmin, userCompany, companies]);
 
+  // --- STRICT DATA ISOLATION ---
+  const manageableCompanyNames = useMemo(() => {
+    return new Set(manageableCompanies.map(c => c.name));
+  }, [manageableCompanies]);
+
   const filteredMedia = useMemo(() => {
     let files = mediaFiles || [];
+
+    // FILTER: Hanya tampilkan data milik perusahaan yang dikelola (Sembunyikan GLOBAL untuk non-superadmin)
+    if (userRole !== 'superadmin') {
+      files = files.filter(f => manageableCompanyNames.has(f.company));
+    }
 
     if (searchTerm) {
       files = files.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -96,11 +106,11 @@ export default function MediaLibraryPage() {
     }
 
     return files.sort((a, b) => {
-        const dateA = a.uploadedAt?.toDate?.() || new Date(0);
-        const dateB = b.uploadedAt?.toDate?.() || new Date(0);
+        const dateA = a.uploadedAt?.toDate ? a.uploadedAt.toDate() : (a.uploadedAt ? new Date(a.uploadedAt) : new Date(0));
+        const dateB = b.uploadedAt?.toDate ? b.uploadedAt.toDate() : (b.uploadedAt ? new Date(b.uploadedAt) : new Date(0));
         return dateB.getTime() - dateA.getTime();
     });
-  }, [mediaFiles, searchTerm, categoryFilter, selectedCompanyId, companies]);
+  }, [mediaFiles, searchTerm, categoryFilter, selectedCompanyId, companies, userRole, manageableCompanyNames]);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
