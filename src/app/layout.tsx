@@ -1,7 +1,6 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -9,6 +8,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { PushNotificationManager } from "@/components/layout/push-notification-manager";
 import Script from "next/script";
 import { cn } from "@/lib/utils";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "Perfom - Sistem HRIS Terintegrasi",
@@ -34,10 +38,10 @@ export default function RootLayout({
   return (
     <html 
       lang="id" 
-      className={cn(GeistSans.variable, GeistMono.variable)} 
+      className={cn(inter.variable)} 
       suppressHydrationWarning
     >
-      <body className={cn("font-sans antialiased", GeistSans.className)}>
+      <body className={cn("font-sans antialiased", inter.className)}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
