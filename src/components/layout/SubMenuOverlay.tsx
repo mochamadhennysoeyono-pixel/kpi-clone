@@ -141,7 +141,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                         <div className={cn(
                                             "flex flex-col items-center justify-center gap-3 p-4 rounded-xl transition-all duration-300 border group/item active:scale-95",
                                             isActive 
-                                                ? "bg-[#2563eb]/[0.06] border-[#2563eb]/[0.2] shadow-sm" 
+                                                ? "bg-[#F1F5F9] border-slate-200 shadow-sm" 
                                                 : "bg-white border-slate-100 hover:border-slate-300 hover:shadow-stripe"
                                         )}>
                                             <div className="size-10 flex items-center justify-center transition-colors">
