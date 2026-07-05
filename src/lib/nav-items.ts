@@ -46,7 +46,7 @@ import {
     Inbox,
     Search,
     BadgeCheck,
-    Stack,
+    Layers,
     CalendarDays
 } from "lucide-react";
 
@@ -68,7 +68,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/feature-management': Zap,
     'manajemen-sistem': Sliders,
     'manajemen-fitur': Zap,
-    'pusat-data': Stack,
+    'pusat-data': Layers,
     '/master-data/company': Building2,
     '/master-data/departments': Network,
     '/master-data/positions': Briefcase,
