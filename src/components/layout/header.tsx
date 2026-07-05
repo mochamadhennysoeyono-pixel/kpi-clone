@@ -76,15 +76,13 @@ export default function Header() {
         <div className="flex items-center gap-3">
           {isMobile ? (
             <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)}>
-                    <Menu className="size-5" />
-                </Button>
-                <Image src="/logo.png" alt="Logo" width={90} height={24} className="brightness-200" priority />
+                {/* Hamburger menu hidden for mobile as requested */}
+                <Image src="/logo.png" alt="Logo" width={90} height={24} priority />
             </div>
           ) : (
             <div className="flex items-center gap-4">
                 {!isOpen && (
-                    <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)} className="hover:bg-white/5">
+                    <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)} className="hover:bg-muted">
                         <Menu className="size-5" />
                     </Button>
                 )}
@@ -117,7 +115,7 @@ export default function Header() {
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 hover:bg-white/5 border border-white/5">
+            <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 hover:bg-muted border border-border/40">
               <CircleUser className="h-5 w-5 opacity-70" />
             </Button>
           </DropdownMenuTrigger>
@@ -127,14 +125,14 @@ export default function Header() {
                 <p className="text-sm font-bold truncate">{currentUser?.name}</p>
                 <p className="text-[10px] text-muted-foreground truncate">{currentUser?.email}</p>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-white/5" />
+            <DropdownMenuSeparator className="bg-border/40" />
             <DropdownMenuItem asChild className="p-3 cursor-pointer">
                 <Link href="/settings" className="flex items-center gap-3">
                   <Settings size={14} className="opacity-60"/>
                   <span className="text-xs font-bold">Pengaturan</span>
                 </Link>
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-white/5" />
+            <DropdownMenuSeparator className="bg-border/40" />
             <DropdownMenuItem onClick={() => logout()} className="p-3 cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive">
                   <LogOut size={14} className="mr-3" />
                   <span className="text-xs font-bold">Keluar</span>
