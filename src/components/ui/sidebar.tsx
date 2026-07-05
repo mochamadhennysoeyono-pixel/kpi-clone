@@ -57,16 +57,16 @@ function MotionNav() {
      <motion.nav
         initial={false}
         animate={isMobile ? { x: 0 } : { width: isOpen ? 280 : 80 }}
-        transition={{ type: "spring", stiffness: 400, damping: 40 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
         className={cn(
           "flex flex-col h-screen sticky left-0 top-0 z-50 border-r bg-white no-print",
-          isMobile ? "fixed w-[280px] h-full border-none shadow-2xl" : ""
+          isMobile ? "fixed w-[280px] h-full border-none shadow-2xl" : "border-[#E5E7EB]"
         )}
         onMouseEnter={() => !isMobile && setIsOpen(true)}
         onMouseLeave={() => !isMobile && setIsOpen(false)}
       >
-        {/* Header: Logo Area */}
-        <div className="flex items-center px-6 flex-shrink-0 h-[65px] border-b border-[#E5E7EB]">
+        {/* Header: Logo Area (65px height) */}
+        <div className="flex items-center px-[20px] flex-shrink-0 h-[65px] border-b border-[#E5E7EB]">
           <div className="flex items-center justify-center min-h-[32px] w-full">
             <AnimatePresence mode="wait">
               {isOpen || isMobile ? (
@@ -95,30 +95,32 @@ function MotionNav() {
         </div>
 
         {/* Navigation Area */}
-        <ScrollArea className="flex-1 px-3">
-             <ul className="space-y-8 mt-8"> {/* Increased group spacing (32px) */}
-                {navItems.map((group, groupIdx) => {
-                    // Detect groups by checking if item has subItems
+        <ScrollArea className="flex-1 px-[20px]">
+             <ul className="space-y-[12px] mt-[32px]">
+                {navItems.map((group) => {
                     const isGroup = !!group.subItems;
+                    const isGroupActive = isGroup && group.subItems?.some(sub => pathname.startsWith(sub.href));
+                    const isStandaloneActive = !isGroup && (pathname === group.href || (group.href !== '/' && pathname.startsWith(group.href!)));
+                    const isActive = isGroupActive || isStandaloneActive;
 
                     return (
-                        <li key={group.label} className="space-y-1.5">
+                        <li key={group.label}>
                             {isGroup ? (
-                                <Collapsible defaultOpen={group.subItems?.some(sub => pathname.startsWith(sub.href))}>
+                                <Collapsible defaultOpen={isGroupActive}>
                                     <CollapsibleTrigger asChild>
                                         <button
                                             className={cn(
-                                                "group flex items-center gap-4 rounded-xl px-4 py-0 h-[56px] text-[14px] w-full text-left transition-all duration-200 ease-out",
-                                                group.subItems?.some(sub => pathname.startsWith(sub.href)) 
-                                                    ? "text-[#0F172A] bg-[#2563eb]/[0.06] font-semibold" 
-                                                    : "text-[#64748B] font-medium hover:bg-slate-50 hover:text-[#0F172A]"
+                                                "group flex items-center gap-[14px] rounded-[12px] px-[16px] h-[54px] text-[14px] w-full text-left transition-all duration-[180ms] ease-out",
+                                                isGroupActive 
+                                                    ? "text-[#111827] bg-[#2563eb]/[0.06] font-semibold" 
+                                                    : "text-[#475569] font-medium hover:bg-[#2563eb]/[0.03] hover:text-[#334155]"
                                             )}
                                         >
-                                            <div className="flex size-5 items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110">
+                                            <div className="flex size-[20px] items-center justify-center shrink-0 transition-transform duration-[180ms] group-hover:scale-110">
                                               {React.createElement(iconMap[group.iconName || 'default'] || Folders, {
-                                                  size: 22,
+                                                  size: 20,
                                                   weight: "fill",
-                                                  color: group.subItems?.some(sub => pathname.startsWith(sub.href)) ? "#2563eb" : "#94A3B8"
+                                                  color: isGroupActive ? "#2563eb" : "#64748B"
                                               })}
                                             </div>
                                             {(isOpen || isMobile) && (
@@ -131,16 +133,16 @@ function MotionNav() {
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>
                                         {(isOpen || isMobile) && (
-                                          <ul className="ml-9 my-1 border-l border-[#E5E7EB] space-y-1">
+                                          <ul className="ml-[26px] mt-[4px] border-l border-[#E5E7EB] space-y-[4px]">
                                               {group.subItems?.map(subItem => {
                                                   const isSubActive = pathname.startsWith(subItem.href);
                                                   return (
                                                       <li key={subItem.href}>
                                                           <Link href={subItem.href} className={cn(
-                                                              "block pl-5 pr-3 py-2.5 text-[13px] tracking-tight transition-all duration-200",
+                                                              "block pl-[24px] pr-3 py-[10px] text-[13px] tracking-tight transition-all duration-[180ms] ease-out",
                                                               isSubActive 
-                                                                ? "text-[#2563eb] font-semibold" 
-                                                                : "text-[#64748B] font-medium hover:text-[#0F172A] hover:translate-x-1"
+                                                                ? "text-[#2563eb] font-semibold border-l-2 border-[#2563eb] -ml-[1px]" 
+                                                                : "text-[#475569] font-medium hover:text-[#334155] hover:translate-x-1"
                                                           )}>
                                                               {subItem.label}
                                                           </Link>
@@ -155,17 +157,17 @@ function MotionNav() {
                                 <Link
                                     href={group.href || '#'}
                                     className={cn(
-                                        "group flex items-center gap-4 rounded-xl px-4 py-0 h-[56px] text-[14px] transition-all duration-200 ease-out",
-                                        (pathname === group.href || (group.href !== '/' && pathname.startsWith(group.href!)))
-                                            ? "bg-[#2563eb]/[0.06] text-[#0F172A] font-semibold" 
-                                            : "text-[#64748B] font-medium hover:bg-slate-50 hover:text-[#0F172A]"
+                                        "group flex items-center gap-[14px] rounded-[12px] px-[16px] h-[54px] text-[14px] transition-all duration-[180ms] ease-out",
+                                        isStandaloneActive
+                                            ? "bg-[#2563eb]/[0.06] text-[#111827] font-semibold" 
+                                            : "text-[#475569] font-medium hover:bg-[#2563eb]/[0.03] hover:text-[#334155]"
                                     )}
                                 >
-                                    <div className="flex size-5 items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110">
+                                    <div className="flex size-[20px] items-center justify-center shrink-0 transition-transform duration-[180ms] group-hover:scale-110">
                                         {React.createElement(iconMap[group.iconName || 'default'] || Folders, {
-                                            size: 22,
+                                            size: 20,
                                             weight: "fill",
-                                            color: (pathname === group.href || (group.href !== '/' && pathname.startsWith(group.href!))) ? "#2563eb" : "#94A3B8"
+                                            color: isStandaloneActive ? "#2563eb" : "#64748B"
                                         })}
                                     </div>
                                     {(isOpen || isMobile) && (
@@ -182,11 +184,11 @@ function MotionNav() {
         </ScrollArea>
         
         {/* Footer: User Profile Area */}
-        <div className="p-4 border-t border-[#E5E7EB] flex-shrink-0">
+        <div className="p-[20px] border-t border-[#E5E7EB] flex-shrink-0">
             <button
                 onClick={() => logout()}
                 className={cn(
-                  "flex items-center gap-3 w-full rounded-xl transition-all duration-200 active:scale-95 group",
+                  "flex items-center gap-3 w-full rounded-[12px] transition-all duration-[180ms] active:scale-95 group",
                   isOpen || isMobile ? "p-3 hover:bg-slate-50" : "justify-center"
                 )}
             >
@@ -196,8 +198,8 @@ function MotionNav() {
                 
                 {(isOpen || isMobile) && (
                   <div className="flex-1 text-left min-w-0">
-                    <p className="text-[13px] font-bold text-[#0F172A] truncate tracking-tight">{currentUser?.name}</p>
-                    <div className="flex items-center gap-1.5 text-[10px] font-medium text-[#64748B] uppercase transition-colors group-hover:text-destructive tracking-widest">
+                    <p className="text-[13px] font-bold text-[#111827] truncate tracking-tight">{currentUser?.name}</p>
+                    <div className="flex items-center gap-1.5 text-[10px] font-medium text-[#475569] uppercase transition-colors group-hover:text-destructive tracking-widest">
                         <SignOut size={12} weight="bold" />
                         <span>Log Out</span>
                     </div>

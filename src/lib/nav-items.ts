@@ -57,7 +57,7 @@ import {
 
 // iOS System Color Palette (Premium Flat)
 export const iosColors = {
-    blue: "#007AFF",
+    blue: "#2563eb",
     green: "#34C759",
     indigo: "#5856D6",
     orange: "#FF9500",
