@@ -32,7 +32,8 @@ import {
     Network,
     Layers,
     FileText,
-    Bot
+    Bot,
+    X
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -490,9 +491,12 @@ export default function PortalPage() {
 
             <Dialog open={isMgmtDialogOpen} onOpenChange={setIsMgmtDialogOpen}>
                 <DialogContent className="max-w-5xl h-[90vh] md:h-[85vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl bg-white z-[200]">
-                    <DialogHeader className="p-6 pb-2 shrink-0 bg-background border-b sticky top-0 z-10">
-                        <DialogTitle className="font-headline font-black text-xl uppercase tracking-tighter">Manajemen Tim Admin</DialogTitle>
-                        <DialogDescription className="text-xs font-bold text-primary">Kapasitas Maksimal: {mgmtLimit} Akun Admin</DialogDescription>
+                    <DialogHeader className="p-6 pb-2 shrink-0 bg-muted/20 border-b flex flex-row items-center justify-between space-y-0">
+                        <div className="space-y-0.5">
+                            <DialogTitle className="font-black text-xl tracking-tighter uppercase">Manajemen Tim Admin</DialogTitle>
+                            <DialogDescription className="text-[10px] font-bold text-primary uppercase tracking-widest">Kapasitas Maksimal: {mgmtLimit} Akun Admin</DialogDescription>
+                        </div>
+                        <DialogClose asChild><Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><X size={18} /></Button></DialogClose>
                     </DialogHeader>
                     <div className="flex-1 overflow-y-auto no-scrollbar min-w-0 bg-[#fafafa]">
                          <div className="p-4 w-full min-w-0">
@@ -503,13 +507,16 @@ export default function PortalPage() {
             </Dialog>
 
             <Dialog open={isMgmtConfigOpen} onOpenChange={setIsMgmtConfigOpen}>
-                <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden z-[300] flex flex-col max-h-[90vh] p-0">
-                    <DialogHeader className="p-8 pb-4 bg-slate-50 border-b shrink-0">
-                        <DialogTitle className="font-black text-slate-900 text-xl tracking-tighter flex items-center gap-3"><Shield className="size-6 text-primary" /> Tambah Kuota Admin</DialogTitle>
-                        <DialogDescription className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-2">Investasi Add-on Lifetime</DialogDescription>
+                <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden z-[300] flex flex-col h-full max-h-[85vh] p-0">
+                    <DialogHeader className="p-6 pb-2 bg-muted/20 border-b shrink-0 flex flex-row items-center justify-between space-y-0">
+                        <div className="space-y-0.5">
+                            <DialogTitle className="font-black text-slate-900 text-xl tracking-tighter uppercase flex items-center gap-3"><Shield className="size-6 text-primary" strokeWidth={2.5} /> Tambah Kuota Admin</DialogTitle>
+                            <DialogDescription className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em]">Investasi Add-on Lifetime</DialogDescription>
+                        </div>
+                        <DialogClose asChild><Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><X size={18} /></Button></DialogClose>
                     </DialogHeader>
                     
-                    <ScrollArea className="flex-1">
+                    <ScrollArea className="flex-1 min-h-0 bg-background">
                         <div className="p-8 space-y-8">
                             <div className="flex items-center justify-between gap-4">
                                 <div className="space-y-1 min-w-0">
@@ -533,7 +540,6 @@ export default function PortalPage() {
                                 </AlertDescription>
                             </Alert>
 
-                            {/* Footer integrated into scrollable area */}
                             <div className="flex gap-3 pt-6 border-t">
                                 <DialogClose asChild><Button variant="ghost" className="flex-1 font-black text-[10px] uppercase">Batal</Button></DialogClose>
                                 <Button className="flex-1 font-black uppercase tracking-widest text-[10px] h-12 shadow-lg" onClick={handleBuyMgmtAddon}>Beli Sekarang</Button>
@@ -545,3 +551,4 @@ export default function PortalPage() {
         </ResponsivePage>
     );
 }
+

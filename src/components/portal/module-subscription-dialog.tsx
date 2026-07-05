@@ -16,13 +16,15 @@ import {
     Zap, 
     Loader2,
     Users,
-    ShoppingCart
+    ShoppingCart,
+    X
 } from 'lucide-react';
 import { useMasterData } from '@/contexts/master-data-context';
 import type { ModuleId, Company } from '@/types';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { DialogClose } from '@radix-ui/react-dialog';
 
 interface ModuleSubscriptionDialogProps {
   isOpen: boolean;
@@ -112,19 +114,20 @@ export function ModuleSubscriptionDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl p-0 overflow-hidden border-none shadow-2xl flex flex-col h-full max-h-[95vh]">
-                <DialogHeader className="p-4 px-6 flex flex-row items-center justify-between bg-muted/20 border-b shrink-0">
+            <DialogContent className="max-w-4xl p-0 overflow-hidden border-none shadow-2xl flex flex-col h-full max-h-[90vh]">
+                <DialogHeader className="p-4 px-6 flex flex-row items-center justify-between bg-muted/20 border-b shrink-0 space-y-0">
                     <div className="flex items-center gap-2">
                         <div className={cn("p-1.5 rounded-lg", module.bg, module.color)}>
                             {React.createElement(module.icon, { size: 14 })}
                         </div>
-                        <DialogTitle className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        <DialogTitle className="text-xl font-black uppercase tracking-tighter">
                             Konfigurasi Paket: {module.name}
                         </DialogTitle>
                     </div>
+                    <DialogClose asChild><Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><X size={18} /></Button></DialogClose>
                 </DialogHeader>
 
-                <ScrollArea className="flex-1 bg-background">
+                <ScrollArea className="flex-1 min-h-0 bg-background">
                     {!activePricing ? (
                         <div className="p-20 text-center space-y-4">
                             <Loader2 className="size-8 animate-spin mx-auto text-primary" />
@@ -178,9 +181,18 @@ export function ModuleSubscriptionDialog({
                                         ))}
                                     </div>
                                 </div>
+
+                                {/* Summary Column Logic integrated here for scrolling safety on smaller screens */}
+                                <div className="md:hidden space-y-6 pt-6 border-t">
+                                     <h3 className="text-xs font-black uppercase tracking-widest text-slate-800">Ringkasan Tagihan</h3>
+                                     <div className="p-5 rounded-2xl bg-slate-900 text-white shadow-xl space-y-2">
+                                        <p className="text-2xl font-black">Rp {pricing.totalBill.toLocaleString('id-ID')}</p>
+                                        <p className="text-[9px] font-bold uppercase opacity-50">Total Tagihan ({durationMonths} Bln)</p>
+                                     </div>
+                                </div>
                             </div>
 
-                            <div className="p-6 md:p-8 space-y-6 flex flex-col bg-white border-l">
+                            <div className="hidden md:flex p-6 md:p-8 space-y-6 flex-col bg-white border-l h-full">
                                 <h3 className="text-xs font-black uppercase tracking-widest text-slate-800">Ringkasan Tagihan</h3>
 
                                 <div className="space-y-4 text-sm">
@@ -237,6 +249,20 @@ export function ModuleSubscriptionDialog({
                                     )}
                                 </div>
                             </div>
+                            
+                            {/* Mobile Floating Footer inside scroll context or fixed */}
+                            <div className="md:hidden p-6 border-t bg-background space-y-3">
+                                <Button 
+                                    onClick={() => handleAction('paid')}
+                                    disabled={isLoading}
+                                    className="w-full font-black text-[10px] uppercase tracking-widest h-12"
+                                >
+                                    {isLoading ? <Loader2 className="animate-spin size-4" /> : 'Beli Paket Sekarang'}
+                                </Button>
+                                {isTrialAvailable && (
+                                    <Button variant="ghost" className="w-full text-[10px] font-bold uppercase" onClick={() => handleAction('trial')}>Mulai Trial</Button>
+                                )}
+                            </div>
                         </div>
                     )}
                 </ScrollArea>
@@ -244,3 +270,4 @@ export function ModuleSubscriptionDialog({
         </Dialog>
     );
 }
+
