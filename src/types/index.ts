@@ -47,6 +47,19 @@ export type CompanyAdmin = {
   createdAt: any;
 };
 
+// Akun Otoritas Tertinggi Sistem
+export type SuperAdmin = {
+  id: string;
+  authUid: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: 'superadmin';
+  status: 'Aktif' | 'Tidak Aktif';
+  loginStatus: LoginStatus;
+  createdAt: any;
+};
+
 // --- Modular Subscription Types ---
 export type ModuleId = 'appraisal' | 'lms' | 'collabspace' | 'foundation' | 'holding';
 

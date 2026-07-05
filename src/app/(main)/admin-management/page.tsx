@@ -1,3 +1,4 @@
+
 // src/app/(main)/admin-management/page.tsx
 "use client";
 
@@ -14,7 +15,7 @@ import {
   EnvelopeSimple,
   CaretDown,
 } from "@phosphor-icons/react";
-import type { Employee, LoginStatus } from "@/types";
+import type { SuperAdmin, LoginStatus } from "@/types";
 import { EmployeeFormSheet } from "@/components/master-data/employees/employee-form-sheet";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -42,65 +43,55 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function AdminManagementPage() {
-  const { currentUser, userRole, updateUserProfile, sendPasswordReset } = useAuth();
-  const { employees, deleteEmployees, fetchData } = useMasterData();
+  const { currentUser, userRole, addSuperAdmin, sendPasswordReset } = useAuth();
+  const { superadmins, deleteSuperadmins, fetchData } = useMasterData();
   const [isSheetOpen, setSheetOpen] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | undefined>(undefined);
+  const [selectedAdmin, setSelectedAdmin] = useState<Partial<SuperAdmin> | undefined>(undefined);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
+  const [adminToDelete, setAdminToDelete] = useState<SuperAdmin | null>(null);
   const [isSendingInvitation, setIsSendingInvitation] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const superAdmins = useMemo(() => {
-    return employees.filter(e => e.role === 'superadmin');
-  }, [employees]);
-
-  const handleAddEmployee = () => {
-    setSelectedEmployee(undefined);
+  const handleAddClick = () => {
+    setSelectedAdmin(undefined);
     setSheetOpen(true);
   };
   
-  const handleEditEmployee = (employee: Employee) => {
-    setSelectedEmployee(employee);
+  const handleEditAdmin = (admin: SuperAdmin) => {
+    setSelectedAdmin(admin);
     setSheetOpen(true);
   };
 
-  const handleAddSuperAdmin = async (data: Omit<Employee, 'id' | 'password'>) => {
-    try {
-        const docRef = doc(collection(db, 'employees'));
-        const dataToSave: Omit<Employee, 'id' | 'password'> = {
-            ...data,
-            role: 'superadmin',
-            company: 'Internal',
-            department: 'System',
-            position: 'Superadmin',
-            level: 'Direktur',
-            reportsTo: '',
-            status: 'Aktif',
-            joinDate: new Date().toISOString().split('T')[0],
-            loginStatus: 'No Login',
-        };
-        await setDoc(docRef, dataToSave);
-        await fetchData();
-        toast({ title: "Superadmin Dibuat", description: "Akun baru telah berhasil didaftarkan." });
-    } catch (e: any) {
-        toast({ variant: 'destructive', title: 'Gagal', description: e.message });
+  const handleAddSuperAdminAction = async (data: any) => {
+    const result = await addSuperAdmin({
+        name: data.name,
+        email: data.email,
+        phone: data.phone || "",
+        role: "superadmin",
+        status: data.status || "Aktif",
+    }, true);
+
+    if (result.success) {
+        toast({ title: "Superadmin Berhasil Ditambahkan" });
+        await fetchData(true);
+    } else {
+        toast({ variant: "destructive", title: "Gagal", description: result.error });
     }
   }
   
-  const openDeleteDialog = (employee: Employee) => {
-    if (employee.id === currentUser?.id) {
+  const openDeleteDialog = (admin: SuperAdmin) => {
+    if (admin.id === currentUser?.id) {
         toast({ variant: "destructive", title: "Ditolak", description: "Tidak bisa menghapus diri sendiri." });
         return;
     }
-    setEmployeeToDelete(employee);
+    setAdminToDelete(admin);
     setDeleteDialogOpen(true);
   };
   
   const handleDelete = async () => {
-    if (employeeToDelete) {
-      await deleteEmployees([employeeToDelete.id]);
-      setEmployeeToDelete(null);
+    if (adminToDelete) {
+      await deleteSuperadmins([adminToDelete.id]);
+      setAdminToDelete(null);
     }
   };
 
@@ -132,7 +123,7 @@ export default function AdminManagementPage() {
         description="Kelola otoritas tertinggi sistem dan pengaturan akses admin global."
         icon={ShieldCheckered}
         actions={
-          <Button onClick={handleAddEmployee} className="font-bold shadow-stripe h-10 px-5 active:scale-95 transition-all">
+          <Button onClick={handleAddClick} className="font-bold shadow-stripe h-10 px-5 active:scale-95 transition-all">
             <PlusCircle className="size-4 mr-2" weight="fill" />
             Tambah Superadmin
           </Button>
@@ -140,7 +131,7 @@ export default function AdminManagementPage() {
       />
 
       <AdaptiveTable 
-        data={superAdmins}
+        data={superadmins}
         keyExtractor={(e) => e.id}
         columns={[
           {
@@ -187,7 +178,7 @@ export default function AdminManagementPage() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-2xl border-none p-2">
                   <DropdownMenuLabel className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Opsi Akun</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => handleEditEmployee(e)} className="p-2.5 rounded-lg cursor-pointer">
+                  <DropdownMenuItem onClick={() => handleEditAdmin(e)} className="p-2.5 rounded-lg cursor-pointer">
                     <PencilSimple className="size-4 mr-3 opacity-60" weight="bold" /> Ubah Data
                   </DropdownMenuItem>
                   {e.loginStatus !== 'No Login' && (
@@ -221,7 +212,7 @@ export default function AdminManagementPage() {
                   <Badge variant="outline" className={cn("text-[9px] font-black h-5 border", getLoginStatusBadge(e.loginStatus))}>{e.loginStatus}</Badge>
               </div>
               <div className="flex gap-2 pt-2">
-                  <Button variant="outline" size="sm" className="flex-1 font-bold h-9 rounded-xl border-slate-200" onClick={() => handleEditEmployee(e)}>Ubah</Button>
+                  <Button variant="outline" size="sm" className="flex-1 font-bold h-9 rounded-xl border-slate-200" onClick={() => handleEditAdmin(e)}>Ubah</Button>
                   <Button variant="ghost" size="sm" className="flex-1 font-bold h-9 rounded-xl text-destructive hover:bg-destructive/5" onClick={() => openDeleteDialog(e)} disabled={e.id === currentUser?.id}>Hapus</Button>
               </div>
             </CardContent>
@@ -232,16 +223,16 @@ export default function AdminManagementPage() {
       <EmployeeFormSheet 
         isOpen={isSheetOpen} 
         onOpenChange={setSheetOpen} 
-        employee={selectedEmployee} 
-        onSave={updateUserProfile}
-        onAdd={handleAddSuperAdmin}
+        employee={selectedAdmin as any} 
+        onSave={(id, data) => handleAddSuperAdminAction({ ...data, id })}
+        onAdd={handleAddSuperAdminAction}
         quotaInfo={null}
       />
       <DeleteConfirmationDialog
         isOpen={isDeleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDelete}
-        itemName={employeeToDelete?.name || ''}
+        itemName={adminToDelete?.name || ''}
         itemType="superadmin"
       />
     </ResponsivePage>

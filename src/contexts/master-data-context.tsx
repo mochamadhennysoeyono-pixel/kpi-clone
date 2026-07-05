@@ -5,7 +5,7 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
 import { db } from '@/lib/firebase/client';
 import type { 
-    Company, Department, Position, Employee, CompanyAdmin, KpiCategory, KboCategory, 
+    Company, Department, Position, Employee, CompanyAdmin, SuperAdmin, KpiCategory, KboCategory, 
     KboSetup, AppraisalSetup, KpiSetup, KpiData, TargetOverride, 
     KboAssessment, AppraisalTask, SubscriptionPlan, LmsQuiz, Course, Enrollment, 
     DocumentTemplate, OKR, NotificationTemplate, LearningProgram, CompanyObjective, 
@@ -27,6 +27,7 @@ interface MasterDataContextType {
   positions: Position[];
   employees: Employee[];
   companyAdmins: CompanyAdmin[];
+  superadmins: SuperAdmin[];
   companyObjectives: CompanyObjective[];
   kpiCategories: KpiCategory[];
   kboCategories: KboCategory[];
@@ -71,6 +72,7 @@ interface MasterDataContextType {
   deleteEmployees: (ids: string[]) => Promise<void>;
   updateCompanyAdmin: (id: string, data: Partial<CompanyAdmin>) => Promise<void>;
   deleteCompanyAdmins: (ids: string[]) => Promise<void>;
+  deleteSuperadmins: (ids: string[]) => Promise<void>;
   addCompanyObjective: (objective: Omit<CompanyObjective, 'id'>) => Promise<CompanyObjective | null>;
   updateCompanyObjective: (id: string, data: Partial<CompanyObjective>) => Promise<void>;
   deleteCompanyObjectives: (ids: string[]) => Promise<void>;
@@ -158,7 +160,7 @@ const mapSnapshot = <T extends any>(snapshot: any): T[] => {
 export function MasterDataProvider({ children }: { children: ReactNode }) {
   const { currentUser, userRole, isLoading: isAuthLoading } = useAuth();
   const [data, setData] = useState<any>({
-    companies: [], departments: [], positions: [], employees: [], companyAdmins: [], companyObjectives: [],
+    companies: [], departments: [], positions: [], employees: [], companyAdmins: [], superadmins: [], companyObjectives: [],
     kpiCategories: [], kboCategories: [], kboSetups: [], kpiSetups: [], appraisalSetups: [], documentTemplates: [], 
     emailTemplates: [], whatsappTemplates: [], notificationTemplates: [], kpiData: [], okrs: [], 
     targetOverrides: [], kboAssessments: [], appraisalTasks: [], subscriptionPlans: [], courses: [], 
@@ -200,7 +202,8 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
         const globalCollections = [
             'subscriptionPlans', 'emailTemplates', 'whatsappTemplates', 
             'notificationTemplates', 'aiTools', 'targetOverrides', 
-            'lmsEnrollments', 'memos', 'modulePricing', 'addonPricing'
+            'lmsEnrollments', 'memos', 'modulePricing', 'addonPricing',
+            'superadmins'
         ];
         
         const scopedCollections = [
@@ -235,10 +238,10 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
         const [
             subscriptionPlansSnap, emailTemplatesSnap, whatsappTemplatesSnap, 
             notificationTemplatesSnap, aiToolsSnap, targetOverridesSnap, 
-            enrollmentsSnap, memosSnap, modulePricingSnap, addonPricingSnap
+            enrollmentsSnap, memosSnap, modulePricingSnap, addonPricingSnap,
+            superadminsSnap
         ] = globalSnaps;
 
-        // Extract IDs of accessible employees for secondary filtering layer
         const accessibleEmployees = mapSnapshot<Employee>(employeesSnap);
         const accessibleEmployeeIds = new Set(accessibleEmployees.map(e => e.id));
 
@@ -249,6 +252,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
             positions: mapSnapshot<Position>(positionsSnap),
             employees: accessibleEmployees,
             companyAdmins: mapSnapshot<CompanyAdmin>(companyAdminsSnap),
+            superadmins: mapSnapshot<SuperAdmin>(superadminsSnap),
             companyObjectives: mapSnapshot<CompanyObjective>(companyObjectivesSnap),
             kpiCategories: mapSnapshot<KpiCategory>(kpiCategoriesSnap),
             kboCategories: mapSnapshot<KboCategory>(kboCategoriesSnap),
@@ -275,7 +279,6 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
             modulePricing: mapSnapshot<ModulePricing>(modulePricingSnap),
             addonPricing: mapSnapshot<AddonPricing>(addonPricingSnap),
             
-            // SECONDARY ISOLATION LAYER (Filtering global items by allowed member IDs)
             targetOverrides: mapSnapshot<TargetOverride>(targetOverridesSnap).filter(o => isSuperadmin || accessibleEmployeeIds.has(o.id.split('_')[0])),
             enrollments: mapSnapshot<any>(enrollmentsSnap)
                 .filter(e => isSuperadmin || accessibleEmployeeIds.has(e.employeeId))
@@ -355,6 +358,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     deleteEmployees: (ids) => deleteDocsAndUpdateState('employees', ids, 'employees'),
     updateCompanyAdmin: (id, d) => updateDocAndUpdateState<CompanyAdmin>('companyAdmins', id, d, 'companyAdmins'),
     deleteCompanyAdmins: (ids) => deleteDocsAndUpdateState('companyAdmins', ids, 'companyAdmins'),
+    deleteSuperadmins: (ids) => deleteDocsAndUpdateState('superadmins', ids, 'superadmins'),
     addCompanyObjective: (d) => addDocAndUpdateState<CompanyObjective>('companyObjectives', d, 'companyObjectives'),
     updateCompanyObjective: (id, d) => updateDocAndUpdateState<CompanyObjective>('companyObjectives', id, d, 'companyObjectives'),
     deleteCompanyObjectives: (ids) => deleteDocsAndUpdateState('companyObjectives', ids, 'companyObjectives'),

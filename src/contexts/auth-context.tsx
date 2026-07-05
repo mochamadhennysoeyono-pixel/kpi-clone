@@ -23,7 +23,7 @@ import {
   reauthenticateWithCredential
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/client'; 
-import type { Employee, CompanyAdmin, UserRole, Company } from '@/types';
+import type { Employee, CompanyAdmin, UserRole, Company, SuperAdmin } from '@/types';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc, collection, query, where, getDocs, writeBatch, updateDoc, DocumentData, UpdateData, setDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { sendPasswordResetEmailWithSmtp, notifyAdminNewRegistration, sendWelcomeWhatsApp } from '@/lib/services/notification-service';
@@ -65,6 +65,7 @@ interface AuthContextType {
   activateEmployeeAccount: (data: EmployeeActivationData) => Promise<{ success: boolean; error?: string; message?: string }>;
   addUserAsAdmin: (employeeData: Omit<Employee, 'id' | 'loginStatus'>, sendInvitationEmail?: boolean, silent?: boolean) => Promise<{ success: boolean; error?: string; message?: string }>;
   addCompanyAdmin: (adminData: Omit<CompanyAdmin, 'id' | 'authUid' | 'loginStatus' | 'createdAt'>, sendInvitationEmail?: boolean) => Promise<{ success: boolean; error?: string; message?: string }>;
+  addSuperAdmin: (adminData: Omit<SuperAdmin, 'id' | 'authUid' | 'loginStatus' | 'createdAt'>, sendInvitationEmail?: boolean) => Promise<{ success: boolean; error?: string; message?: string }>;
   sendPasswordReset: (email: string, userName?: string, isSilent?: boolean) => Promise<{ success: boolean; error?: string }>;
   updateUserProfile: (userId: string, data: UpdateData<DocumentData>) => Promise<{ success: boolean; error?: string }>;
   updateUserPassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
@@ -126,9 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             if (userProfile) {
-                // SINKRONISASI STATUS LOGIN KE "Active" SAAT BERHASIL MASUK
                 if (userProfile.loginStatus !== 'Active') {
-                    console.log(`[Auth] User ${userProfile.name} logged in, changing status from ${userProfile.loginStatus} to Active.`);
                     const userRef = doc(db, collectionName, user.uid);
                     await updateDoc(userRef, { loginStatus: 'Active' });
                     userProfile.loginStatus = 'Active';
@@ -368,6 +367,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const addSuperAdmin = async (adminData: Omit<SuperAdmin, 'id' | 'authUid' | 'loginStatus' | 'createdAt'>, sendInvitationEmail = false) => {
+    setIsLoading(true);
+    const tempApp = initializeApp(auth.app.options, `temp-sa-${Date.now()}`);
+    const tempAuth = getAuth(tempApp);
+    
+    try {
+      const email = adminData.email.toLowerCase().trim();
+      const tempPassword = Math.random().toString(36).slice(-10);
+
+      const userCredential = await createUserWithEmailAndPassword(tempAuth, email, tempPassword);
+      const newUser = userCredential.user;
+  
+      await setDoc(doc(db, "superadmins", newUser.uid), {
+        ...adminData,
+        email,
+        authUid: newUser.uid,
+        loginStatus: sendInvitationEmail ? 'Invited' : 'No Login',
+        createdAt: serverTimestamp(),
+      });
+
+      if (sendInvitationEmail) {
+        await sleep(1000); 
+        await sendPasswordReset(email, adminData.name, true); 
+      }
+      
+      return { success: true, message: `Berhasil menambahkan superadmin ${adminData.name}.` };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    } finally {
+      await signOut(tempAuth).catch(() => {});
+      await deleteApp(tempApp).catch(() => {});
+      setIsLoading(false);
+    }
+  };
+
   const sendPasswordReset = async (email: string, userName: string = "Pengguna", isSilent = false) => {
     const cleanEmail = email.toLowerCase().trim();
     if (!isSilent) setIsLoading(true);
@@ -380,7 +414,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return { success: false, error: result.error };
         }
 
-        // SINKRONISASI STATUS 'Invited' DI FIRESTORE SETELAH EMAIL BERHASIL TERKIRIM
         const collectionsToCheck = ['employees', 'companyAdmins', 'superadmins'];
         let userFound = false;
 
@@ -391,17 +424,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (!snap.empty) {
                 const userDoc = snap.docs[0];
                 const userRef = doc(db, collName, userDoc.id);
-                
-                // Update status di Firestore menjadi 'Invited'
                 await updateDoc(userRef, { loginStatus: 'Invited' });
                 userFound = true;
-                console.log(`[Auth] User status updated to 'Invited' in collection: ${collName}`);
             }
         }
 
         return { success: true };
     } catch(e: any) {
-        console.error(`[AUTH_CONTEXT_ERROR]`, e.message);
         return { success: false, error: e.message };
     } finally {
         if (!isSilent) setIsLoading(false);
@@ -449,7 +478,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{ 
         currentUser, firebaseUser, userRole, isLoading, setIsLoading, isLoggingOut, 
         loginWithEmail, loginWithGoogle, loginWithPhone, verifyOtp, 
-        registerCompanyAccount, activateEmployeeAccount, addUserAsAdmin, addCompanyAdmin,
+        registerCompanyAccount, activateEmployeeAccount, addUserAsAdmin, addCompanyAdmin, addSuperAdmin,
         sendPasswordReset, updateUserProfile, updateUserPassword, logout 
     }}>
       {children}
