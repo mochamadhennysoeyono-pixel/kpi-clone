@@ -36,7 +36,8 @@
     --input: 214 32% 91%;
     --ring: 221 83% 53%;
 
-    --radius: 0.75rem;
+    /* Reduced radius for professional industrial look */
+    --radius: 0.5rem;
   }
 }
 
