@@ -67,10 +67,14 @@ function ModuleStatusCard({
 
     const getRemainingDays = () => {
         if (!sub?.expiryDate) return null;
-        const expiry = parseISO(sub.expiryDate);
-        const now = new Date();
-        if (now > expiry) return 'EXPIRED';
-        return formatDistanceToNowStrict(expiry, { unit: 'day', locale: localeId });
+        try {
+            const expiry = parseISO(sub.expiryDate);
+            const now = new Date();
+            if (now > expiry) return 'EXPIRED';
+            return formatDistanceToNowStrict(expiry, { unit: 'day', locale: localeId });
+        } catch (e) {
+            return 'N/A';
+        }
     };
 
     const daysLeft = getRemainingDays();
@@ -297,17 +301,20 @@ export default function SubscriptionStatusPage() {
                     </CardContent>
                 </Card>
             </div>
-
-            {/* Help Note */}
-            <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10 flex items-start gap-4">
-                <Info size={18} className="text-primary shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                    <p className="text-xs font-black text-slate-900 uppercase tracking-tight">Bantuan Administrasi Billing</p>
-                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                        Jika Anda memerlukan bantuan terkait faktur pajak, perubahan metode pembayaran, atau kustomisasi kuota grup di luar pilihan standar, silakan hubungi tim dukungan kami melalui pusat bantuan.
-                    </p>
-                </div>
-            </div>
         </ResponsivePage>
     );
+}
+
+function formatSafeDate(date: any, formatStr: string) {
+    const d = safeToDate(date);
+    if (!d || !isValid(d)) return '-';
+    return format(d, formatStr, { locale: localeId });
+}
+
+function safeToDate(dateVal: any): Date | null {
+    if (!dateVal) return null;
+    if (dateVal instanceof Date) return dateVal;
+    if (typeof dateVal.toDate === 'function') return dateVal.toDate();
+    const d = new Date(dateVal);
+    return isNaN(d.getTime()) ? null : d;
 }
