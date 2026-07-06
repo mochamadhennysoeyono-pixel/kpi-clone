@@ -10,7 +10,7 @@ import type {
     KboAssessment, AppraisalTask, SubscriptionPlan, LmsQuiz, Course, Enrollment, 
     DocumentTemplate, OKR, NotificationTemplate, LearningProgram, CompanyObjective, 
     AiTool, MediaFile, CollabSpace, CollabTask, CollabMessage, EmailTemplate, 
-    WhatsappTemplate, SubscriptionLog, Memo, ModulePricing, AddonPricing
+    WhatsappTemplate, SubscriptionLog, Memo, ModulePricing, AddonPricing, ModuleId, ModuleSubscription
 } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './auth-context';
@@ -63,7 +63,11 @@ interface MasterDataContextType {
   addCompany: (company: Omit<Company, 'id'>) => Promise<Company | null>;
   updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
   deleteCompany: (id: string) => Promise<void>;
-  resetCompanySubscription: (companyId: string) => Promise<void>;
+  
+  // Modular Subscription Management
+  resetModuleSubscription: (companyId: string, moduleId: ModuleId) => Promise<void>;
+  activateModuleManually: (companyId: string, moduleId: ModuleId, config: Partial<ModuleSubscription>) => Promise<void>;
+
   addDepartment: (department: Omit<Department, 'id'>) => Promise<Department | null>;
   updateDepartment: (id: string, data: Partial<Omit<Department, 'id'>>) => Promise<void>;
   deleteDepartments: (ids: string[]) => Promise<void>;
@@ -343,62 +347,67 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     } catch (e: any) { toast({ variant: "destructive", title: "Gagal Hapus", description: e.message }); }
   }, [toast]);
 
-  const resetCompanySubscription = useCallback(async (companyId: string) => {
-      if (!db || userRole !== 'superadmin') {
-          toast({ variant: 'destructive', title: "Akses Ditolak", description: "Hanya Superadmin yang bisa melakukan reset." });
-          return;
-      }
-      
+  const resetModuleSubscription = useCallback(async (companyId: string, moduleId: ModuleId) => {
+      if (!db || userRole !== 'superadmin') return;
       try {
           const companyRef = doc(db, 'companies', companyId);
           const companySnap = await getDoc(companyRef);
-          
           if (!companySnap.exists()) throw new Error("Perusahaan tidak ditemukan.");
-          const companyData = companySnap.data();
-
-          const now = new Date();
-          const expiry = addDays(now, 14);
-          const batch = writeBatch(db);
-
-          // 1. Reset profil utama perusahaan menggunakan stempel pembersihan eksplisit
-          batch.update(companyRef, {
-              subscriptionPlanId: 'default-trial',
-              subscriptionActivationDate: now.toISOString(),
-              subscriptionExpiryDate: expiry.toISOString(),
-              moduleSubscriptions: deleteField(),
-              usedTrials: [],
-              customPrice: deleteField(),
-              customUserLimit: 5,
-              customManagementUserLimit: 2,
-              customCompanyLimit: deleteField(),
-              status: 'Aktif'
-          });
           
-          // 2. Catat audit log untuk reset manual ini
+          const batch = writeBatch(db);
+          batch.update(companyRef, {
+              [`moduleSubscriptions.${moduleId}`]: deleteField()
+          });
+
           const logRef = doc(collection(db, 'subscriptionLogs'));
           batch.set(logRef, {
-              companyId: companyId,
-              companyName: companyData.name,
-              company: companyData.name,
-              planName: 'RESET TO TRIAL (SYSTEM TEST)',
-              action: 'TRIAL',
-              amount: 0,
-              startDate: now.toISOString(),
-              endDate: expiry.toISOString(),
-              performedBy: `Superadmin (${currentUser?.name || 'System'})`,
-              timestamp: serverTimestamp()
+              companyId, companyName: companySnap.data().name, company: companySnap.data().name,
+              planName: `RESET MODUL ${moduleId.toUpperCase()}`,
+              action: 'MANUAL_CHANGE', amount: 0,
+              startDate: new Date().toISOString(), endDate: new Date().toISOString(),
+              performedBy: `Superadmin (${currentUser?.name})`, timestamp: serverTimestamp()
           });
 
           await batch.commit();
-          
-          // Force refresh state agar UI langsung berubah
           await fetchData(true);
+          toast({ title: "Modul Direset", description: `Langganan ${moduleId} telah dihapus.` });
+      } catch (e: any) { toast({ variant: 'destructive', title: "Gagal", description: e.message }); }
+  }, [currentUser, fetchData, toast, userRole]);
+
+  const activateModuleManually = useCallback(async (companyId: string, moduleId: ModuleId, config: Partial<ModuleSubscription>) => {
+      if (!db || userRole !== 'superadmin') return;
+      try {
+          const companyRef = doc(db, 'companies', companyId);
+          const companySnap = await getDoc(companyRef);
+          if (!companySnap.exists()) throw new Error("Perusahaan tidak ditemukan.");
           
-          toast({ title: "Reset Berhasil", description: `Seluruh status langganan ${companyData.name} telah dibersihkan.` });
-      } catch (e: any) {
-          console.error("[RESET_SUBSCRIPTION_ERROR]", e);
-          toast({ variant: 'destructive', title: "Gagal Melakukan Reset", description: e.message });
-      }
+          const batch = writeBatch(db);
+          const subData: ModuleSubscription = {
+              status: 'active',
+              type: config.type || 'paid',
+              quota: config.quota || 10,
+              expiryDate: config.expiryDate || addDays(new Date(), 365).toISOString(),
+              activatedAt: new Date().toISOString()
+          };
+
+          batch.update(companyRef, {
+              [`moduleSubscriptions.${moduleId}`]: subData,
+              status: 'Aktif'
+          });
+
+          const logRef = doc(collection(db, 'subscriptionLogs'));
+          batch.set(logRef, {
+              companyId, companyName: companySnap.data().name, company: companySnap.data().name,
+              planName: `AKTIVASI MANUAL ${moduleId.toUpperCase()}`,
+              action: subData.type === 'trial' ? 'TRIAL' : 'UPGRADE', amount: 0,
+              startDate: new Date().toISOString(), endDate: subData.expiryDate,
+              performedBy: `Superadmin (${currentUser?.name})`, timestamp: serverTimestamp()
+          });
+
+          await batch.commit();
+          await fetchData(true);
+          toast({ title: "Modul Diaktifkan", description: `Modul ${moduleId} berhasil diaktifkan secara manual.` });
+      } catch (e: any) { toast({ variant: 'destructive', title: "Gagal", description: e.message }); }
   }, [currentUser, fetchData, toast, userRole]);
 
   const value = {
@@ -408,7 +417,8 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     addCompany: (d) => addDocAndUpdateState<Company>('companies', d, 'companies'),
     updateCompany: (id, d) => updateDocAndUpdateState<Company>('companies', id, d, 'companies'),
     deleteCompany: (id) => deleteDocsAndUpdateState('companies', [id], 'companies'),
-    resetCompanySubscription,
+    resetModuleSubscription,
+    activateModuleManually,
     addDepartment: (d) => addDocAndUpdateState<Department>('departments', d, 'departments'),
     updateDepartment: (id, d) => updateDocAndUpdateState<Department>('departments', id, d, 'departments'),
     deleteDepartments: (ids) => deleteDocsAndUpdateState('departments', ids, 'departments'),
@@ -511,12 +521,6 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     deleteAiTool: (id) => deleteDocsAndUpdateState('aiTools', [id], 'aiTools'),
     addMediaFile: (d) => addDocAndUpdateState<MediaFile>('mediaFiles', d, 'mediaFiles'),
     deleteMediaFile: (id) => deleteDocsAndUpdateState('mediaFiles', [id], 'mediaFiles'),
-    addCollabSpace: (d) => addDocAndUpdateState<CollabSpace>('collabSpaces', d, 'collabSpaces'),
-    updateCollabSpace: (id, d) => updateDocAndUpdateState<CollabSpace>('collabSpaces', id, d, 'collabSpaces'),
-    deleteCollabSpace: (id) => deleteDocsAndUpdateState('collabSpaces', [id], 'collabSpaces'),
-    addCollabTask: (d) => addDocAndUpdateState<CollabTask>('collabTasks', d, 'collabTasks'),
-    updateCollabTask: (id, d) => updateDocAndUpdateState<CollabTask>('collabTasks', id, d, 'collabTasks'),
-    deleteCollabTask: (id) => deleteDocsAndUpdateState('collabTasks', [id], 'collabTasks'),
     addMemo: (d) => addDocAndUpdateState<any>('memos', d, 'memos'),
     addSubscriptionLog: (d) => addDocAndUpdateState<SubscriptionLog>('subscriptionLogs', d, 'subscriptionLogs', true),
     updateModulePricing: (id, d) => updateDocAndUpdateState<ModulePricing>('modulePricing', id, d, 'modulePricing'),

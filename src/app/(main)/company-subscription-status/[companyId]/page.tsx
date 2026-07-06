@@ -1,37 +1,31 @@
+
 // src/app/(main)/company-subscription-status/[companyId]/page.tsx
 "use client";
 
 import { useMemo, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useMasterData } from '@/contexts/master-data-context';
 import { 
     Crown, 
-    Users, 
     Building, 
-    Shield, 
     ChevronLeft, 
-    Calendar, 
-    ShoppingCart, 
     History, 
-    ArrowRight,
-    CheckCircle2,
-    XCircle,
     ClipboardCheck,
-    Target,
     GraduationCap,
     LayoutGrid,
-    Bot,
-    FileText,
-    GitMerge,
-    Info,
-    Clock,
     Zap,
-    Loader2
+    Loader2,
+    MoreHorizontal,
+    RefreshCw,
+    ShieldAlert,
+    ShoppingCart,
+    Timer,
+    PlusCircle,
+    X,
+    Calendar
 } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { formatDistanceToNowStrict, format, parseISO, isValid } from 'date-fns';
+import { formatDistanceToNowStrict, format, parseISO, isValid, addDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -46,19 +40,46 @@ import { cn } from '@/lib/utils';
 import type { SubscriptionPlan, Company, ModuleId, ModuleSubscription } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter,
+  DialogClose
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useToast } from '@/hooks/use-toast';
 
-// --- Sub Components ---
+// --- Internal Components ---
 
 function ModuleStatusCard({ 
     id, 
     name, 
     icon: Icon, 
-    sub 
+    sub,
+    onReset,
+    onActivate,
+    onUpgrade
 }: { 
     id: ModuleId, 
     name: string, 
     icon: any, 
-    sub?: ModuleSubscription 
+    sub?: ModuleSubscription,
+    onReset: (id: ModuleId) => void,
+    onActivate: (id: ModuleId) => void,
+    onUpgrade: (id: ModuleId) => void
 }) {
     const isActive = sub?.status === 'active';
     const isExpired = sub?.status === 'expired';
@@ -80,7 +101,7 @@ function ModuleStatusCard({
 
     return (
         <Card className={cn(
-            "border-border/60 shadow-sm overflow-hidden transition-all duration-300",
+            "border-border/60 shadow-sm overflow-hidden transition-all duration-300 group",
             isActive ? "bg-background" : "bg-muted/10 grayscale opacity-60"
         )}>
             <div className={cn("h-1.5 w-full", isActive ? "bg-primary" : "bg-slate-300")} />
@@ -91,14 +112,32 @@ function ModuleStatusCard({
                         isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
                         <Icon size={20} />
                     </div>
-                    {isActive && (
-                        <Badge className={cn(
-                            "text-[8px] font-black uppercase h-5 px-2 border-none",
-                            isTrial ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
-                        )}>
-                            {isTrial ? 'Trial' : 'Paid'}
-                        </Badge>
-                    )}
+                    
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                <MoreHorizontal size={14} />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="z-[350]">
+                            <DropdownMenuLabel className="text-[10px] font-black uppercase opacity-60">Kontrol Modul</DropdownMenuLabel>
+                            {isActive ? (
+                                <>
+                                    <DropdownMenuItem onClick={() => onUpgrade(id)}>
+                                        <ShoppingCart size={14} className="mr-2 text-primary" /> Upgrade / Tambah Kuota
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem className="text-amber-600 font-bold" onClick={() => onReset(id)}>
+                                        <RefreshCw size={14} className="mr-2" /> Reset Langganan (Test)
+                                    </DropdownMenuItem>
+                                </>
+                            ) : (
+                                <DropdownMenuItem onClick={() => onActivate(id)}>
+                                    <Zap size={14} className="mr-2 text-amber-500 fill-amber-500" /> Aktifkan Manual
+                                </DropdownMenuItem>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
 
                 <div className="space-y-0.5">
@@ -127,7 +166,74 @@ function ModuleStatusCard({
     );
 }
 
-// Internal Local Components
+function ManualActivationDialog({ 
+    isOpen, 
+    onOpenChange, 
+    moduleName, 
+    onConfirm,
+    isLoading 
+}: { 
+    isOpen: boolean, 
+    onOpenChange: (o: boolean) => void, 
+    moduleName: string, 
+    onConfirm: (data: any) => void,
+    isLoading: boolean
+}) {
+    const [config, setConfig] = useState({
+        type: 'paid' as 'trial' | 'paid',
+        quota: 10,
+        expiryDate: format(addDays(new Date(), 365), 'yyyy-MM-dd')
+    });
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md border-none shadow-2xl">
+                <DialogHeader>
+                    <DialogTitle className="text-xl font-black uppercase tracking-tighter">Aktivasi Manual</DialogTitle>
+                    <DialogDescription className="text-xs font-bold text-primary uppercase">MODUL: {moduleName}</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6 py-4">
+                    <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase opacity-60">Jenis Akses</Label>
+                        <RadioGroup 
+                            value={config.type} 
+                            onValueChange={(v: any) => setConfig(prev => ({ ...prev, type: v, quota: v === 'trial' ? 10 : prev.quota, expiryDate: v === 'trial' ? format(addDays(new Date(), 14), 'yyyy-MM-dd') : prev.expiryDate }))}
+                            className="grid grid-cols-2 gap-3"
+                        >
+                            <div className="relative">
+                                <RadioGroupItem value="paid" id="paid" className="peer sr-only" />
+                                <Label htmlFor="paid" className="flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 text-xs font-bold uppercase transition-all">PAID</Label>
+                            </div>
+                            <div className="relative">
+                                <RadioGroupItem value="trial" id="trial" className="peer sr-only" />
+                                <Label htmlFor="trial" className="flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer peer-data-[state=checked]:border-amber-500 peer-data-[state=checked]:bg-amber-50 text-xs font-bold uppercase transition-all">TRIAL</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase opacity-60">Kuota Staff</Label>
+                            <Input type="number" value={config.quota} onChange={(e) => setConfig(prev => ({ ...prev, quota: parseInt(e.target.value) || 0 }))} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase opacity-60">Tanggal Kadaluarsa</Label>
+                            <Input type="date" value={config.expiryDate} onChange={(e) => setConfig(prev => ({ ...prev, expiryDate: e.target.value }))} />
+                        </div>
+                    </div>
+                </div>
+                <DialogFooter className="gap-2">
+                    <DialogClose asChild><Button variant="ghost" className="font-bold">Batal</Button></DialogClose>
+                    <Button onClick={() => onConfirm(config)} disabled={isLoading} className="font-black px-8">
+                        {isLoading ? <Loader2 className="animate-spin size-4" /> : "AKTIFKAN MODUL"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+// Internal Local Components for Layout
 function Card({ children, className }: { children: React.ReactNode, className?: string }) {
   return (
     <div className={cn("rounded-xl border border-border bg-card text-card-foreground shadow-sm", className)}>
@@ -155,21 +261,14 @@ function CardContent({ children, className }: { children: React.ReactNode, class
 export default function CompanySubscriptionStatusPage() {
     const { companyId } = useParams();
     const router = useRouter();
-    const { companies, employees, subscriptionPlans, subscriptionLogs, companyAdmins } = useMasterData();
+    const { toast } = useToast();
+    const { companies, employees, resetModuleSubscription, activateModuleManually, subscriptionLogs, companyAdmins } = useMasterData();
     
+    const [isActivating, setIsActivating] = useState(false);
+    const [selectedModuleId, setSelectedModuleId] = useState<ModuleId | null>(null);
+    const [isManualDialogOpen, setIsManualDialogOpen] = useState(false);
+
     const company = useMemo(() => companies.find(c => c.id === companyId), [companyId, companies]);
-
-    // Aggregate statistics
-    const usage = useMemo(() => {
-        if (!company) return { userCount: 0, managementCount: 0 };
-        const companyEmployees = employees.filter(e => e.company === company.name && e.status === 'Aktif');
-        const companyAdminsList = companyAdmins.filter(a => a.company === company.name && a.status === 'Aktif');
-
-        return {
-            userCount: companyEmployees.filter(e => e.role === 'user').length,
-            managementCount: companyAdminsList.length,
-        };
-    }, [company, employees, companyAdmins]);
 
     const companyHistory = useMemo(() => {
         if (!company) return [];
@@ -193,6 +292,29 @@ export default function CompanySubscriptionStatusPage() {
         { id: 'collabspace' as ModuleId, name: 'CollabSpace', icon: LayoutGrid },
     ];
 
+    const handleResetRequest = async (moduleId: ModuleId) => {
+        if (!company) return;
+        if (confirm(`PENTING: Hapus data langganan modul ${moduleId} untuk ${company.name}? Data operasional mungkin tidak bisa diakses sampai diaktifkan kembali.`)) {
+            await resetModuleSubscription(company.id, moduleId);
+        }
+    };
+
+    const handleOpenManualActivation = (moduleId: ModuleId) => {
+        setSelectedModuleId(moduleId);
+        setIsManualDialogOpen(true);
+    };
+
+    const handleConfirmManualActivation = async (config: any) => {
+        if (!company || !selectedModuleId) return;
+        setIsActivating(true);
+        try {
+            await activateModuleManually(company.id, selectedModuleId, config);
+            setIsManualDialogOpen(false);
+        } finally {
+            setIsActivating(false);
+        }
+    };
+
     if (!company) {
         return (
             <div className="flex h-[80vh] items-center justify-center">
@@ -202,6 +324,7 @@ export default function CompanySubscriptionStatusPage() {
     }
 
     const mgmtLimit = company.customManagementUserLimit || 1;
+    const currentMgmtCount = companyAdmins.filter(a => a.company === company.name).length;
 
     return (
         <div className="space-y-8 max-w-6xl mx-auto pb-24 px-4 sm:px-0 animate-fade-in">
@@ -220,10 +343,10 @@ export default function CompanySubscriptionStatusPage() {
                 </div>
                 <CardHeader className="p-8 sm:p-10">
                     <div className="space-y-2">
-                        <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">OVERVIEW LANGGANAN KLIEN</p>
+                        <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">BILLING & MODULAR OVERSIGHT</p>
                         <CardTitle className="font-headline text-3xl sm:text-4xl tracking-tighter uppercase">{company.name}</CardTitle>
                         <CardDescription className="text-slate-400 text-sm sm:text-base font-medium max-w-2xl">
-                            Monitoring infrastruktur modular, utilisasi kuota personil, dan rekaman audit finansial unit bisnis.
+                            Kelola status operasional setiap modul secara independen dan pantau utilisasi lisensi di seluruh ekosistem bisnis klien.
                         </CardDescription>
                     </div>
                 </CardHeader>
@@ -234,15 +357,15 @@ export default function CompanySubscriptionStatusPage() {
                         <p className="text-xl font-black">{activeModulesCount} / 3</p>
                     </div>
                     <div className="p-6 border-r border-white/5">
-                        <p className="text-[9px] font-black uppercase opacity-40 tracking-widest mb-1">Total Staff</p>
-                        <p className="text-xl font-black">{usage.userCount} Personil</p>
+                        <p className="text-[9px] font-black uppercase opacity-40 tracking-widest mb-1">Admin Aktif</p>
+                        <p className="text-xl font-black">{currentMgmtCount} / {mgmtLimit}</p>
                     </div>
                     <div className="p-6 border-r border-white/5">
-                        <p className="text-[9px] font-black uppercase opacity-40 tracking-widest mb-1">Admin Klien</p>
-                        <p className="text-xl font-black">{usage.managementCount} / {mgmtLimit}</p>
+                        <p className="text-[9px] font-black uppercase opacity-40 tracking-widest mb-1">ID Klien</p>
+                        <p className="text-xs font-mono opacity-60 uppercase">{company.id.substring(0, 12)}...</p>
                     </div>
                     <div className="p-6">
-                        <p className="text-[9px] font-black uppercase opacity-40 tracking-widest mb-1">System Health</p>
+                        <p className="text-[9px] font-black uppercase opacity-40 tracking-widest mb-1">Status Klien</p>
                         <div className="flex items-center gap-2">
                             <div className="size-2 rounded-full bg-emerald-500 animate-pulse"></div>
                             <p className="text-sm font-black text-emerald-400 uppercase tracking-widest">Normal</p>
@@ -255,7 +378,7 @@ export default function CompanySubscriptionStatusPage() {
             <div className="space-y-4">
                 <div className="flex items-center gap-2 text-slate-400">
                     <Zap size={14} className="text-primary" />
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">INVENTORI MODUL AKTIF</h3>
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">INVENTORI MODUL TERPASANG</h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {moduleCatalog.map(m => (
@@ -264,7 +387,10 @@ export default function CompanySubscriptionStatusPage() {
                             id={m.id} 
                             name={m.name} 
                             icon={m.icon} 
-                            sub={company.moduleSubscriptions?.[m.id]} 
+                            sub={company.moduleSubscriptions?.[m.id]}
+                            onReset={handleResetRequest}
+                            onActivate={handleOpenManualActivation}
+                            onUpgrade={(id) => router.push(`/subscription-plans?companyId=${company.id}&moduleId=${id}`)}
                         />
                     ))}
                 </div>
@@ -342,6 +468,14 @@ export default function CompanySubscriptionStatusPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            <ManualActivationDialog 
+                isOpen={isManualDialogOpen}
+                onOpenChange={setIsManualDialogOpen}
+                moduleName={moduleCatalog.find(m => m.id === selectedModuleId)?.name || ''}
+                isLoading={isActivating}
+                onConfirm={handleConfirmManualActivation}
+            />
         </div>
     );
 }

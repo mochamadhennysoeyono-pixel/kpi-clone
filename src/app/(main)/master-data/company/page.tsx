@@ -58,7 +58,7 @@ import {
 export default function CompanyPage() {
   const { 
     companies, addCompany, updateCompany, deleteCompany, 
-    subscriptionPlans, employees, resetCompanySubscription, 
+    subscriptionPlans, employees, 
     isLoading: isGlobalLoading 
   } = useMasterData();
   
@@ -134,17 +134,6 @@ export default function CompanyPage() {
     }
   };
 
-  const handleReset = async (company: Company) => {
-      if (confirm(`PENTING: Anda akan mereset seluruh data langganan modular ${company.name} kembali ke Trial 14 Hari. Lanjutkan?`)) {
-          setIsProcessing(true);
-          try {
-              await resetCompanySubscription(company.id);
-          } finally {
-              setIsProcessing(false);
-          }
-      }
-  };
-
   const getModuleIcon = (id: string) => {
       switch(id) {
           case 'appraisal': return <ClipboardCheck size={10} />;
@@ -158,7 +147,7 @@ export default function CompanyPage() {
     <ResponsivePage>
       <PageHeader 
         title="Data Perusahaan Klien"
-        description="Manajemen infrastruktur klien. Gunakan fitur Reset Langganan untuk membersihkan data testing modular."
+        description="Manajemen infrastruktur klien. Kelola profil dan pantau status langganan modular di halaman Detail Paket."
         icon={Building}
         actions={
           <Button onClick={() => { setSelectedCompany(undefined); setSheetOpen(true); }} className="font-bold shadow-lg h-9 sm:h-10 active:scale-95 transition-all">
@@ -289,14 +278,10 @@ export default function CompanyPage() {
                 <DropdownMenuContent align="end" className="z-[350]">
                   <DropdownMenuItem asChild>
                     <Link href={`/company-subscription-status/${c.id}`} className="cursor-pointer">
-                      <Eye className="size-3.5 mr-2" /> Detail Paket
+                      <Eye className="size-3.5 mr-2" /> Detail Paket & Billing
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleEditCompany(c)}><Pencil className="size-3.5 mr-2" />Edit Profil</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleReset(c)} className="text-amber-600 font-bold">
-                    <RefreshCw className="size-3.5 mr-2" /> Reset Langganan (Test)
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(c)}><Trash2 className="size-3.5 mr-2" />Hapus Permanen</DropdownMenuItem>
                 </DropdownMenuContent>
@@ -335,7 +320,7 @@ export default function CompanyPage() {
 
                         <div className="flex gap-2 pt-1">
                              <Button asChild variant="outline" size="sm" className="flex-1 font-black text-[9px] h-9 shadow-sm">
-                                <Link href={`/company-subscription-status/${c.id}`}>STATUS PAKET</Link>
+                                <Link href={`/company-subscription-status/${c.id}`}>BILLING</Link>
                              </Button>
                              <Button variant="ghost" size="sm" className="flex-1 font-black text-[9px] h-9" onClick={() => handleEditCompany(c)}>UBAH PROFIL</Button>
                              <DropdownMenu>
@@ -343,7 +328,6 @@ export default function CompanyPage() {
                                     <Button variant="ghost" size="icon" className="h-9 w-9"><MoreHorizontal size={14}/></Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="z-[350]">
-                                    <DropdownMenuItem onClick={() => handleReset(c)} className="text-amber-600 font-bold">Reset Paket</DropdownMenuItem>
                                     <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(c)}>Hapus Klien</DropdownMenuItem>
                                 </DropdownMenuContent>
                              </DropdownMenu>
