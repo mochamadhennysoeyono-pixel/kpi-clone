@@ -66,7 +66,7 @@ interface MasterDataContextType {
   
   // Modular Subscription Management
   resetModuleSubscription: (companyId: string, moduleId: ModuleId) => Promise<void>;
-  activateModuleManually: (companyId: string, moduleId: ModuleId, config: Partial<ModuleSubscription>) => Promise<void>;
+  activateModuleManually: (companyId: string, moduleId: ModuleId, config: Partial<ModuleSubscription>, isUpgrade?: boolean) => Promise<void>;
 
   addDepartment: (department: Omit<Department, 'id'>) => Promise<Department | null>;
   updateDepartment: (id: string, data: Partial<Omit<Department, 'id'>>) => Promise<void>;
@@ -355,6 +355,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
           if (!companySnap.exists()) throw new Error("Perusahaan tidak ditemukan.");
           
           const batch = writeBatch(db);
+          // Hapus field secara eksplisit menggunakan dot notation dan sentinel deleteField()
           batch.update(companyRef, {
               [`moduleSubscriptions.${moduleId}`]: deleteField()
           });
@@ -369,12 +370,13 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
           });
 
           await batch.commit();
+          // Segera tarik data segar setelah commit sukses
           await fetchData(true);
-          toast({ title: "Modul Direset", description: `Langganan ${moduleId} telah dihapus.` });
-      } catch (e: any) { toast({ variant: 'destructive', title: "Gagal", description: e.message }); }
+          toast({ title: "Modul Direset", description: `Langganan ${moduleId} telah dihapus dari sistem.` });
+      } catch (e: any) { toast({ variant: 'destructive', title: "Gagal Reset", description: e.message }); }
   }, [currentUser, fetchData, toast, userRole]);
 
-  const activateModuleManually = useCallback(async (companyId: string, moduleId: ModuleId, config: Partial<ModuleSubscription>) => {
+  const activateModuleManually = useCallback(async (companyId: string, moduleId: ModuleId, config: Partial<ModuleSubscription>, isUpgrade: boolean = false) => {
       if (!db || userRole !== 'superadmin') return;
       try {
           const companyRef = doc(db, 'companies', companyId);
@@ -382,12 +384,15 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
           if (!companySnap.exists()) throw new Error("Perusahaan tidak ditemukan.");
           
           const batch = writeBatch(db);
+          const currentSubs = companySnap.data().moduleSubscriptions || {};
+          const currentMod = currentSubs[moduleId] || {};
+
           const subData: ModuleSubscription = {
               status: 'active',
               type: config.type || 'paid',
-              quota: config.quota || 10,
-              expiryDate: config.expiryDate || addDays(new Date(), 365).toISOString(),
-              activatedAt: new Date().toISOString()
+              quota: isUpgrade ? (currentMod.quota || 0) + (config.quota || 0) : (config.quota || 10),
+              expiryDate: config.expiryDate || (currentMod.expiryDate || addDays(new Date(), 365).toISOString()),
+              activatedAt: currentMod.activatedAt || new Date().toISOString()
           };
 
           batch.update(companyRef, {
@@ -398,15 +403,15 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
           const logRef = doc(collection(db, 'subscriptionLogs'));
           batch.set(logRef, {
               companyId, companyName: companySnap.data().name, company: companySnap.data().name,
-              planName: `AKTIVASI MANUAL ${moduleId.toUpperCase()}`,
-              action: subData.type === 'trial' ? 'TRIAL' : 'UPGRADE', amount: 0,
+              planName: isUpgrade ? `UPGRADE +${config.quota} USER - ${moduleId.toUpperCase()}` : `AKTIVASI MANUAL ${moduleId.toUpperCase()}`,
+              action: isUpgrade ? 'UPGRADE' : (subData.type === 'trial' ? 'TRIAL' : 'UPGRADE'), amount: 0,
               startDate: new Date().toISOString(), endDate: subData.expiryDate,
               performedBy: `Superadmin (${currentUser?.name})`, timestamp: serverTimestamp()
           });
 
           await batch.commit();
           await fetchData(true);
-          toast({ title: "Modul Diaktifkan", description: `Modul ${moduleId} berhasil diaktifkan secara manual.` });
+          toast({ title: isUpgrade ? "Kuota Ditambah" : "Modul Diaktifkan", description: `Konfigurasi modul ${moduleId} telah diperbarui.` });
       } catch (e: any) { toast({ variant: 'destructive', title: "Gagal", description: e.message }); }
   }, [currentUser, fetchData, toast, userRole]);
 

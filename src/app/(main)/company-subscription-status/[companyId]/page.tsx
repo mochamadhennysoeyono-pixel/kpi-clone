@@ -22,7 +22,8 @@ import {
     Timer,
     PlusCircle,
     X,
-    Calendar
+    Calendar,
+    UserPlus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNowStrict, format, parseISO, isValid, addDays } from 'date-fns';
@@ -124,7 +125,7 @@ function ModuleStatusCard({
                             {isActive ? (
                                 <>
                                     <DropdownMenuItem onClick={() => onUpgrade(id)}>
-                                        <ShoppingCart size={14} className="mr-2 text-primary" /> Upgrade / Tambah Kuota
+                                        <UserPlus size={14} className="mr-2 text-primary" /> Tambah Kuota User
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem className="text-amber-600 font-bold" onClick={() => onReset(id)}>
@@ -171,13 +172,15 @@ function ManualActivationDialog({
     onOpenChange, 
     moduleName, 
     onConfirm,
-    isLoading 
+    isLoading,
+    isUpgrade = false
 }: { 
     isOpen: boolean, 
     onOpenChange: (o: boolean) => void, 
     moduleName: string, 
     onConfirm: (data: any) => void,
-    isLoading: boolean
+    isLoading: boolean,
+    isUpgrade?: boolean
 }) {
     const [config, setConfig] = useState({
         type: 'paid' as 'trial' | 'paid',
@@ -185,47 +188,69 @@ function ManualActivationDialog({
         expiryDate: format(addDays(new Date(), 365), 'yyyy-MM-dd')
     });
 
+    useEffect(() => {
+        if (isOpen) {
+            setConfig({
+                type: 'paid',
+                quota: isUpgrade ? 5 : 10,
+                expiryDate: format(addDays(new Date(), 365), 'yyyy-MM-dd')
+            });
+        }
+    }, [isOpen, isUpgrade]);
+
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md border-none shadow-2xl">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-black uppercase tracking-tighter">Aktivasi Manual</DialogTitle>
+                    <DialogTitle className="text-xl font-black uppercase tracking-tighter">
+                        {isUpgrade ? 'Tambah Kuota User' : 'Aktivasi Manual'}
+                    </DialogTitle>
                     <DialogDescription className="text-xs font-bold text-primary uppercase">MODUL: {moduleName}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-6 py-4">
-                    <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase opacity-60">Jenis Akses</Label>
-                        <RadioGroup 
-                            value={config.type} 
-                            onValueChange={(v: any) => setConfig(prev => ({ ...prev, type: v, quota: v === 'trial' ? 10 : prev.quota, expiryDate: v === 'trial' ? format(addDays(new Date(), 14), 'yyyy-MM-dd') : prev.expiryDate }))}
-                            className="grid grid-cols-2 gap-3"
-                        >
-                            <div className="relative">
-                                <RadioGroupItem value="paid" id="paid" className="peer sr-only" />
-                                <Label htmlFor="paid" className="flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 text-xs font-bold uppercase transition-all">PAID</Label>
-                            </div>
-                            <div className="relative">
-                                <RadioGroupItem value="trial" id="trial" className="peer sr-only" />
-                                <Label htmlFor="trial" className="flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer peer-data-[state=checked]:border-amber-500 peer-data-[state=checked]:bg-amber-50 text-xs font-bold uppercase transition-all">TRIAL</Label>
-                            </div>
-                        </RadioGroup>
-                    </div>
+                    {!isUpgrade && (
+                        <div className="space-y-3">
+                            <Label className="text-[10px] font-black uppercase opacity-60">Jenis Akses</Label>
+                            <RadioGroup 
+                                value={config.type} 
+                                onValueChange={(v: any) => setConfig(prev => ({ ...prev, type: v, quota: v === 'trial' ? 10 : prev.quota, expiryDate: v === 'trial' ? format(addDays(new Date(), 14), 'yyyy-MM-dd') : prev.expiryDate }))}
+                                className="grid grid-cols-2 gap-3"
+                            >
+                                <div className="relative">
+                                    <RadioGroupItem value="paid" id="paid" className="peer sr-only" />
+                                    <Label htmlFor="paid" className="flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 text-xs font-bold uppercase transition-all">PAID</Label>
+                                </div>
+                                <div className="relative">
+                                    <RadioGroupItem value="trial" id="trial" className="peer sr-only" />
+                                    <Label htmlFor="trial" className="flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer peer-data-[state=checked]:border-amber-500 peer-data-[state=checked]:bg-amber-50 text-xs font-bold uppercase transition-all">TRIAL</Label>
+                                </div>
+                            </RadioGroup>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase opacity-60">Kuota Staff</Label>
+                            <Label className="text-[10px] font-black uppercase opacity-60">{isUpgrade ? 'Tambah Slot Staff' : 'Kuota Staff'}</Label>
                             <Input type="number" value={config.quota} onChange={(e) => setConfig(prev => ({ ...prev, quota: parseInt(e.target.value) || 0 }))} />
                         </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase opacity-60">Tanggal Kadaluarsa</Label>
-                            <Input type="date" value={config.expiryDate} onChange={(e) => setConfig(prev => ({ ...prev, expiryDate: e.target.value }))} />
-                        </div>
+                        {!isUpgrade && (
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase opacity-60">Tanggal Kadaluarsa</Label>
+                                <Input type="date" value={config.expiryDate} onChange={(e) => setConfig(prev => ({ ...prev, expiryDate: e.target.value }))} />
+                            </div>
+                        )}
                     </div>
+                    {isUpgrade && (
+                        <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 flex items-center gap-3">
+                            <UserPlus className="size-5 text-primary shrink-0" />
+                            <p className="text-[10px] font-medium leading-relaxed">Penambahan kuota ini akan digabungkan dengan kapasitas saat ini tanpa merubah tanggal kadaluarsa paket.</p>
+                        </div>
+                    )}
                 </div>
                 <DialogFooter className="gap-2">
                     <DialogClose asChild><Button variant="ghost" className="font-bold">Batal</Button></DialogClose>
                     <Button onClick={() => onConfirm(config)} disabled={isLoading} className="font-black px-8">
-                        {isLoading ? <Loader2 className="animate-spin size-4" /> : "AKTIFKAN MODUL"}
+                        {isLoading ? <Loader2 className="animate-spin size-4" /> : (isUpgrade ? "TAMBAH KUOTA" : "AKTIFKAN MODUL")}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -267,6 +292,7 @@ export default function CompanySubscriptionStatusPage() {
     const [isActivating, setIsActivating] = useState(false);
     const [selectedModuleId, setSelectedModuleId] = useState<ModuleId | null>(null);
     const [isManualDialogOpen, setIsManualDialogOpen] = useState(false);
+    const [dialogMode, setDialogMode] = useState<'activate' | 'upgrade'>('activate');
 
     const company = useMemo(() => companies.find(c => c.id === companyId), [companyId, companies]);
 
@@ -294,21 +320,28 @@ export default function CompanySubscriptionStatusPage() {
 
     const handleResetRequest = async (moduleId: ModuleId) => {
         if (!company) return;
-        if (confirm(`PENTING: Hapus data langganan modul ${moduleId} untuk ${company.name}? Data operasional mungkin tidak bisa diakses sampai diaktifkan kembali.`)) {
+        if (confirm(`PENTING: Reset langganan modul ${moduleId} untuk ${company.name}? Data kuota akan dihapus dan modul menjadi inaktif.`)) {
             await resetModuleSubscription(company.id, moduleId);
         }
     };
 
     const handleOpenManualActivation = (moduleId: ModuleId) => {
         setSelectedModuleId(moduleId);
+        setDialogMode('activate');
         setIsManualDialogOpen(true);
     };
 
-    const handleConfirmManualActivation = async (config: any) => {
+    const handleOpenUpgrade = (moduleId: ModuleId) => {
+        setSelectedModuleId(moduleId);
+        setDialogMode('upgrade');
+        setIsManualDialogOpen(true);
+    };
+
+    const handleConfirmConfig = async (config: any) => {
         if (!company || !selectedModuleId) return;
         setIsActivating(true);
         try {
-            await activateModuleManually(company.id, selectedModuleId, config);
+            await activateModuleManually(company.id, selectedModuleId, config, dialogMode === 'upgrade');
             setIsManualDialogOpen(false);
         } finally {
             setIsActivating(false);
@@ -390,7 +423,7 @@ export default function CompanySubscriptionStatusPage() {
                             sub={company.moduleSubscriptions?.[m.id]}
                             onReset={handleResetRequest}
                             onActivate={handleOpenManualActivation}
-                            onUpgrade={(id) => router.push(`/subscription-plans?companyId=${company.id}&moduleId=${id}`)}
+                            onUpgrade={handleOpenUpgrade}
                         />
                     ))}
                 </div>
@@ -474,7 +507,8 @@ export default function CompanySubscriptionStatusPage() {
                 onOpenChange={setIsManualDialogOpen}
                 moduleName={moduleCatalog.find(m => m.id === selectedModuleId)?.name || ''}
                 isLoading={isActivating}
-                onConfirm={handleConfirmManualActivation}
+                isUpgrade={dialogMode === 'upgrade'}
+                onConfirm={handleConfirmConfig}
             />
         </div>
     );
