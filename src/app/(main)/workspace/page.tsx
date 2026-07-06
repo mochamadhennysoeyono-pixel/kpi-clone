@@ -86,7 +86,7 @@ const MODULE_CATALOG = [
         description: 'Manajemen Kinerja terintegrasi (KPI, KBO, & OKR) untuk pertumbuhan tim.',
         icon: ClipboardCheck,
         color: 'text-primary',
-        route: '/action-center',
+        route: '/appraisal-dashboard',
     },
     {
         id: 'lms' as ModuleId,
@@ -414,10 +414,11 @@ export function WorkspaceContent() {
     return (
         <>
             <ResponsivePage className="bg-[#f8f9ff] min-h-screen">
+                {/* Header / Hero Section */}
                 <section className="mb-8">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                         <div>
-                            <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-900 mb-2">Halo, {currentUser.name.split(' ')[0]}!</h1>
+                            <h1 className="text-xl sm:text-2xl font-black tracking-tighter text-slate-900 mb-2">Halo, {currentUser.name.split(' ')[0]}!</h1>
                             <p className="text-slate-500 font-medium text-sm sm:text-base max-w-lg">
                                 Selamat datang kembali. Pintu masuk ke ekosistem produktivitas tim Anda yang terintegrasi.
                             </p>
@@ -430,7 +431,9 @@ export function WorkspaceContent() {
                 </section>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    {/* Left Column: Operations (8 cols) */}
                     <div className="lg:col-span-8 space-y-6">
+                        {/* Company Identity Card */}
                         <div className="bg-[#131b2e] text-white p-6 sm:p-8 rounded-2xl relative overflow-hidden shadow-2xl">
                             <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                                 <div className="flex items-center gap-5">
@@ -459,6 +462,7 @@ export function WorkspaceContent() {
                             <div className="absolute -right-10 -bottom-10 size-40 bg-primary/20 rounded-full blur-3xl opacity-50"></div>
                         </div>
 
+                        {/* Data Foundation Section */}
                         {isManagement && (
                             <div className="space-y-4">
                                 <SectionLabel icon={Database} label="PONDASI DATA" />
@@ -489,6 +493,7 @@ export function WorkspaceContent() {
                             </div>
                         )}
 
+                        {/* Active Modules Section */}
                         <div className="space-y-4">
                             <SectionLabel icon={ShieldCheck} label="MODUL AKTIF" color="text-primary" />
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -504,6 +509,7 @@ export function WorkspaceContent() {
                             </div>
                         </div>
 
+                        {/* Management Add-on Section */}
                         {isManagement && (
                             <div className="space-y-4">
                                 <SectionLabel icon={Layers} label="LAYANAN TAMBAHAN" />
@@ -530,6 +536,7 @@ export function WorkspaceContent() {
                             </div>
                         )}
 
+                        {/* Available Modules Section */}
                         {isManagement && availableModules.length > 0 && (
                             <div className="space-y-4">
                                 <SectionLabel icon={Sparkles} label="MODUL TERSEDIA" />
@@ -558,11 +565,14 @@ export function WorkspaceContent() {
                         )}
                     </div>
 
+                    {/* Right Column: Sidebar (4 cols) */}
                     <div className="lg:col-span-4 space-y-6 flex flex-col h-full">
+                        {/* Account Summary Stats */}
                         <div className="bg-[#131b2e] text-white p-7 rounded-2xl relative overflow-hidden shadow-2xl">
                             <div className="relative z-10 space-y-8">
                                 <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">RINGKASAN AKUN</h3>
                                 <div className="space-y-8">
+                                    {/* License Usage */}
                                     <div className="space-y-3">
                                         <div className="flex justify-between items-end mb-2">
                                             <div className="space-y-0.5">
@@ -586,6 +596,7 @@ export function WorkspaceContent() {
                                         <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Akun staff aktif dalam ekosistem</p>
                                     </div>
 
+                                    {/* Productivity Index */}
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-end mb-1">
                                             <div className="space-y-0.5">
@@ -617,6 +628,7 @@ export function WorkspaceContent() {
                             <div className="absolute -right-24 -top-24 size-48 bg-primary/10 rounded-full blur-[80px]"></div>
                         </div>
 
+                        {/* Proactive Help Area */}
                         <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10 space-y-4 group overflow-hidden relative">
                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform"><Bot size={80} /></div>
                             <div className="space-y-1 relative z-10">
@@ -628,6 +640,7 @@ export function WorkspaceContent() {
                             </Button>
                         </div>
 
+                        {/* Purchase History: Always at the bottom of the right column */}
                         <div className="mt-auto pt-4 flex-grow flex flex-col justify-end">
                             <SectionLabel icon={History} label="HISTORI PEMBELIAN & AKTIVITAS" />
                             <GlassCard className="p-2">
