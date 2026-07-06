@@ -95,6 +95,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
     'kpi': ClipboardCheck,
     'kbo': ShieldCheck,
     'okr': Target,
+    'appraisal': ClipboardCheck,
     '/my-performance': UserCircle,
     '/input-achievement': FilePlus,
     '/setup-kpi': Settings,
@@ -226,11 +227,11 @@ export function getNavItems(
                 ]
             },
             {
-                label: 'KPI',
-                iconName: 'kpi',
+                label: 'APPRAISAL',
+                iconName: 'appraisal',
                 subItems: [
                     { href: '/appraisal-dashboard', label: 'Analitik', iconName: '/appraisal-dashboard' },
-                    { href: '/setup-kpi', label: 'Setup', iconName: '/setup-kpi' },
+                    { href: '/setup-kpi', label: 'KPI', iconName: '/setup-kpi' },
                     { href: '/master-data/kbo-competencies', label: 'KBO', iconName: 'manajemen-kbo' },
                     { href: '/okr', label: 'OKR', iconName: '/okr' },
                 ]
@@ -326,37 +327,18 @@ export function getNavItems(
         },
 
         {
-            href: '/appraisal-dashboard',
-            label: 'Analitik',
-            iconName: 'analisis',
-            show: capabilities.canAccessReports && (capabilities.isDeptHead || capabilities.isCompanyAdmin),
-            moduleId: 'appraisal',
-        },
-
-        {
-            href: '/setup-kpi',
-            label: 'KPI',
-            iconName: 'kpi',
-            show: capabilities.canAccessKpi,
-            moduleId: 'appraisal',
-        },
-
-        {
-            href: '/master-data/kbo-competencies',
-            label: 'KBO',
-            iconName: 'kbo',
-            show: capabilities.canAccessKbo && capabilities.isCompanyAdmin,
-            moduleId: 'appraisal',
-        },
-
-        {
-            label: 'OKR',
-            iconName: 'okr',
-            show: capabilities.canAccessOkr,
+            label: 'APPRAISAL',
+            iconName: 'appraisal',
+            show: capabilities.canAccessKpi || capabilities.canAccessKbo || capabilities.canAccessOkr,
             moduleId: 'appraisal',
             subItems: [
-                 { href: '/okr', label: 'Workspace', show: capabilities.isCompanyAdmin, iconName: '/okr', moduleId: 'appraisal' },
-                 { href: '/okr/progress', label: 'Progress', show: !capabilities.isCompanyAdmin && capabilities.isOkrParticipant, iconName: '/okr/progress', moduleId: 'appraisal' },
+                { href: '/appraisal-dashboard', label: 'Analitik', show: capabilities.canAccessReports && (capabilities.isDeptHead || capabilities.isCompanyAdmin), iconName: 'analisis', moduleId: 'appraisal' },
+                { href: '/setup-kpi', label: 'KPI', show: capabilities.canAccessKpi, iconName: 'kpi', moduleId: 'appraisal' },
+                { href: '/master-data/kbo-competencies', label: 'KBO', show: capabilities.canAccessKbo && capabilities.isCompanyAdmin, iconName: 'kbo', moduleId: 'appraisal' },
+                { href: '/okr', label: 'OKR', show: capabilities.canAccessOkr && capabilities.isCompanyAdmin, iconName: 'okr', moduleId: 'appraisal' },
+                { href: '/okr/progress', label: 'Progres OKR', show: !capabilities.isCompanyAdmin && capabilities.isOkrParticipant, iconName: '/okr/progress', moduleId: 'appraisal' },
+                { href: '/my-performance', label: 'Performa Saya', show: !capabilities.isCompanyAdmin && !capabilities.isSuperAdmin, iconName: '/my-performance', moduleId: 'appraisal' },
+                { href: '/input-achievement', label: 'Input Realisasi', show: capabilities.canAccessKpi, iconName: '/input-achievement', moduleId: 'appraisal' },
             ]
         },
 
