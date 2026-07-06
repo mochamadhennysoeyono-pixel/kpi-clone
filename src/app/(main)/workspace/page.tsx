@@ -264,7 +264,6 @@ export function WorkspaceContent() {
     const [isMgmtDialogOpen, setIsMgmtDialogOpen] = useState(false);
     const [isMgmtConfigOpen, setIsMgmtConfigOpen] = useState(false);
     const [mgmtAddQuota, setMgmtAddQuota] = useState(1);
-    const [isUpgrading, setIsUpgrading] = useState(false);
 
     const company = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
     const isManagement = userRole === 'manajemen';
@@ -282,7 +281,7 @@ export function WorkspaceContent() {
     const staffLimit = useMemo(() => company?.customUserLimit || 0, [company]);
     const currentStaffCount = useMemo(() => employees.filter(e => e.company === company?.name && e.role === 'user' && e.status === 'Aktif').length, [employees, company]);
     const licenseUsagePercent = useMemo(() => {
-        if (staffLimit === -1) return 0;
+        if (staffLimit === -1) return 100; // Just for visual in progress bar
         if (staffLimit === 0) return 0;
         return Math.min(100, (currentStaffCount / staffLimit) * 100);
     }, [currentStaffCount, staffLimit]);
@@ -473,7 +472,7 @@ export function WorkspaceContent() {
                                             </div>
                                         </GlassCard>
                                     </Link>
-                                    <Link href="/master-data/hierarchy">
+                                    <div onClick={() => setIsGroupDialogOpen(true)}>
                                         <GlassCard className="p-5 flex items-center gap-5 group">
                                             <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-lg shadow-primary/20">
                                                 <GitMerge size={22} strokeWidth={2} />
@@ -483,7 +482,7 @@ export function WorkspaceContent() {
                                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">KELOLA HOLDING & ANAK PERUSAHAAN</p>
                                             </div>
                                         </GlassCard>
-                                    </Link>
+                                    </div>
                                 </div>
                             </div>
                         )}
