@@ -257,17 +257,11 @@ export function getNavItems(
         },
 
         {
-            label: 'Analisis & Laporan',
+            href: '/appraisal-dashboard',
+            label: 'Dashboard Appraisal',
             iconName: 'analisis-laporan',
             show: capabilities.canAccessReports && (capabilities.isDeptHead || capabilities.isCompanyAdmin || capabilities.isSuperAdmin),
             moduleId: 'appraisal',
-            subItems: [
-                 { href: '/appraisal-dashboard', label: 'Dashboard Appraisal', show: true, iconName: '/appraisal-dashboard', moduleId: 'appraisal' },
-                 { href: '/reports', label: 'Dashboard KPI', show: capabilities.canAccessKpi, iconName: '/reports', moduleId: 'appraisal' },
-                 { href: '/cycle-reports', label: 'Dashboard Siklus KPI', show: capabilities.canAccessKpi, iconName: '/cycle-reports', moduleId: 'appraisal' },
-                 { href: '/kbo-appraisal', label: 'Dashboard KBO', show: capabilities.canAccessKbo, iconName: '/kbo-appraisal', moduleId: 'appraisal' },
-                 { href: '/okr/reports', label: 'Dashboard OKR', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/okr/reports', moduleId: 'appraisal' },
-            ]
         },
 
         {
@@ -380,6 +374,7 @@ export function getNavItems(
         'Pondasi Data', 
         'Pusat Holding',
         'CollabSpace',
+        '/appraisal-dashboard',
         'OKR (Objectives)',
         'Analisis & Laporan', 
         'Manajemen KPI', 
@@ -392,6 +387,7 @@ export function getNavItems(
         'Pondasi Data', 
         'Pusat Holding', 
         'CollabSpace', 
+        '/appraisal-dashboard',
         'Analisis & Laporan', 
         'Manajemen KPI', 
         'Manajemen KBO', 
@@ -403,10 +399,10 @@ export function getNavItems(
         '/settings'
       ],
       "department-head": [
-        '/action-center', 'Pondasi Data', 'CollabSpace', 'Analisis & Laporan', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal', '/settings'
+        '/action-center', 'Pondasi Data', 'CollabSpace', '/appraisal-dashboard', 'Analisis & Laporan', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal', '/settings'
       ],
       user: [
-        '/action-center', 'CollabSpace', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal', '/settings'
+        '/action-center', 'CollabSpace', '/appraisal-dashboard', 'Manajemen KPI', 'OKR (Objectives)', 'LMS Portal', '/settings'
       ]
     };
     

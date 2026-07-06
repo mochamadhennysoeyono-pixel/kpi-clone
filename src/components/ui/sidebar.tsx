@@ -1,3 +1,4 @@
+
 // src/components/ui/sidebar.tsx
 "use client";
 
@@ -63,9 +64,7 @@ function MotionNav() {
           "flex flex-col h-screen sticky left-0 top-0 z-50 border-r bg-white no-print",
           isMobile ? "fixed w-[280px] h-full border-none shadow-2xl" : "border-[#E5E7EB]"
         )}
-        // MOD: Auto-expand on hover
         onMouseEnter={() => !isMobile && setIsOpen(true)}
-        // MOD: DO NOT include onMouseLeave to ensure it stays expanded
       >
         {/* Header: Logo & Manual Toggle Area (65px height) */}
         <div className="flex items-center px-[13px] sm:px-[20px] flex-shrink-0 h-[65px] border-b border-[#E5E7EB] overflow-hidden relative">
@@ -96,14 +95,13 @@ function MotionNav() {
                 </AnimatePresence>
             </div>
 
-            {/* Manual Toggle Button (Desktop Only) */}
             {(isOpen || isMobile) && (
                 <Button 
                     variant="ghost" 
                     size="icon" 
                     onClick={(e) => {
                         e.stopPropagation();
-                        setIsOpen(false); // Manually collapse
+                        setIsOpen(false);
                     }}
                     className="size-8 rounded-lg hover:bg-slate-100 shrink-0 ml-auto hidden md:flex"
                 >
@@ -113,7 +111,6 @@ function MotionNav() {
           </div>
         </div>
 
-        {/* Navigation Area */}
         <ScrollArea className={cn(
             "flex-1 transition-all duration-200",
             (isOpen || isMobile) ? "px-[20px]" : "px-[13px]"
@@ -122,7 +119,23 @@ function MotionNav() {
                 {navItems.map((group) => {
                     const isGroup = !!group.subItems;
                     const isGroupActive = isGroup && group.subItems?.some(sub => pathname.startsWith(sub.href));
-                    const isStandaloneActive = !isGroup && (pathname === group.href || (group.href !== '/' && pathname.startsWith(group.href!)));
+                    
+                    // Special logic for Appraisal module: any dashboard path counts as active for /appraisal-dashboard
+                    const isAppraisalDashboard = group.href === '/appraisal-dashboard';
+                    const isAppraisalActive = isAppraisalDashboard && (
+                        pathname.startsWith('/appraisal-dashboard') || 
+                        pathname.startsWith('/reports') || 
+                        pathname.startsWith('/cycle-reports') || 
+                        pathname.startsWith('/kbo-appraisal') || 
+                        pathname.startsWith('/okr/reports')
+                    );
+
+                    const isStandaloneActive = !isGroup && (
+                        isAppraisalActive || 
+                        pathname === group.href || 
+                        (group.href !== '/' && pathname.startsWith(group.href!))
+                    );
+                    
                     const isActive = isGroupActive || isStandaloneActive;
 
                     return (
@@ -209,7 +222,6 @@ function MotionNav() {
              </ul>
         </ScrollArea>
         
-        {/* Footer: User Profile Area */}
         <div className="p-[20px] border-t border-[#E5E7EB] flex-shrink-0">
             <button
                 onClick={() => logout()}
