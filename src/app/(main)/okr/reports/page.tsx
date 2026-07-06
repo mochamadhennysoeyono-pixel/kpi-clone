@@ -1,3 +1,4 @@
+
 // src/app/(main)/okr/reports/page.tsx
 "use client";
 
@@ -42,6 +43,7 @@ import { AdaptiveTable } from '@/components/ui/adaptive-table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { DashboardNavigator } from '@/components/layout/dashboard-navigator';
 
 // Helper to safely convert dates
 const safeToDate = (dateVal: any): Date | null => {
@@ -409,10 +411,12 @@ export default function OkrReportsPage() {
     return (
         <ResponsivePage>
             <PageHeader 
-                title="Laporan Hasil Project" 
+                title="Dashboard OKR" 
                 description="Analisis performa unit bisnis dan kontribusi personil terhadap sasaran strategis perusahaan." 
                 icon={FilePieChart} 
             />
+
+            <DashboardNavigator />
 
             <ResponsiveToolbar>
                 <div className="relative flex-1">

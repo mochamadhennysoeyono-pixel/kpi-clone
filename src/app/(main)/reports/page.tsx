@@ -1,3 +1,4 @@
+
 // src/app/(main)/reports/page.tsx
 "use client";
 
@@ -62,6 +63,7 @@ import { AdaptiveCardGrid, AdaptiveMetricCard, AdaptiveInsightCard } from "@/com
 import { AdaptiveTable } from "@/components/ui/adaptive-table";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { usePageContext } from "@/contexts/page-context";
+import { DashboardNavigator } from '@/components/layout/dashboard-navigator';
 
 function TeamReportView() {
     const { currentUser, userRole } = useAuth();
@@ -415,84 +417,15 @@ export function ReportDetailView({ kpiData, onClose }: { kpiData: KpiData, onClo
 
 export default function ReportsPage() {
     const { setPageContext } = usePageContext();
-    const [activeTab, setActiveTab] = useState("team");
-    useEffect(() => { setPageContext('Pusat Analisis Laporan', null); }, [setPageContext]);
+    useEffect(() => { setPageContext('Dashboard KPI', null); }, [setPageContext]);
 
     return (
       <ResponsivePage>
-        <PageHeader title="Pusat Analisis Laporan" description="Monitor pencapaian target dan analisis tren pertumbuhan kinerja di seluruh unit bisnis." icon={FilePieChart} />
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-[400px] bg-muted/30 p-1 rounded-xl mb-6">
-                <TabsTrigger value="team" className="font-bold text-xs rounded-lg uppercase tracking-tight">Laporan Agregat Tim</TabsTrigger>
-                <TabsTrigger value="individual" className="font-bold text-xs rounded-lg uppercase tracking-tight">Analisa Individu</TabsTrigger>
-            </TabsList>
-            <TabsContent value="team" className="m-0 border-none space-y-6"><TeamReportView /></TabsContent>
-            <TabsContent value="individual" className="m-0 border-none"><IndividualAnalysisView /></TabsContent>
-        </Tabs>
+        <PageHeader title="Dashboard KPI" description="Monitor pencapaian target KPI tim dan analisis tren pertumbuhan kinerja secara real-time." icon={PieChart} />
+        
+        <DashboardNavigator />
+        
+        <TeamReportView />
       </ResponsivePage>
-    );
-}
-
-function IndividualAnalysisView() {
-    const { currentUser, userRole } = useAuth();
-    const { employees, companies, kpiData } = useMasterData();
-    const router = useRouter();
-    
-    const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
-    const [selectedEmployeeId, setSelectedEmployeeId] = useState("all");
-    const [startPeriod, setStartPeriod] = useState<string>("");
-    const [endPeriod, setEndPeriod] = useState<string>("");
-
-    const manageableCompanies = useMemo(() => {
-        if (userRole === 'superadmin') return companies.filter(c => c.status === 'Aktif');
-        const userCompany = companies.find(c => c.name === currentUser?.company);
-        if (userRole === 'manajemen' && userCompany?.isHolding) {
-            const getDescendantCompanies = (parentId: string): any[] => {
-                const children = companies.filter(c => c.parentId === parentId);
-                return children.flatMap(c => [c, ...getDescendantCompanies(c.id)]);
-            };
-            return [userCompany, ...getDescendantCompanies(userCompany.id)];
-        }
-        if (userCompany) return [userCompany]; return [];
-    }, [userRole, currentUser, companies]);
-
-    const selectedCompanyName = useMemo(() => companies.find(c => c.id === selectedCompanyId)?.name, [selectedCompanyId, companies]);
-    const filteredEmployees = useMemo(() => {
-        if (!selectedCompanyName) return [];
-        return employees.filter(e => e.company === selectedCompanyName && e.status === 'Aktif' && e.role !== 'superadmin').sort((a, b) => a.name.localeCompare(b.name));
-    }, [employees, selectedCompanyName]);
-
-    const availablePeriods = useMemo(() => {
-        if (!kpiData || !selectedCompanyName) return [];
-        return [...new Set(kpiData.filter(d => d.company === selectedCompanyName && d.period).map(d => d.period))].sort().reverse();
-    }, [kpiData, selectedCompanyName]);
-
-    const handleRunAnalysis = () => {
-        if (selectedEmployeeId === 'all' || !startPeriod || !endPeriod) return;
-        const employee = employees.find(e => e.id === selectedEmployeeId);
-        if (employee) {
-            sessionStorage.setItem('selectedEmployeeAnalysis', JSON.stringify({ employee, startPeriod, endPeriod }));
-            router.push(`/reports/${employee.id}`);
-        }
-    };
-
-    return (
-        <Card className="border-border/40 shadow-stripe overflow-hidden rounded-2xl bg-background">
-            <CardHeader className="bg-primary/5 p-8 border-b">
-                <div className="flex items-center gap-4">
-                    <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm"><UserSearch size={24} /></div>
-                    <div className="space-y-1"><CardTitle className="text-2xl font-black tracking-tight">Simulator Performa Personal</CardTitle><CardDescription className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Analisa histori pencapaian individu secara mendalam</CardDescription></div>
-                </div>
-            </CardHeader>
-            <CardContent className="p-8 space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Unit Bisnis</Label><Select onValueChange={(v) => { setSelectedCompanyId(v); setSelectedEmployeeId('all'); }} value={selectedCompanyId ?? ""}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue /></SelectTrigger><SelectContent className="z-[350]">{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Karyawan</Label><Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId} disabled={filteredEmployees.length === 0}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue placeholder="Pilih Karyawan..." /></SelectTrigger><SelectContent className="z-[350]">{filteredEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Dari Periode</Label><Select value={startPeriod} onValueChange={setStartPeriod}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue placeholder="Pilih..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Sampai Periode</Label><Select value={endPeriod} onValueChange={setEndPeriod}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue placeholder="Pilih..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
-                </div>
-                <Button onClick={handleRunAnalysis} disabled={selectedEmployeeId === 'all' || !startPeriod || !endPeriod} className="w-full h-11 font-black uppercase tracking-widest text-[11px] shadow-xl shadow-primary/20 transition-all active:scale-[0.98]"><TrendingUp size={16} className="mr-2" /> Jalankan Analisis Performa</Button>
-            </CardContent>
-        </Card>
     );
 }

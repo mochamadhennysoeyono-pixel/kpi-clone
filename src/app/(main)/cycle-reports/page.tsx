@@ -1,3 +1,4 @@
+
 // src/app/(main)/cycle-reports/page.tsx
 "use client";
 
@@ -34,6 +35,7 @@ import { ResponsivePage, ResponsiveToolbar } from "@/components/ui/adaptive-layo
 import { PageHeader } from "@/components/ui/page-header";
 import { AdaptiveCardGrid } from "@/components/ui/adaptive-card";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
+import { DashboardNavigator } from '@/components/layout/dashboard-navigator';
 
 export type CyclicalIndicator = KpiIndicator & {
   setupId: string;
@@ -326,7 +328,7 @@ export default function CycleReportsPage() {
     }, [availableYears, selectedYear]);
 
     useEffect(() => {
-      setPageContext('Laporan Progres Siklus KPI', null);
+      setPageContext('Dashboard Siklus KPI', null);
     }, [setPageContext]);
     
     useEffect(() => {
@@ -336,10 +338,12 @@ export default function CycleReportsPage() {
   return (
       <ResponsivePage>
             <PageHeader 
-                title="Laporan Progres Siklus"
+                title="Dashboard Siklus KPI"
                 description="Pantau pencapaian kumulatif untuk indikator KPI berjangka panjang (Triwulan, Semester, Tahunan)."
                 icon={Activity}
             />
+
+            <DashboardNavigator />
 
             <ResponsiveToolbar>
                 <div className="flex flex-1 items-center gap-2 min-w-0">

@@ -1,3 +1,4 @@
+
 // src/app/(main)/kbo-appraisal/page.tsx
 "use client";
 
@@ -54,6 +55,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { AdaptiveCardGrid, AdaptiveMetricCard } from '@/components/ui/adaptive-card';
 import { AdaptiveTable } from '@/components/ui/adaptive-table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { DashboardNavigator } from '@/components/layout/dashboard-navigator';
 
 
 interface KboResult {
@@ -434,10 +436,12 @@ function KboAppraisalContent() {
   return (
     <ResponsivePage>
       <PageHeader 
-        title="Laporan Penilaian KBO"
+        title="Dashboard KBO"
         description="Monitor progres dan hasil evaluasi kompetensi perilaku (KBO) di seluruh unit bisnis Anda."
         icon={ClipboardText}
       />
+
+      <DashboardNavigator />
       
       <ResponsiveToolbar>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex items-center gap-3 flex-1 min-w-0">

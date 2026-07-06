@@ -262,10 +262,11 @@ export function getNavItems(
             show: capabilities.canAccessReports && (capabilities.isDeptHead || capabilities.isCompanyAdmin || capabilities.isSuperAdmin),
             moduleId: 'appraisal',
             subItems: [
-                 { href: '/reports', label: 'Laporan Kinerja Tim', show: capabilities.canAccessKpi, iconName: '/reports', moduleId: 'appraisal' },
-                 { href: '/cycle-reports', label: 'Laporan Siklus', show: capabilities.canAccessKpi, iconName: '/cycle-reports', moduleId: 'appraisal' },
-                 { href: '/appraisal-dashboard', label: 'Dasbor Terintegrasi', show: true, iconName: '/appraisal-dashboard', moduleId: 'appraisal' },
-                 { href: '/kbo-appraisal', label: 'Hasil Evaluasi KBO', show: capabilities.canAccessKbo, iconName: '/kbo-appraisal', moduleId: 'appraisal' },
+                 { href: '/appraisal-dashboard', label: 'Dashboard Appraisal', show: true, iconName: '/appraisal-dashboard', moduleId: 'appraisal' },
+                 { href: '/reports', label: 'Dashboard KPI', show: capabilities.canAccessKpi, iconName: '/reports', moduleId: 'appraisal' },
+                 { href: '/cycle-reports', label: 'Dashboard Siklus KPI', show: capabilities.canAccessKpi, iconName: '/cycle-reports', moduleId: 'appraisal' },
+                 { href: '/kbo-appraisal', label: 'Dashboard KBO', show: capabilities.canAccessKbo, iconName: '/kbo-appraisal', moduleId: 'appraisal' },
+                 { href: '/okr/reports', label: 'Dashboard OKR', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/okr/reports', moduleId: 'appraisal' },
             ]
         },
 
@@ -302,7 +303,6 @@ export function getNavItems(
             moduleId: 'appraisal',
             subItems: [
                  { href: '/okr', label: 'Workspace OKR', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/okr', moduleId: 'appraisal' },
-                 { href: '/okr/reports', label: 'Analitik Project', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/okr/reports', moduleId: 'appraisal' },
                  { href: '/okr/progress', label: 'Update Progres', show: !capabilities.isSuperAdmin && !capabilities.isCompanyAdmin && capabilities.isOkrParticipant, iconName: '/okr/progress', moduleId: 'appraisal' },
             ]
         },

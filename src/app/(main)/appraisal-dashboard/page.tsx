@@ -1,3 +1,4 @@
+
 // src/app/(main)/appraisal-dashboard/page.tsx
 "use client";
 
@@ -47,6 +48,7 @@ import { AdaptiveCardGrid, AdaptiveMetricCard, AdaptiveInsightCard } from '@/com
 import { AdaptiveTable } from '@/components/ui/adaptive-table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
+import { DashboardNavigator } from '@/components/layout/dashboard-navigator';
 
 interface AppraisalResult {
     subject: Employee;
@@ -368,10 +370,12 @@ export default function AppraisalDashboardPage() {
     return (
         <ResponsivePage>
             <PageHeader 
-                title="Dasbor Appraisal Terintegrasi" 
+                title="Dashboard Appraisal" 
                 description="Analisis performa akhir karyawan berdasarkan penggabungan skor KPI, KBO, dan OKR secara proporsional." 
                 icon={Activity} 
             />
+
+            <DashboardNavigator />
 
             <ResponsiveToolbar>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
