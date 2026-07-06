@@ -1,3 +1,4 @@
+
 // src/app/(main)/workspace/page.tsx
 "use client";
 
@@ -41,7 +42,9 @@ import {
     Sparkles,
     TrendingUp,
     Timer,
-    MoreHorizontal
+    MoreHorizontal,
+    ShieldAlert,
+    CheckCircle
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -252,7 +255,7 @@ function HistoryItem({ log }: { log: SubscriptionLog }) {
 
 export function WorkspaceContent() {
     const { currentUser, userRole, logout, setIsLoading } = useAuth();
-    const { companies, updateCompany, addSubscriptionLog, fetchData, companyAdmins, addonPricing, subscriptionLogs, employees, collabTasks, subscriptionPlans, kpiData } = useMasterData();
+    const { companies, updateCompany, addSubscriptionLog, fetchData, companyAdmins, addonPricing, subscriptionLogs, employees, collabTasks, subscriptionPlans, kpiData, departments, positions } = useMasterData();
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -277,70 +280,29 @@ export function WorkspaceContent() {
         }
     }, [userRole]);
 
-    // --- Account Summary Calculations ---
-    const staffLimit = useMemo(() => {
-        if (!company) return 0;
-        const plan = subscriptionPlans.find(p => p.id === company.subscriptionPlanId);
-        // Robust fallback: Custom > Plan > Default Trial (5)
-        return company.customUserLimit ?? plan?.userLimit ?? 5;
-    }, [company, subscriptionPlans]);
-
-    const currentStaffCount = useMemo(() => employees.filter(e => e.company === company?.name && e.role === 'user' && e.status === 'Aktif').length, [employees, company]);
-    
-    const licenseUsagePercent = useMemo(() => {
-        if (staffLimit === -1) return 100; 
-        if (staffLimit <= 0) return 0;
-        return Math.min(100, (currentStaffCount / staffLimit) * 100);
-    }, [currentStaffCount, staffLimit]);
-
-    // PRODUCTIVITY LOGIC: Aware of module activation
-    const { activityTrend, productivityLabel, productivityChange } = useMemo(() => {
-        const last7Days = Array.from({ length: 7 }, (_, i) => subDays(new Date(), 6 - i));
-        const isCollabActive = company?.moduleSubscriptions?.collabspace?.status === 'active';
-        
-        // Label dynamic based on module
-        const label = isCollabActive ? "INDEKS TUGAS SELESAI (7 HARI)" : "INDEKS UPDATE KPI (7 HARI)";
-
-        const trend = last7Days.map(day => {
-            if (isCollabActive) {
-                // If collab is active, count 'done' tasks
-                const completedCount = collabTasks.filter(t => {
-                    const completedAt = t.completedAt?.toDate ? t.completedAt.toDate() : (t.status === 'done' ? t.updatedAt?.toDate?.() : null);
-                    return completedAt && isSameDay(completedAt, day) && t.company === company?.name;
-                }).length;
-                return Math.min(100, (completedCount / 5) * 100);
-            } else {
-                // FALLBACK: If collab is OFF, count KPI achievement updates as productivity indicator
-                const kpiUpdates = kpiData.filter(d => {
-                    const updatedDate = d.updatedAt?.toDate ? d.updatedAt.toDate() : new Date();
-                    return isSameDay(updatedDate, day) && d.company === company?.name;
-                }).length;
-                return Math.min(100, (kpiUpdates / 3) * 100);
-            }
-        });
-
-        // Change calculation
-        const todayIdx = 6;
-        const yesterdayIdx = 5;
-        const todayVal = trend[todayIdx];
-        const yesterdayVal = trend[yesterdayIdx];
-        
-        let change = 0;
-        if (yesterdayVal > 0) change = Math.round(((todayVal - yesterdayVal) / yesterdayVal) * 100);
-        else if (todayVal > 0) change = 100;
-
-        return { activityTrend: trend, productivityLabel: label, productivityChange: change };
-    }, [collabTasks, kpiData, company]);
-
-    const childCompanies = useMemo(() => {
+    // --- GENERIC READINESS CHECKLIST LOGIC ---
+    // Steps to get the platform fully operational
+    const readinessChecklist = useMemo(() => {
         if (!company) return [];
-        const getAllDescendants = (parentId: string): Company[] => {
-            const children = companies.filter(c => c.parentId === parentId);
-            if (children.length === 0) return [];
-            return [...children, ...children.flatMap(child => getAllDescendants(child.id))];
-        };
-        return getAllDescendants(company.id);
-    }, [company, companies]);
+        
+        const hasFullAddress = company.address && company.address !== 'N/A' && company.address.length > 5;
+        const hasDepartments = departments.filter(d => d.company === company.name).length > 0;
+        const hasPositions = positions.filter(p => p.company === company.name).length > 0;
+        const hasEmployees = employees.filter(e => e.company === company.name && e.role === 'user').length > 0;
+        
+        return [
+            { id: 'profile', label: 'Profil Unit Bisnis', done: hasFullAddress, route: '/settings' },
+            { id: 'dept', label: 'Definisi Departemen', done: hasDepartments, route: '/master-data/departments' },
+            { id: 'pos', label: 'Definisi Jabatan', done: hasPositions, route: '/master-data/positions' },
+            { id: 'staff', label: 'Sinkronisasi Anggota', done: hasEmployees, route: '/master-data/employees' },
+        ];
+    }, [company, departments, positions, employees]);
+
+    const readinessPercent = useMemo(() => {
+        if (readinessChecklist.length === 0) return 0;
+        const doneCount = readinessChecklist.filter(c => c.done).length;
+        return Math.round((doneCount / readinessChecklist.length) * 100);
+    }, [readinessChecklist]);
 
     const myLogs = useMemo(() => {
         if (!company) return [];
@@ -500,7 +462,7 @@ export function WorkspaceContent() {
                                             </div>
                                         </GlassCard>
                                     </Link>
-                                    <div onClick={() => setIsGroupDialogOpen(true)}>
+                                    <div className="cursor-pointer" onClick={() => setIsGroupDialogOpen(true)}>
                                         <GlassCard className="p-5 flex items-center gap-5 group">
                                             <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-lg shadow-primary/20">
                                                 <GitMerge size={22} strokeWidth={2} />
@@ -589,65 +551,71 @@ export function WorkspaceContent() {
 
                     {/* Right Column: Sidebar (4 cols) */}
                     <div className="lg:col-span-4 space-y-6 flex flex-col h-full">
-                        {/* Account Summary Stats */}
+                        {/* Account Summary Stats - Readiness Checklist */}
                         <div className="bg-[#131b2e] text-white p-7 rounded-2xl relative overflow-hidden shadow-2xl">
                             <div className="relative z-10 space-y-8">
-                                <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">RINGKASAN AKUN</h3>
-                                <div className="space-y-8">
-                                    {/* License Usage */}
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between items-end mb-2">
-                                            <div className="space-y-0.5">
-                                                <p className="text-[10px] font-bold text-white/50 uppercase flex items-center gap-1.5">
-                                                    <Users size={12} /> UTILISASI LISENSI Staff
-                                                </p>
-                                            </div>
-                                            <p className="text-xs font-black tnum">
-                                                {currentStaffCount} / {staffLimit === -1 ? '∞' : staffLimit}
-                                            </p>
-                                        </div>
-                                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">KESIAPAN PLATFORM</h3>
+                                    <Badge variant="outline" className="bg-white/5 border-white/10 text-white font-black text-[9px] h-5">{readinessPercent}%</Badge>
+                                </div>
+
+                                <div className="space-y-6">
+                                    {/* Overall Readiness Bar */}
+                                    <div className="space-y-2">
+                                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                                             <div 
-                                                className={cn(
-                                                    "h-full transition-all duration-1000 ease-out",
-                                                    licenseUsagePercent > 90 ? "bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.5)]" : "bg-primary shadow-[0_0_15px_rgba(37,99,235,0.5)]"
-                                                )} 
-                                                style={{ width: `${licenseUsagePercent}%` }}
-                                            ></div>
+                                                className="h-full bg-primary transition-all duration-1000 ease-out" 
+                                                style={{ width: `${readinessPercent}%` }}
+                                            />
                                         </div>
-                                        <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Akun staff aktif dalam ekosistem</p>
+                                        <p className="text-[8px] font-bold text-white/30 uppercase tracking-[0.2em] text-center">Status integrasi unit bisnis</p>
                                     </div>
 
-                                    {/* Productivity Index */}
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between items-end mb-1">
-                                            <div className="space-y-0.5">
-                                                <p className="text-[10px] font-bold text-white/50 uppercase flex items-center gap-1.5">
-                                                    <Timer size={12} /> {productivityLabel}
-                                                </p>
+                                    {/* Checklist Items */}
+                                    <div className="space-y-2.5">
+                                        {readinessChecklist.map((item) => (
+                                            <Link key={item.id} href={item.route}>
+                                                <div className={cn(
+                                                    "flex items-center justify-between p-3 rounded-xl border transition-all active:scale-95 group/item",
+                                                    item.done 
+                                                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
+                                                        : "bg-white/5 border-white/5 text-white/60 hover:bg-white/10 hover:border-white/20"
+                                                )}>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={cn(
+                                                            "size-6 rounded-full flex items-center justify-center border",
+                                                            item.done ? "bg-emerald-500 text-white border-emerald-500" : "bg-transparent border-current opacity-30"
+                                                        )}>
+                                                            {item.done ? <CheckCircle size={14} strokeWidth={3} /> : <div className="size-1 rounded-full bg-white" />}
+                                                        </div>
+                                                        <span className="text-[11px] font-bold uppercase tracking-tight">{item.label}</span>
+                                                    </div>
+                                                    {!item.done && <ArrowRight size={14} className="opacity-0 group-hover/item:opacity-100 transition-opacity" />}
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+
+                                    {/* Account Verification Info */}
+                                    <div className="pt-4 border-t border-white/5 space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="size-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                                                <ShieldCheck size={16} strokeWidth={2.5} />
                                             </div>
-                                            <div className="flex items-center gap-1">
-                                                <TrendingUp size={12} className="text-emerald-400" />
-                                                <p className="text-xs font-black text-emerald-400 tnum">{productivityChange > 0 ? `+${productivityChange}` : productivityChange}%</p>
+                                            <div className="min-w-0">
+                                                <p className="text-[10px] font-black uppercase tracking-tight">Status Verifikasi</p>
+                                                <p className="text-[9px] text-white/40 font-medium">Identitas & Bisnis Terverifikasi</p>
                                             </div>
                                         </div>
-                                        <div className="h-16 flex items-end gap-1.5 px-1 bg-white/[0.02] rounded-xl p-2 border border-white/[0.05]">
-                                            {activityTrend.map((h, i) => (
-                                                <div 
-                                                    key={i} 
-                                                    style={{ height: `${Math.max(15, h)}%` }} 
-                                                    className={cn(
-                                                        "flex-1 rounded-sm transition-all duration-700 ease-in-out",
-                                                        i === 6 ? "bg-primary shadow-[0_0_20px_rgba(37,99,235,0.4)]" : "bg-white/10"
-                                                    )}
-                                                />
-                                            ))}
+                                        <div className="flex items-center gap-3">
+                                            <div className="size-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+                                                <Lock size={16} strokeWidth={2.5} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-[10px] font-black uppercase tracking-tight">Enkripsi Data</p>
+                                                <p className="text-[9px] text-white/40 font-medium">AES-256 Industri Standar</p>
+                                            </div>
                                         </div>
-                                        <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest text-center">
-                                            {company?.moduleSubscriptions?.collabspace?.status === 'active' 
-                                                ? "Berdasarkan penyelesaian tugas harian" 
-                                                : "Berdasarkan pembaruan data capaian KPI"}
-                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -738,7 +706,7 @@ export function WorkspaceContent() {
                                         <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">Jumlah Akun</h4>
                                         <p className="text-[9px] text-slate-400 font-medium uppercase">Admin tambahan untuk dashboard</p>
                                     </div>
-                                    <div className="flex items-center bg-slate-100 rounded-xl border border-slate-200 overflow-hidden h-9 shadow-sm shrink-0">
+                                    <div className="flex items-center bg-slate-100 rounded-xl border border-slate-200 overflow-hidden h-11 shadow-sm shrink-0">
                                         <button type="button" onClick={() => setMgmtAddQuota(Math.max(1, mgmtAddQuota - 1))} className="px-3 hover:bg-white text-slate-900 transition-colors"><Minus size={14} strokeWidth={3} /></button>
                                         <input type="number" value={mgmtAddQuota} onChange={(e) => setMgmtAddQuota(Math.max(1, parseInt(e.target.value) || 1))} className="w-10 text-center border-none focus-visible:ring-0 text-xs font-black bg-transparent" />
                                         <button type="button" onClick={() => setMgmtAddQuota(mgmtAddQuota + 1)} className="px-3 hover:bg-white text-slate-900 transition-colors"><Plus size={14} strokeWidth={3} /></button>
