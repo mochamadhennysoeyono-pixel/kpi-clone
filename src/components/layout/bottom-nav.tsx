@@ -22,7 +22,9 @@ import {
   Users,
   Search,
   Home,
-  ChevronLeft
+  ChevronLeft,
+  BookOpenCheck,
+  BadgeCheck
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSubMenu } from './submenu-context';
@@ -70,11 +72,11 @@ export function BottomNav() {
     setActiveGroup(menuGroup);
   };
 
-  // --- DYNAMIC CONTEXTUAL ITEMS ---
+  // --- DYNAMIC CONTEXTUAL ITEMS (ISOLATED BY MODULE) ---
   const items = React.useMemo(() => {
     if (!userRole) return [];
 
-    // SUPERADMIN: Global constant view
+    // 1. SUPERADMIN: Masih menggunakan floating action untuk akses global cepat
     if (userRole === 'superadmin') {
       return [
         { href: '/dashboard', label: 'Workbench', icon: LayoutGrid },
@@ -85,83 +87,81 @@ export function BottomNav() {
       ];
     }
 
-    // MANAJEMEN & USER: Contextual based on Module
+    // 2. MANAJEMEN & USER: Isolated Context + Workspace Anchor at the end
     
-    // 1. MODUL APPRAISAL / KPI / OKR
+    // APPRAISAL MODULE
     if (activeModule === 'appraisal') {
         if (userRole === 'manajemen') {
             return [
                 { href: '/appraisal-dashboard', label: 'Dashboard', icon: PieChart },
                 { href: '/setup-kpi', label: 'KPI', icon: ClipboardCheck },
-                { type: 'action' as const },
-                { href: '/master-data/kbo-competencies', label: 'KBO', icon: Activity },
+                { href: '/master-data/kbo-competencies', label: 'KBO', icon: BadgeCheck },
                 { href: '/okr', label: 'OKR', icon: Target },
+                { href: '/workspace', label: 'Exit', icon: LayoutGrid },
             ];
         }
         return [
             { href: '/action-center', label: 'Beranda', icon: Home },
             { href: '/my-performance', label: 'Performa', icon: Activity },
-            { type: 'action' as const },
             { href: '/okr/progress', label: 'OKR', icon: Target },
             { href: '/settings', label: 'Profil', icon: Settings },
+            { href: '/workspace', label: 'Exit', icon: LayoutGrid },
         ];
     }
 
-    // 2. MODUL LMS
+    // LMS MODULE
     if (activeModule === 'lms') {
         if (userRole === 'manajemen') {
             return [
                 { href: '/lms/admin/dashboard', label: 'Insight', icon: LayoutGrid },
                 { href: '/lms/admin/courses', label: 'Kursus', icon: BookOpen },
-                { type: 'action' as const },
                 { href: '/lms/admin/programs', label: 'Program', icon: GraduationCap },
                 { href: '/lms/admin/reports', label: 'Laporan', icon: PieChart },
+                { href: '/workspace', label: 'Exit', icon: LayoutGrid },
             ];
         }
         return [
             { href: '/lms/user/my-learnings', label: 'Belajar', icon: BookOpen },
-            { href: '/lms/user/my-learnings', label: 'Katalog', icon: GraduationCap },
-            { type: 'action' as const },
             { href: '/action-center', label: 'Beranda', icon: Home },
             { href: '/settings', label: 'Profil', icon: Settings },
+            { href: '/workspace', label: 'Exit', icon: LayoutGrid },
         ];
     }
 
-    // 3. MODUL COLLABSPACE
+    // COLLABSPACE MODULE
     if (activeModule === 'collabspace') {
         return [
             { href: '/collab-space', label: 'Ruangan', icon: MonitorPlay },
             { href: '/collab-space/management', label: 'Kelola', icon: Settings },
-            { type: 'action' as const },
             { href: '/collab-space/reports', label: 'Analitik', icon: PieChart },
-            { href: '/workspace', label: 'Keluar', icon: ChevronLeft },
+            { href: '/settings', label: 'Profil', icon: Settings },
+            { href: '/workspace', label: 'Exit', icon: LayoutGrid },
         ];
     }
 
-    // 4. FOUNDATION / MASTER DATA
+    // FOUNDATION / MASTER DATA
     if (activeModule === 'foundation') {
         return [
             { href: '/master-data/employees', label: 'Karyawan', icon: Users },
             { href: '/master-data/hierarchy', label: 'Struktur', icon: Building },
-            { type: 'action' as const },
             { href: '/media-library', label: 'Media', icon: Folder },
-            { href: '/workspace', label: 'Workspace', icon: LayoutGrid },
+            { href: '/settings', label: 'Profil', icon: Settings },
+            { href: '/workspace', label: 'Exit', icon: LayoutGrid },
         ];
     }
 
-    // 5. DEFAULT FALLBACK
+    // DEFAULT FALLBACK
     return [
-      { href: '/workspace', label: 'Workspace', icon: LayoutGrid },
       { href: '/action-center', label: 'Action', icon: Activity },
       { href: '/appraisal-dashboard', label: 'Analitik', icon: PieChart },
-      { type: 'action' as const },
       { href: '/collab-space', label: 'Collab', icon: MonitorPlay },
       { href: '/settings', label: 'Profil', icon: Settings },
+      { href: '/workspace', label: 'Exit', icon: LayoutGrid },
     ];
 
   }, [userRole, activeModule, hasSubordinates, currentUser, companies, subscriptionPlans, okrs]);
 
-  // Hide bottom nav if explicitely requested, if not mobile, or on the main workspace entry page
+  // Sembunyikan jika bukan mobile, di halaman workspace, atau jika diminta secara eksplisit
   if (!isMobile || hideBottomNav || pathname === '/workspace') {
     return null;
   }
@@ -170,7 +170,7 @@ export function BottomNav() {
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] h-[72px] bg-white/95 backdrop-blur-xl border-t border-slate-100 pb-safe shadow-[0_-8px_30px_rgb(0,0,0,0.06)] no-print">
         <div className="relative grid grid-cols-5 items-center h-full w-full px-2">
             {items.map((item, idx) => {
-                // RENDER: Big Center Action Button
+                // RENDER: Big Center Action Button (Hanya untuk Superadmin sekarang)
                 if (item.type === 'action') {
                     return (
                         <div key="action-center-btn" className="flex justify-center -translate-y-4">
@@ -193,7 +193,9 @@ export function BottomNav() {
                         key={item.href || item.label} 
                         href={item.href || '#'}
                         className={cn(
-                            "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95 group"
+                            "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95 group",
+                            // Jika ini adalah tombol Workspace (paling kanan) dan kita bukan superadmin
+                            idx === 4 && userRole !== 'superadmin' && "text-primary"
                         )}
                     >
                         <div className={cn(
@@ -202,12 +204,12 @@ export function BottomNav() {
                         )}>
                             <Icon 
                               size={IconTokens.size.mobile} 
-                              strokeWidth={IconTokens.strokeWidth} 
+                              strokeWidth={isActive ? 2.5 : IconTokens.strokeWidth} 
                               color={isActive ? IconTokens.color.active : IconTokens.color.default}
                             />
                         </div>
                         <span className={cn(
-                            "text-[9px] font-bold tracking-tight",
+                            "text-[9px] font-bold tracking-tight uppercase",
                             isActive ? "text-[#2563eb]" : "text-slate-400"
                         )}>
                             {item.label}
