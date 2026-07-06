@@ -37,13 +37,11 @@ import {
     UserPlus,
     History,
     CheckCircle2,
-    CheckCircle,
     Activity,
     Sparkles,
-    Search,
-    MoreHorizontal,
     TrendingUp,
-    Timer
+    Timer,
+    MoreHorizontal
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -77,9 +75,7 @@ import { useToast } from '@/hooks/use-toast';
 import { serverTimestamp } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
 import { ResponsivePage } from '@/components/ui/adaptive-layout';
-import { PageHeader } from '@/components/ui/page-header';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import CompanyAdminManagementPage from '@/app/(main)/company-admin-management/page';
 
 // --- Static Meta for Modules ---
 const MODULE_CATALOG = [
@@ -272,7 +268,7 @@ export function WorkspaceContent() {
     const company = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
     const isManagement = userRole === 'manajemen';
 
-    // --- NEW: Account Summary Calculations ---
+    // --- Account Summary Calculations ---
     const staffLimit = useMemo(() => company?.customUserLimit || 0, [company]);
     const currentStaffCount = useMemo(() => employees.filter(e => e.company === company?.name && e.role === 'user' && e.status === 'Aktif').length, [employees, company]);
     const licenseUsagePercent = useMemo(() => {
@@ -288,7 +284,6 @@ export function WorkspaceContent() {
                 const createdAt = t.createdAt?.toDate ? t.createdAt.toDate() : new Date(t.createdAt);
                 return isSameDay(createdAt, day) && t.company === company?.name;
             }).length;
-            // Normalize for visual (max 100% height for 10 tasks)
             return Math.min(100, (count / 10) * 100);
         });
     }, [collabTasks, company]);
@@ -418,7 +413,6 @@ export function WorkspaceContent() {
     return (
         <>
             <ResponsivePage className="bg-[#f8f9ff] min-h-screen">
-                {/* Header / Hero Section */}
                 <section className="mb-10">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                         <div>
@@ -435,11 +429,7 @@ export function WorkspaceContent() {
                 </section>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    
-                    {/* PRIMARY CONTENT (8 cols) */}
                     <div className="lg:col-span-8 space-y-8">
-                        
-                        {/* Organization Banner */}
                         <div className="bg-[#131b2e] text-white p-6 sm:p-8 rounded-[2rem] relative overflow-hidden shadow-2xl">
                             <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                                 <div className="flex items-center gap-5">
@@ -468,7 +458,6 @@ export function WorkspaceContent() {
                             <div className="absolute -right-10 -bottom-10 size-40 bg-primary/20 rounded-full blur-3xl opacity-50"></div>
                         </div>
 
-                        {/* Foundation Data Section */}
                         {isManagement && (
                             <div className="space-y-4">
                                 <SectionLabel icon={Database} label="PONDASI DATA" />
@@ -480,7 +469,7 @@ export function WorkspaceContent() {
                                             </div>
                                             <div className="min-w-0">
                                                 <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Konfigurasi Master</h4>
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">STAFF, STRUKTUR, & DEPARTEMEN</p>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">KARYAWAN, STRUKTUR, & DEPARTEMEN</p>
                                             </div>
                                         </GlassCard>
                                     </Link>
@@ -499,25 +488,21 @@ export function WorkspaceContent() {
                             </div>
                         )}
 
-                        {/* Active Modules Section */}
                         <div className="space-y-4">
                             <SectionLabel icon={ShieldCheck} label="MODUL AKTIF" color="text-primary" />
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                {activeModules.map(m => {
-                                    return (
-                                        <WorkspaceModuleCard 
-                                            key={m.id} config={m} 
-                                            subscription={company?.moduleSubscriptions?.[m.id]} 
-                                            isManagement={isManagement} 
-                                            onActivateRequest={(mod) => { setDialogMode('activate'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
-                                            onAddQuotaRequest={(mod) => { setDialogMode('add-quota'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
-                                        />
-                                    );
-                                })}
+                                {activeModules.map(m => (
+                                    <WorkspaceModuleCard 
+                                        key={m.id} config={m} 
+                                        subscription={company?.moduleSubscriptions?.[m.id]} 
+                                        isManagement={isManagement} 
+                                        onActivateRequest={(mod) => { setDialogMode('activate'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
+                                        onAddQuotaRequest={(mod) => { setDialogMode('add-quota'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
+                                    />
+                                ))}
                             </div>
                         </div>
 
-                        {/* Additional Services Section */}
                         {isManagement && (
                             <div className="space-y-4">
                                 <SectionLabel icon={Layers} label="LAYANAN TAMBAHAN" />
@@ -544,7 +529,6 @@ export function WorkspaceContent() {
                             </div>
                         )}
 
-                        {/* Available Modules Section */}
                         {isManagement && availableModules.length > 0 && (
                             <div className="space-y-4">
                                 <SectionLabel icon={Sparkles} label="MODUL TERSEDIA" />
@@ -572,7 +556,6 @@ export function WorkspaceContent() {
                             </div>
                         )}
                         
-                        {/* History Log Section - Bottom Anchor */}
                         <div className="pt-6">
                             <SectionLabel icon={History} label="HISTORI PEMBELIAN & AKTIVITAS" />
                             <GlassCard className="p-2">
@@ -597,16 +580,11 @@ export function WorkspaceContent() {
                         </div>
                     </div>
 
-                    {/* SIDEBAR CONTENT (4 cols) */}
                     <div className="lg:col-span-4 space-y-8">
-                        
-                        {/* Account Summary Bento Card (The requested Design Reference) */}
                         <div className="bg-[#131b2e] text-white p-7 rounded-[2.5rem] relative overflow-hidden shadow-2xl">
                             <div className="relative z-10 space-y-8">
                                 <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">RINGKASAN AKUN</h3>
-                                
                                 <div className="space-y-8">
-                                    {/* Staff License Usage */}
                                     <div className="space-y-3">
                                         <div className="flex justify-between items-end mb-2">
                                             <div className="space-y-0.5">
@@ -630,7 +608,6 @@ export function WorkspaceContent() {
                                         <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Akun staff aktif dalam ekosistem</p>
                                     </div>
 
-                                    {/* Productivity / Activity Trend */}
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-end mb-1">
                                             <div className="space-y-0.5">
@@ -662,7 +639,6 @@ export function WorkspaceContent() {
                             <div className="absolute -right-24 -top-24 size-48 bg-primary/10 rounded-full blur-[80px]"></div>
                         </div>
 
-                        {/* Promotion / Support Snippet */}
                         <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/10 space-y-4 group overflow-hidden relative">
                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform"><Bot size={80} /></div>
                             <div className="space-y-1 relative z-10">
@@ -677,17 +653,21 @@ export function WorkspaceContent() {
                 </div>
             </ResponsivePage>
 
-            {/* --- Modals & Dialogs --- */}
             <ModuleSubscriptionDialog 
-                isOpen={isSubDialogOpen} onOpenChange={setIsSubDialogOpen} 
-                module={selectedModule} company={company || null} 
-                mode={dialogMode} onConfirm={handleActivateModule} 
+                isOpen={isSubDialogOpen} 
+                onOpenChange={setIsSubDialogOpen} 
+                module={selectedModule} 
+                company={company || null} 
+                mode={dialogMode} 
+                onConfirm={handleActivateModule} 
             />
             
             {company && (
                 <GroupManagementDialog 
-                    isOpen={isGroupDialogOpen} onOpenChange={setIsGroupDialogOpen} 
-                    holdingCompany={company} childCompanies={childCompanies} 
+                    isOpen={isGroupDialogOpen} 
+                    onOpenChange={setIsGroupDialogOpen} 
+                    holdingCompany={company} 
+                    childCompanies={childCompanies} 
                 />
             )}
             
@@ -715,7 +695,7 @@ export function WorkspaceContent() {
                         <div className="p-6 space-y-6">
                             <div className="flex items-center justify-between gap-4">
                                 <div className="space-y-0.5 min-w-0">
-                                    h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">Jumlah Akun</h4>
+                                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">Jumlah Akun</h4>
                                     <p className="text-[9px] text-slate-400 font-medium uppercase">Admin tambahan untuk dashboard</p>
                                 </div>
                                 <div className="flex items-center bg-slate-100 rounded-xl border border-slate-200 overflow-hidden h-9 shadow-sm shrink-0">
