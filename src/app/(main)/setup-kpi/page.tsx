@@ -19,7 +19,21 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { PlusCircle, MoreHorizontal, ChevronDown, CalendarDays, BellRing, Settings, Building, Filter, Network, Briefcase } from "lucide-react";
+import { 
+  PlusCircle, 
+  MoreHorizontal, 
+  ChevronDown, 
+  CalendarDays, 
+  BellRing, 
+  Settings, 
+  Building, 
+  Filter, 
+  Network, 
+  Briefcase,
+  Pencil,
+  Trash2,
+  AreaChart
+} from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { KpiSetup, Company, KpiIndicator } from '@/types';
@@ -36,6 +50,7 @@ import KpiBulkActions from '@/components/kpi/kpi-bulk-actions';
 import { ResponsivePage, ResponsiveToolbar } from '@/components/ui/adaptive-layout';
 import { PageHeader } from '@/components/ui/page-header';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { cn } from '@/lib/utils';
 
 export default function SetupKpiPage() {
   const { kpiSetups, addKpiSetup, updateKpiSetup, deleteKpiSetup, companies, employees } = useMasterData();
