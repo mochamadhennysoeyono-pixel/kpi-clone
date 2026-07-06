@@ -41,7 +41,9 @@ import {
     Activity,
     Sparkles,
     Search,
-    MoreHorizontal
+    MoreHorizontal,
+    TrendingUp,
+    Timer
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -55,7 +57,7 @@ import {
     CardContent, 
     CardFooter 
 } from '@/components/ui/card';
-import { format, addDays } from 'date-fns';
+import { format, addDays, isSameDay, subDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -253,7 +255,7 @@ function HistoryItem({ log }: { log: SubscriptionLog }) {
 
 export function WorkspaceContent() {
     const { currentUser, userRole, logout, setIsLoading } = useAuth();
-    const { companies, updateCompany, addSubscriptionLog, fetchData, companyAdmins, addonPricing, subscriptionLogs } = useMasterData();
+    const { companies, updateCompany, addSubscriptionLog, fetchData, companyAdmins, addonPricing, subscriptionLogs, employees, collabTasks } = useMasterData();
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -269,6 +271,34 @@ export function WorkspaceContent() {
 
     const company = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
     const isManagement = userRole === 'manajemen';
+
+    // --- NEW: Account Summary Calculations ---
+    const staffLimit = useMemo(() => company?.customUserLimit || 0, [company]);
+    const currentStaffCount = useMemo(() => employees.filter(e => e.company === company?.name && e.role === 'user' && e.status === 'Aktif').length, [employees, company]);
+    const licenseUsagePercent = useMemo(() => {
+        if (staffLimit === -1) return 0;
+        if (staffLimit === 0) return 0;
+        return Math.min(100, (currentStaffCount / staffLimit) * 100);
+    }, [currentStaffCount, staffLimit]);
+
+    const activityTrend = useMemo(() => {
+        const last7Days = Array.from({ length: 7 }, (_, i) => subDays(new Date(), 6 - i));
+        return last7Days.map(day => {
+            const count = collabTasks.filter(t => {
+                const createdAt = t.createdAt?.toDate ? t.createdAt.toDate() : new Date(t.createdAt);
+                return isSameDay(createdAt, day) && t.company === company?.name;
+            }).length;
+            // Normalize for visual (max 100% height for 10 tasks)
+            return Math.min(100, (count / 10) * 100);
+        });
+    }, [collabTasks, company]);
+
+    const productivityChange = useMemo(() => {
+        const todayCount = collabTasks.filter(t => isSameDay(t.createdAt?.toDate?.() || new Date(), new Date()) && t.company === company?.name).length;
+        const yesterdayCount = collabTasks.filter(t => isSameDay(t.createdAt?.toDate?.() || new Date(), subDays(new Date(), 1)) && t.company === company?.name).length;
+        if (yesterdayCount === 0) return todayCount > 0 ? 100 : 0;
+        return Math.round(((todayCount - yesterdayCount) / yesterdayCount) * 100);
+    }, [collabTasks, company]);
 
     const childCompanies = useMemo(() => {
         if (!company) return [];
@@ -296,7 +326,6 @@ export function WorkspaceContent() {
                 setSelectedModule(moduleConfig);
                 setDialogMode('activate');
                 setIsSubDialogOpen(true);
-                // Clear the param after showing the dialog
                 const newUrl = window.location.pathname;
                 window.history.replaceState({}, '', newUrl);
             }
@@ -408,7 +437,7 @@ export function WorkspaceContent() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     
                     {/* PRIMARY CONTENT (8 cols) */}
-                    <div className="lg:col-span-8 space-y-10">
+                    <div className="lg:col-span-8 space-y-8">
                         
                         {/* Organization Banner */}
                         <div className="bg-[#131b2e] text-white p-6 sm:p-8 rounded-[2rem] relative overflow-hidden shadow-2xl">
@@ -474,15 +503,17 @@ export function WorkspaceContent() {
                         <div className="space-y-4">
                             <SectionLabel icon={ShieldCheck} label="MODUL AKTIF" color="text-primary" />
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                {activeModules.map(m => (
-                                    <WorkspaceModuleCard 
-                                        key={m.id} config={m} 
-                                        subscription={company?.moduleSubscriptions?.[m.id]} 
-                                        isManagement={isManagement} 
-                                        onActivateRequest={(mod) => { setDialogMode('activate'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
-                                        onAddQuotaRequest={(mod) => { setDialogMode('add-quota'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
-                                    />
-                                ))}
+                                {activeModules.map(m => {
+                                    return (
+                                        <WorkspaceModuleCard 
+                                            key={m.id} config={m} 
+                                            subscription={company?.moduleSubscriptions?.[m.id]} 
+                                            isManagement={isManagement} 
+                                            onActivateRequest={(mod) => { setDialogMode('activate'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
+                                            onAddQuotaRequest={(mod) => { setDialogMode('add-quota'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
+                                        />
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -540,83 +571,96 @@ export function WorkspaceContent() {
                                 })}
                             </div>
                         )}
+                        
+                        {/* History Log Section - Bottom Anchor */}
+                        <div className="pt-6">
+                            <SectionLabel icon={History} label="HISTORI PEMBELIAN & AKTIVITAS" />
+                            <GlassCard className="p-2">
+                                <div className="space-y-1">
+                                    {myLogs.length > 0 ? (
+                                        myLogs.map(log => <HistoryItem key={log.id} log={log} />)
+                                    ) : (
+                                        <div className="py-12 text-center opacity-30 flex flex-col items-center gap-2">
+                                            <Activity size={24} />
+                                            <p className="text-[10px] font-black uppercase">Belum ada aktivitas tercatat</p>
+                                        </div>
+                                    )}
+                                </div>
+                                <Link 
+                                    href="/subscription-status" 
+                                    className="mt-4 flex items-center justify-center gap-2 text-[10px] font-black uppercase text-primary hover:gap-3 transition-all tracking-widest py-3 border-t border-slate-50"
+                                >
+                                    LIHAT STATUS LANGGANAN LENGKAP
+                                    <ArrowRight size={14} strokeWidth={3} />
+                                </Link>
+                            </GlassCard>
+                        </div>
                     </div>
 
                     {/* SIDEBAR CONTENT (4 cols) */}
                     <div className="lg:col-span-4 space-y-8">
                         
-                        {/* Account Summary Bento Card */}
+                        {/* Account Summary Bento Card (The requested Design Reference) */}
                         <div className="bg-[#131b2e] text-white p-7 rounded-[2.5rem] relative overflow-hidden shadow-2xl">
                             <div className="relative z-10 space-y-8">
                                 <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">RINGKASAN AKUN</h3>
                                 
-                                <div className="space-y-6">
-                                    {/* Storage Usage Simulation */}
+                                <div className="space-y-8">
+                                    {/* Staff License Usage */}
                                     <div className="space-y-3">
-                                        <div className="flex justify-between items-end">
-                                            <p className="text-[10px] font-bold text-white/50 uppercase">Penyimpanan Digunakan</p>
-                                            <p className="text-xs font-black tnum">1.2 GB / 5 GB</p>
+                                        <div className="flex justify-between items-end mb-2">
+                                            <div className="space-y-0.5">
+                                                <p className="text-[10px] font-bold text-white/50 uppercase flex items-center gap-1.5">
+                                                    <Users size={12} /> UTILISASI LISENSI
+                                                </p>
+                                            </div>
+                                            <p className="text-xs font-black tnum">
+                                                {currentStaffCount} / {staffLimit === -1 ? '∞' : staffLimit}
+                                            </p>
                                         </div>
-                                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                            <div className="h-full bg-primary shadow-[0_0_10px_rgba(37,99,235,0.5)]" style={{ width: '24%' }}></div>
+                                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                            <div 
+                                                className={cn(
+                                                    "h-full transition-all duration-1000 ease-out",
+                                                    licenseUsagePercent > 90 ? "bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.5)]" : "bg-primary shadow-[0_0_15px_rgba(37,99,235,0.5)]"
+                                                )} 
+                                                style={{ width: `${licenseUsagePercent}%` }}
+                                            ></div>
                                         </div>
+                                        <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Akun staff aktif dalam ekosistem</p>
                                     </div>
 
-                                    {/* Activity Chart Simulation */}
+                                    {/* Productivity / Activity Trend */}
                                     <div className="space-y-4">
-                                        <div className="flex justify-between items-end">
-                                            <p className="text-[10px] font-bold text-white/50 uppercase">Aktivitas Tim (7 Hari)</p>
-                                            <p className="text-xs font-black text-emerald-400">+12%</p>
+                                        <div className="flex justify-between items-end mb-1">
+                                            <div className="space-y-0.5">
+                                                <p className="text-[10px] font-bold text-white/50 uppercase flex items-center gap-1.5">
+                                                    <Timer size={12} /> INDEKS PRODUKTIVITAS (7 HARI)
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <TrendingUp size={12} className="text-emerald-400" />
+                                                <p className="text-xs font-black text-emerald-400 tnum">{productivityChange > 0 ? `+${productivityChange}` : productivityChange}%</p>
+                                            </div>
                                         </div>
-                                        <div className="h-14 flex items-end gap-1.5 px-1">
-                                            {[30, 45, 25, 60, 80, 95, 70].map((h, i) => (
+                                        <div className="h-16 flex items-end gap-1.5 px-1 bg-white/[0.02] rounded-2xl p-2 border border-white/[0.05]">
+                                            {activityTrend.map((h, i) => (
                                                 <div 
                                                     key={i} 
-                                                    style={{ height: `${h}%` }} 
+                                                    style={{ height: `${Math.max(15, h)}%` }} 
                                                     className={cn(
-                                                        "flex-1 rounded-t-md transition-all duration-500",
-                                                        i > 4 ? "bg-primary shadow-[0_0_15px_rgba(37,99,235,0.3)]" : "bg-white/10"
+                                                        "flex-1 rounded-md transition-all duration-700 ease-in-out",
+                                                        i === 6 ? "bg-primary shadow-[0_0_20px_rgba(37,99,235,0.4)]" : "bg-white/10"
                                                     )}
                                                 />
                                             ))}
                                         </div>
+                                        <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest text-center">Rasio penyelesaian tugas harian</p>
                                     </div>
                                 </div>
                             </div>
                             <div className="absolute -right-24 -top-24 size-48 bg-primary/10 rounded-full blur-[80px]"></div>
                         </div>
-
-                        {/* Purchase History Card */}
-                        <GlassCard className="p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-2">
-                                    <History size={16} className="text-primary" strokeWidth={3} />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-800">HISTORI</span>
-                                </div>
-                                <Button variant="ghost" size="icon" className="size-8 rounded-full opacity-30 hover:opacity-100">
-                                    <MoreHorizontal size={16} />
-                                </Button>
-                            </div>
-
-                            <div className="space-y-2">
-                                {myLogs.length > 0 ? (
-                                    myLogs.map(log => <HistoryItem key={log.id} log={log} />)
-                                ) : (
-                                    <div className="py-12 text-center opacity-30 flex flex-col items-center gap-2">
-                                        <Activity size={24} />
-                                        <p className="text-[10px] font-black uppercase">Belum ada aktivitas</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            <Link 
-                                href="/subscription-status" 
-                                className="mt-6 flex items-center justify-center gap-2 text-[10px] font-black uppercase text-primary hover:gap-3 transition-all tracking-widest pt-4 border-t border-slate-50"
-                            >
-                                LIHAT STATUS LENGKAP
-                                <ArrowRight size={14} strokeWidth={3} />
-                            </Link>
-                        </GlassCard>
 
                         {/* Promotion / Support Snippet */}
                         <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/10 space-y-4 group overflow-hidden relative">
@@ -633,7 +677,7 @@ export function WorkspaceContent() {
                 </div>
             </ResponsivePage>
 
-            {/* --- Modals & Dialogs (Outside ResponsivePage to avoid layout constraints) --- */}
+            {/* --- Modals & Dialogs --- */}
             <ModuleSubscriptionDialog 
                 isOpen={isSubDialogOpen} onOpenChange={setIsSubDialogOpen} 
                 module={selectedModule} company={company || null} 
@@ -671,7 +715,7 @@ export function WorkspaceContent() {
                         <div className="p-6 space-y-6">
                             <div className="flex items-center justify-between gap-4">
                                 <div className="space-y-0.5 min-w-0">
-                                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">Jumlah Akun</h4>
+                                    h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">Jumlah Akun</h4>
                                     <p className="text-[9px] text-slate-400 font-medium uppercase">Admin tambahan untuk dashboard</p>
                                 </div>
                                 <div className="flex items-center bg-slate-100 rounded-xl border border-slate-200 overflow-hidden h-9 shadow-sm shrink-0">
