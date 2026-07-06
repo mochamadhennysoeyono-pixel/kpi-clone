@@ -47,8 +47,9 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
       const subscription = company?.moduleSubscriptions?.[activeModule as ModuleId];
 
       if (!subscription || subscription.status !== 'active') {
-        console.warn(`[Access Guard] Unsubscribed access attempt to ${activeModule} from ${pathname}`);
-        router.replace('/workspace');
+        console.warn(`[Access Guard] Unsubscribed access attempt to ${activeModule} from ${pathname}. Redirecting to portal.`);
+        // Redirect to workspace with trigger for payment popup
+        router.replace(`/workspace?blocked_module=${activeModule}`);
       }
     }
   }, [pathname, totalIsLoading, currentUser, userRole, companies, router]);

@@ -2,9 +2,10 @@
 // src/app/(main)/workspace/page.tsx
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { 
     LayoutGrid, 
     ArrowRight, 
@@ -154,7 +155,7 @@ function ModuleCard({
                     <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-slate-50 border border-slate-100">
                         <div className="space-y-0.5">
                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Kapasitas</p>
-                            <p className="text-[11px] font-bold text-slate-700 truncate">{subscription.quota === -1 ? 'Unlimited' : `${subscription.quota} Staff`}</p>
+                            <p className="text-11px font-bold text-slate-700 truncate">{subscription.quota === -1 ? 'Unlimited' : `${subscription.quota} Staff`}</p>
                         </div>
                         <div className="space-y-0.5 text-right">
                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Sisa Masa</p>
@@ -237,10 +238,12 @@ function AdminLinkCard({ label, description, icon: Icon, href, color, onClick }:
     );
 }
 
-export default function WorkspacePage() {
+function WorkspaceContent() {
     const { currentUser, userRole, logout, setIsLoading } = useAuth();
     const { companies, updateCompany, addSubscriptionLog, fetchData, companyAdmins, addonPricing } = useMasterData();
     const { toast } = useToast();
+    const searchParams = useSearchParams();
+    const router = useRouter();
 
     const [isSubDialogOpen, setIsSubDialogOpen] = useState(false);
     const [dialogMode, setDialogMode] = useState<'activate' | 'add-quota'>('activate');
@@ -253,6 +256,23 @@ export default function WorkspacePage() {
 
     const company = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
     const isManagement = userRole === 'manajemen';
+
+    // --- EFFECT: Trigger auto-payment popup if redirected from guard ---
+    useEffect(() => {
+        const blockedModuleId = searchParams.get('blocked_module');
+        if (blockedModuleId && isManagement) {
+            const moduleConfig = MODULE_CATALOG.find(m => m.id === blockedModuleId);
+            if (moduleConfig) {
+                setSelectedModule(moduleConfig);
+                setDialogMode('activate');
+                setIsSubDialogOpen(true);
+                
+                // Clear the search param after triggering to avoid repeated popups
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, '', newUrl);
+            }
+        }
+    }, [searchParams, isManagement]);
 
     const childCompanies = useMemo(() => {
         if (!company) return [];
@@ -559,7 +579,7 @@ export default function WorkspacePage() {
                 <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden z-[300] flex flex-col h-full max-h-[85vh] p-0">
                     <DialogHeader className="p-6 pb-2 bg-muted/20 border-b shrink-0 flex flex-col space-y-0.5 text-left">
                         <DialogTitle className="font-black text-slate-900 text-xl tracking-tighter uppercase flex items-center gap-3">
-                            <Shield className="size-6 text-primary" strokeWidth={2.5} /> Tambah Kuota Admin
+                            <Shield size={6} text-primary" strokeWidth={2.5} /> Tambah Kuota Admin
                         </DialogTitle>
                         <DialogDescription className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em]">Investasi Add-on Lifetime</DialogDescription>
                     </DialogHeader>
@@ -597,5 +617,13 @@ export default function WorkspacePage() {
                 </DialogContent>
             </Dialog>
         </ResponsivePage>
+    );
+}
+
+export default function WorkspacePage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-primary size-10" /></div>}>
+            <WorkspaceContent />
+        </Suspense>
     );
 }
