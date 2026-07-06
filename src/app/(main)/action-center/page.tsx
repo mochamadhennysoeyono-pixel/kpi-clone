@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
 import { format, parse } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
     FilePlus2, 
@@ -22,13 +22,16 @@ import {
     BrainCircuit, 
     Target, 
     TrendingUp,
-    TrendingDown
+    TrendingDown,
+    Loader2,
+    ArrowRight
 } from 'lucide-react';
 import Link from 'next/link';
 import type { Enrollment, KpiData, Course, Employee, KboAssessment, AppraisalSetup, AppraisalTask } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { PerformanceTrendChart } from '@/components/reports/performance-trend-chart';
+import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -173,7 +176,11 @@ function MyDashboardContent() {
     
     const kboCategoryScores = useMemo(() => {
         if (!myKboData.length || !currentUser) return [];
-        const latestAssessment = myKboData.sort((a, b) => new Date(b.timestamp.toDate()).getTime() - new Date(a.timestamp.toDate()).getTime())[0];
+        const latestAssessment = myKboData.sort((a, b) => {
+            const dateA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(0);
+            const dateB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(0);
+            return dateB.getTime() - dateA.getTime();
+        })[0];
         const setup = appraisalSetups.find(s => s.id === latestAssessment.setupId);
         const comps = setup?.componentsByLevel?.[currentUser.level];
         if (!comps?.kbo) return [];
