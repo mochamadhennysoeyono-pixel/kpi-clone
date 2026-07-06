@@ -257,7 +257,6 @@ function WorkspaceContent() {
     const company = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
     const isManagement = userRole === 'manajemen';
 
-    // --- EFFECT: Trigger auto-payment popup if redirected from guard ---
     useEffect(() => {
         const blockedModuleId = searchParams.get('blocked_module');
         if (blockedModuleId && isManagement) {
@@ -267,7 +266,6 @@ function WorkspaceContent() {
                 setDialogMode('activate');
                 setIsSubDialogOpen(true);
                 
-                // Clear the search param after triggering to avoid repeated popups
                 const newUrl = window.location.pathname;
                 window.history.replaceState({}, '', newUrl);
             }
@@ -325,7 +323,7 @@ function WorkspaceContent() {
             const now = new Date();
             let expiryStr: string;
             
-            if (dialogMode === 'add-quota' && company.moduleSubscriptions?.[selectedModule.id]) {
+            if (isAddQuotaMode && company.moduleSubscriptions?.[selectedModule.id]) {
                 expiryStr = company.moduleSubscriptions[selectedModule.id].expiryDate;
             } else {
                 expiryStr = addDays(now, data.duration).toISOString();
@@ -579,7 +577,7 @@ function WorkspaceContent() {
                 <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden z-[300] flex flex-col h-full max-h-[85vh] p-0">
                     <DialogHeader className="p-6 pb-2 bg-muted/20 border-b shrink-0 flex flex-col space-y-0.5 text-left">
                         <DialogTitle className="font-black text-slate-900 text-xl tracking-tighter uppercase flex items-center gap-3">
-                            <Shield size={6} text-primary" strokeWidth={2.5} /> Tambah Kuota Admin
+                            <Shield size={24} className="text-primary" strokeWidth={2.5} /> Tambah Kuota Admin
                         </DialogTitle>
                         <DialogDescription className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em]">Investasi Add-on Lifetime</DialogDescription>
                     </DialogHeader>
