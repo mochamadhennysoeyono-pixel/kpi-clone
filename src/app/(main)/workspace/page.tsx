@@ -1,4 +1,3 @@
-
 // src/app/(main)/workspace/page.tsx
 "use client";
 
@@ -77,7 +76,7 @@ import { Separator } from '@/components/ui/separator';
 import { ResponsivePage } from '@/components/ui/adaptive-layout';
 import { PageHeader } from '@/components/ui/page-header';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CompanyAdminManagementPage } from '@/app/(main)/company-admin-management/page';
+import CompanyAdminManagementPage from '@/app/(main)/company-admin-management/page';
 
 // --- Static Meta for Modules ---
 const MODULE_CATALOG = [
@@ -107,7 +106,7 @@ const MODULE_CATALOG = [
     }
 ];
 
-// --- Sub-components for New Design ---
+// --- Sub-components ---
 
 function GlassCard({ children, className, onClick }: { children: React.ReactNode, className?: string, onClick?: () => void }) {
     return (
@@ -149,12 +148,13 @@ function WorkspaceModuleCard({
     const isActive = subscription?.status === 'active';
     const isExpired = subscription?.status === 'expired';
     const isTrial = subscription?.type === 'trial';
+    const Icon = config.icon;
     
     return (
         <GlassCard className="p-5 flex flex-col h-full">
             <div className="flex justify-between items-start mb-5">
                 <div className="size-11 rounded-2xl bg-primary/5 flex items-center justify-center text-primary border border-primary/10">
-                    <config.icon size={22} strokeWidth={2} />
+                    <Icon size={22} strokeWidth={2} />
                 </div>
                 {isActive && (
                     <Badge className={cn(
@@ -239,7 +239,7 @@ function HistoryItem({ log }: { log: SubscriptionLog }) {
             </div>
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-[7px] font-black h-3.5 px-1 bg-primary/10 text-primary border-none">{log.action}</Badge>
+                    <Badge variant="secondary" className="text-[8px] font-black h-3.5 px-1 bg-primary/10 text-primary border-none">{log.action}</Badge>
                     <span className="text-[9px] font-bold text-slate-400 uppercase">{format(log.timestamp?.toDate ? log.timestamp.toDate() : new Date(), "d MMM yyyy")}</span>
                 </div>
                 {isLife && <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">LIFE</span>}
@@ -248,7 +248,7 @@ function HistoryItem({ log }: { log: SubscriptionLog }) {
     );
 }
 
-// --- Main Workspace Page ---
+// --- Main Workspace Component ---
 
 export function WorkspaceContent() {
     const { currentUser, userRole, logout, setIsLoading } = useAuth();
@@ -283,7 +283,7 @@ export function WorkspaceContent() {
         if (!company) return [];
         return subscriptionLogs
             .filter(log => log.companyId === company.id)
-            .sort((a, b) => (b.timestamp?.toDate?.() || 0) - (a.timestamp?.toDate?.() || 0))
+            .sort((a, b) => (b.timestamp?.toDate?.().getTime() || 0) - (a.timestamp?.toDate?.().getTime() || 0))
             .slice(0, 4);
     }, [subscriptionLogs, company]);
 
@@ -295,6 +295,7 @@ export function WorkspaceContent() {
                 setSelectedModule(moduleConfig);
                 setDialogMode('activate');
                 setIsSubDialogOpen(true);
+                // Clear the param after showing the dialog
                 const newUrl = window.location.pathname;
                 window.history.replaceState({}, '', newUrl);
             }
@@ -494,7 +495,7 @@ export function WorkspaceContent() {
                                     </div>
                                     <div className="flex-1 text-center md:text-left space-y-1">
                                         <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">Tim Manajemen</h4>
-                                        <p className="text-xs font-medium text-slate-500 leading-relaxed max-w-md">Tambahkan kapasitas personil Admin untuk membantu pengelolaan dashboard unit bisnis.</p>
+                                        <p className="text-xs font-medium text-slate-500 leading-relaxed max-w-md">Tambahkan kapasitas personil Admin untuk membantu pengelolaan dashboard.</p>
                                         <div className="pt-2">
                                             <Badge variant="secondary" className="bg-primary/5 text-primary border-none font-bold text-[9px] px-3 h-5 rounded-full">{mgmtLimit} Akun (Aktif: {currentMgmtCount})</Badge>
                                         </div>
@@ -515,24 +516,27 @@ export function WorkspaceContent() {
                         {isManagement && availableModules.length > 0 && (
                             <div className="space-y-4">
                                 <SectionLabel icon={Sparkles} label="MODUL TERSEDIA" />
-                                {availableModules.map(m => (
-                                    <GlassCard key={m.id} className="p-6 flex flex-col md:flex-row items-center gap-6 border border-dashed border-primary/30 bg-primary/[0.02]">
-                                        <div className="size-16 rounded-[1.25rem] bg-white flex items-center justify-center shrink-0 border shadow-sm">
-                                            <React.createElement(m.icon, { size: 28, className: "text-slate-400", strokeWidth: 1.5 })}
-                                        </div>
-                                        <div className="flex-1 text-center md:text-left">
-                                            <h4 className="text-base font-black text-slate-900 uppercase tracking-tight mb-1">{m.name}</h4>
-                                            <p className="text-xs font-medium text-slate-500">{m.description}</p>
-                                        </div>
-                                        <Button 
-                                            onClick={() => { setSelectedModule(m); setDialogMode('activate'); setIsSubDialogOpen(true); }}
-                                            variant="outline" 
-                                            className="w-full md:w-auto h-11 px-6 border-2 border-primary text-primary hover:bg-primary hover:text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all flex items-center gap-2"
-                                        >
-                                            <Zap size={14} className="fill-current" /> AKTIFKAN SEKARANG
-                                        </Button>
-                                    </GlassCard>
-                                ))}
+                                {availableModules.map(m => {
+                                    const Icon = m.icon;
+                                    return (
+                                        <GlassCard key={m.id} className="p-6 flex flex-col md:flex-row items-center gap-6 border border-dashed border-primary/30 bg-primary/[0.02]">
+                                            <div className="size-16 rounded-[1.25rem] bg-white flex items-center justify-center shrink-0 border shadow-sm">
+                                                <Icon size={28} className="text-slate-400" strokeWidth={1.5} />
+                                            </div>
+                                            <div className="flex-1 text-center md:text-left">
+                                                <h4 className="text-base font-black text-slate-900 uppercase tracking-tight mb-1">{m.name}</h4>
+                                                <p className="text-xs font-medium text-slate-500">{m.description}</p>
+                                            </div>
+                                            <Button 
+                                                onClick={() => { setSelectedModule(m); setDialogMode('activate'); setIsSubDialogOpen(true); }}
+                                                variant="outline" 
+                                                className="w-full md:w-auto h-11 px-6 border-2 border-primary text-primary hover:bg-primary hover:text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all flex items-center gap-2"
+                                            >
+                                                <Zap size={14} className="fill-current" /> AKTIFKAN SEKARANG
+                                            </Button>
+                                        </GlassCard>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
@@ -549,7 +553,7 @@ export function WorkspaceContent() {
                                     {/* Storage Usage Simulation */}
                                     <div className="space-y-3">
                                         <div className="flex justify-between items-end">
-                                            <p className="text-[10px] font-bold text-white/50 uppercase">Penyimpanan</p>
+                                            <p className="text-[10px] font-bold text-white/50 uppercase">Penyimpanan Digunakan</p>
                                             <p className="text-xs font-black tnum">1.2 GB / 5 GB</p>
                                         </div>
                                         <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
@@ -564,7 +568,7 @@ export function WorkspaceContent() {
                                             <p className="text-xs font-black text-emerald-400">+12%</p>
                                         </div>
                                         <div className="h-14 flex items-end gap-1.5 px-1">
-                                            {[30, 45, 25, 60, 80, 100, 70].map((h, i) => (
+                                            {[30, 45, 25, 60, 80, 95, 70].map((h, i) => (
                                                 <div 
                                                     key={i} 
                                                     style={{ height: `${h}%` }} 
@@ -626,68 +630,74 @@ export function WorkspaceContent() {
                         </div>
                     </div>
                 </div>
+            </ResponsivePage>
 
-                {/* --- Modals & Dialogs --- */}
-                <ModuleSubscriptionDialog 
-                    isOpen={isSubDialogOpen} onOpenChange={setIsSubDialogOpen} 
-                    module={selectedModule} company={company || null} 
-                    mode={dialogMode} onConfirm={handleActivateModule} 
+            {/* --- Modals & Dialogs (Outside ResponsivePage to avoid layout constraints) --- */}
+            <ModuleSubscriptionDialog 
+                isOpen={isSubDialogOpen} onOpenChange={setIsSubDialogOpen} 
+                module={selectedModule} company={company || null} 
+                mode={dialogMode} onConfirm={handleActivateModule} 
+            />
+            
+            {company && (
+                <GroupManagementDialog 
+                    isOpen={isGroupDialogOpen} onOpenChange={setIsGroupDialogOpen} 
+                    holdingCompany={company} childCompanies={childCompanies} 
                 />
-                {company && <GroupManagementDialog isOpen={isGroupDialogOpen} onOpenChange={setIsGroupDialogOpen} holdingCompany={company} childCompanies={childCompanies} />}
-                
-                <Dialog open={isMgmtDialogOpen} onOpenChange={setIsMgmtDialogOpen}>
-                    <DialogContent className="max-w-5xl h-[90vh] md:h-[85vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl bg-white z-[200]">
-                        <DialogHeader className="p-4 pb-2 shrink-0 bg-muted/20 border-b flex flex-col space-y-0.5">
-                            <DialogTitle className="font-black text-lg tracking-tighter uppercase text-slate-900">Manajemen Tim Admin</DialogTitle>
-                            <DialogDescription className="text-[9px] font-bold text-primary uppercase tracking-widest">Kapasitas Maksimal: {mgmtLimit} Akun Admin</DialogDescription>
-                        </DialogHeader>
-                        <div className="flex-1 overflow-y-auto no-scrollbar min-w-0 bg-[#fafafa] p-4">
-                            <CompanyAdminManagementPage onQuotaFull={() => { setIsMgmtConfigOpen(true); }} />
-                        </div>
-                    </DialogContent>
-                </Dialog>
-                
-                <Dialog open={isMgmtConfigOpen} onOpenChange={setIsMgmtConfigOpen}>
-                    <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden z-[300] flex flex-col h-full max-h-[85vh] p-0">
-                        <DialogHeader className="p-4 pb-2 bg-muted/20 border-b shrink-0 flex flex-col space-y-0.5 text-left">
-                            <DialogTitle className="font-black text-slate-900 text-lg tracking-tighter uppercase flex items-center gap-3">
-                                <Shield size={20} className="text-primary" strokeWidth={2.5} /> Tambah Kuota Admin
-                            </DialogTitle>
-                            <DialogDescription className="text-slate-500 text-[8px] font-black uppercase tracking-[0.2em]">Investasi Add-on Lifetime</DialogDescription>
-                        </DialogHeader>
-                        <ScrollArea className="flex-1 min-h-0 bg-background">
-                            <div className="p-6 space-y-6">
-                                <div className="flex items-center justify-between gap-4">
-                                    <div className="space-y-0.5 min-w-0">
-                                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">Jumlah Akun</h4>
-                                        <p className="text-[9px] text-slate-400 font-medium uppercase">Admin tambahan untuk dashboard</p>
-                                    </div>
-                                    <div className="flex items-center bg-slate-100 rounded-xl border border-slate-200 overflow-hidden h-9 shadow-sm shrink-0">
-                                        <button type="button" onClick={() => setMgmtAddQuota(Math.max(1, mgmtAddQuota - 1))} className="px-3 hover:bg-white text-slate-900 transition-colors"><Minus size={14} strokeWidth={3} /></button>
-                                        <input type="number" value={mgmtAddQuota} onChange={(e) => setMgmtAddQuota(Math.max(1, parseInt(e.target.value) || 1))} className="w-10 text-center border-none focus-visible:ring-0 text-xs font-black bg-transparent" />
-                                        <button type="button" onClick={() => setMgmtAddQuota(mgmtAddQuota + 1)} className="px-3 hover:bg-white text-slate-900 transition-colors"><Plus size={14} strokeWidth={3} /></button>
-                                    </div>
+            )}
+            
+            <Dialog open={isMgmtDialogOpen} onOpenChange={setIsMgmtDialogOpen}>
+                <DialogContent className="max-w-5xl h-[90vh] md:h-[85vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl bg-white z-[200]">
+                    <DialogHeader className="p-4 pb-2 shrink-0 bg-muted/20 border-b flex flex-col space-y-0.5">
+                        <DialogTitle className="font-black text-lg tracking-tighter uppercase text-slate-900">Manajemen Tim Admin</DialogTitle>
+                        <DialogDescription className="text-[9px] font-bold text-primary uppercase tracking-widest">Kapasitas Maksimal: {mgmtLimit} Akun Admin</DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-y-auto no-scrollbar min-w-0 bg-[#fafafa] p-4">
+                        <CompanyAdminManagementPage onQuotaFull={() => setIsMgmtConfigOpen(true)} />
+                    </div>
+                </DialogContent>
+            </Dialog>
+            
+            <Dialog open={isMgmtConfigOpen} onOpenChange={setIsMgmtConfigOpen}>
+                <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden z-[300] flex flex-col h-full max-h-[85vh] p-0">
+                    <DialogHeader className="p-4 pb-2 bg-muted/20 border-b shrink-0 flex flex-col space-y-0.5 text-left">
+                        <DialogTitle className="font-black text-slate-900 text-lg tracking-tighter uppercase flex items-center gap-3">
+                            <Shield size={20} className="text-primary" strokeWidth={2.5} /> Tambah Kuota Admin
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500 text-[8px] font-black uppercase tracking-[0.2em]">Investasi Add-on Lifetime</DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="flex-1 min-h-0 bg-background">
+                        <div className="p-6 space-y-6">
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="space-y-0.5 min-w-0">
+                                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">Jumlah Akun</h4>
+                                    <p className="text-[9px] text-slate-400 font-medium uppercase">Admin tambahan untuk dashboard</p>
                                 </div>
-                                <div className="p-5 rounded-2xl bg-[#090e1a] text-white shadow-xl space-y-1.5">
-                                    <div className="flex justify-between items-center opacity-40"><span className="text-[9px] font-black uppercase tracking-[0.2em]">Total Investasi</span><ShoppingCart size={12} /></div>
-                                    <p className="text-2xl font-black tracking-tighter">Rp {(mgmtAddQuota * mgmtPricePerUser).toLocaleString('id-ID')}</p>
-                                </div>
-                                <div className="flex gap-2 pt-4">
-                                    <DialogClose asChild><Button variant="ghost" className="flex-1 font-black text-[9px] uppercase h-11">Batal</Button></DialogClose>
-                                    <Button className="flex-1 font-black uppercase tracking-widest text-[9px] h-11 shadow-lg" onClick={handleBuyMgmtAddon}>Beli Sekarang</Button>
+                                <div className="flex items-center bg-slate-100 rounded-xl border border-slate-200 overflow-hidden h-9 shadow-sm shrink-0">
+                                    <button type="button" onClick={() => setMgmtAddQuota(Math.max(1, mgmtAddQuota - 1))} className="px-3 hover:bg-white text-slate-900 transition-colors"><Minus size={14} strokeWidth={3} /></button>
+                                    <input type="number" value={mgmtAddQuota} onChange={(e) => setMgmtAddQuota(Math.max(1, parseInt(e.target.value) || 1))} className="w-10 text-center border-none focus-visible:ring-0 text-xs font-black bg-transparent" />
+                                    <button type="button" onClick={() => setMgmtAddQuota(mgmtAddQuota + 1)} className="px-3 hover:bg-white text-slate-900 transition-colors"><Plus size={14} strokeWidth={3} /></button>
                                 </div>
                             </div>
-                        </ScrollArea>
-                    </DialogContent>
-                </Dialog>
-            </ResponsivePage>
+                            <div className="p-5 rounded-2xl bg-[#090e1a] text-white shadow-xl space-y-1.5">
+                                <div className="flex justify-between items-center opacity-40"><span className="text-[9px] font-black uppercase tracking-[0.2em]">Total Investasi</span><ShoppingCart size={12} /></div>
+                                <p className="text-2xl font-black tracking-tighter">Rp {(mgmtAddQuota * mgmtPricePerUser).toLocaleString('id-ID')}</p>
+                            </div>
+                            <div className="flex gap-2 pt-4">
+                                <DialogClose asChild><Button variant="ghost" className="flex-1 font-black text-[9px] uppercase h-11">Batal</Button></DialogClose>
+                                <Button className="flex-1 font-black uppercase tracking-widest text-[9px] h-11 shadow-lg" onClick={handleBuyMgmtAddon}>Beli Sekarang</Button>
+                            </div>
+                        </div>
+                    </ScrollArea>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
 
 export default function WorkspacePage() {
     return (
-        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-primary size-10" /></div>}>
+        <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="animate-spin text-primary size-10" /></div>}>
             <WorkspaceContent />
         </Suspense>
     );
