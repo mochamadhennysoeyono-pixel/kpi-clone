@@ -10,9 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { 
     Crown, 
     Users, 
-    Building, 
     Shield, 
-    Calendar, 
     ShoppingCart, 
     CheckCircle2, 
     XCircle,
@@ -25,11 +23,14 @@ import {
     GitMerge,
     Info,
     History,
-    Clock
+    Clock,
+    ArrowRight,
+    ChevronLeft,
+    Wallet
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNowStrict, format } from 'date-fns';
+import { formatDistanceToNowStrict, format, parseISO, isValid } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,255 +41,277 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { SubscriptionPlan, Company, SubscriptionLog } from '@/types';
+import type { ModuleId, Company, SubscriptionLog } from '@/types';
 import { cn } from '@/lib/utils';
 import { ResponsivePage } from '@/components/ui/adaptive-layout';
 import { PageHeader } from '@/components/ui/page-header';
 import { AdaptiveCardGrid, AdaptiveMetricCard } from '@/components/ui/adaptive-card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
+// --- Internal Components ---
 
-function FeatureStatus({ label, enabled, icon: Icon }: { label: string; enabled: boolean; icon: any }) {
+function ModuleStatusCard({ 
+    id, 
+    name, 
+    icon: Icon, 
+    sub 
+}: { 
+    id: ModuleId, 
+    name: string, 
+    icon: any, 
+    sub?: any 
+}) {
+    const isActive = sub?.status === 'active';
+    const isExpired = sub?.status === 'expired';
+    const isTrial = sub?.type === 'trial';
+
+    const getRemainingDays = () => {
+        if (!sub?.expiryDate) return null;
+        const expiry = parseISO(sub.expiryDate);
+        const now = new Date();
+        if (now > expiry) return 'EXPIRED';
+        return formatDistanceToNowStrict(expiry, { unit: 'day', locale: localeId });
+    };
+
+    const daysLeft = getRemainingDays();
+
     return (
-        <div className={cn(
-            "flex items-center justify-between p-3 rounded-xl border transition-all",
-            enabled ? "bg-background border-primary/20 shadow-sm" : "bg-muted/30 opacity-40 border-dashed"
+        <Card className={cn(
+            "border-border/60 shadow-sm overflow-hidden transition-all duration-300",
+            isActive ? "bg-background" : "bg-muted/10 grayscale opacity-60"
         )}>
-            <div className="flex items-center gap-3">
-                <div className={cn("p-2 rounded-lg", enabled ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
-                    <Icon className="size-4" />
+            <div className={cn("h-1.5 w-full", isActive ? "bg-primary" : "bg-slate-300")} />
+            <CardContent className="p-5 space-y-4">
+                <div className="flex justify-between items-start">
+                    <div className={cn(
+                        "p-2 rounded-xl",
+                        isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                    )}>
+                        <Icon size={20} />
+                    </div>
+                    {isActive && (
+                        <Badge className={cn(
+                            "text-[8px] font-black uppercase h-5 px-2 border-none",
+                            isTrial ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+                        )}>
+                            {isTrial ? 'Trial' : 'Pro'}
+                        </Badge>
+                    )}
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-tight text-slate-800">{label}</span>
-            </div>
-            {enabled ? (
-                <CheckCircle2 className="size-4 text-green-500" />
-            ) : (
-                <XCircle className="size-4 text-muted-foreground/30" />
-            )}
-        </div>
+
+                <div className="space-y-0.5">
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{name}</h4>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                        {isActive ? (isTrial ? 'Akses Terbatas' : 'Lisensi Penuh') : 'Belum Aktif'}
+                    </p>
+                </div>
+
+                {isActive && (
+                    <div className="pt-2 space-y-3">
+                        <div className="flex justify-between items-center text-[10px] font-black uppercase">
+                            <span className="text-muted-foreground opacity-60">Staff Quota</span>
+                            <span className="text-slate-900">{sub.quota === -1 ? '∞' : sub.quota} Akun</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] font-black uppercase">
+                            <span className="text-muted-foreground opacity-60">Masa Aktif</span>
+                            <span className={cn(isExpired ? "text-rose-600" : "text-primary")}>
+                                {daysLeft}
+                            </span>
+                        </div>
+                        {isExpired && (
+                            <Button asChild size="sm" variant="destructive" className="w-full h-8 text-[9px] font-black uppercase tracking-widest mt-2">
+                                <Link href={`/subscription-plans?companyId=${id}`}>REAKTIVASI SEKARANG</Link>
+                            </Button>
+                        )}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
     );
 }
 
 export default function SubscriptionStatusPage() {
-    const { currentUser, userRole } = useAuth();
-    const { companies, employees, subscriptionPlans, subscriptionLogs } = useMasterData();
+    const { currentUser } = useAuth();
+    const { companies, employees, subscriptionLogs, companyAdmins } = useMasterData();
     
-    const userCompany = useMemo(() => {
-        if (!currentUser) return null;
-        return companies.find(c => c.name === currentUser.company);
-    }, [currentUser, companies]);
+    const company = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
     
-    const relevantCompany = useMemo(() => {
-        if (!userCompany) return null;
-        if (userCompany.parentId) {
-            return companies.find(c => c.id === userCompany.parentId) || userCompany;
-        }
-        return userCompany;
-    }, [userCompany, companies]);
+    const activeModulesCount = useMemo(() => {
+        if (!company?.moduleSubscriptions) return 0;
+        return Object.values(company.moduleSubscriptions).filter(s => s.status === 'active').length;
+    }, [company]);
 
-    const currentPlan = useMemo(() => {
-        if (!relevantCompany) return null;
+    const mgmtLimit = company?.customManagementUserLimit || 1;
+    const currentMgmtCount = useMemo(() => company ? companyAdmins.filter(a => a.company === company.name).length : 0, [companyAdmins, company]);
 
-        const plan = subscriptionPlans.find(p => p.id === relevantCompany.subscriptionPlanId);
-        if (plan) return plan;
-
-        if (relevantCompany.subscriptionPlanId === 'default-trial') {
-            return {
-                id: 'default-trial',
-                name: 'TRIAL',
-                title: '14 Days Free Trial',
-                price: 0,
-                userLimit: relevantCompany.customUserLimit ?? 5,
-                managementUserLimit: relevantCompany.customManagementUserLimit ?? 2,
-                companyLimit: 0,
-                durationDays: 14,
-                benefitList: ["Akses KPI & KBO", "Akses CollabSpace", "Fitur AI (KIPI) Aktif", "Analisis Laporan Standar"],
-                features: {
-                    allowHolding: false, allowKpi: true, allowKbo: true, allowOkr: true, 
-                    allowReporting: true, allowLms: false, allowCollabSpace: true, 
-                    allowAiFeatures: true, allowDocumentManagement: false,
-                },
-            } as SubscriptionPlan;
-        }
-
-        return null;
-    }, [relevantCompany, subscriptionPlans]);
-    
-    const usageDetails = useMemo(() => {
-        if (!relevantCompany) return { totalUsage: { userCount: 0, managementCount: 0, childCompanyCount: 0 }, breakdown: [] };
-
-        const childCompanies = companies.filter(c => c.parentId === relevantCompany.id);
-        const allGroupCompanies = [relevantCompany, ...childCompanies];
-
-        const breakdown = allGroupCompanies.map(company => {
-            const companyEmployees = employees.filter(e => e.company === company.name);
-            return {
-                companyName: company.name,
-                isHolding: company.id === relevantCompany.id,
-                userCount: companyEmployees.filter(e => e.role === 'user').length,
-                managementCount: companyEmployees.filter(e => e.role === 'manajemen').length,
-            };
-        });
-
-        const totalUsage = breakdown.reduce((acc, curr) => {
-            acc.userCount += curr.userCount;
-            acc.managementCount += curr.managementCount;
-            return acc;
-        }, { userCount: 0, managementCount: 0, childCompanyCount: childCompanies.length });
-
-        return { totalUsage, breakdown };
-
-    }, [relevantCompany, employees, companies]);
-
-    const companyHistory = useMemo(() => {
-        if (!relevantCompany) return [];
+    const myLogs = useMemo(() => {
+        if (!company) return [];
         return subscriptionLogs
-            .filter(log => log.companyId === relevantCompany.id)
+            .filter(log => log.companyId === company.id)
             .sort((a, b) => {
                 const dateA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(0);
                 const dateB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(0);
                 return dateB.getTime() - dateA.getTime();
             });
-    }, [relevantCompany, subscriptionLogs]);
-    
-    const finalUserLimit = relevantCompany?.customUserLimit ?? currentPlan?.userLimit ?? 0;
-    const finalManagementLimit = relevantCompany?.customManagementUserLimit ?? currentPlan?.managementUserLimit ?? 0;
-    const finalCompanyLimit = relevantCompany?.customCompanyLimit ?? currentPlan?.companyLimit ?? 0;
+    }, [company, subscriptionLogs]);
 
-    const getRemainingDays = () => {
-        if (!relevantCompany?.subscriptionExpiryDate) return 'N/A';
-        const expiryDate = new Date(relevantCompany.subscriptionExpiryDate);
-        const now = new Date();
-        if (now > expiryDate) return 'EXPIRED';
-        return formatDistanceToNowStrict(expiryDate, { unit: 'day', locale: localeId });
-    };
+    const moduleCatalog = [
+        { id: 'appraisal' as ModuleId, name: 'Appraisal & KPI', icon: ClipboardCheck },
+        { id: 'lms' as ModuleId, name: 'Akademi LMS', icon: GraduationCap },
+        { id: 'collabspace' as ModuleId, name: 'CollabSpace', icon: LayoutGrid },
+    ];
 
-    if (!relevantCompany || !currentPlan) return null;
+    if (!company) return null;
 
     return (
         <ResponsivePage>
             <PageHeader 
-                title="Status Langganan Aktif"
-                description={`Manajemen detail paket berlangganan untuk entitas ${relevantCompany.name}.`}
-                icon={Crown}
+                title="Pusat Billing & Berlangganan"
+                description="Kelola seluruh inventori modul aktif, kuota staff, dan riwayat audit transaksi keuangan perusahaan Anda."
+                icon={Wallet}
                 actions={
-                    <Button asChild variant="secondary" className="font-bold shadow-lg h-9 sm:h-10 px-6">
-                        <Link href={`/subscription-plans?companyId=${userCompany?.id}`}>
-                            <ShoppingCart className="mr-2 size-4" />
-                            Upgrade / Ganti Paket
+                    <Button asChild variant="outline" className="font-bold border-slate-200 bg-white shadow-sm h-10 px-5">
+                        <Link href="/workspace">
+                            <ChevronLeft className="size-4 mr-2" strokeWidth={3} />
+                            WORKSPACE
                         </Link>
                     </Button>
                 }
             />
 
-            <Card className="bg-primary text-primary-foreground border-none shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none"><Crown size={150} /></div>
-                <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/10 bg-black/10">
-                    <div className="p-6">
-                        <p className="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Paket</p>
-                        <p className="text-xl font-black">{currentPlan.name}</p>
-                    </div>
-                    <div className="p-6">
-                        <p className="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Nilai Investasi</p>
-                        <p className="text-xl font-black">Rp {(relevantCompany.customPrice ?? currentPlan.price).toLocaleString('id-ID')}</p>
-                    </div>
-                    <div className="p-6">
-                        <p className="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Masa Aktif</p>
-                        <p className="text-xl font-black">{getRemainingDays()}</p>
-                    </div>
-                    <div className="p-6">
-                        <p className="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Exp Date</p>
-                        <p className="text-xl font-black">{relevantCompany.subscriptionExpiryDate ? format(new Date(relevantCompany.subscriptionExpiryDate), 'd MMM yyyy') : '-'}</p>
-                    </div>
-                </div>
-            </Card>
-
+            {/* Metrics Overview */}
             <AdaptiveCardGrid complexity="simple">
                 <AdaptiveMetricCard 
-                    title="Utilisasi Staff" 
-                    value={`${usageDetails.totalUsage.userCount} / ${finalUserLimit === -1 ? '∞' : finalUserLimit}`} 
-                    icon={Users} 
+                    title="Modul Aktif" 
+                    value={activeModulesCount} 
+                    icon={LayoutGrid} 
+                    color="bg-primary/10 text-primary" 
+                    description="Dari 3 modul tersedia"
                 />
                 <AdaptiveMetricCard 
-                    title="Utilisasi Admin" 
-                    value={`${usageDetails.totalUsage.managementCount} / ${finalManagementLimit === -1 ? '∞' : finalManagementLimit}`} 
+                    title="Tim Manajemen" 
+                    value={`${currentMgmtCount} / ${mgmtLimit}`} 
                     icon={Shield} 
+                    color="bg-indigo-500/10 text-indigo-600" 
+                    description="Admin aktif saat ini"
                 />
-                {currentPlan.features.allowHolding && (
-                    <AdaptiveMetricCard 
-                        title="Unit Bisnis" 
-                        value={`${usageDetails.totalUsage.childCompanyCount} / ${finalCompanyLimit === -1 ? '∞' : finalCompanyLimit}`} 
-                        icon={GitMerge} 
-                    />
-                )}
+                <AdaptiveMetricCard 
+                    title="Total Transaksi" 
+                    value={myLogs.length} 
+                    icon={History} 
+                    description="Seluruh riwayat pembayaran"
+                />
             </AdaptiveCardGrid>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2 border-border/40 shadow-sm bg-background">
-                    <CardHeader className="bg-muted/30 border-b p-5">
-                        <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2"><LayoutGrid size={16} className="text-primary" /> Cakupan Modul Aktif</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <FeatureStatus label="Manajemen KPI" enabled={currentPlan.features.allowKpi} icon={ClipboardCheck} />
-                            <FeatureStatus label="Penilaian KBO" enabled={currentPlan.features.allowKbo} icon={Shield} />
-                            <FeatureStatus label="Manajemen OKR" enabled={currentPlan.features.allowOkr} icon={Target} />
-                            <FeatureStatus label="Portal LMS" enabled={currentPlan.features.allowLms} icon={GraduationCap} />
-                            <FeatureStatus label="CollabSpace" enabled={currentPlan.features.allowCollabSpace} icon={LayoutGrid} />
-                            <FeatureStatus label="Fitur AI (KIPI)" enabled={currentPlan.features.allowAiFeatures} icon={Bot} />
-                            <FeatureStatus label="Akses Holding" enabled={currentPlan.features.allowHolding} icon={GitMerge} />
-                            <FeatureStatus label="Laporan Analitik" enabled={currentPlan.features.allowReporting} icon={Info} />
-                        </div>
-                    </CardContent>
-                </Card>
+            {/* Modular Inventory Section */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
+                        <CheckCircle2 size={14} className="text-primary" /> INVENTORI MODUL OPERASIONAL
+                    </h3>
+                    <Button asChild variant="ghost" size="sm" className="text-[10px] font-black uppercase text-primary hover:bg-primary/5">
+                        <Link href="/subscription-plans?companyId=${company.id}">
+                            BELI MODUL LAIN <ArrowRight size={12} className="ml-1.5" strokeWidth={3} />
+                        </Link>
+                    </Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {moduleCatalog.map(m => (
+                        <ModuleStatusCard 
+                            key={m.id} 
+                            id={m.id} 
+                            name={m.name} 
+                            icon={m.icon} 
+                            sub={company.moduleSubscriptions?.[m.id]} 
+                        />
+                    ))}
+                </div>
+            </div>
 
-                <Card className="border-border/40 shadow-sm bg-background">
+            <Separator className="opacity-40" />
+
+            {/* Full Transaction Audit Log */}
+            <div className="space-y-4">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1 flex items-center gap-2">
+                    <History size={14} className="text-primary" /> AUDIT LOG TRANSAKSI & AKTIVASI
+                </h3>
+                <Card className="border-border/40 shadow-sm overflow-hidden bg-background">
                     <CardHeader className="bg-muted/30 border-b p-5">
-                        <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2"><ShoppingCart size={16} className="text-primary" /> Manfaat Eksklusif</CardTitle>
+                        <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                            Riwayat Pembayaran & Perubahan Paket
+                        </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-6">
-                        <ul className="space-y-3">
-                            {(currentPlan.benefitList || []).map((benefit, i) => (
-                                <li key={i} className="text-xs font-bold flex items-start gap-3 text-slate-700">
-                                    <CheckCircle2 className="size-4 text-green-500 shrink-0 mt-0.5" />
-                                    <span>{benefit}</span>
-                                </li>
-                            ))}
-                        </ul>
+                    <CardContent className="p-0">
+                        <ScrollArea className="w-full">
+                            <Table>
+                                <TableHeader className="bg-muted/10 border-none">
+                                    <TableRow className="border-none">
+                                        <TableHead className="text-[10px] font-black uppercase py-4 px-6">Timestamp</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase">Aksi / Detail</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase">Item Paket</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase text-right">Nilai (IDR)</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase text-right pr-6">Oleh</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {myLogs.length > 0 ? (
+                                        myLogs.map((log) => (
+                                            <TableRow key={log.id} className="border-border/40 hover:bg-muted/5 group transition-colors">
+                                                <TableCell className="py-5 px-6">
+                                                    <div className="font-mono text-[10px] font-bold text-slate-400">
+                                                        {log.timestamp?.toDate ? format(log.timestamp.toDate(), "HH:mm:ss") : "--:--:--"}
+                                                    </div>
+                                                    <div className="text-[10px] font-bold text-slate-900 mt-0.5">
+                                                        {log.timestamp?.toDate ? format(log.timestamp.toDate(), "dd MMM yyyy") : "-"}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant="outline" className={cn(
+                                                        "text-[9px] font-black uppercase border-none px-1.5 h-4 shadow-sm",
+                                                        log.action === 'TRIAL' ? "bg-amber-50 text-amber-700" : 
+                                                        log.action === 'UPGRADE' ? "bg-emerald-50 text-emerald-700" : 
+                                                        "bg-blue-50 text-blue-700"
+                                                    )}>
+                                                        {log.action.replace('_', ' ')}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-xs font-bold text-slate-700 uppercase tracking-tight">
+                                                    {log.planName}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <span className="font-mono text-xs font-black text-primary tnum">
+                                                        {log.amount > 0 ? `Rp ${log.amount.toLocaleString('id-ID')}` : 'FREE'}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="text-right pr-6">
+                                                    <p className="text-[10px] font-black text-muted-foreground uppercase">{log.performedBy}</p>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="h-40 text-center text-xs text-muted-foreground italic font-medium">
+                                                Belum ada riwayat transaksi tercatat untuk unit bisnis ini.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </ScrollArea>
                     </CardContent>
                 </Card>
             </div>
 
-            <Card className="border-border/40 shadow-sm overflow-hidden bg-background">
-                <CardHeader className="bg-muted/30 border-b p-5">
-                    <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2"><History size={16} className="text-primary" /> Riwayat Transaksi Paket</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader className="bg-muted/10">
-                            <TableRow className="border-none">
-                                <TableHead className="text-[10px] font-black uppercase py-4">Waktu</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase">Aksi</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase">Nama Paket</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-right">Nilai (Rp)</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {companyHistory.length > 0 ? (
-                                companyHistory.map((log) => (
-                                    <TableRow key={log.id} className="border-border/40">
-                                        <TableCell className="text-[10px] font-bold text-muted-foreground uppercase">{log.timestamp ? format(log.timestamp.toDate(), "d MMM yy, HH:mm") : '-'}</TableCell>
-                                        <TableCell><Badge variant="outline" className="text-[8px] font-black uppercase h-5 bg-muted/50 border-none">{log.action}</Badge></TableCell>
-                                        <TableCell className="text-xs font-black text-slate-800">{log.planName}</TableCell>
-                                        <TableCell className="text-right font-mono text-xs font-black text-primary">Rp {log.amount.toLocaleString('id-ID')}</TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow><TableCell colSpan={4} className="h-40 text-center text-xs text-muted-foreground italic">Belum ada riwayat tercatat.</TableCell></TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+            {/* Help Note */}
+            <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10 flex items-start gap-4">
+                <Info size={18} className="text-primary shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                    <p className="text-xs font-black text-slate-900 uppercase tracking-tight">Bantuan Administrasi Billing</p>
+                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                        Jika Anda memerlukan bantuan terkait faktur pajak, perubahan metode pembayaran, atau kustomisasi kuota grup di luar pilihan standar, silakan hubungi tim dukungan kami melalui pusat bantuan.
+                    </p>
+                </div>
+            </div>
         </ResponsivePage>
     );
 }

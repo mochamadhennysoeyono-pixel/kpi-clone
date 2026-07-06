@@ -657,7 +657,7 @@ export function WorkspaceContent() {
                                     href="/subscription-status" 
                                     className="mt-4 flex items-center justify-center gap-2 text-[10px] font-black uppercase text-primary hover:gap-3 transition-all tracking-widest py-3 border-t border-slate-50"
                                 >
-                                    LIHAT STATUS LENGKAP
+                                    LIHAT STATUS & AUDIT LENGKAP
                                     <ArrowRight size={14} strokeWidth={3} />
                                 </Link>
                             </GlassCard>
