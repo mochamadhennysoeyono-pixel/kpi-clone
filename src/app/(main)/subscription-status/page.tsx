@@ -19,7 +19,7 @@ import {
     Wallet
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNowStrict, parseISO } from 'date-fns';
+import { formatDistanceToNowStrict, parseISO, format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import {
