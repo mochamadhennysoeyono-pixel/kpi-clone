@@ -255,7 +255,7 @@ function HistoryItem({ log }: { log: SubscriptionLog }) {
 
 export function WorkspaceContent() {
     const { currentUser, userRole, logout, setIsLoading } = useAuth();
-    const { companies, updateCompany, addSubscriptionLog, fetchData, companyAdmins, addonPricing, subscriptionLogs, employees, collabTasks, subscriptionPlans, kpiData, departments, positions } = useMasterData();
+    const { companies, updateCompany, addSubscriptionLog, fetchData, companyAdmins, addonPricing, subscriptionLogs, employees, departments, positions } = useMasterData();
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -280,8 +280,13 @@ export function WorkspaceContent() {
         }
     }, [userRole]);
 
+    // Step to get child companies for the dialog
+    const childCompanies = useMemo(() => {
+        if (!company || !company.isHolding) return [];
+        return companies.filter(c => c.parentId === company.id);
+    }, [company, companies]);
+
     // --- GENERIC READINESS CHECKLIST LOGIC ---
-    // Steps to get the platform fully operational
     const readinessChecklist = useMemo(() => {
         if (!company) return [];
         
