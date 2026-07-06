@@ -516,68 +516,30 @@ function WorkspaceContent() {
                     )}
 
                     {isManagement && (
-                        <>
-                            <div className="space-y-5">
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2 ml-1">
-                                    <Plus size={14} strokeWidth={3} /> Layanan Tambahan
-                                </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <div className="bg-white border-2 border-slate-100 rounded-2xl p-6 sm:p-8 flex flex-col group hover:border-slate-300 transition-all shadow-sm">
-                                        <div className="size-12 rounded-xl bg-slate-100 text-slate-900 flex items-center justify-center mb-6 group-hover:scale-105 transition-transform"><Shield size={24} strokeWidth={1.5} /></div>
-                                        <div className="mb-8 flex-1">
-                                            <h3 className="text-xl font-black tracking-tight text-slate-900 mb-2">Tim Manajemen</h3>
-                                            <p className="text-xs font-medium text-slate-500 leading-relaxed">
-                                                Tambah kapasitas personil Admin untuk membantu pengelolaan dashboard operasional.
-                                            </p>
-                                        </div>
-                                        <div className="bg-[#fcfcfc] p-4 rounded-xl border border-slate-50 mb-6 flex justify-between items-center">
-                                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kapasitas</span>
-                                            <span className="text-xs font-black text-primary">{mgmtLimit} Akun (Aktif: {currentMgmtCount})</span>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <Button className="flex-1 font-black text-[10px] uppercase h-11 rounded-xl shadow-lg" onClick={() => setIsMgmtDialogOpen(true)}>Kelola Tim</Button>
-                                            <Button variant="outline" size="icon" className="size-11 rounded-xl border-2 border-slate-200 text-slate-500 hover:text-primary hover:border-primary/20 shrink-0" onClick={() => setIsMgmtConfigOpen(true)}><Users size={18}/></Button>
-                                        </div>
+                        <div className="space-y-5">
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2 ml-1">
+                                <Plus size={14} strokeWidth={3} /> Layanan Tambahan
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div className="bg-white border-2 border-slate-100 rounded-2xl p-6 sm:p-8 flex flex-col group hover:border-slate-300 transition-all shadow-sm">
+                                    <div className="size-12 rounded-xl bg-slate-100 text-slate-900 flex items-center justify-center mb-6 group-hover:scale-105 transition-transform"><Shield size={24} strokeWidth={1.5} /></div>
+                                    <div className="mb-8 flex-1">
+                                        <h3 className="text-xl font-black tracking-tight text-slate-900 mb-2">Tim Manajemen</h3>
+                                        <p className="text-xs font-medium text-slate-500 leading-relaxed">
+                                            Tambah kapasitas personil Admin untuk membantu pengelolaan dashboard operasional.
+                                        </p>
+                                    </div>
+                                    <div className="bg-[#fcfcfc] p-4 rounded-xl border border-slate-50 mb-6 flex justify-between items-center">
+                                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kapasitas</span>
+                                        <span className="text-xs font-black text-primary">{mgmtLimit} Akun (Aktif: {currentMgmtCount})</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button className="flex-1 font-black text-[10px] uppercase h-11 rounded-xl shadow-lg" onClick={() => setIsMgmtDialogOpen(true)}>Kelola Tim</Button>
+                                        <Button variant="outline" size="icon" className="size-11 rounded-xl border-2 border-slate-200 text-slate-500 hover:text-primary hover:border-primary/20 shrink-0" onClick={() => setIsMgmtConfigOpen(true)}><Users size={18}/></Button>
                                     </div>
                                 </div>
                             </div>
-
-                            {myLogs.length > 0 && (
-                                <div className="space-y-5">
-                                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2 ml-1">
-                                        <History size={14} strokeWidth={3} /> Histori Pembelian & Aktivitas
-                                    </h3>
-                                    <Card className="border-none shadow-sm overflow-hidden bg-white rounded-2xl">
-                                        <div className="divide-y divide-slate-50">
-                                            {myLogs.map(log => (
-                                                <div key={log.id} className="p-4 sm:p-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
-                                                    <div className="min-w-0 flex-1 pr-4">
-                                                        <p className="text-xs font-bold text-slate-900 truncate tracking-tight">{log.planName}</p>
-                                                        <div className="flex items-center gap-2 mt-1">
-                                                            <Badge variant="outline" className="text-[7px] font-black uppercase h-3.5 px-1 border-none bg-muted/50">{log.action}</Badge>
-                                                            <span className="text-[9px] font-medium text-slate-400 uppercase tracking-tighter">
-                                                                {log.timestamp?.toDate ? format(log.timestamp.toDate(), 'd MMM yyyy, HH:mm') : '-'}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="text-xs font-black text-primary tnum">
-                                                            {log.amount > 0 ? `Rp ${log.amount.toLocaleString('id-ID')}` : 'Gratis/Trial'}
-                                                        </p>
-                                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Nilai Transaksi</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="p-3 bg-slate-50/50 border-t border-slate-50 text-center">
-                                            <Button variant="ghost" size="sm" asChild className="text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary/5 h-8">
-                                                <Link href="/subscription-status">LIHAT STATUS LENGKAP <ArrowRight size={10} className="ml-1.5" strokeWidth={3} /></Link>
-                                            </Button>
-                                        </div>
-                                    </Card>
-                                </div>
-                            )}
-                        </>
+                        </div>
                     )}
 
                     {availableModules.length > 0 && isManagement && (
@@ -595,6 +557,42 @@ function WorkspaceContent() {
                                     />
                                 ))}
                             </div>
+                        </div>
+                    )}
+
+                    {isManagement && myLogs.length > 0 && (
+                        <div className="space-y-5">
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2 ml-1">
+                                <History size={14} strokeWidth={3} /> Histori Pembelian & Aktivitas
+                            </h3>
+                            <Card className="border-none shadow-sm overflow-hidden bg-white rounded-2xl">
+                                <div className="divide-y divide-slate-50">
+                                    {myLogs.map(log => (
+                                        <div key={log.id} className="p-4 sm:p-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                                            <div className="min-w-0 flex-1 pr-4">
+                                                <p className="text-xs font-bold text-slate-900 truncate tracking-tight">{log.planName}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <Badge variant="outline" className="text-[7px] font-black uppercase h-3.5 px-1 border-none bg-muted/50">{log.action}</Badge>
+                                                    <span className="text-[9px] font-medium text-slate-400 uppercase tracking-tighter">
+                                                        {log.timestamp?.toDate ? format(log.timestamp.toDate(), 'd MMM yyyy, HH:mm') : '-'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-xs font-black text-primary tnum">
+                                                    {log.amount > 0 ? `Rp ${log.amount.toLocaleString('id-ID')}` : 'Gratis/Trial'}
+                                                </p>
+                                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Nilai Transaksi</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="p-3 bg-slate-50/50 border-t border-slate-50 text-center">
+                                    <Button variant="ghost" size="sm" asChild className="text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary/5 h-8">
+                                        <Link href="/subscription-status">LIHAT STATUS LENGKAP <ArrowRight size={10} className="ml-1.5" strokeWidth={3} /></Link>
+                                    </Button>
+                                </div>
+                            </Card>
                         </div>
                     )}
                 </div>

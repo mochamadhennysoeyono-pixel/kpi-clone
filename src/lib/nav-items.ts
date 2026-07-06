@@ -66,8 +66,8 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/subscription-management': Crown,
     '/subscription-logs': History,
     '/group-management': GitBranch,
-    'manajemen-sistem': Sliders,
-    'pusat-data': Layers,
+    'sistem': Sliders,
+    'data': Layers,
     '/master-data/company': Building2,
     '/master-data/departments': Network,
     '/master-data/positions': Briefcase,
@@ -79,7 +79,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/master-data/kpi-data': Search,
     '/master-data/company-objectives': Target,
     '/media-library': Image,
-    'pusat-holding': Network,
+    'holding': Network,
     '/holding-dashboard': BarChart3,
     '/holding-kpi-setup': Settings,
     '/holding-group-management': Users,
@@ -87,14 +87,14 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/collab-space': MonitorPlay,
     '/collab-space/management': Settings2,
     '/collab-space/reports': PieChart,
-    'analisis-laporan': BarChart3,
+    'analisis': BarChart3,
     '/reports': PieChart,
     '/cycle-reports': Activity,
     '/appraisal-dashboard': BarChart3,
     '/kbo-appraisal': BadgeCheck,
-    'manajemen-kpi': ClipboardCheck,
-    'manajemen-kbo': ShieldCheck,
-    'okr-management': Target,
+    'kpi': ClipboardCheck,
+    'kbo': ShieldCheck,
+    'okr': Target,
     '/my-performance': UserCircle,
     '/input-achievement': FilePlus,
     '/setup-kpi': Settings,
@@ -102,8 +102,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/okr': Flag,
     '/okr/reports': LineChart,
     '/okr/progress': ClipboardCheck,
-    'lms-portal': GraduationCap,
-    'lms-user': BookOpen,
+    'lms': GraduationCap,
     'manajemen-pembelajaran': GraduationCap,
     '/lms/admin/dashboard': LayoutDashboard,
     '/lms/admin/courses': BookOpen,
@@ -112,7 +111,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
     '/lms/admin/quizzes': FileQuestion,
     '/lms/admin/reports': BarChart3,
     '/lms/user/my-learnings': BookOpen,
-    'manajemen-dokumen': Files,
+    'dokumen': Files,
     '/document-management/templates': FileText,
     '/document-management/contracts': Inbox,
     '/subscription-status': Crown,
@@ -191,74 +190,73 @@ export function getNavItems(
             { href: '/dashboard', label: 'Workbench', iconName: '/dashboard' },
             {
                 label: 'Sistem',
-                iconName: 'manajemen-sistem',
+                iconName: 'sistem',
                 subItems: [
-                    { href: '/admin-management', label: 'Admin Super', iconName: '/admin-management' },
+                    { href: '/admin-management', label: 'Admin', iconName: '/admin-management' },
                     { href: '/company-admin-management', label: 'Klien', iconName: '/company-admin-management' },
                     { href: '/subscription-management', label: 'Pricing', iconName: '/subscription-management' },
-                    { href: '/subscription-logs', label: 'Audit Log', iconName: '/subscription-logs' },
-                    { href: '/group-management', label: 'Holding', iconName: '/group-management' },
+                    { href: '/subscription-logs', label: 'Log', iconName: '/subscription-logs' },
+                    { href: '/group-management', label: 'Grup', iconName: '/group-management' },
                 ]
             },
             {
                 label: 'Data',
-                iconName: 'pusat-data',
+                iconName: 'data',
                 subItems: [
-                    { href: '/master-data/company', label: 'Perusahaan', iconName: '/master-data/company' },
-                    { href: '/master-data/company-objectives', label: 'Objective', iconName: '/master-data/company-objectives' },
-                    { href: '/master-data/departments', label: 'Departemen', iconName: '/master-data/departments' },
+                    { href: '/master-data/company', label: 'Klien', iconName: '/master-data/company' },
+                    { href: '/master-data/company-objectives', label: 'Tujuan', iconName: '/master-data/company-objectives' },
+                    { href: '/master-data/departments', label: 'Dept', iconName: '/master-data/departments' },
                     { href: '/master-data/positions', label: 'Jabatan', iconName: '/master-data/positions' },
-                    { href: '/master-data/employees', label: 'Karyawan', iconName: '/master-data/employees' },
+                    { href: '/master-data/employees', label: 'Staff', iconName: '/master-data/employees' },
                     { href: '/master-data/hierarchy', label: 'Struktur', iconName: '/master-data/hierarchy' },
                     { href: '/media-library', label: 'Media', iconName: '/media-library' },
                 ]
             },
             {
                 label: 'Holding',
-                iconName: 'pusat-holding',
+                iconName: 'holding',
                 subItems: [
-                    { href: '/holding-dashboard', label: 'Dashboard', iconName: '/holding-dashboard' },
-                    { href: '/holding-kpi-setup', label: 'Setup KPI', iconName: '/holding-kpi-setup' },
+                    { href: '/holding-dashboard', label: 'Insight', iconName: '/holding-dashboard' },
+                    { href: '/holding-kpi-setup', label: 'Setup', iconName: '/holding-kpi-setup' },
                     { href: '/holding-group-management', label: 'Unit', iconName: '/holding-group-management' },
                 ]
             },
             {
-                label: 'Appraisal',
-                iconName: 'manajemen-kpi',
+                label: 'KPI',
+                iconName: 'kpi',
                 subItems: [
-                    { href: '/appraisal-dashboard', label: 'Dashboard', iconName: '/appraisal-dashboard' },
-                    { href: '/setup-kpi', label: 'Setup KPI', iconName: '/setup-kpi' },
-                    { href: '/master-data/kbo-competencies', label: 'Setup KBO', iconName: 'manajemen-kbo' },
+                    { href: '/appraisal-dashboard', label: 'Analitik', iconName: '/appraisal-dashboard' },
+                    { href: '/setup-kpi', label: 'Setup', iconName: '/setup-kpi' },
+                    { href: '/master-data/kbo-competencies', label: 'KBO', iconName: 'manajemen-kbo' },
                     { href: '/okr', label: 'OKR', iconName: '/okr' },
                 ]
             },
             {
                 label: 'LMS',
-                iconName: 'manajemen-pembelajaran',
+                iconName: 'lms',
                 subItems: [
                     { href: '/lms/admin/dashboard', label: 'Insight', iconName: '/lms/admin/dashboard' },
                     { href: '/lms/admin/courses', label: 'Kursus', iconName: '/lms/admin/courses' },
                     { href: '/lms/admin/programs', label: 'Program', iconName: '/lms/admin/programs' },
-                    { href: '/lms/admin/global-catalog', label: 'Katalog', iconName: '/lms/admin/global-catalog' },
                     { href: '/lms/admin/quizzes', label: 'Kuis', iconName: '/lms/admin/quizzes' },
                     { href: '/lms/admin/reports', label: 'Laporan', iconName: '/lms/admin/reports' },
                 ]
             },
             {
-                label: 'CollabSpace',
+                label: 'Collab',
                 iconName: '/collab-space',
                 subItems: [
-                    { href: '/collab-space/management', label: 'Ruangan', iconName: '/collab-space/management' },
+                    { href: '/collab-space/management', label: 'Manage', iconName: '/collab-space/management' },
                     { href: '/collab-space/reports', label: 'Laporan', iconName: '/collab-space/reports' },
                     { href: '/collab-space', label: 'Mine', iconName: '/collab-space' },
                 ]
             },
             {
                 label: 'Dokumen',
-                iconName: 'manajemen-dokumen',
+                iconName: 'dokumen',
                 subItems: [
                     { href: '/document-management/templates', label: 'Template', iconName: '/document-management/templates' },
-                    { href: '/document-management/contracts', label: 'Kontrak', iconName: '/document-management/contracts' },
+                    { href: '/document-management/contracts', label: 'Arsip', iconName: '/document-management/contracts' },
                 ]
             },
             { href: '/settings', label: 'Settings', iconName: '/settings' },
@@ -286,14 +284,14 @@ export function getNavItems(
         { href: '/action-center', label: 'Beranda', show: !capabilities.isSuperAdmin && !capabilities.isCompanyAdmin, iconName: '/action-center', moduleId: 'appraisal' },
         { 
             label: 'Data', 
-            iconName: 'pusat-data', 
+            iconName: 'data', 
             show: capabilities.isCompanyAdmin,
             moduleId: 'foundation',
             subItems: [
-                { href: '/master-data/company-objectives', label: 'Objective', show: true, iconName: '/master-data/company-objectives', moduleId: 'foundation' },
-                { href: '/master-data/departments', label: 'Departemen', show: true, iconName: '/master-data/departments', moduleId: 'foundation' },
+                { href: '/master-data/company-objectives', label: 'Tujuan', show: true, iconName: '/master-data/company-objectives', moduleId: 'foundation' },
+                { href: '/master-data/departments', label: 'Dept', show: true, iconName: '/master-data/departments', moduleId: 'foundation' },
                 { href: '/master-data/positions', label: 'Jabatan', show: true, iconName: '/master-data/positions', moduleId: 'foundation' },
-                { href: '/master-data/employees', label: 'Karyawan', show: true, iconName: '/master-data/employees', moduleId: 'foundation' },
+                { href: '/master-data/employees', label: 'Staff', show: true, iconName: '/master-data/employees', moduleId: 'foundation' },
                 { href: '/master-data/hierarchy', label: 'Struktur', show: true, iconName: '/master-data/hierarchy', moduleId: 'foundation' }, 
                 { href: '/media-library', label: 'Media', show: true, iconName: '/media-library', moduleId: 'foundation' },
             ] 
@@ -301,18 +299,18 @@ export function getNavItems(
 
         { 
             label: 'Holding', 
-            iconName: 'pusat-holding', 
+            iconName: 'holding', 
             show: (capabilities.isCompanyAdmin && capabilities.isHolding),
             moduleId: 'holding',
             subItems: [
-                { href: '/holding-dashboard', label: 'Dashboard', show: true, iconName: '/holding-dashboard', moduleId: 'holding' },
-                { href: '/holding-kpi-setup', label: 'Setup KPI', show: true, iconName: '/holding-kpi-setup', moduleId: 'holding' },
+                { href: '/holding-dashboard', label: 'Insight', show: true, iconName: '/holding-dashboard', moduleId: 'holding' },
+                { href: '/holding-kpi-setup', label: 'Setup', show: true, iconName: '/holding-kpi-setup', moduleId: 'holding' },
                 { href: '/holding-group-management', label: 'Unit', show: true, iconName: '/holding-group-management', moduleId: 'holding' },
             ] 
         },
 
         { 
-            label: 'CollabSpace', 
+            label: 'Collab', 
             iconName: '/collab-space', 
             show: capabilities.canAccessCollabSpace,
             moduleId: 'collabspace',
@@ -325,8 +323,8 @@ export function getNavItems(
 
         {
             href: '/appraisal-dashboard',
-            label: 'Dashboard',
-            iconName: 'analisis-laporan',
+            label: 'Analitik',
+            iconName: 'analisis',
             show: capabilities.canAccessReports && (capabilities.isDeptHead || capabilities.isCompanyAdmin),
             moduleId: 'appraisal',
         },
@@ -334,7 +332,7 @@ export function getNavItems(
         {
             href: '/setup-kpi',
             label: 'KPI',
-            iconName: 'manajemen-kpi',
+            iconName: 'kpi',
             show: capabilities.canAccessKpi,
             moduleId: 'appraisal',
         },
@@ -342,14 +340,14 @@ export function getNavItems(
         {
             href: '/master-data/kbo-competencies',
             label: 'KBO',
-            iconName: 'manajemen-kbo',
+            iconName: 'kbo',
             show: capabilities.canAccessKbo && capabilities.isCompanyAdmin,
             moduleId: 'appraisal',
         },
 
         {
             label: 'OKR',
-            iconName: 'okr-management',
+            iconName: 'okr',
             show: capabilities.canAccessOkr,
             moduleId: 'appraisal',
             subItems: [
@@ -360,11 +358,11 @@ export function getNavItems(
 
         { 
             label: 'LMS', 
-            iconName: 'lms-user', 
+            iconName: 'lms', 
             show: !capabilities.isCompanyAdmin && capabilities.canAccessLms,
             moduleId: 'lms',
             subItems: [
-                { href: '/lms/user/my-learnings', label: 'Belajar', show: true, iconName: '/lms/user/my-learnings', moduleId: 'lms' },
+                { href: '/lms/user/my-learnings', label: 'Materi', show: true, iconName: '/lms/user/my-learnings', moduleId: 'lms' },
             ]
         },
         { 
@@ -376,7 +374,6 @@ export function getNavItems(
                 { href: '/lms/admin/dashboard', label: 'Insight', show: true, iconName: '/lms/admin/dashboard', moduleId: 'lms' },
                 { href: '/lms/admin/courses', label: 'Kursus', show: true, iconName: '/lms/admin/courses', moduleId: 'lms' },
                 { href: '/lms/admin/programs', label: 'Program', show: true, iconName: '/lms/admin/programs', moduleId: 'lms' },
-                { href: '/lms/admin/global-catalog', label: 'Katalog', show: true, iconName: '/lms/admin/global-catalog', moduleId: 'lms' },
                 { href: '/lms/admin/quizzes', label: 'Kuis', show: true, iconName: '/lms/admin/quizzes', moduleId: 'lms' },
                 { href: '/lms/admin/reports', label: 'Laporan', show: true, iconName: '/lms/admin/reports', moduleId: 'lms' },
             ]
@@ -384,18 +381,18 @@ export function getNavItems(
 
         {
             label: 'Dokumen',
-            iconName: 'manajemen-dokumen',
+            iconName: 'dokumen',
             show: capabilities.canAccessDocs,
             moduleId: 'documents',
             subItems: [
                 { href: '/document-management/templates', label: 'Template', show: true, iconName: '/document-management/templates', moduleId: 'documents' },
-                { href: '/document-management/contracts', label: 'Kontrak', show: true, iconName: '/document-management/contracts', moduleId: 'documents' },
+                { href: '/document-management/contracts', label: 'Arsip', show: true, iconName: '/document-management/contracts', moduleId: 'documents' },
             ]
         },
         
         { href: '/subscription-status', label: 'Billing', show: capabilities.isCompanyAdmin, iconName: '/subscription-status', moduleId: 'billing' },
         { href: '/company-admin-management', label: 'Admin', show: capabilities.isCompanyAdmin, iconName: '/company-admin-management', moduleId: 'admin' },
-        { href: '/settings', label: 'Settings', show: true, iconName: '/settings', moduleId: 'settings' },
+        { href: '/settings', label: 'Settings', iconName: '/settings', moduleId: 'settings' },
     ];
 
     let visibleItems = allNavItems
