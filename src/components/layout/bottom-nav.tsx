@@ -21,7 +21,8 @@ import {
   BookOpen,
   Users,
   Search,
-  Home
+  Home,
+  ChevronLeft
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSubMenu } from './submenu-context';
@@ -119,7 +120,7 @@ export function BottomNav() {
         }
         return [
             { href: '/lms/user/my-learnings', label: 'Belajar', icon: BookOpen },
-            { href: '/lms/user/my-learnings', label: 'Katalog', icon: GraduationCap }, // Simplified
+            { href: '/lms/user/my-learnings', label: 'Katalog', icon: GraduationCap },
             { type: 'action' as const },
             { href: '/action-center', label: 'Beranda', icon: Home },
             { href: '/settings', label: 'Profil', icon: Settings },
@@ -130,11 +131,11 @@ export function BottomNav() {
     if (activeModule === 'collabspace') {
         return [
             { href: '/collab-space', label: 'Ruangan', icon: MonitorPlay },
-            { href: '/collab-space/management', label: 'Kelola', icon: Settings, show: userRole === 'manajemen' },
+            { href: '/collab-space/management', label: 'Kelola', icon: Settings },
             { type: 'action' as const },
-            { href: '/collab-space/reports', label: 'Analitik', icon: PieChart, show: userRole === 'manajemen' || hasSubordinates },
+            { href: '/collab-space/reports', label: 'Analitik', icon: PieChart },
             { href: '/workspace', label: 'Keluar', icon: ChevronLeft },
-        ].filter(i => i.show !== false);
+        ];
     }
 
     // 4. FOUNDATION / MASTER DATA
@@ -148,20 +149,20 @@ export function BottomNav() {
         ];
     }
 
-    // 5. DEFAULT (WORKSPACE / HOME)
+    // 5. DEFAULT FALLBACK
     return [
       { href: '/workspace', label: 'Workspace', icon: LayoutGrid },
-      { href: '/action-center', label: 'Action', icon: Activity, show: userRole !== 'manajemen' },
-      { href: '/appraisal-dashboard', label: 'Analitik', icon: PieChart, show: userRole === 'manajemen' },
+      { href: '/action-center', label: 'Action', icon: Activity },
+      { href: '/appraisal-dashboard', label: 'Analitik', icon: PieChart },
       { type: 'action' as const },
       { href: '/collab-space', label: 'Collab', icon: MonitorPlay },
       { href: '/settings', label: 'Profil', icon: Settings },
-    ].filter(i => i.show !== false);
+    ];
 
-  }, [userRole, activeModule, hasSubordinates]);
+  }, [userRole, activeModule, hasSubordinates, currentUser, companies, subscriptionPlans, okrs]);
 
   // Hide bottom nav if explicitely requested, if not mobile, or on the main workspace entry page
-  if (!isMobile || hideBottomNav) {
+  if (!isMobile || hideBottomNav || pathname === '/workspace') {
     return null;
   }
 
