@@ -4,7 +4,7 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, ChevronLeft, Menu } from "lucide-react";
+import { LogOut, ChevronLeft, Menu, ChevronDown, Folder } from "lucide-react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -129,6 +129,11 @@ function MotionNav() {
                         (group.href !== '/' && pathname.startsWith(group.href!))
                     );
 
+                    // Check if group header should be highlighted (if any sub-item is active)
+                    const isGroupActive = hasSubItems && group.subItems?.some(sub => 
+                        pathname === sub.href || (sub.href !== '/' && pathname.startsWith(sub.href))
+                    );
+
                     const IconComponent = iconMap[group.iconName || 'default'] || Folder;
 
                     return (
@@ -161,14 +166,21 @@ function MotionNav() {
                                     "flex items-center rounded-[12px] h-[40px] text-[14px]",
                                     (isOpen || isMobile) ? "px-[16px] gap-[14px]" : "px-0 justify-center"
                                 )}>
-                                     <div className="flex size-[20px] items-center justify-center shrink-0 opacity-40">
+                                     <div className={cn(
+                                         "flex size-[20px] items-center justify-center shrink-0 transition-opacity",
+                                         isGroupActive ? "opacity-100" : "opacity-40"
+                                     )}>
                                         <IconComponent 
                                             size={isMobile ? IconTokens.size.mobile : IconTokens.size.desktop}
                                             strokeWidth={IconTokens.strokeWidth}
+                                            color={isGroupActive ? IconTokens.color.active : "currentColor"}
                                         />
                                     </div>
                                     {(isOpen || isMobile) && (
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 truncate">
+                                        <span className={cn(
+                                            "text-[10px] font-black uppercase tracking-[0.2em] truncate",
+                                            isGroupActive ? "text-primary" : "text-slate-400"
+                                        )}>
                                             {group.label}
                                         </span>
                                     )}
@@ -179,7 +191,7 @@ function MotionNav() {
                             {hasSubItems && (isOpen || isMobile) && (
                                 <ul className="ml-[26px] mt-[4px] border-l border-[#E5E7EB] space-y-[4px]">
                                     {group.subItems?.map(subItem => {
-                                        const isSubActive = pathname.startsWith(subItem.href);
+                                        const isSubActive = pathname === subItem.href || (subItem.href !== '/' && pathname.startsWith(subItem.href));
                                         return (
                                             <li key={subItem.href}>
                                                 <Link href={subItem.href} className={cn(
