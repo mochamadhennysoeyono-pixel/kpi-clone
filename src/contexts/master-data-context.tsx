@@ -4,6 +4,10 @@
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
 import { db } from '@/lib/firebase/client';
+import { 
+    collection, getDocs, query, where, addDoc, doc, updateDoc, writeBatch, 
+    serverTimestamp, deleteDoc, getDoc, setDoc, deleteField 
+} from 'firebase/firestore';
 import type { 
     Company, Department, Position, Employee, CompanyAdmin, SuperAdmin, KpiCategory, KboCategory, 
     KboSetup, AppraisalSetup, KpiSetup, KpiData, TargetOverride, 
@@ -14,10 +18,6 @@ import type {
 } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './auth-context';
-import { 
-    collection, getDocs, query, where, addDoc, doc, updateDoc, writeBatch, 
-    serverTimestamp, deleteDoc, getDoc, setDoc, deleteField 
-} from 'firebase/firestore';
 import { DEFAULT_KPI_CATEGORIES, DEFAULT_KBO_CATEGORIES } from '@/lib/default-data';
 import { enrollmentWithMethods } from '@/types';
 import { addDays } from 'date-fns';
@@ -64,7 +64,6 @@ interface MasterDataContextType {
   updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
   deleteCompany: (id: string) => Promise<void>;
   
-  // Modular Subscription Management (THE FIX IS HERE)
   resetModuleSubscription: (companyId: string, moduleId: ModuleId) => Promise<void>;
   activateModuleManually: (companyId: string, moduleId: ModuleId, config: Partial<ModuleSubscription>, isUpgrade?: boolean) => Promise<void>;
 
@@ -184,7 +183,10 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
         return;
       }
-      if (!hasFetchedRef.current && !isSilent) setIsLoading(true);
+      if (!hasFetchedRef.current && !isSilent) {
+          console.log("[DIAGNOSTIC] Initial Data Fetch Started");
+          setIsLoading(true);
+      }
 
       try {
         const allCompaniesSnap = await getDocs(collection(db, 'companies'));
@@ -251,6 +253,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
         const accessibleEmployees = mapSnapshot<Employee>(employeesSnap);
         const accessibleEmployeeIds = new Set(accessibleEmployees.map(e => e.id));
 
+        console.log("[DIAGNOSTIC] Data Mapping and State Sync");
         setData(prev => ({
             ...prev,
             companies: isSuperadmin ? allCompanies : allCompanies.filter(c => companyNamesToQuery.includes(c.name)),
@@ -347,49 +350,77 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     } catch (e: any) { toast({ variant: "destructive", title: "Gagal Hapus", description: e.message }); }
   }, [toast]);
 
-  // --- REWORKED RESET FUNCTION ---
+  // --- RCA STAGE: ATOMIC RESET IMPLEMENTATION ---
   const resetModuleSubscription = useCallback(async (companyId: string, moduleId: ModuleId) => {
       if (!db || userRole !== 'superadmin') return;
+      
+      console.log(`[DIAGNOSTIC] Reset Triggered for Module: ${moduleId} on Company: ${companyId}`);
+      
       try {
           const companyRef = doc(db, 'companies', companyId);
           const companySnap = await getDoc(companyRef);
           if (!companySnap.exists()) throw new Error("Perusahaan tidak ditemukan.");
           
           const batch = writeBatch(db);
-          const currentSubs = { ...(companySnap.data().moduleSubscriptions || {}) };
           
-          // CRITICAL: Delete key from the map locally then update the whole field
-          delete currentSubs[moduleId];
-
+          // PHASE 1: ATOMIC FIELD DELETION using Dot Notation (Safest method for Maps)
+          console.log("[DIAGNOSTIC] DB Phase 1: Creating delete field instruction");
           batch.update(companyRef, {
-              moduleSubscriptions: currentSubs
+              [`moduleSubscriptions.${moduleId}`]: deleteField()
           });
 
+          // PHASE 2: AUDIT LOG CREATION
+          console.log("[DIAGNOSTIC] DB Phase 2: Preparing audit log");
           const logRef = doc(collection(db, 'subscriptionLogs'));
           batch.set(logRef, {
-              companyId, companyName: companySnap.data().name, company: companySnap.data().name,
+              companyId, 
+              companyName: companySnap.data().name, 
+              company: companySnap.data().name,
               planName: `RESET MODUL ${moduleId.toUpperCase()}`,
-              action: 'MANUAL_CHANGE', amount: 0,
-              startDate: new Date().toISOString(), endDate: new Date().toISOString(),
-              performedBy: `Superadmin (${currentUser?.name})`, timestamp: serverTimestamp()
+              action: 'MANUAL_CHANGE', 
+              amount: 0,
+              startDate: new Date().toISOString(), 
+              endDate: new Date().toISOString(),
+              performedBy: `Superadmin (${currentUser?.name})`, 
+              timestamp: serverTimestamp()
           });
 
+          // COMMIT ATOMICALLY
+          console.log("[DIAGNOSTIC] DB Phase 3: Executing write batch commit");
           await batch.commit();
           
-          // Update local state immediately for instant UI reaction
-          setData(prev => ({
-              ...prev,
-              companies: prev.companies.map((c: Company) => c.id === companyId ? { ...c, moduleSubscriptions: currentSubs } : c)
-          }));
+          // PHASE 3: STATE SYNC (Direct local state mutation for zero-latency)
+          console.log("[DIAGNOSTIC] State Phase: Patching local React state");
+          setData(prev => {
+              const updatedCompanies = prev.companies.map((c: Company) => {
+                  if (c.id === companyId) {
+                      const newSubs = { ...(c.moduleSubscriptions || {}) };
+                      delete newSubs[moduleId];
+                      return { ...c, moduleSubscriptions: newSubs };
+                  }
+                  return c;
+              });
+              return { ...prev, companies: updatedCompanies };
+          });
 
-          toast({ title: "Modul Direset", description: `Langganan ${moduleId} telah dihapus dari sistem.` });
-          await fetchData(true); // Sync full data silently
-      } catch (e: any) { toast({ variant: 'destructive', title: "Gagal Reset", description: e.message }); }
+          toast({ title: "Modul Direset", description: `Langganan ${moduleId} telah dihapus secara permanen.` });
+          
+          // FINAL SYNC: Forced background refresh
+          console.log("[DIAGNOSTIC] Final Sync: Triggering background fetch");
+          await fetchData(true); 
+          
+      } catch (e: any) { 
+          console.error("[DIAGNOSTIC] FATAL FAILURE during reset:", e.message);
+          toast({ variant: 'destructive', title: "Gagal Reset", description: e.message }); 
+      }
   }, [currentUser, fetchData, toast, userRole]);
 
-  // --- REWORKED ACTIVATION FUNCTION ---
+  // --- RCA STAGE: ATOMIC ACTIVATION ---
   const activateModuleManually = useCallback(async (companyId: string, moduleId: ModuleId, config: Partial<ModuleSubscription>, isUpgrade: boolean = false) => {
       if (!db || userRole !== 'superadmin') return;
+      
+      console.log(`[DIAGNOSTIC] Activation Triggered for ${moduleId}. Mode: ${isUpgrade ? 'Upgrade' : 'New'}`);
+      
       try {
           const companyRef = doc(db, 'companies', companyId);
           const companySnap = await getDoc(companyRef);
@@ -407,10 +438,10 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
               activatedAt: currentMod.activatedAt || new Date().toISOString()
           };
 
-          currentSubs[moduleId] = subData;
-
+          // ATOMIC UPDATE using Dot Notation
+          console.log("[DIAGNOSTIC] DB Phase 1: Preparing atomic map write");
           batch.update(companyRef, {
-              moduleSubscriptions: currentSubs,
+              [`moduleSubscriptions.${moduleId}`]: subData,
               status: 'Aktif'
           });
 
@@ -418,22 +449,39 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
           batch.set(logRef, {
               companyId, companyName: companySnap.data().name, company: companySnap.data().name,
               planName: isUpgrade ? `UPGRADE +${config.quota} USER - ${moduleId.toUpperCase()}` : `AKTIVASI MANUAL ${moduleId.toUpperCase()}`,
-              action: isUpgrade ? 'UPGRADE' : (subData.type === 'trial' ? 'TRIAL' : 'UPGRADE'), amount: 0,
-              startDate: new Date().toISOString(), endDate: subData.expiryDate,
-              performedBy: `Superadmin (${currentUser?.name})`, timestamp: serverTimestamp()
+              action: isUpgrade ? 'UPGRADE' : (subData.type === 'trial' ? 'TRIAL' : 'UPGRADE'), 
+              amount: 0,
+              startDate: new Date().toISOString(), 
+              endDate: subData.expiryDate,
+              performedBy: `Superadmin (${currentUser?.name})`, 
+              timestamp: serverTimestamp()
           });
 
+          console.log("[DIAGNOSTIC] DB Phase 2: Committing batch");
           await batch.commit();
           
-          // Update local state immediately
-          setData(prev => ({
-              ...prev,
-              companies: prev.companies.map((c: Company) => c.id === companyId ? { ...c, moduleSubscriptions: currentSubs, status: 'Aktif' } : c)
-          }));
+          // Immediate State Refresh
+          console.log("[DIAGNOSTIC] State Phase: Patching state");
+          setData(prev => {
+              const updatedCompanies = prev.companies.map((c: Company) => {
+                  if (c.id === companyId) {
+                      return { 
+                          ...c, 
+                          moduleSubscriptions: { ...(c.moduleSubscriptions || {}), [moduleId]: subData },
+                          status: 'Aktif' 
+                      };
+                  }
+                  return c;
+              });
+              return { ...prev, companies: updatedCompanies };
+          });
 
-          toast({ title: isUpgrade ? "Kuota Ditambah" : "Modul Diaktifkan", description: `Konfigurasi modul ${moduleId} telah diperbarui.` });
+          toast({ title: isUpgrade ? "Kuota Ditambah" : "Modul Diaktifkan" });
           await fetchData(true);
-      } catch (e: any) { toast({ variant: 'destructive', title: "Gagal", description: e.message }); }
+      } catch (e: any) { 
+          console.error("[DIAGNOSTIC] Activation Error:", e.message);
+          toast({ variant: 'destructive', title: "Gagal", description: e.message }); 
+      }
   }, [currentUser, fetchData, toast, userRole]);
 
   const value = {
@@ -559,4 +607,3 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     </MasterDataContext.Provider>
   );
 }
-
