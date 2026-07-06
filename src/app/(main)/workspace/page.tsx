@@ -62,6 +62,7 @@ import Link from 'next/link';
 import type { ModuleId, ModuleSubscription, Company, SubscriptionLog, Employee } from '@/types';
 import { ModuleSubscriptionDialog } from '@/components/portal/module-subscription-dialog';
 import { GroupManagementDialog } from '@/components/holding/group-management-dialog';
+import CompanyAdminManagementPage from '@/app/(main)/company-admin-management/page';
 import { 
   Dialog, 
   DialogContent, 
@@ -223,12 +224,12 @@ function WorkspaceModuleCard({
 
 function HistoryItem({ log }: { log: SubscriptionLog }) {
     const isFree = log.amount === 0;
-    const isLife = log.planName.toLowerCase().includes('lifetime');
+    const isLife = log.planName?.toLowerCase().includes('lifetime');
 
     return (
         <div className="p-3 rounded-2xl hover:bg-white/60 transition-all group border border-transparent hover:border-slate-100">
             <div className="flex justify-between items-start mb-1">
-                <p className="text-[11px] font-black text-slate-800 truncate pr-2 uppercase tracking-tight">{log.planName}</p>
+                <p className="text-[11px] font-black text-slate-800 truncate pr-2 uppercase tracking-tight">{log.planName || 'Modul'}</p>
                 <p className={cn(
                     "text-[10px] font-black shrink-0",
                     isFree ? "text-emerald-600" : "text-primary"
@@ -310,7 +311,7 @@ export function WorkspaceContent() {
         return subscriptionLogs
             .filter(log => log.companyId === company.id)
             .sort((a, b) => (b.timestamp?.toDate?.().getTime() || 0) - (a.timestamp?.toDate?.().getTime() || 0))
-            .slice(0, 4);
+            .slice(0, 5);
     }, [subscriptionLogs, company]);
 
     useEffect(() => {
@@ -411,248 +412,247 @@ export function WorkspaceContent() {
     };
 
     return (
-        <>
-            <ResponsivePage className="bg-[#f8f9ff] min-h-screen">
-                <section className="mb-10">
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                        <div>
-                            <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-900 mb-2">Halo, {currentUser.name.split(' ')[0]}!</h1>
-                            <p className="text-slate-500 font-medium text-sm sm:text-base max-w-lg">
-                                Selamat datang kembali. Pintu masuk ke ekosistem produktivitas tim Anda yang terintegrasi.
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-3 bg-blue-500/5 px-4 py-2 rounded-full border border-blue-500/10 self-start md:self-auto">
-                            <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-                            <span className="text-[10px] font-black text-primary uppercase tracking-widest">SISTEM OPTIMAL</span>
-                        </div>
+        <ResponsivePage className="bg-[#f8f9ff] min-h-screen">
+            <section className="mb-10">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div>
+                        <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-900 mb-2">Halo, {currentUser.name.split(' ')[0]}!</h1>
+                        <p className="text-slate-500 font-medium text-sm sm:text-base max-w-lg">
+                            Selamat datang kembali. Pintu masuk ke ekosistem produktivitas tim Anda yang terintegrasi.
+                        </p>
                     </div>
-                </section>
-
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    <div className="lg:col-span-8 space-y-8">
-                        <div className="bg-[#131b2e] text-white p-6 sm:p-8 rounded-[2rem] relative overflow-hidden shadow-2xl">
-                            <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                                <div className="flex items-center gap-5">
-                                    <div className="size-16 rounded-[1.25rem] bg-white/10 flex items-center justify-center border border-white/5 shadow-inner">
-                                        <Building size={32} strokeWidth={1.5} />
-                                    </div>
-                                    <div className="space-y-0.5">
-                                        <h2 className="text-xl sm:text-2xl font-black tracking-tight truncate max-w-[200px] sm:max-w-md uppercase">{company?.name || 'N/A'}</h2>
-                                        <p className="text-[10px] opacity-40 font-black tracking-[0.3em] uppercase">{company?.businessField}</p>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col gap-2.5">
-                                    <div className="flex items-center gap-2.5 opacity-60">
-                                        <LucideUser size={14} strokeWidth={3} />
-                                        <span className="text-xs font-bold">{currentUser.name}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2.5 opacity-60">
-                                        <Mail size={14} strokeWidth={3} />
-                                        <span className="text-xs font-medium">{currentUser.email}</span>
-                                    </div>
-                                </div>
-                                <Button onClick={logout} variant="ghost" className="px-6 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-widest rounded-xl border border-white/10">
-                                    KELUAR AKUN
-                                </Button>
-                            </div>
-                            <div className="absolute -right-10 -bottom-10 size-40 bg-primary/20 rounded-full blur-3xl opacity-50"></div>
-                        </div>
-
-                        {isManagement && (
-                            <div className="space-y-4">
-                                <SectionLabel icon={Database} label="PONDASI DATA" />
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Link href="/master-data/employees">
-                                        <GlassCard className="p-5 flex items-center gap-5 group">
-                                            <div className="size-12 rounded-2xl bg-[#131b2e] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                                                <Settings size={22} strokeWidth={2} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Konfigurasi Master</h4>
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">KARYAWAN, STRUKTUR, & DEPARTEMEN</p>
-                                            </div>
-                                        </GlassCard>
-                                    </Link>
-                                    <Link href="/master-data/hierarchy">
-                                        <GlassCard className="p-5 flex items-center gap-5 group">
-                                            <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-lg shadow-primary/20">
-                                                <GitMerge size={22} strokeWidth={2} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Manajemen Grup</h4>
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">KELOLA HOLDING & ANAK PERUSAHAAN</p>
-                                            </div>
-                                        </GlassCard>
-                                    </Link>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="space-y-4">
-                            <SectionLabel icon={ShieldCheck} label="MODUL AKTIF" color="text-primary" />
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                {activeModules.map(m => (
-                                    <WorkspaceModuleCard 
-                                        key={m.id} config={m} 
-                                        subscription={company?.moduleSubscriptions?.[m.id]} 
-                                        isManagement={isManagement} 
-                                        onActivateRequest={(mod) => { setDialogMode('activate'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
-                                        onAddQuotaRequest={(mod) => { setDialogMode('add-quota'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-
-                        {isManagement && (
-                            <div className="space-y-4">
-                                <SectionLabel icon={Layers} label="LAYANAN TAMBAHAN" />
-                                <GlassCard className="p-6 flex flex-col md:flex-row items-center gap-6 border-l-[6px] border-l-primary shadow-lg">
-                                    <div className="size-16 rounded-[1.25rem] bg-blue-50 flex items-center justify-center shrink-0 text-primary border border-primary/10">
-                                        <Shield size={28} strokeWidth={2} />
-                                    </div>
-                                    <div className="flex-1 text-center md:text-left space-y-1">
-                                        <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">Tim Manajemen</h4>
-                                        <p className="text-xs font-medium text-slate-500 leading-relaxed max-w-md">Tambahkan kapasitas personil Admin untuk membantu pengelolaan dashboard.</p>
-                                        <div className="pt-2">
-                                            <Badge variant="secondary" className="bg-primary/5 text-primary border-none font-bold text-[9px] px-3 h-5 rounded-full">{mgmtLimit} Akun (Aktif: {currentMgmtCount})</Badge>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
-                                        <Button onClick={() => setIsMgmtDialogOpen(true)} className="flex-1 md:flex-none h-11 px-8 bg-primary hover:bg-primary/90 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20">
-                                            KELOLA TIM
-                                        </Button>
-                                        <Button onClick={() => setIsMgmtConfigOpen(true)} variant="outline" size="icon" className="size-11 rounded-2xl border-2 border-slate-100 hover:bg-slate-50 transition-colors shrink-0">
-                                            <UserPlus size={20} className="text-slate-400" strokeWidth={2} />
-                                        </Button>
-                                    </div>
-                                </GlassCard>
-                            </div>
-                        )}
-
-                        {isManagement && availableModules.length > 0 && (
-                            <div className="space-y-4">
-                                <SectionLabel icon={Sparkles} label="MODUL TERSEDIA" />
-                                {availableModules.map(m => {
-                                    const Icon = m.icon;
-                                    return (
-                                        <GlassCard key={m.id} className="p-6 flex flex-col md:flex-row items-center gap-6 border border-dashed border-primary/30 bg-primary/[0.02]">
-                                            <div className="size-16 rounded-[1.25rem] bg-white flex items-center justify-center shrink-0 border shadow-sm">
-                                                <Icon size={28} className="text-slate-400" strokeWidth={1.5} />
-                                            </div>
-                                            <div className="flex-1 text-center md:text-left">
-                                                <h4 className="text-base font-black text-slate-900 uppercase tracking-tight mb-1">{m.name}</h4>
-                                                <p className="text-xs font-medium text-slate-500">{m.description}</p>
-                                            </div>
-                                            <Button 
-                                                onClick={() => { setSelectedModule(m); setDialogMode('activate'); setIsSubDialogOpen(true); }}
-                                                variant="outline" 
-                                                className="w-full md:w-auto h-11 px-6 border-2 border-primary text-primary hover:bg-primary hover:text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all flex items-center gap-2"
-                                            >
-                                                <Zap size={14} className="fill-current" /> AKTIFKAN SEKARANG
-                                            </Button>
-                                        </GlassCard>
-                                    );
-                                })}
-                            </div>
-                        )}
-                        
-                        <div className="pt-6">
-                            <SectionLabel icon={History} label="HISTORI PEMBELIAN & AKTIVITAS" />
-                            <GlassCard className="p-2">
-                                <div className="space-y-1">
-                                    {myLogs.length > 0 ? (
-                                        myLogs.map(log => <HistoryItem key={log.id} log={log} />)
-                                    ) : (
-                                        <div className="py-12 text-center opacity-30 flex flex-col items-center gap-2">
-                                            <Activity size={24} />
-                                            <p className="text-[10px] font-black uppercase">Belum ada aktivitas tercatat</p>
-                                        </div>
-                                    )}
-                                </div>
-                                <Link 
-                                    href="/subscription-status" 
-                                    className="mt-4 flex items-center justify-center gap-2 text-[10px] font-black uppercase text-primary hover:gap-3 transition-all tracking-widest py-3 border-t border-slate-50"
-                                >
-                                    LIHAT STATUS LANGGANAN LENGKAP
-                                    <ArrowRight size={14} strokeWidth={3} />
-                                </Link>
-                            </GlassCard>
-                        </div>
-                    </div>
-
-                    <div className="lg:col-span-4 space-y-8">
-                        <div className="bg-[#131b2e] text-white p-7 rounded-[2.5rem] relative overflow-hidden shadow-2xl">
-                            <div className="relative z-10 space-y-8">
-                                <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">RINGKASAN AKUN</h3>
-                                <div className="space-y-8">
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between items-end mb-2">
-                                            <div className="space-y-0.5">
-                                                <p className="text-[10px] font-bold text-white/50 uppercase flex items-center gap-1.5">
-                                                    <Users size={12} /> UTILISASI LISENSI
-                                                </p>
-                                            </div>
-                                            <p className="text-xs font-black tnum">
-                                                {currentStaffCount} / {staffLimit === -1 ? '∞' : staffLimit}
-                                            </p>
-                                        </div>
-                                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                                            <div 
-                                                className={cn(
-                                                    "h-full transition-all duration-1000 ease-out",
-                                                    licenseUsagePercent > 90 ? "bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.5)]" : "bg-primary shadow-[0_0_15px_rgba(37,99,235,0.5)]"
-                                                )} 
-                                                style={{ width: `${licenseUsagePercent}%` }}
-                                            ></div>
-                                        </div>
-                                        <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Akun staff aktif dalam ekosistem</p>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between items-end mb-1">
-                                            <div className="space-y-0.5">
-                                                <p className="text-[10px] font-bold text-white/50 uppercase flex items-center gap-1.5">
-                                                    <Timer size={12} /> INDEKS PRODUKTIVITAS (7 HARI)
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <TrendingUp size={12} className="text-emerald-400" />
-                                                <p className="text-xs font-black text-emerald-400 tnum">{productivityChange > 0 ? `+${productivityChange}` : productivityChange}%</p>
-                                            </div>
-                                        </div>
-                                        <div className="h-16 flex items-end gap-1.5 px-1 bg-white/[0.02] rounded-2xl p-2 border border-white/[0.05]">
-                                            {activityTrend.map((h, i) => (
-                                                <div 
-                                                    key={i} 
-                                                    style={{ height: `${Math.max(15, h)}%` }} 
-                                                    className={cn(
-                                                        "flex-1 rounded-md transition-all duration-700 ease-in-out",
-                                                        i === 6 ? "bg-primary shadow-[0_0_20px_rgba(37,99,235,0.4)]" : "bg-white/10"
-                                                    )}
-                                                />
-                                            ))}
-                                        </div>
-                                        <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest text-center">Rasio penyelesaian tugas harian</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="absolute -right-24 -top-24 size-48 bg-primary/10 rounded-full blur-[80px]"></div>
-                        </div>
-
-                        <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/10 space-y-4 group overflow-hidden relative">
-                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform"><Bot size={80} /></div>
-                            <div className="space-y-1 relative z-10">
-                                <h4 className="text-xs font-black text-amber-900 uppercase tracking-tight">Butuh bantuan KIPI?</h4>
-                                <p className="text-[10px] text-amber-700 font-medium leading-relaxed">Gunakan asisten AI di pojok kanan bawah untuk panduan integrasi sistem.</p>
-                            </div>
-                            <Button variant="ghost" className="p-0 h-auto text-[9px] font-black text-amber-600 hover:text-amber-800 hover:bg-transparent tracking-[0.2em] uppercase relative z-10">
-                                HUBUNGI SUPPORT <ChevronRight size={10} strokeWidth={4} />
-                            </Button>
-                        </div>
+                    <div className="flex items-center gap-3 bg-blue-500/5 px-4 py-2 rounded-full border border-blue-500/10 self-start md:self-auto">
+                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                        <span className="text-[10px] font-black text-primary uppercase tracking-widest">SISTEM OPTIMAL</span>
                     </div>
                 </div>
-            </ResponsivePage>
+            </section>
 
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <div className="lg:col-span-8 space-y-6">
+                    <div className="bg-[#131b2e] text-white p-6 sm:p-8 rounded-[2rem] relative overflow-hidden shadow-2xl">
+                        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                            <div className="flex items-center gap-5">
+                                <div className="size-16 rounded-[1.25rem] bg-white/10 flex items-center justify-center border border-white/5 shadow-inner">
+                                    <Building size={32} strokeWidth={1.5} />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <h2 className="text-xl sm:text-2xl font-black tracking-tight truncate max-w-[200px] sm:max-w-md uppercase">{company?.name || 'N/A'}</h2>
+                                    <p className="text-[10px] opacity-40 font-black tracking-[0.3em] uppercase">{company?.businessField}</p>
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-2.5">
+                                <div className="flex items-center gap-2.5 opacity-60">
+                                    <LucideUser size={14} strokeWidth={3} />
+                                    <span className="text-xs font-bold">{currentUser.name}</span>
+                                </div>
+                                <div className="flex items-center gap-2.5 opacity-60">
+                                    <Mail size={14} strokeWidth={3} />
+                                    <span className="text-xs font-medium">{currentUser.email}</span>
+                                </div>
+                            </div>
+                            <Button onClick={logout} variant="ghost" className="px-6 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-widest rounded-xl border border-white/10">
+                                KELUAR AKUN
+                            </Button>
+                        </div>
+                        <div className="absolute -right-10 -bottom-10 size-40 bg-primary/20 rounded-full blur-3xl opacity-50"></div>
+                    </div>
+
+                    {isManagement && (
+                        <div className="space-y-4">
+                            <SectionLabel icon={Database} label="PONDASI DATA" />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Link href="/master-data/employees">
+                                    <GlassCard className="p-5 flex items-center gap-5 group">
+                                        <div className="size-12 rounded-2xl bg-[#131b2e] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                            <Settings size={22} strokeWidth={2} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Konfigurasi Master</h4>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">KARYAWAN, STRUKTUR, & DEPARTEMEN</p>
+                                        </div>
+                                    </GlassCard>
+                                </Link>
+                                <Link href="/master-data/hierarchy">
+                                    <GlassCard className="p-5 flex items-center gap-5 group">
+                                        <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-lg shadow-primary/20">
+                                            <GitMerge size={22} strokeWidth={2} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Manajemen Grup</h4>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">KELOLA HOLDING & ANAK PERUSAHAAN</p>
+                                        </div>
+                                    </GlassCard>
+                                </Link>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="space-y-4">
+                        <SectionLabel icon={ShieldCheck} label="MODUL AKTIF" color="text-primary" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            {activeModules.map(m => (
+                                <WorkspaceModuleCard 
+                                    key={m.id} config={m} 
+                                    subscription={company?.moduleSubscriptions?.[m.id]} 
+                                    isManagement={isManagement} 
+                                    onActivateRequest={(mod) => { setDialogMode('activate'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
+                                    onAddQuotaRequest={(mod) => { setDialogMode('add-quota'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {isManagement && (
+                        <div className="space-y-4">
+                            <SectionLabel icon={Layers} label="LAYANAN TAMBAHAN" />
+                            <GlassCard className="p-6 flex flex-col md:flex-row items-center gap-6 border-l-[6px] border-l-primary shadow-lg">
+                                <div className="size-16 rounded-[1.25rem] bg-blue-50 flex items-center justify-center shrink-0 text-primary border border-primary/10">
+                                    <Shield size={28} strokeWidth={2} />
+                                </div>
+                                <div className="flex-1 text-center md:text-left space-y-1">
+                                    <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">Tim Manajemen</h4>
+                                    <p className="text-xs font-medium text-slate-500 leading-relaxed max-w-md">Tambahkan kapasitas personil Admin untuk membantu pengelolaan dashboard.</p>
+                                    <div className="pt-2">
+                                        <Badge variant="secondary" className="bg-primary/5 text-primary border-none font-bold text-[9px] px-3 h-5 rounded-full">{mgmtLimit} Akun (Aktif: {currentMgmtCount})</Badge>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
+                                    <Button onClick={() => setIsMgmtDialogOpen(true)} className="flex-1 md:flex-none h-11 px-8 bg-primary hover:bg-primary/90 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20">
+                                        KELOLA TIM
+                                    </Button>
+                                    <Button onClick={() => setIsMgmtConfigOpen(true)} variant="outline" size="icon" className="size-11 rounded-2xl border-2 border-slate-100 hover:bg-slate-50 transition-colors shrink-0">
+                                        <UserPlus size={20} className="text-slate-400" strokeWidth={2} />
+                                    </Button>
+                                </div>
+                            </GlassCard>
+                        </div>
+                    )}
+
+                    {isManagement && availableModules.length > 0 && (
+                        <div className="space-y-4">
+                            <SectionLabel icon={Sparkles} label="MODUL TERSEDIA" />
+                            {availableModules.map(m => {
+                                const Icon = m.icon;
+                                return (
+                                    <GlassCard key={m.id} className="p-6 flex flex-col md:flex-row items-center gap-6 border border-dashed border-primary/30 bg-primary/[0.02]">
+                                        <div className="size-16 rounded-[1.25rem] bg-white flex items-center justify-center shrink-0 border shadow-sm">
+                                            <Icon size={28} className="text-slate-400" strokeWidth={1.5} />
+                                        </div>
+                                        <div className="flex-1 text-center md:text-left">
+                                            <h4 className="text-base font-black text-slate-900 uppercase tracking-tight mb-1">{m.name}</h4>
+                                            <p className="text-xs font-medium text-slate-500">{m.description}</p>
+                                        </div>
+                                        <Button 
+                                            onClick={() => { setSelectedModule(m); setDialogMode('activate'); setIsSubDialogOpen(true); }}
+                                            variant="outline" 
+                                            className="w-full md:w-auto h-11 px-6 border-2 border-primary text-primary hover:bg-primary hover:text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all flex items-center gap-2"
+                                        >
+                                            <Zap size={14} className="fill-current" /> AKTIFKAN SEKARANG
+                                        </Button>
+                                    </GlassCard>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+
+                <div className="lg:col-span-4 space-y-6">
+                    <div className="bg-[#131b2e] text-white p-7 rounded-[2.5rem] relative overflow-hidden shadow-2xl">
+                        <div className="relative z-10 space-y-8">
+                            <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">RINGKASAN AKUN</h3>
+                            <div className="space-y-8">
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-end mb-2">
+                                        <div className="space-y-0.5">
+                                            <p className="text-[10px] font-bold text-white/50 uppercase flex items-center gap-1.5">
+                                                <Users size={12} /> UTILISASI LISENSI Staff
+                                            </p>
+                                        </div>
+                                        <p className="text-xs font-black tnum">
+                                            {currentStaffCount} / {staffLimit === -1 ? '∞' : staffLimit}
+                                        </p>
+                                    </div>
+                                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                        <div 
+                                            className={cn(
+                                                "h-full transition-all duration-1000 ease-out",
+                                                licenseUsagePercent > 90 ? "bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.5)]" : "bg-primary shadow-[0_0_15px_rgba(37,99,235,0.5)]"
+                                            )} 
+                                            style={{ width: `${licenseUsagePercent}%` }}
+                                        ></div>
+                                    </div>
+                                    <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Akun staff aktif dalam ekosistem</p>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-end mb-1">
+                                        <div className="space-y-0.5">
+                                            <p className="text-[10px] font-bold text-white/50 uppercase flex items-center gap-1.5">
+                                                <Timer size={12} /> INDEKS PRODUKTIVITAS (7 HARI)
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <TrendingUp size={12} className="text-emerald-400" />
+                                            <p className="text-xs font-black text-emerald-400 tnum">{productivityChange > 0 ? `+${productivityChange}` : productivityChange}%</p>
+                                        </div>
+                                    </div>
+                                    <div className="h-16 flex items-end gap-1.5 px-1 bg-white/[0.02] rounded-2xl p-2 border border-white/[0.05]">
+                                        {activityTrend.map((h, i) => (
+                                            <div 
+                                                key={i} 
+                                                style={{ height: `${Math.max(15, h)}%` }} 
+                                                className={cn(
+                                                    "flex-1 rounded-md transition-all duration-700 ease-in-out",
+                                                    i === 6 ? "bg-primary shadow-[0_0_20px_rgba(37,99,235,0.4)]" : "bg-white/10"
+                                                )}
+                                            />
+                                        ))}
+                                    </div>
+                                    <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest text-center">Rasio penyelesaian tugas harian</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="absolute -right-24 -top-24 size-48 bg-primary/10 rounded-full blur-[80px]"></div>
+                    </div>
+
+                    <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/10 space-y-4 group overflow-hidden relative">
+                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform"><Bot size={80} /></div>
+                        <div className="space-y-1 relative z-10">
+                            <h4 className="text-xs font-black text-amber-900 uppercase tracking-tight">Butuh bantuan KIPI?</h4>
+                            <p className="text-[10px] text-amber-700 font-medium leading-relaxed">Gunakan asisten AI di pojok kanan bawah untuk panduan integrasi sistem.</p>
+                        </div>
+                        <Button variant="ghost" className="p-0 h-auto text-[9px] font-black text-amber-600 hover:text-amber-800 hover:bg-transparent tracking-[0.2em] uppercase relative z-10">
+                            HUBUNGI SUPPORT <ChevronRight size={10} strokeWidth={4} />
+                        </Button>
+                    </div>
+
+                    <div className="pt-4">
+                        <SectionLabel icon={History} label="HISTORI" />
+                        <GlassCard className="p-2">
+                            <div className="space-y-1">
+                                {myLogs.length > 0 ? (
+                                    myLogs.map(log => <HistoryItem key={log.id} log={log} />)
+                                ) : (
+                                    <div className="py-12 text-center opacity-30 flex flex-col items-center gap-2">
+                                        <Activity size={24} />
+                                        <p className="text-[10px] font-black uppercase">Belum ada aktivitas tercatat</p>
+                                    </div>
+                                )}
+                            </div>
+                            <Link 
+                                href="/subscription-status" 
+                                className="mt-4 flex items-center justify-center gap-2 text-[10px] font-black uppercase text-primary hover:gap-3 transition-all tracking-widest py-3 border-t border-slate-50"
+                            >
+                                LIHAT STATUS LENGKAP
+                                <ArrowRight size={14} strokeWidth={3} />
+                            </Link>
+                        </GlassCard>
+                    </div>
+                </div>
+            </div>
+
+            {/* --- Modals & Dialogs --- */}
             <ModuleSubscriptionDialog 
                 isOpen={isSubDialogOpen} 
                 onOpenChange={setIsSubDialogOpen} 
@@ -716,7 +716,7 @@ export function WorkspaceContent() {
                     </ScrollArea>
                 </DialogContent>
             </Dialog>
-        </>
+        </ResponsivePage>
     );
 }
 
