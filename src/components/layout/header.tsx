@@ -1,3 +1,4 @@
+
 // src/components/layout/header.tsx
 'use client';
 
@@ -65,7 +66,7 @@ export default function Header() {
   const { isOpen, setIsOpen } = useSidebar();
   const pathname = usePathname();
   const router = useRouter();
-  const isPortal = pathname === '/portal';
+  const isWorkspace = pathname === '/workspace';
   
   return (
     <header className={cn(
@@ -81,15 +82,15 @@ export default function Header() {
           ) : (
             <div className="flex items-center gap-4">
                 <SidebarTrigger />
-                {userRole !== 'superadmin' && !isPortal && (
+                {userRole !== 'superadmin' && !isWorkspace && (
                     <Button 
                         variant="ghost" 
                         size="sm" 
-                        onClick={() => router.push('/portal')}
+                        onClick={() => router.push('/workspace')}
                         className="gap-2 font-semibold text-xs text-primary hover:text-white hover:bg-primary transition-all px-3 h-8 border border-primary/20 rounded-lg"
                     >
                         <ChevronLeft size={14} className="stroke-[3px]" />
-                        Portal
+                        Workspace
                     </Button>
                 )}
             </div>
@@ -97,10 +98,10 @@ export default function Header() {
         </div>
 
       <div className="hidden md:flex">
-        {isPortal ? (
+        {isWorkspace ? (
             <Badge variant="outline" className="h-7 px-3 rounded-lg gap-2 font-semibold text-[11px] bg-primary/5 border-primary/20 text-primary">
                 <LayoutGrid size={12} />
-                Portal Utama Perfom
+                Workspace Utama Perfom
             </Badge>
         ) : <LiveClock />}
       </div>
@@ -138,4 +139,3 @@ export default function Header() {
     </header>
   );
 }
-

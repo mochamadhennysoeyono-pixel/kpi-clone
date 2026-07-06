@@ -1,3 +1,4 @@
+
 // src/app/(main)/main-layout-content.tsx
 "use client";
 
@@ -47,14 +48,14 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
 
       if (!subscription || subscription.status !== 'active') {
         console.warn(`[Access Guard] Unsubscribed access attempt to ${activeModule} from ${pathname}`);
-        router.replace('/portal');
+        router.replace('/workspace');
       }
     }
   }, [pathname, totalIsLoading, currentUser, userRole, companies, router]);
 
-  const isPortal = pathname === '/portal';
+  const isWorkspace = pathname === '/workspace';
   const isDocEditor = pathname.startsWith('/document-management/templates/');
-  const hideSidebar = isPortal || isDocEditor;
+  const hideSidebar = isWorkspace || isDocEditor;
 
   if (totalIsLoading) {
     return (
@@ -86,12 +87,12 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
             <ScrollArea className="flex-1 w-full h-full">
                 <main className={cn(
                     "w-full min-w-0 mx-auto",
-                    isPortal ? "max-w-[1920px]" : "max-w-7xl"
+                    isWorkspace ? "max-w-[1920px]" : "max-w-7xl"
                 )}>
                     <div className={cn(
                         "transition-all duration-500",
                         isMobile ? "pb-24" : "pb-10",
-                        isPortal && "lg:p-12"
+                        isWorkspace && "lg:p-12"
                     )}>
                         {children}
                     </div>

@@ -58,7 +58,7 @@ import {
 export const iconMap: { [key: string]: React.ElementType } = {
     '/dashboard': LayoutDashboard,
     '/action-center': Home,
-    '/portal': LayoutGrid,
+    '/workspace': LayoutGrid,
     '/beranda': Home,
     '/admin-management': ShieldCheck,
     '/company-admin-management': UserCheck,

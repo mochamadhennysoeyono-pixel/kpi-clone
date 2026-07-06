@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useMemo } from 'react';
@@ -136,11 +137,11 @@ export function ModuleHeader() {
         <Button 
           variant="ghost" 
           size="sm" 
-          onClick={() => router.push('/portal')}
+          onClick={() => router.push('/workspace')}
           className="gap-2 font-bold text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary transition-all active:scale-95 px-2"
         >
           <ChevronLeft size={16} className="stroke-[3px]" />
-          <span className="hidden sm:inline">Portal</span>
+          <span className="hidden sm:inline">Workspace</span>
         </Button>
 
         <Separator orientation="vertical" className="h-6 opacity-40" />

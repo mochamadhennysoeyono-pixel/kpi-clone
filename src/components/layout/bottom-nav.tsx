@@ -1,3 +1,4 @@
+
 // src/components/layout/bottom-nav.tsx
 'use client';
 
@@ -61,11 +62,11 @@ export function BottomNav() {
     setActiveGroup(menuGroup);
   };
 
-  const isPortal = pathname === '/portal';
+  const isWorkspace = pathname === '/workspace';
 
   // --- Dynamic Item Calculation ---
   const dynamicItems = React.useMemo(() => {
-    if (userRole === 'superadmin' || isPortal) return [];
+    if (userRole === 'superadmin' || isWorkspace) return [];
     
     const allItems = getNavItems(userRole, hasSubordinates, userCompany, userSubscriptionPlan, false, currentUser, okrs, activeModule);
     
@@ -86,10 +87,10 @@ export function BottomNav() {
         finalItems.push(...links);
     }
     
-    finalItems.push({ label: 'Portal', href: '/portal', iconName: 'portal' });
+    finalItems.push({ label: 'Workspace', href: '/workspace', iconName: 'portal' });
     
     return finalItems;
-  }, [userRole, isPortal, hasSubordinates, userCompany, userSubscriptionPlan, currentUser, okrs, activeModule]);
+  }, [userRole, isWorkspace, hasSubordinates, userCompany, userSubscriptionPlan, currentUser, okrs, activeModule]);
 
   const classicBottomItems = React.useMemo(() => {
     return [
@@ -100,7 +101,7 @@ export function BottomNav() {
     ];
   }, []);
 
-  if (!isMobile || hideBottomNav || isPortal) {
+  if (!isMobile || hideBottomNav || isWorkspace) {
     return null;
   }
 

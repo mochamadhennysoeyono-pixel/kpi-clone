@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, FormEvent } from "react";
@@ -213,7 +214,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isAuthLoading && currentUser) {
-      const targetPath = userRole === "superadmin" ? "/dashboard" : "/portal";
+      const targetPath = userRole === "superadmin" ? "/dashboard" : "/workspace";
       router.replace(targetPath);
     }
   }, [isAuthLoading, currentUser, router, userRole]);

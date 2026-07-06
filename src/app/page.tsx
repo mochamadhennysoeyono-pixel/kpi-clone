@@ -21,8 +21,8 @@ export default function RootPage() {
         if (userRole === "superadmin") {
           router.replace("/dashboard");
         } else {
-          // Karyawan dan Manajemen sekarang diarahkan ke Portal sebagai pintu masuk modular
-          router.replace("/portal");
+          // Karyawan dan Manajemen sekarang diarahkan ke Workspace sebagai pintu masuk utama
+          router.replace("/workspace");
         }
       } else {
         // Jika belum login, arahkan ke halaman login
