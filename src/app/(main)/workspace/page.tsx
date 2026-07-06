@@ -1,7 +1,7 @@
 // src/app/(main)/workspace/page.tsx
 "use client";
 
-import { useMemo, useState, useEffect, Suspense } from 'react';
+import { useMemo, useState, useEffect, Suspense, useCallback } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -55,7 +55,7 @@ import {
     CardContent, 
     CardFooter 
 } from '@/components/ui/card';
-import { format, addDays, isSameDay, subDays } from 'date-fns';
+import { format, addDays, isSameDay, subDays, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -252,7 +252,7 @@ function HistoryItem({ log }: { log: SubscriptionLog }) {
 
 export function WorkspaceContent() {
     const { currentUser, userRole, logout, setIsLoading } = useAuth();
-    const { companies, updateCompany, addSubscriptionLog, fetchData, companyAdmins, addonPricing, subscriptionLogs, employees, collabTasks, subscriptionPlans } = useMasterData();
+    const { companies, updateCompany, addSubscriptionLog, fetchData, companyAdmins, addonPricing, subscriptionLogs, employees, collabTasks, subscriptionPlans, kpiData } = useMasterData();
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -281,8 +281,8 @@ export function WorkspaceContent() {
     const staffLimit = useMemo(() => {
         if (!company) return 0;
         const plan = subscriptionPlans.find(p => p.id === company.subscriptionPlanId);
-        // Fallback hierarchy: Custom Override > Plan Default > 0
-        return company.customUserLimit ?? plan?.userLimit ?? 0;
+        // Robust fallback: Custom > Plan > Default Trial (5)
+        return company.customUserLimit ?? plan?.userLimit ?? 5;
     }, [company, subscriptionPlans]);
 
     const currentStaffCount = useMemo(() => employees.filter(e => e.company === company?.name && e.role === 'user' && e.status === 'Aktif').length, [employees, company]);
@@ -293,25 +293,44 @@ export function WorkspaceContent() {
         return Math.min(100, (currentStaffCount / staffLimit) * 100);
     }, [currentStaffCount, staffLimit]);
 
-    // MOD: Mengukur produktivitas dari tugas yang benar-benar SELESAI (done)
-    const activityTrend = useMemo(() => {
+    // PRODUCTIVITY LOGIC: Aware of module activation
+    const { activityTrend, productivityLabel, productivityChange } = useMemo(() => {
         const last7Days = Array.from({ length: 7 }, (_, i) => subDays(new Date(), 6 - i));
-        return last7Days.map(day => {
-            const completedCount = collabTasks.filter(t => {
-                const completedAt = t.completedAt?.toDate ? t.completedAt.toDate() : (t.status === 'done' ? t.updatedAt?.toDate?.() : null);
-                return completedAt && isSameDay(completedAt, day) && t.company === company?.name;
-            }).length;
-            // Scale visual for chart (max 5 tasks for full height for better visibility)
-            return Math.min(100, (completedCount / 5) * 100);
-        });
-    }, [collabTasks, company]);
+        const isCollabActive = company?.moduleSubscriptions?.collabspace?.status === 'active';
+        
+        // Label dynamic based on module
+        const label = isCollabActive ? "INDEKS TUGAS SELESAI (7 HARI)" : "INDEKS UPDATE KPI (7 HARI)";
 
-    const productivityChange = useMemo(() => {
-        const todayCount = collabTasks.filter(t => t.status === 'done' && isSameDay(t.updatedAt?.toDate?.() || new Date(), new Date()) && t.company === company?.name).length;
-        const yesterdayCount = collabTasks.filter(t => t.status === 'done' && isSameDay(t.updatedAt?.toDate?.() || new Date(), subDays(new Date(), 1)) && t.company === company?.name).length;
-        if (yesterdayCount === 0) return todayCount > 0 ? 100 : 0;
-        return Math.round(((todayCount - yesterdayCount) / yesterdayCount) * 100);
-    }, [collabTasks, company]);
+        const trend = last7Days.map(day => {
+            if (isCollabActive) {
+                // If collab is active, count 'done' tasks
+                const completedCount = collabTasks.filter(t => {
+                    const completedAt = t.completedAt?.toDate ? t.completedAt.toDate() : (t.status === 'done' ? t.updatedAt?.toDate?.() : null);
+                    return completedAt && isSameDay(completedAt, day) && t.company === company?.name;
+                }).length;
+                return Math.min(100, (completedCount / 5) * 100);
+            } else {
+                // FALLBACK: If collab is OFF, count KPI achievement updates as productivity indicator
+                const kpiUpdates = kpiData.filter(d => {
+                    const updatedDate = d.updatedAt?.toDate ? d.updatedAt.toDate() : new Date();
+                    return isSameDay(updatedDate, day) && d.company === company?.name;
+                }).length;
+                return Math.min(100, (kpiUpdates / 3) * 100);
+            }
+        });
+
+        // Change calculation
+        const todayIdx = 6;
+        const yesterdayIdx = 5;
+        const todayVal = trend[todayIdx];
+        const yesterdayVal = trend[yesterdayIdx];
+        
+        let change = 0;
+        if (yesterdayVal > 0) change = Math.round(((todayVal - yesterdayVal) / yesterdayVal) * 100);
+        else if (todayVal > 0) change = 100;
+
+        return { activityTrend: trend, productivityLabel: label, productivityChange: change };
+    }, [collabTasks, kpiData, company]);
 
     const childCompanies = useMemo(() => {
         if (!company) return [];
@@ -604,7 +623,7 @@ export function WorkspaceContent() {
                                         <div className="flex justify-between items-end mb-1">
                                             <div className="space-y-0.5">
                                                 <p className="text-[10px] font-bold text-white/50 uppercase flex items-center gap-1.5">
-                                                    <Timer size={12} /> INDEKS PRODUKTIVITAS (7 HARI)
+                                                    <Timer size={12} /> {productivityLabel}
                                                 </p>
                                             </div>
                                             <div className="flex items-center gap-1">
@@ -624,7 +643,11 @@ export function WorkspaceContent() {
                                                 />
                                             ))}
                                         </div>
-                                        <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest text-center">Rasio penyelesaian tugas harian</p>
+                                        <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest text-center">
+                                            {company?.moduleSubscriptions?.collabspace?.status === 'active' 
+                                                ? "Berdasarkan penyelesaian tugas harian" 
+                                                : "Berdasarkan pembaruan data capaian KPI"}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
