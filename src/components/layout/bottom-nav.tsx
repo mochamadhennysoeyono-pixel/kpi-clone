@@ -1,3 +1,4 @@
+
 // src/components/layout/bottom-nav.tsx
 'use client';
 
@@ -53,7 +54,7 @@ export function BottomNav() {
     // Get all items for the current context to show in the overlay
     const allContextualItems = getNavItems(userRole, hasSubordinates, userCompany, userSubscriptionPlan, false, currentUser, okrs, activeModule);
     const menuGroup = {
-      label: 'Menu Lainnya',
+      label: 'More Actions',
       subItems: allContextualItems,
     };
     setActiveGroup(menuGroup);
@@ -63,14 +64,14 @@ export function BottomNav() {
   const finalItems = React.useMemo(() => {
     if (!userRole) return [];
 
-    // 1. SUPERADMIN: Masih menggunakan floating action untuk akses global cepat
+    // 1. SUPERADMIN: Access global quick actions
     if (userRole === 'superadmin') {
       return [
         { href: '/dashboard', label: 'Workbench', icon: iconMap['/dashboard'] },
         { href: '/appraisal-dashboard', label: 'Analitik', icon: iconMap['/appraisal-dashboard'] },
         { type: 'action' as const },
         { href: '/master-data/company', label: 'Klien', icon: iconMap['/master-data/company'] },
-        { href: '/settings', label: 'Sistem', icon: iconMap['/settings'] },
+        { href: '/settings', label: 'Settings', icon: iconMap['/settings'] },
       ];
     }
 
@@ -80,10 +81,9 @@ export function BottomNav() {
     let itemsToDisplay: any[] = [];
     
     if (activeModule && userRole !== 'superadmin') {
-        // FLATTEN LOGIC: Bongkar grup modul agar sub-item muncul sebagai tombol utama di bottom nav
+        // FLATTEN LOGIC: Break group down so sub-items appear as main buttons in bottom nav
         rawItems.forEach((item: any) => {
             if (item.subItems) {
-                // Tambahkan semua sub-item yang termasuk dalam modul aktif ini
                 const relevantSubs = item.subItems.filter((s: any) => s.moduleId === activeModule);
                 itemsToDisplay.push(...relevantSubs);
             } else if (item.moduleId === activeModule) {
@@ -91,7 +91,6 @@ export function BottomNav() {
             }
         });
         
-        // Hapus duplikasi berdasarkan href jika ada
         const seen = new Set();
         itemsToDisplay = itemsToDisplay.filter(item => {
             if (!item.href) return true;
@@ -106,7 +105,7 @@ export function BottomNav() {
     let itemsToRender: any[] = [];
     let showMore = false;
 
-    // Rule: Jika menu modul > 4, ambil 3 pertama, tambahkan More, lalu Exit.
+    // Rule: If module menu > 4, take 3 first, add More, then Exit.
     if (itemsToDisplay.length > 4) {
         itemsToRender = itemsToDisplay.slice(0, 3).map(item => ({
             href: item.href,
@@ -125,7 +124,7 @@ export function BottomNav() {
     if (showMore) {
         itemsToRender.push({ 
             type: 'more' as any, 
-            label: 'Lainnya', 
+            label: 'More', 
             icon: MoreHorizontal as any,
             onClick: handleMoreClick
         });
@@ -149,13 +148,12 @@ export function BottomNav() {
     }
     const allDesktopItems = getNavItems(userRole, hasSubordinates, userCompany, userSubscriptionPlan, false, currentUser, okrs, activeModule);
     const menuGroup = {
-      label: 'Navigasi Pintar',
+      label: 'Navigator',
       subItems: allDesktopItems,
     };
     setActiveGroup(menuGroup);
   };
 
-  // Sembunyikan jika bukan mobile, di halaman workspace, atau jika diminta secara eksplisit
   if (!isMobile || hideBottomNav || pathname === '/workspace') {
     return null;
   }
@@ -164,7 +162,6 @@ export function BottomNav() {
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] h-[72px] bg-white/95 backdrop-blur-xl border-t border-slate-100 pb-safe shadow-[0_-8px_30px_rgb(0,0,0,0.06)] no-print">
         <div className="relative grid grid-cols-5 items-center h-full w-full px-2">
             {finalItems.map((item: any, idx) => {
-                // RENDER: Big Center Action Button (Hanya untuk Superadmin)
                 if (item.type === 'action') {
                     return (
                         <div key="action-center-btn" className="flex justify-center -translate-y-4">
@@ -178,7 +175,6 @@ export function BottomNav() {
                     );
                 }
 
-                // RENDER: More Button
                 if (item.type === 'more') {
                     return (
                         <button 
@@ -193,14 +189,13 @@ export function BottomNav() {
                                   color={IconTokens.color.default}
                                 />
                             </div>
-                            <span className="text-[9px] font-bold tracking-tight uppercase">
+                            <span className="text-[9px] font-black tracking-tight uppercase">
                                 {item.label}
                             </span>
                         </button>
                     );
                 }
 
-                // RENDER: Standard Nav Link
                 const isActive = item.href && (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)));
                 const Icon = item.icon || Folder;
 
@@ -210,7 +205,6 @@ export function BottomNav() {
                         href={item.href || '#'}
                         className={cn(
                             "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95 group",
-                            // Jika ini adalah tombol Workspace (paling kanan) dan kita bukan superadmin
                             idx === 4 && userRole !== 'superadmin' && "text-primary"
                         )}
                     >
@@ -225,7 +219,7 @@ export function BottomNav() {
                             />
                         </div>
                         <span className={cn(
-                            "text-[9px] font-bold tracking-tight uppercase",
+                            "text-[9px] font-black tracking-tight uppercase",
                             isActive ? "text-[#2563eb]" : "text-slate-400"
                         )}>
                             {item.label}
