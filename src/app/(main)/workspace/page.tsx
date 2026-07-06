@@ -64,7 +64,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import type { ModuleId, ModuleSubscription, Company, SubscriptionLog, Employee } from '@/types';
 import { ModuleSubscriptionDialog } from '@/components/portal/module-subscription-dialog';
-import { GroupManagementDialog } from '@/components/holding/group-management-dialog';
+import { InfrastructureAccessConsole } from '@/components/holding/infrastructure-access-console';
 import CompanyAdminManagementPage from '@/app/(main)/company-admin-management/page';
 import { 
   Dialog, 
@@ -264,13 +264,14 @@ export function WorkspaceContent() {
     const [isSubDialogOpen, setIsSubDialogOpen] = useState(false);
     const [dialogMode, setDialogMode] = useState<'activate' | 'add-quota'>('activate');
     const [selectedModule, setSelectedModule] = useState<any>(null);
-    const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
+    const [isConsoleOpen, setIsConsoleOpen] = useState(false);
     const [isMgmtDialogOpen, setIsMgmtDialogOpen] = useState(false);
     const [isMgmtConfigOpen, setIsMgmtConfigOpen] = useState(false);
     const [mgmtAddQuota, setMgmtAddQuota] = useState(1);
 
     const company = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
     const isManagement = userRole === 'manajemen';
+    const isSuperadmin = userRole === 'superadmin';
 
     // Role Label Mapping
     const accountTypeLabel = useMemo(() => {
@@ -387,7 +388,6 @@ export function WorkspaceContent() {
                         onSuccess: async (result: any) => {
                             toast({ title: "Pembayaran Berhasil!", description: "Sedang sinkronisasi data..." });
                             
-                            // Client-side Fallback Activation dengan Penjumlahan Kuota
                             const currentExpiry = company.moduleSubscriptions?.[selectedModule.id]?.expiryDate;
                             const newExpiry = currentExpiry || addDays(new Date(), data.duration).toISOString();
                             
@@ -398,7 +398,7 @@ export function WorkspaceContent() {
                                 planName: planData.name,
                                 orderId: result.order_id,
                                 performedBy: currentUser.name,
-                                isUpgrade: isUpgrade // Gunakan flag upgrade untuk trigger increment
+                                isUpgrade: isUpgrade 
                             });
 
                             await fetchData(true);
@@ -505,14 +505,14 @@ export function WorkspaceContent() {
                                             </div>
                                         </GlassCard>
                                     </Link>
-                                    <div className="cursor-pointer" onClick={() => setIsGroupDialogOpen(true)}>
+                                    <div className="cursor-pointer" onClick={() => setIsConsoleOpen(true)}>
                                         <GlassCard className="p-5 flex items-center gap-5 group">
                                             <div className="size-12 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-lg shadow-primary/20">
-                                                <GitMerge size={22} strokeWidth={2} />
+                                                <Layers size={22} strokeWidth={2} />
                                             </div>
                                             <div className="min-w-0">
-                                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Manajemen Grup</h4>
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">KELOLA HOLDING & ANAK PERUSAHAAN</p>
+                                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Konsol Infrastruktur</h4>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">MANAJEMEN GRUP & AKSES MODUL</p>
                                             </div>
                                         </GlassCard>
                                     </div>
@@ -703,11 +703,12 @@ export function WorkspaceContent() {
                 />
                 
                 {company && (
-                    <GroupManagementDialog 
-                        isOpen={isGroupDialogOpen} 
-                        onOpenChange={setIsGroupDialogOpen} 
+                    <InfrastructureAccessConsole 
+                        isOpen={isConsoleOpen} 
+                        onOpenChange={setIsConsoleOpen} 
                         holdingCompany={company} 
-                        childCompanies={childCompanies} 
+                        childCompanies={childCompanies}
+                        isSuperadmin={isSuperadmin}
                     />
                 )}
                 

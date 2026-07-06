@@ -75,6 +75,7 @@ interface MasterDataContextType {
   deletePositions: (ids: string[]) => Promise<void>;
   updateEmployee: (id: string, data: Partial<Omit<Employee, 'id'>>) => Promise<void>;
   deleteEmployees: (ids: string[]) => Promise<void>;
+  bulkUpdateEmployeeAccess: (employeeIds: string[], moduleAccess: Record<string, boolean>) => Promise<void>;
   updateCompanyAdmin: (id: string, data: Partial<CompanyAdmin>) => Promise<void>;
   deleteCompanyAdmins: (ids: string[]) => Promise<void>;
   deleteSuperadmins: (ids: string[]) => Promise<void>;
@@ -484,6 +485,23 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
       }
   }, [currentUser, fetchData, toast, userRole]);
 
+  const bulkUpdateEmployeeAccess = useCallback(async (employeeIds: string[], moduleAccess: Record<string, boolean>) => {
+      if (!db || employeeIds.length === 0) return;
+      
+      const batch = writeBatch(db);
+      try {
+          employeeIds.forEach(id => {
+              const ref = doc(db, 'employees', id);
+              batch.update(ref, { moduleAccess, updatedAt: serverTimestamp() });
+          });
+          await batch.commit();
+          toast({ title: "Akses Diperbarui", description: `${employeeIds.length} karyawan berhasil dimutasi hak aksesnya.` });
+          await fetchData(true);
+      } catch (e: any) {
+          toast({ variant: 'destructive', title: "Gagal Update Massal", description: e.message });
+      }
+  }, [fetchData, toast]);
+
   const value = {
     ...data,
     fetchData,
@@ -501,6 +519,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     deletePositions: (ids) => deleteDocsAndUpdateState('positions', ids, 'positions'),
     updateEmployee: (id, d) => updateDocAndUpdateState<Employee>('employees', id, d, 'employees'),
     deleteEmployees: (ids) => deleteDocsAndUpdateState('employees', ids, 'employees'),
+    bulkUpdateEmployeeAccess,
     updateCompanyAdmin: (id, d) => updateDocAndUpdateState<CompanyAdmin>('companyAdmins', id, d, 'companyAdmins'),
     deleteCompanyAdmins: (ids) => deleteDocsAndUpdateState('companyAdmins', ids, 'companyAdmins'),
     deleteSuperadmins: (ids) => deleteDocsAndUpdateState('superadmins', ids, 'superadmins'),
