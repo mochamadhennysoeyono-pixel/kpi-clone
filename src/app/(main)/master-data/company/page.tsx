@@ -56,11 +56,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function CompanyPage() {
-  const { companies, addCompany, updateCompany, deleteCompany, subscriptionPlans, employees, resetCompanySubscription } = useMasterData();
+  const { 
+    companies, addCompany, updateCompany, deleteCompany, 
+    subscriptionPlans, employees, resetCompanySubscription, 
+    isLoading: isGlobalLoading 
+  } = useMasterData();
+  
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | undefined>(undefined);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,10 +105,15 @@ export default function CompanyPage() {
   };
 
   const handleSaveCompany = async (companyData: Company) => {
-    if (companyData.id) {
-      await updateCompany(companyData.id, companyData);
-    } else {
-      await addCompany(companyData);
+    setIsProcessing(true);
+    try {
+        if (companyData.id) {
+            await updateCompany(companyData.id, companyData);
+        } else {
+            await addCompany(companyData);
+        }
+    } finally {
+        setIsProcessing(false);
     }
   };
 
@@ -113,14 +124,24 @@ export default function CompanyPage() {
 
   const handleDeleteCompany = async () => {
     if (companyToDelete) {
-      await deleteCompany(companyToDelete.id);
-      setCompanyToDelete(null);
+      setIsProcessing(true);
+      try {
+          await deleteCompany(companyToDelete.id);
+          setCompanyToDelete(null);
+      } finally {
+          setIsProcessing(false);
+      }
     }
   };
 
   const handleReset = async (company: Company) => {
       if (confirm(`PENTING: Anda akan mereset seluruh data langganan modular ${company.name} kembali ke Trial 14 Hari. Lanjutkan?`)) {
-          await resetCompanySubscription(company.id);
+          setIsProcessing(true);
+          try {
+              await resetCompanySubscription(company.id);
+          } finally {
+              setIsProcessing(false);
+          }
       }
   };
 
@@ -197,6 +218,8 @@ export default function CompanyPage() {
       <AdaptiveTable 
         data={filteredCompanies}
         keyExtractor={(c) => c.id}
+        isLoading={isGlobalLoading || isProcessing}
+        emptyMessage="Tidak ada data perusahaan yang ditemukan."
         columns={[
           {
             header: "Klien & Industri",

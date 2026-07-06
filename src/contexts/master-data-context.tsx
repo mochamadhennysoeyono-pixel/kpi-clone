@@ -348,21 +348,19 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
           toast({ variant: 'destructive', title: "Akses Ditolak", description: "Hanya Superadmin yang bisa melakukan reset." });
           return;
       }
-      setIsLoading(true);
+      
       try {
-          // Fetch fresh data for the company to avoid stale name or missing fields
           const companyRef = doc(db, 'companies', companyId);
           const companySnap = await getDoc(companyRef);
           
-          if (!companySnap.exists()) throw new Error("Perusahaan tidak ditemukan di database.");
+          if (!companySnap.exists()) throw new Error("Perusahaan tidak ditemukan.");
           const companyData = companySnap.data();
 
           const now = new Date();
           const expiry = addDays(now, 14);
           const batch = writeBatch(db);
 
-          // 1. Reset Company Profile to baseline Trial
-          // Using deleteField() to explicitly remove modular fields
+          // 1. Reset profil utama perusahaan menggunakan stempel pembersihan eksplisit
           batch.update(companyRef, {
               subscriptionPlanId: 'default-trial',
               subscriptionActivationDate: now.toISOString(),
@@ -370,37 +368,36 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
               moduleSubscriptions: deleteField(),
               usedTrials: [],
               customPrice: deleteField(),
-              customUserLimit: 5, // Back to trial baseline
+              customUserLimit: 5,
               customManagementUserLimit: 2,
               customCompanyLimit: deleteField(),
               status: 'Aktif'
           });
           
-          // 2. Log this reset as a Manual TRIAL event
+          // 2. Catat audit log untuk reset manual ini
           const logRef = doc(collection(db, 'subscriptionLogs'));
           batch.set(logRef, {
               companyId: companyId,
               companyName: companyData.name,
-              company: companyData.name, // Important for scoping filters
-              planName: 'RESET TO TRIAL (MANUAL)',
+              company: companyData.name,
+              planName: 'RESET TO TRIAL (SYSTEM TEST)',
               action: 'TRIAL',
               amount: 0,
               startDate: now.toISOString(),
               endDate: expiry.toISOString(),
-              performedBy: `Superadmin (${currentUser?.name || 'Unknown'})`,
+              performedBy: `Superadmin (${currentUser?.name || 'System'})`,
               timestamp: serverTimestamp()
           });
 
           await batch.commit();
-          toast({ title: "Reset Berhasil", description: `Paket ${companyData.name} telah diatur ulang ke Trial 14 hari.` });
           
-          // Force refetch to update all UI components
+          // Force refresh state agar UI langsung berubah
           await fetchData(true);
+          
+          toast({ title: "Reset Berhasil", description: `Seluruh status langganan ${companyData.name} telah dibersihkan.` });
       } catch (e: any) {
-          console.error("[RESET_ERROR]", e);
-          toast({ variant: 'destructive', title: "Gagal Reset", description: e.message });
-      } finally {
-          setIsLoading(false);
+          console.error("[RESET_SUBSCRIPTION_ERROR]", e);
+          toast({ variant: 'destructive', title: "Gagal Melakukan Reset", description: e.message });
       }
   }, [currentUser, fetchData, toast, userRole]);
 
