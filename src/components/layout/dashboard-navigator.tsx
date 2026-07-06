@@ -29,6 +29,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const DASHBOARD_MODES = [
     { id: 'integrated', label: 'Dashboard Appraisal', href: '/appraisal-dashboard', icon: LayoutGrid, description: 'Ringkasan Skor Terintegrasi' },
@@ -61,7 +62,7 @@ interface SwitcherProps {
 function GenericSwitcher({ title, modes, activeMode, onSwitch }: SwitcherProps) {
     return (
         <div className="flex items-center gap-3">
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-3 px-4 h-12 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-primary/40 hover:shadow-md transition-all active:scale-95 group">
                         <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shrink-0">
@@ -76,39 +77,48 @@ function GenericSwitcher({ title, modes, activeMode, onSwitch }: SwitcherProps) 
                         </div>
                     </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-[300px] p-2 rounded-2xl shadow-2xl border-none">
-                    <div className="px-3 py-2 mb-1">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pilih Mode</p>
-                    </div>
-                    {modes.map((mode) => {
-                        const isActive = activeMode.id === mode.id;
-                        return (
-                            <DropdownMenuItem 
-                                key={mode.id} 
-                                onClick={() => onSwitch(mode.href)}
-                                className={cn(
-                                    "flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all mb-1 last:mb-0",
-                                    isActive ? "bg-primary/5 border border-primary/20" : "hover:bg-slate-50"
-                                )}
-                            >
-                                <div className={cn(
-                                    "size-9 rounded-lg flex items-center justify-center shrink-0 border",
-                                    isActive ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" : "bg-white text-slate-400 border-slate-100"
-                                )}>
-                                    <mode.icon size={18} strokeWidth={2.5} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className={cn("text-xs font-black uppercase tracking-tight", isActive ? "text-primary" : "text-slate-900")}>
-                                        {mode.label}
-                                    </p>
-                                    <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5 line-clamp-1 italic">
-                                        {mode.description}
-                                    </p>
-                                </div>
-                                {isActive && <ArrowRight size={14} className="text-primary mt-1" strokeWidth={3} />}
-                            </DropdownMenuItem>
-                        );
-                    })}
+                <DropdownMenuContent 
+                    align="start" 
+                    className="w-[calc(100vw-32px)] sm:w-[320px] p-0 overflow-hidden rounded-2xl shadow-2xl border-none z-[500]"
+                >
+                    <ScrollArea className="max-h-[60vh] sm:max-h-[70vh]">
+                        <div className="p-2">
+                            <div className="px-3 py-3 mb-1 border-b border-slate-50">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Pilih Mode {title}</p>
+                            </div>
+                            <div className="space-y-1">
+                                {modes.map((mode) => {
+                                    const isActive = activeMode.id === mode.id;
+                                    return (
+                                        <DropdownMenuItem 
+                                            key={mode.id} 
+                                            onClick={() => onSwitch(mode.href)}
+                                            className={cn(
+                                                "flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all outline-none",
+                                                isActive ? "bg-primary/5 border border-primary/10" : "hover:bg-slate-50 focus:bg-slate-50"
+                                            )}
+                                        >
+                                            <div className={cn(
+                                                "size-9 rounded-lg flex items-center justify-center shrink-0 border transition-all",
+                                                isActive ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" : "bg-white text-slate-400 border-slate-100"
+                                            )}>
+                                                <mode.icon size={18} strokeWidth={2.5} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className={cn("text-xs font-black uppercase tracking-tight", isActive ? "text-primary" : "text-slate-900")}>
+                                                    {mode.label}
+                                                </p>
+                                                <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5 line-clamp-1 italic">
+                                                    {mode.description}
+                                                </p>
+                                            </div>
+                                            {isActive && <ArrowRight size={14} className="text-primary mt-1 shrink-0" strokeWidth={3} />}
+                                        </DropdownMenuItem>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </ScrollArea>
                 </DropdownMenuContent>
             </DropdownMenu>
 
@@ -124,7 +134,7 @@ export function DashboardNavigator() {
     const pathname = usePathname();
     const router = useRouter();
     const activeMode = DASHBOARD_MODES.find(m => pathname.startsWith(m.href)) || DASHBOARD_MODES[0];
-    return <div className="w-full mb-8 no-print"><GenericSwitcher title="Analytics" modes={DASHBOARD_MODES} activeMode={activeMode} onSwitch={(h) => router.push(href)} /></div>;
+    return <div className="w-full mb-8 no-print"><GenericSwitcher title="Analytics" modes={DASHBOARD_MODES} activeMode={activeMode} onSwitch={(h) => router.push(h)} /></div>;
 }
 
 export function KpiNavigator() {
