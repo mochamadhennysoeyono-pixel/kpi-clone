@@ -13,7 +13,8 @@ export async function createSubscriptionTransaction(
     plan: { id: string; price: number; name: string }, 
     company: { id: string; name: string }, 
     user: { name: string; email: string; phone?: string },
-    moduleId?: string // MOD: Menambahkan moduleId untuk sistem modular
+    moduleId?: string,
+    quotaCount?: number // NEW: Menyimpan jumlah kuota yang dibeli
 ) {
     const serverKey = process.env.MIDTRANS_SERVER_KEY || "Mid-server-BaagyjkErNfOuiKha6hsXhlN";
     const clientKey = process.env.MIDTRANS_CLIENT_KEY || "Mid-client-MpjNTjYjtHljjjQ9";
@@ -49,7 +50,8 @@ export async function createSubscriptionTransaction(
         }],
         custom_field1: company.id,
         custom_field2: plan.id,
-        custom_field3: moduleId || "", // MOD: Menyimpan ID Modul di sini
+        custom_field3: moduleId || "", 
+        custom_field4: quotaCount?.toString() || "0", // MOD: Kirim kuota ke custom field 4
         callbacks: {
             finish: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.perfom.id'}/subscription-status`
         }
@@ -74,32 +76,40 @@ export async function createSubscriptionTransaction(
 export async function processModulePaymentSuccess(
     companyId: string, 
     moduleId: string, 
-    data: { quota: number, expiryDate: string, amount: number, planName: string, orderId: string, performedBy: string }
+    data: { quota: number, expiryDate: string, amount: number, planName: string, orderId: string, performedBy: string, isUpgrade?: boolean }
 ) {
     try {
-        console.log(`[PAYMENT_MODULAR_ACTION] Processing ${moduleId} for Company: ${companyId}`);
+        console.log(`[PAYMENT_MODULAR_ACTION] Processing ${moduleId} for Company: ${companyId}. Upgrade Mode: ${data.isUpgrade}`);
         
         const companyRef = db.collection('companies').doc(companyId);
         const companySnap = await companyRef.get();
         
         if (!companySnap.exists) throw new Error("Data perusahaan tidak ditemukan.");
 
-        const now = new Date();
-        const subData = {
-            status: 'active',
-            type: 'paid',
-            quota: data.quota,
-            expiryDate: data.expiryDate,
-            activatedAt: now.toISOString()
-        };
-
         const batch = db.batch();
+        const now = new Date();
 
-        // 1. Update Company Map with Dot Notation
-        batch.update(companyRef, {
-            [`moduleSubscriptions.${moduleId}`]: subData,
-            status: 'Aktif'
-        });
+        if (data.isUpgrade) {
+            // JALUR UPGRADE: Gunakan FieldValue.increment agar bersifat kumulatif
+            batch.update(companyRef, {
+                [`moduleSubscriptions.${moduleId}.quota`]: adminApp.firestore.FieldValue.increment(data.quota),
+                [`moduleSubscriptions.${moduleId}.type`]: 'paid', // Ubah ke paid jika sebelumnya trial
+                status: 'Aktif'
+            });
+        } else {
+            // JALUR AKTIVASI BARU: Set objek modul lengkap
+            const subData = {
+                status: 'active',
+                type: 'paid',
+                quota: data.quota,
+                expiryDate: data.expiryDate,
+                activatedAt: now.toISOString()
+            };
+            batch.update(companyRef, {
+                [`moduleSubscriptions.${moduleId}`]: subData,
+                status: 'Aktif'
+            });
+        }
 
         // 2. Create Audit Log
         const logRef = db.collection('subscriptionLogs').doc();
@@ -120,7 +130,7 @@ export async function processModulePaymentSuccess(
         });
 
         await batch.commit();
-        console.log(`[PAYMENT_MODULAR_ACTION] Success! Module ${moduleId} activated.`);
+        console.log(`[PAYMENT_MODULAR_ACTION] Success! Module ${moduleId} updated.`);
         
         return { success: true };
     } catch (error: any) {

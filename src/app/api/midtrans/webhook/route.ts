@@ -32,7 +32,8 @@ export async function POST(req: Request) {
         // Metadata dari custom fields
         const companyId = statusResponse.custom_field1;
         const planId = statusResponse.custom_field2;
-        const moduleId = statusResponse.custom_field3; // MOD: Mendeteksi apakah ini pembayaran modul
+        const moduleId = statusResponse.custom_field3; 
+        const quotaCount = parseInt(statusResponse.custom_field4 || "0"); // NEW: Ambil jumlah kuota dari field 4
 
         console.log(`[MIDTRANS_WEBHOOK] Received notification: ${orderId} | Status: ${transactionStatus}`);
 
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
                 
                 if (moduleId) {
                     // JALUR MODULAR
-                    await processModularActivation(companyId, moduleId, statusResponse);
+                    await processModularActivation(companyId, moduleId, quotaCount, statusResponse);
                 } else {
                     // JALUR LEGACY (FULL PLAN)
                     await processLegacyActivation(companyId, planId, statusResponse);
@@ -67,36 +68,42 @@ export async function POST(req: Request) {
 }
 
 /**
- * Aktivasi Modul Spesifik (Sistem Baru)
+ * Aktivasi Modul Spesifik (Sistem Baru) dengan Logika Kumulatif
  */
-async function processModularActivation(companyId: string, moduleId: string, status: any) {
+async function processModularActivation(companyId: string, moduleId: string, quotaCount: number, status: any) {
     const companyRef = db.collection('companies').doc(companyId);
     const companySnap = await companyRef.get();
     if (!companySnap.exists) return;
 
+    const currentSubs = companySnap.data()?.moduleSubscriptions || {};
+    const existingMod = currentSubs[moduleId];
     const amount = parseFloat(status.gross_amount);
     const now = new Date();
     
-    // Asumsi default 1 tahun jika tidak ada info lain, atau hitung dari item_details jika ada
-    const expiry = addDays(now, 365); 
-
-    // Ambil kuota dari item_id atau asumsikan dari transaksi sebelumnya
-    // Dalam realita, kita bisa parse dari item_details
-    const quota = 10; 
-
-    const subData = {
-        status: 'active',
-        type: 'paid',
-        quota: quota,
-        expiryDate: expiry.toISOString(),
-        activatedAt: now.toISOString()
-    };
-
     const batch = db.batch();
-    batch.update(companyRef, {
-        [`moduleSubscriptions.${moduleId}`]: subData,
-        status: 'Aktif'
-    });
+
+    if (existingMod) {
+        // JALUR UPGRADE / RENEWAL
+        batch.update(companyRef, {
+            [`moduleSubscriptions.${moduleId}.quota`]: adminApp.firestore.FieldValue.increment(quotaCount),
+            [`moduleSubscriptions.${moduleId}.type`]: 'paid',
+            status: 'Aktif'
+        });
+    } else {
+        // JALUR AKTIVASI PERTAMA
+        const expiry = addDays(now, 365); // Default 1 tahun
+        const subData = {
+            status: 'active',
+            type: 'paid',
+            quota: quotaCount || 10,
+            expiryDate: expiry.toISOString(),
+            activatedAt: now.toISOString()
+        };
+        batch.update(companyRef, {
+            [`moduleSubscriptions.${moduleId}`]: subData,
+            status: 'Aktif'
+        });
+    }
 
     const logRef = db.collection('subscriptionLogs').doc();
     batch.set(logRef, {
@@ -104,11 +111,11 @@ async function processModularActivation(companyId: string, moduleId: string, sta
         companyName: companySnap.data()?.name,
         company: companySnap.data()?.name,
         moduleId,
-        planName: `Aktivasi Modul ${moduleId.toUpperCase()} (via Webhook)`,
+        planName: `Aktivasi/Upgrade Modul ${moduleId.toUpperCase()} (via Webhook)`,
         action: 'UPGRADE',
         amount: amount,
         startDate: now.toISOString(),
-        endDate: expiry.toISOString(),
+        endDate: existingMod?.expiryDate || addDays(now, 365).toISOString(),
         performedBy: 'Midtrans Webhook',
         timestamp: adminApp.firestore.FieldValue.serverTimestamp(),
         orderId: status.order_id

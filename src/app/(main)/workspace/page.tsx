@@ -281,7 +281,6 @@ export function WorkspaceContent() {
         }
     }, [userRole]);
 
-    // Step to get child companies for the dialog
     const childCompanies = useMemo(() => {
         if (!company || !company.isHolding) return [];
         return companies.filter(c => c.parentId === company.id);
@@ -354,8 +353,9 @@ export function WorkspaceContent() {
     const handleActivateModule = async (data: { type: 'trial' | 'paid', quota: number, mgmtQuota: number, duration: number, totalPrice: number }) => {
         if (!company || !selectedModule || !currentUser) return;
 
+        const isUpgrade = dialogMode === 'add-quota' || (company.moduleSubscriptions?.[selectedModule.id]?.status === 'active' && company.moduleSubscriptions?.[selectedModule.id]?.type === 'trial');
+
         if (data.type === 'trial') {
-            // JALUR TRIAL: Aktivasi Instan via Firestore
             try {
                 const now = new Date();
                 const expiryStr = addDays(now, 14).toISOString();
@@ -374,30 +374,31 @@ export function WorkspaceContent() {
                 await fetchData(true);
             } catch (error: any) { toast({ variant: 'destructive', title: "Gagal", description: error.message }); }
         } else {
-            // JALUR PAID: Melalui Midtrans Snap
             try {
-                const planData = { id: `mod_${selectedModule.id}`, price: data.totalPrice, name: `${isSubDialogOpen ? 'Update' : 'Aktivasi'} Modul ${selectedModule.name}` };
+                const planName = isUpgrade ? `Upgrade Kuota ${selectedModule.name} (+${data.quota} User)` : `Aktivasi Modul ${selectedModule.name}`;
+                const planData = { id: `mod_${selectedModule.id}`, price: data.totalPrice, name: planName };
                 const userData = { name: currentUser.name, email: currentUser.email, phone: currentUser.phone || "" };
                 const companyData = { id: company.id, name: company.name };
 
-                // Kirim juga moduleId ke custom_field3 agar webhook tahu modul mana yang diupdate
-                const res = await createSubscriptionTransaction(planData, companyData, userData, selectedModule.id);
+                const res = await createSubscriptionTransaction(planData, companyData, userData, selectedModule.id, data.quota);
                 
                 if (res.success && res.token && window.snap) {
                     window.snap.pay(res.token, {
                         onSuccess: async (result: any) => {
-                            toast({ title: "Pembayaran Berhasil!", description: "Sedang mengaktifkan fitur..." });
+                            toast({ title: "Pembayaran Berhasil!", description: "Sedang sinkronisasi data..." });
                             
-                            // Client-side Fallback Activation
-                            const now = new Date();
-                            const expiry = addDays(now, data.duration);
+                            // Client-side Fallback Activation dengan Penjumlahan Kuota
+                            const currentExpiry = company.moduleSubscriptions?.[selectedModule.id]?.expiryDate;
+                            const newExpiry = currentExpiry || addDays(new Date(), data.duration).toISOString();
+                            
                             await processModulePaymentSuccess(company.id, selectedModule.id, {
                                 quota: data.quota,
-                                expiryDate: expiry.toISOString(),
+                                expiryDate: newExpiry,
                                 amount: data.totalPrice,
                                 planName: planData.name,
                                 orderId: result.order_id,
-                                performedBy: currentUser.name
+                                performedBy: currentUser.name,
+                                isUpgrade: isUpgrade // Gunakan flag upgrade untuk trigger increment
                             });
 
                             await fetchData(true);
@@ -414,7 +415,6 @@ export function WorkspaceContent() {
     const handleBuyMgmtAddon = async () => {
         if (!company || mgmtAddQuota <= 0 || !currentUser) return;
         
-        // JALUR ADDON: Selalu lewat Midtrans untuk pembayaran nyata
         try {
             const totalPrice = mgmtAddQuota * mgmtPricePerUser;
             const planData = { id: 'mgmt_addon', price: totalPrice, name: `Tambah ${mgmtAddQuota} Kuota Admin (Lifetime)` };
@@ -445,7 +445,6 @@ export function WorkspaceContent() {
     return (
         <>
             <ResponsivePage className="bg-[#f8f9ff] min-h-screen">
-                {/* Header / Hero Section */}
                 <section className="mb-8">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                         <div>
@@ -462,9 +461,7 @@ export function WorkspaceContent() {
                 </section>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    {/* Left Column: Operations (8 cols) */}
                     <div className="lg:col-span-8 space-y-6">
-                        {/* Company Identity Card */}
                         <div className="bg-[#131b2e] text-white p-6 sm:p-8 rounded-2xl relative overflow-hidden shadow-2xl">
                             <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                                 <div className="flex items-center gap-5">
@@ -493,7 +490,6 @@ export function WorkspaceContent() {
                             <div className="absolute -right-10 -bottom-10 size-40 bg-primary/20 rounded-full blur-3xl opacity-50"></div>
                         </div>
 
-                        {/* Data Foundation Section */}
                         {isManagement && (
                             <div className="space-y-4">
                                 <SectionLabel icon={Database} label="PONDASI DATA" />
@@ -524,7 +520,6 @@ export function WorkspaceContent() {
                             </div>
                         )}
 
-                        {/* Active Modules Section */}
                         <div className="space-y-4">
                             <SectionLabel icon={ShieldCheck} label="MODUL AKTIF" color="text-primary" />
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -540,7 +535,6 @@ export function WorkspaceContent() {
                             </div>
                         </div>
 
-                        {/* Management Add-on Section */}
                         {isManagement && (
                             <div className="space-y-4">
                                 <SectionLabel icon={Layers} label="LAYANAN TAMBAHAN" />
@@ -567,7 +561,6 @@ export function WorkspaceContent() {
                             </div>
                         )}
 
-                        {/* Available Modules Section */}
                         {isManagement && availableModules.length > 0 && (
                             <div className="space-y-4">
                                 <SectionLabel icon={Sparkles} label="MODUL TERSEDIA" />
@@ -596,9 +589,7 @@ export function WorkspaceContent() {
                         )}
                     </div>
 
-                    {/* Right Column: Sidebar (4 cols) */}
                     <div className="lg:col-span-4 space-y-6 flex flex-col h-full">
-                        {/* Account Summary Stats - Readiness Checklist */}
                         <div className="bg-[#131b2e] text-white p-7 rounded-2xl relative overflow-hidden shadow-2xl">
                             <div className="relative z-10 space-y-8">
                                 <div className="flex items-center justify-between">
@@ -607,7 +598,6 @@ export function WorkspaceContent() {
                                 </div>
 
                                 <div className="space-y-6">
-                                    {/* Overall Readiness Bar */}
                                     <div className="space-y-2">
                                         <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                                             <div 
@@ -618,7 +608,6 @@ export function WorkspaceContent() {
                                         <p className="text-[8px] font-bold text-white/30 uppercase tracking-[0.2em] text-center">Status integrasi unit bisnis</p>
                                     </div>
 
-                                    {/* Checklist Items */}
                                     <div className="space-y-2.5">
                                         {readinessChecklist.map((item) => (
                                             <Link key={item.id} href={item.route}>
@@ -643,7 +632,6 @@ export function WorkspaceContent() {
                                         ))}
                                     </div>
 
-                                    {/* Account Verification Info */}
                                     <div className="pt-4 border-t border-white/5 space-y-4">
                                         <div className="flex items-center gap-3">
                                             <div className="size-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
@@ -669,7 +657,6 @@ export function WorkspaceContent() {
                             <div className="absolute -right-24 -top-24 size-48 bg-primary/10 rounded-full blur-[80px]"></div>
                         </div>
 
-                        {/* Proactive Help Area */}
                         <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10 space-y-4 group overflow-hidden relative">
                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform"><Bot size={80} /></div>
                             <div className="space-y-1 relative z-10">
@@ -681,7 +668,6 @@ export function WorkspaceContent() {
                             </Button>
                         </div>
 
-                        {/* Purchase History: Always at the bottom of the right column */}
                         <div className="mt-auto pt-4 flex-grow flex flex-col justify-end">
                             <SectionLabel icon={History} label="HISTORI PEMBELIAN & AKTIVITAS" />
                             <GlassCard className="p-2">
@@ -707,7 +693,6 @@ export function WorkspaceContent() {
                     </div>
                 </div>
 
-                {/* --- Modals & Dialogs --- */}
                 <ModuleSubscriptionDialog 
                     isOpen={isSubDialogOpen} 
                     onOpenChange={setIsSubDialogOpen} 
