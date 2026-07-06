@@ -9,20 +9,8 @@ import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
 import {
   LayoutGrid,
-  PieChart,
-  Target,
-  ClipboardCheck,
-  GraduationCap,
-  BookOpen,
-  Users,
-  Home,
-  MonitorPlay,
-  Activity,
-  Settings,
-  BadgeCheck,
   MoreHorizontal,
-  Folder,
-  Layers
+  Folder
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSubMenu } from './submenu-context';
@@ -78,51 +66,79 @@ export function BottomNav() {
     // 1. SUPERADMIN: Masih menggunakan floating action untuk akses global cepat
     if (userRole === 'superadmin') {
       return [
-        { href: '/dashboard', label: 'Workbench', icon: LayoutGrid },
-        { href: '/appraisal-dashboard', label: 'Analitik', icon: PieChart },
+        { href: '/dashboard', label: 'Workbench', icon: iconMap['/dashboard'] },
+        { href: '/appraisal-dashboard', label: 'Analitik', icon: iconMap['/appraisal-dashboard'] },
         { type: 'action' as const },
-        { href: '/master-data/company', label: 'Klien', icon: Building2 },
-        { href: '/settings', label: 'Sistem', icon: Settings },
+        { href: '/master-data/company', label: 'Klien', icon: iconMap['/master-data/company'] },
+        { href: '/settings', label: 'Sistem', icon: iconMap['/settings'] },
       ];
     }
 
     // 2. MANAJEMEN & USER: Isolated Context + Workspace Anchor at the end
-    // Get raw items from nav-items library
-    const moduleItems = getNavItems(userRole, hasSubordinates, userCompany, userSubscriptionPlan, false, currentUser, okrs, activeModule);
+    const rawItems = getNavItems(userRole, hasSubordinates, userCompany, userSubscriptionPlan, false, currentUser, okrs, activeModule);
     
-    let itemsToDisplay = [...moduleItems];
+    let itemsToDisplay: any[] = [];
+    
+    if (activeModule && userRole !== 'superadmin') {
+        // FLATTEN LOGIC: Bongkar grup modul agar sub-item muncul sebagai tombol utama di bottom nav
+        rawItems.forEach((item: any) => {
+            if (item.subItems) {
+                // Tambahkan semua sub-item yang termasuk dalam modul aktif ini
+                const relevantSubs = item.subItems.filter((s: any) => s.moduleId === activeModule);
+                itemsToDisplay.push(...relevantSubs);
+            } else if (item.moduleId === activeModule) {
+                itemsToDisplay.push(item);
+            }
+        });
+        
+        // Hapus duplikasi berdasarkan href jika ada
+        const seen = new Set();
+        itemsToDisplay = itemsToDisplay.filter(item => {
+            if (!item.href) return true;
+            if (seen.has(item.href)) return false;
+            seen.add(item.href);
+            return true;
+        });
+    } else {
+        itemsToDisplay = [...rawItems];
+    }
+
+    let itemsToRender: any[] = [];
     let showMore = false;
 
     // Rule: Jika menu modul > 4, ambil 3 pertama, tambahkan More, lalu Exit.
     if (itemsToDisplay.length > 4) {
-        itemsToDisplay = itemsToDisplay.slice(0, 3);
+        itemsToRender = itemsToDisplay.slice(0, 3).map(item => ({
+            href: item.href,
+            label: item.label,
+            icon: iconMap[item.iconName || item.href || 'default'] || Folder
+        }));
         showMore = true;
+    } else {
+        itemsToRender = itemsToDisplay.map(item => ({
+            href: item.href,
+            label: item.label,
+            icon: iconMap[item.iconName || item.href || 'default'] || Folder
+        }));
     }
 
-    // Map the items to include actual icons from iconMap
-    const mappedItems = itemsToDisplay.map(item => ({
-        href: item.href,
-        label: item.label,
-        icon: iconMap[item.iconName || item.href || 'default'] || Folder
-    }));
-
     if (showMore) {
-        mappedItems.push({ 
+        itemsToRender.push({ 
             type: 'more' as any, 
             label: 'Lainnya', 
             icon: MoreHorizontal as any,
             onClick: handleMoreClick
-        } as any);
+        });
     }
 
     // Always add Exit/Workspace at the end (5th position)
-    mappedItems.push({ 
+    itemsToRender.push({ 
         href: '/workspace', 
         label: 'Exit', 
         icon: LayoutGrid 
     });
 
-    return mappedItems;
+    return itemsToRender;
 
   }, [userRole, activeModule, hasSubordinates, currentUser, companies, subscriptionPlans, okrs]);
 
@@ -171,7 +187,7 @@ export function BottomNav() {
                             className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95 group text-slate-400"
                         >
                             <div className="p-1.5 rounded-lg transition-all duration-300">
-                                <MoreHorizontal 
+                                <item.icon 
                                   size={IconTokens.size.mobile} 
                                   strokeWidth={IconTokens.strokeWidth} 
                                   color={IconTokens.color.default}
