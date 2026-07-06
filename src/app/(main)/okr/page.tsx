@@ -1,7 +1,7 @@
 // src/app/(main)/okr/page.tsx
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useMasterData } from '@/contexts/master-data-context';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ import { useRouter } from 'next/navigation';
 import { ResponsivePage, ResponsiveToolbar } from '@/components/ui/adaptive-layout';
 import { PageHeader } from '@/components/ui/page-header';
 import { AdaptiveCardGrid } from '@/components/ui/adaptive-card';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { cn } from '@/lib/utils';
@@ -47,7 +47,7 @@ const OkrCard = ({ okr, onEdit, onDelete }: { okr: OKR, onEdit: (okr: OKR) => vo
     const progressValue = okr.progress ?? 0;
 
     return (
-        <Card className="hover:shadow-md transition-all h-full flex flex-col border-l-4 border-primary group bg-background overflow-hidden">
+        <Card className="hover:shadow-md transition-all h-full flex flex-col border-l-4 border-primary group bg-background overflow-hidden shadow-sm">
             <CardHeader className={isMobile ? "p-4 pb-2" : "p-6 pb-3"}>
                 <div className="flex justify-between items-start gap-4">
                     <div className="flex-1 space-y-1.5 min-w-0">
@@ -70,9 +70,9 @@ const OkrCard = ({ okr, onEdit, onDelete }: { okr: OKR, onEdit: (okr: OKR) => vo
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="z-[350]">
                             <DropdownMenuLabel className="text-[10px] font-black uppercase opacity-60">Pilihan OKR</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => onEdit(okr)}><Edit className="mr-2 h-4 w-4"/> Ubah Setup</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onEdit(okr)} className="text-xs"><Edit className="mr-2 h-3.5 w-3.5"/> Ubah Setup</DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => onDelete(okr)} className="text-destructive font-bold"><Trash2 className="mr-2 h-4 w-4"/> Hapus Project</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onDelete(okr)} className="text-destructive font-bold text-xs"><Trash2 className="mr-2 h-3.5 w-3.5"/> Hapus Project</DropdownMenuItem>
                         </DropdownMenuContent>
                      </DropdownMenu>
                 </div>
@@ -82,21 +82,21 @@ const OkrCard = ({ okr, onEdit, onDelete }: { okr: OKR, onEdit: (okr: OKR) => vo
                      <div className="space-y-4">
                         <div className="flex items-center justify-between text-[10px] font-black uppercase">
                             <span className="text-muted-foreground tracking-widest">Capaian Progres</span>
-                            <span className="text-primary text-sm">{progressValue.toFixed(1)}%</span>
+                            <span className="text-primary text-sm font-black tnum">{(progressValue ?? 0).toFixed(1)}%</span>
                         </div>
                         <Progress value={progressValue} className="h-1.5" />
                         <div className="flex items-center gap-2">
                              <div className="flex items-center gap-1.5 text-[9px] font-black uppercase bg-muted/60 text-slate-600 px-2 py-1 rounded-md border border-border/50">
                                 <ListChecks size={10} className="text-primary" /> {okr.keyResults.length} KR
                              </div>
-                             <Badge variant={getStatusVariant(okr.status)} className="text-[8px] h-5 font-black uppercase px-2">
+                             <Badge variant={getStatusVariant(okr.status)} className="text-[8px] h-5 font-black uppercase px-2 border-none">
                                 {okr.status}
                              </Badge>
                         </div>
                      </div>
                 </CardContent>
                 <CardFooter className={cn(
-                    "text-[9px] font-black uppercase text-muted-foreground border-t bg-muted/5 mt-auto",
+                    "text-[9px] font-black uppercase text-muted-foreground border-t bg-muted/5 mt-auto transition-colors group-hover:bg-muted/10",
                     isMobile ? "p-3 px-4" : "p-4 px-6"
                 )}>
                     <div className="flex items-center justify-between w-full">
@@ -120,7 +120,6 @@ export default function OkrListPage() {
   const { okrs, companies, employees, deleteOkr } = useMasterData();
   const router = useRouter();
   const { toast } = useToast();
-  const { isMobile } = useBreakpoint();
   
   const [activeTab, setActiveTab] = useState("all");
   const [selectedCompany, setSelectedCompany] = useState<string>('all');
@@ -169,7 +168,7 @@ export default function OkrListPage() {
     <ResponsivePage>
         <PageHeader 
             title="Workspace OKR" 
-            description="Definisikan sasaran strategis dan hasil utama yang terukur untuk Anda dan tim di seluruh unit bisnis." 
+            description="Lacak sasaran strategis dan hasil utama yang terukur dalam alur kerja project yang dinamis." 
             icon={Target} 
             actions={
                 <Button asChild className="font-bold shadow-lg h-9 sm:h-10 active:scale-95 transition-all">
@@ -193,8 +192,8 @@ export default function OkrListPage() {
             </div>
             {showCompanyFilter && (
                 <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-                    <SelectTrigger className="w-full sm:w-[240px] h-10 bg-background border-none">
-                        <Building className="size-4 mr-2 text-primary" />
+                    <SelectTrigger className="w-full sm:w-[240px] h-10 bg-background border-none shadow-sm text-[11px] font-black uppercase">
+                        <Building className="size-3.5 mr-2 text-primary" />
                         <SelectValue placeholder="Semua Unit Bisnis" />
                     </SelectTrigger>
                     <SelectContent className="z-[350]">
@@ -210,11 +209,11 @@ export default function OkrListPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="w-full overflow-x-auto pb-2">
                 <TabsList className="flex w-max sm:grid sm:w-full sm:grid-cols-5 max-w-[700px] bg-muted/30 p-1 rounded-xl mb-8">
-                    <TabsTrigger value="all" className="text-[10px] font-bold uppercase rounded-lg">Semua</TabsTrigger>
-                    <TabsTrigger value="Active" className="text-[10px] font-bold uppercase rounded-lg">Aktif</TabsTrigger>
-                    <TabsTrigger value="Draft" className="text-[10px] font-bold uppercase rounded-lg">Draf</TabsTrigger>
-                    <TabsTrigger value="Completed" className="text-[10px] font-bold uppercase rounded-lg">Selesai</TabsTrigger>
-                    <TabsTrigger value="Overdue" className="text-[10px] font-bold uppercase rounded-lg">Telat</TabsTrigger>
+                    <TabsTrigger value="all" className="text-[10px] font-bold uppercase rounded-lg px-6">Semua</TabsTrigger>
+                    <TabsTrigger value="Active" className="text-[10px] font-bold uppercase rounded-lg px-6">Aktif</TabsTrigger>
+                    <TabsTrigger value="Draft" className="text-[10px] font-bold uppercase rounded-lg px-6">Draf</TabsTrigger>
+                    <TabsTrigger value="Completed" className="text-[10px] font-bold uppercase rounded-lg px-6">Selesai</TabsTrigger>
+                    <TabsTrigger value="Overdue" className="text-[10px] font-bold uppercase rounded-lg px-6">Telat</TabsTrigger>
                 </TabsList>
             </div>
 

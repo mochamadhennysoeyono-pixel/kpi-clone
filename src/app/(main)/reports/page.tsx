@@ -4,14 +4,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from 'next/navigation';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -30,15 +22,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  User,
   MoreHorizontal,
   TrendingUp,
   TrendingDown,
   Users,
   BarChart3,
   ShieldCheck,
-  ShieldAlert,
-  UserCog,
   X,
   Maximize2,
   Minimize2,
@@ -47,9 +36,7 @@ import {
   UserSearch,
   Calendar,
   Building,
-  Briefcase,
   Network,
-  Zap,
   FilePieChart,
   Filter
 } from "lucide-react";
@@ -67,7 +54,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { DonutChart } from "@/components/reports/donut-chart";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ResponsivePage, ResponsiveToolbar } from "@/components/ui/adaptive-layout";
 import { PageHeader } from "@/components/ui/page-header";
@@ -265,7 +252,7 @@ function TeamReportView() {
     };
     
     const getStatusBadgeVariant = (status: string) => status === 'Melampaui Target' ? 'default' : status === 'Mencapai Target' ? 'secondary' : 'destructive';
-    const getTrendIcon = (trend: number) => trend > 0.1 ? <TrendingUp className="size-4 text-green-500" /> : trend < -0.1 ? <TrendingDown className="size-4 text-red-500" /> : <ArrowRight className="size-4 text-slate-400" />;
+    const getTrendIcon = (trend: number) => trend > 0.1 ? <TrendingUp className="size-4 text-green-500" /> : trend < -0.1 ? <TrendingDown className="size-4 text-red-500" /> : <ArrowRight className="size-4 text-slate-400 opacity-20" />;
 
     return (
         <div className="space-y-6">
@@ -364,11 +351,11 @@ function TeamReportView() {
                                     <div className="min-w-0"><p className="font-bold text-slate-900 truncate">{d.employeeName}</p><p className="text-[10px] text-muted-foreground uppercase font-black">{d.position}</p></div>
                                 </div>
                             )},
-                            { header: mode === 'trend' ? "Skor Rata-Rata" : "Skor Periode", cell: (d: any) => <span className="text-lg font-black text-primary">{(d.averageScore ?? d.score).toFixed(1)}</span> },
+                            { header: mode === 'trend' ? "Skor Rata-Rata" : "Skor Periode", cell: (d: any) => <span className="text-lg font-black text-primary tnum">{(d.averageScore ?? d.score).toFixed(1)}</span> },
                             { header: "Status / Tren", cell: (d: any) => (
-                                mode === 'trend' ? <div className="flex items-center gap-2 font-bold text-xs">{getTrendIcon(d.personalTrend)} {d.personalTrend.toFixed(1)}%</div> : <Badge variant={getStatusBadgeVariant(d.status)} className="text-[9px] font-black uppercase h-5">{d.status}</Badge>
+                                mode === 'trend' ? <div className="flex items-center gap-2 font-bold text-xs tnum">{getTrendIcon(d.personalTrend)} {d.personalTrend.toFixed(1)}%</div> : <Badge variant={getStatusBadgeVariant(d.status)} className="text-[9px] font-black uppercase h-5">{d.status}</Badge>
                             )},
-                            { header: "Persetujuan", hideOnTablet: true, cell: (d: any) => <Badge variant="outline" className="text-[8px] font-bold border-none bg-muted/50">{mode === 'trend' ? `App: ${d.approvalStatusSummary}` : d.approvalStatus}</Badge> },
+                            { header: "Persetujuan", hideOnTablet: true, cell: (d: any) => <Badge variant="outline" className="text-[8px] font-bold border-none bg-muted/50 uppercase">{mode === 'trend' ? `App: ${d.approvalStatusSummary}` : d.approvalStatus}</Badge> },
                             { header: "", className: "text-right", cell: (d: any) => (
                                 <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal size={4} /></Button></DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="z-[350]">
@@ -385,7 +372,7 @@ function TeamReportView() {
                                             <Avatar className="size-10 border-2 border-primary/10"><AvatarFallback className="font-black text-xs">{d.employeeName?.substring(0,2).toUpperCase()}</AvatarFallback></Avatar>
                                             <div className="min-w-0"><h3 className="font-black text-sm truncate uppercase">{d.employeeName}</h3><p className="text-[10px] font-bold text-muted-foreground">{d.position}</p></div>
                                         </div>
-                                        <div className="text-right"><p className="text-xl font-black text-primary leading-none">{(d.averageScore ?? d.score).toFixed(1)}</p><p className="text-[8px] font-black uppercase text-muted-foreground mt-1">SKOR</p></div>
+                                        <div className="text-right"><p className="text-xl font-black text-primary leading-none tnum">{(d.averageScore ?? d.score).toFixed(1)}</p><p className="text-[8px] font-black uppercase text-muted-foreground mt-1">SKOR</p></div>
                                     </div>
                                     <div className="flex items-center justify-between pt-3 border-t">
                                         <Badge variant={getStatusBadgeVariant(d.status || 'todo')} className="text-[8px] font-black uppercase h-5">{mode === 'trend' ? `TREN: ${d.personalTrend}%` : d.status}</Badge>
@@ -403,85 +390,6 @@ function TeamReportView() {
             )}
             {selectedKpiDataForDetail && (<ReportDetailView kpiData={selectedKpiDataForDetail} onClose={() => setSelectedKpiDataForDetail(null)} />)}
         </div>
-    );
-}
-
-function IndividualAnalysisView() {
-    const { currentUser, userRole } = useAuth();
-    const { employees, companies, kpiData, departments, positions } = useMasterData();
-    const router = useRouter();
-    
-    const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
-    const [selectedDepartment, setSelectedDepartment] = useState("all");
-    const [selectedPosition, setSelectedPosition] = useState("all");
-    const [selectedEmployeeId, setSelectedEmployeeId] = useState("all");
-    const [startPeriod, setStartPeriod] = useState<string>("");
-    const [endPeriod, setEndPeriod] = useState<string>("");
-
-    const manageableCompanies = useMemo(() => {
-        if (userRole === 'superadmin') return companies.filter(c => c.status === 'Aktif');
-        const userCompany = companies.find(c => c.name === currentUser?.company);
-        if (userRole === 'manajemen' && userCompany?.isHolding) {
-            const getDescendantCompanies = (parentId: string): any[] => {
-                const children = companies.filter(c => c.parentId === parentId);
-                return children.flatMap(c => [c, ...getDescendantCompanies(c.id)]);
-            };
-            return [userCompany, ...getDescendantCompanies(userCompany.id)];
-        }
-        if (userCompany) return [userCompany]; return [];
-    }, [userRole, currentUser, companies]);
-
-    useEffect(() => {
-        if (userRole === 'superadmin' && companies.length > 0) {
-            const activeCompanies = companies.filter(c => c.status === 'Aktif');
-            if (activeCompanies.length > 0) setSelectedCompanyId(activeCompanies[0].id);
-        } else if (currentUser) {
-            const userCompanyData = companies.find((c) => c.name === currentUser.company);
-            setSelectedCompanyId(userCompanyData?.id || 'all');
-        }
-    }, [userRole, currentUser, companies]);
-
-    const selectedCompanyName = useMemo(() => companies.find(c => c.id === selectedCompanyId)?.name, [selectedCompanyId, companies]);
-    const filteredEmployees = useMemo(() => {
-        if (!selectedCompanyName) return [];
-        let base = employees.filter(e => e.company === selectedCompanyName && e.status === 'Aktif' && e.role !== 'superadmin');
-        if (selectedDepartment !== "all") base = base.filter(e => e.department === selectedDepartment);
-        if (selectedPosition !== "all") base = base.filter(e => e.position === selectedPosition);
-        return base.sort((a, b) => a.name.localeCompare(b.name));
-    }, [employees, selectedCompanyName, selectedDepartment, selectedPosition]);
-
-    const availablePeriods = useMemo(() => {
-        if (!kpiData || !selectedCompanyName) return [];
-        return [...new Set(kpiData.filter(d => d.company === selectedCompanyName && d.period).map(d => d.period))].sort().reverse();
-    }, [kpiData, selectedCompanyName]);
-
-    const handleRunAnalysis = () => {
-        if (selectedEmployeeId === 'all' || !startPeriod || !endPeriod) return;
-        const employee = employees.find(e => e.id === selectedEmployeeId);
-        if (employee) {
-            sessionStorage.setItem('selectedEmployeeAnalysis', JSON.stringify({ employee, startPeriod, endPeriod }));
-            router.push(`/reports/${employee.id}`);
-        }
-    };
-
-    return (
-        <Card className="border-2 border-primary/10 shadow-xl overflow-hidden rounded-2xl bg-background">
-            <CardHeader className="bg-primary/5 p-8 border-b">
-                <div className="flex items-center gap-4">
-                    <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm"><UserSearch size={24} /></div>
-                    <div className="space-y-1"><CardTitle className="text-2xl font-black tracking-tight">Simulator Performa Personal</CardTitle><CardDescription className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Pilih karyawan dan rentang waktu untuk menjalankan analisa data.</CardDescription></div>
-                </div>
-            </CardHeader>
-            <CardContent className="p-8 space-y-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Unit Bisnis</Label><Select onValueChange={(v) => { setSelectedCompanyId(v); setSelectedDepartment('all'); setSelectedEmployeeId('all'); }} value={selectedCompanyId ?? ""}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue /></SelectTrigger><SelectContent className="z-[350]">{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Karyawan</Label><Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId} disabled={filteredEmployees.length === 0}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue placeholder="Pilih Karyawan..." /></SelectTrigger><SelectContent className="z-[350]">{filteredEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Mulai</Label><Select value={startPeriod} onValueChange={setStartPeriod}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue placeholder="Pilih Bulan..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Selesai</Label><Select value={endPeriod} onValueChange={setEndPeriod}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue placeholder="Pilih Bulan..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
-                </div>
-                <Button onClick={handleRunAnalysis} disabled={selectedEmployeeId === 'all' || !startPeriod || !endPeriod} className="w-full h-11 font-black uppercase tracking-widest text-[11px] shadow-xl shadow-primary/20"><TrendingUp size={16} className="mr-2" /> Jalankan Analisis Performa</Button>
-            </CardContent>
-        </Card>
     );
 }
 
@@ -522,5 +430,69 @@ export default function ReportsPage() {
             <TabsContent value="individual" className="m-0 border-none"><IndividualAnalysisView /></TabsContent>
         </Tabs>
       </ResponsivePage>
+    );
+}
+
+function IndividualAnalysisView() {
+    const { currentUser, userRole } = useAuth();
+    const { employees, companies, kpiData } = useMasterData();
+    const router = useRouter();
+    
+    const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState("all");
+    const [startPeriod, setStartPeriod] = useState<string>("");
+    const [endPeriod, setEndPeriod] = useState<string>("");
+
+    const manageableCompanies = useMemo(() => {
+        if (userRole === 'superadmin') return companies.filter(c => c.status === 'Aktif');
+        const userCompany = companies.find(c => c.name === currentUser?.company);
+        if (userRole === 'manajemen' && userCompany?.isHolding) {
+            const getDescendantCompanies = (parentId: string): any[] => {
+                const children = companies.filter(c => c.parentId === parentId);
+                return children.flatMap(c => [c, ...getDescendantCompanies(c.id)]);
+            };
+            return [userCompany, ...getDescendantCompanies(userCompany.id)];
+        }
+        if (userCompany) return [userCompany]; return [];
+    }, [userRole, currentUser, companies]);
+
+    const selectedCompanyName = useMemo(() => companies.find(c => c.id === selectedCompanyId)?.name, [selectedCompanyId, companies]);
+    const filteredEmployees = useMemo(() => {
+        if (!selectedCompanyName) return [];
+        return employees.filter(e => e.company === selectedCompanyName && e.status === 'Aktif' && e.role !== 'superadmin').sort((a, b) => a.name.localeCompare(b.name));
+    }, [employees, selectedCompanyName]);
+
+    const availablePeriods = useMemo(() => {
+        if (!kpiData || !selectedCompanyName) return [];
+        return [...new Set(kpiData.filter(d => d.company === selectedCompanyName && d.period).map(d => d.period))].sort().reverse();
+    }, [kpiData, selectedCompanyName]);
+
+    const handleRunAnalysis = () => {
+        if (selectedEmployeeId === 'all' || !startPeriod || !endPeriod) return;
+        const employee = employees.find(e => e.id === selectedEmployeeId);
+        if (employee) {
+            sessionStorage.setItem('selectedEmployeeAnalysis', JSON.stringify({ employee, startPeriod, endPeriod }));
+            router.push(`/reports/${employee.id}`);
+        }
+    };
+
+    return (
+        <Card className="border-border/40 shadow-stripe overflow-hidden rounded-2xl bg-background">
+            <CardHeader className="bg-primary/5 p-8 border-b">
+                <div className="flex items-center gap-4">
+                    <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm"><UserSearch size={24} /></div>
+                    <div className="space-y-1"><CardTitle className="text-2xl font-black tracking-tight">Simulator Performa Personal</CardTitle><CardDescription className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Analisa histori pencapaian individu secara mendalam</CardDescription></div>
+                </div>
+            </CardHeader>
+            <CardContent className="p-8 space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Unit Bisnis</Label><Select onValueChange={(v) => { setSelectedCompanyId(v); setSelectedEmployeeId('all'); }} value={selectedCompanyId ?? ""}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue /></SelectTrigger><SelectContent className="z-[350]">{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Karyawan</Label><Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId} disabled={filteredEmployees.length === 0}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue placeholder="Pilih Karyawan..." /></SelectTrigger><SelectContent className="z-[350]">{filteredEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Dari Periode</Label><Select value={startPeriod} onValueChange={setStartPeriod}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue placeholder="Pilih..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary tracking-widest">Sampai Periode</Label><Select value={endPeriod} onValueChange={setEndPeriod}><SelectTrigger className="h-9 text-[11px] font-bold"><SelectValue placeholder="Pilih..." /></SelectTrigger><SelectContent className="z-[350]">{[...availablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
+                </div>
+                <Button onClick={handleRunAnalysis} disabled={selectedEmployeeId === 'all' || !startPeriod || !endPeriod} className="w-full h-11 font-black uppercase tracking-widest text-[11px] shadow-xl shadow-primary/20 transition-all active:scale-[0.98]"><TrendingUp size={16} className="mr-2" /> Jalankan Analisis Performa</Button>
+            </CardContent>
+        </Card>
     );
 }

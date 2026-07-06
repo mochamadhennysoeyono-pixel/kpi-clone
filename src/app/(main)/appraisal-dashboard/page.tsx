@@ -3,28 +3,12 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter
-} from "@/components/ui/card";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -34,13 +18,23 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from '@/components/ui/badge';
-import { User, Activity, AlertCircle, MoreHorizontal, BarChartBig, Users, TrendingUp, TrendingDown, ArrowRight, Target, Filter, Building, Calendar, LayoutGrid } from 'lucide-react';
+import { 
+    Activity, 
+    MoreHorizontal, 
+    BarChartBig, 
+    Users, 
+    TrendingUp, 
+    TrendingDown, 
+    ArrowRight, 
+    Building, 
+    Calendar, 
+    LayoutGrid 
+} from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
-import type { Employee, AppraisalSetup, KboSetup, Company, KpiData, AppraisalComponents, OKR, KeyResult } from '@/types';
-import { parse, isWithinInterval, format, eachMonthOfInterval, isBefore, subMonths, startOfMonth, addMonths, lastDayOfMonth } from "date-fns";
+import type { Employee, AppraisalSetup, Company, OKR } from '@/types';
+import { parse, isBefore, format, eachMonthOfInterval, subMonths, startOfMonth, lastDayOfMonth } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { DonutChart } from '@/components/reports/donut-chart';
 import { Switch } from '@/components/ui/switch';
@@ -52,6 +46,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { AdaptiveCardGrid, AdaptiveMetricCard, AdaptiveInsightCard } from '@/components/ui/adaptive-card';
 import { AdaptiveTable } from '@/components/ui/adaptive-table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface AppraisalResult {
     subject: Employee;
@@ -62,8 +57,6 @@ interface AppraisalResult {
     status: string;
     averageScore?: number;
     personalTrend?: number;
-    isLatestApproved?: boolean;
-    approvalStatus?: string;
     isOkrIntegrated?: boolean;
 }
 
@@ -75,26 +68,23 @@ const getStatusFromFinalScore = (score: number | null): { status: string; varian
 };
 
 const getTrendIcon = (trend: number) => {
-    if (trend > 0.1) return <TrendingUp className="h-4 w-4 text-green-500" />;
-    if (trend < -0.1) return <TrendingDown className="h-4 w-4 text-red-500" />;
-    return <ArrowRight className="h-4 w-4 text-muted-foreground" />;
+    if (trend > 0.1) return <TrendingUp className="size-4 text-green-500" />;
+    if (trend < -0.1) return <TrendingDown className="size-4 text-red-500" />;
+    return <ArrowRight className="size-4 text-muted-foreground opacity-30" />;
 };
 
 const levelOptions: Employee['level'][] = ['Direktur', 'Manager', 'Supervisor', 'Staff'];
 
 export default function AppraisalDashboardPage() {
     const { currentUser, userRole } = useAuth();
-    const { companies, appraisalSetups, employees, kpiData, kboAssessments, kboSetups, okrs, subscriptionPlans } = useMasterData();
+    const { companies, appraisalSetups, employees, kpiData, kboAssessments, kboSetups, okrs } = useMasterData();
     const router = useRouter();
 
     const [mode, setMode] = useState<'single' | 'trend'>('single');
     const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
     const [selectedLevel, setSelectedLevel] = useState<string>('all');
     
-    // State for single mode
     const [selectedAppraisalId, setSelectedAppraisalId] = useState<string | null>(null);
-
-    // State for trend mode
     const [trendStartPeriod, setTrendStartPeriod] = useState<string | null>(null);
     const [trendEndPeriod, setTrendEndPeriod] = useState<string | null>(null);
 
@@ -377,13 +367,17 @@ export default function AppraisalDashboardPage() {
 
     return (
         <ResponsivePage>
-            <PageHeader title="Dasbor Appraisal Terintegrasi" description="Analisis hasil akhir penilaian kinerja (KPI + KBO + OKR) di seluruh unit bisnis." icon={Activity} />
+            <PageHeader 
+                title="Dasbor Appraisal Terintegrasi" 
+                description="Analisis performa akhir karyawan berdasarkan penggabungan skor KPI, KBO, dan OKR secara proporsional." 
+                icon={Activity} 
+            />
 
             <ResponsiveToolbar>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
                     <Label htmlFor="mode-switch" className="space-y-0.5">
                         <span className="font-bold text-slate-800 text-sm">Mode Analisis</span>
-                        <p className="text-[10px] text-slate-500 uppercase font-black">{mode === 'single' ? 'Periode Tunggal' : 'Tren Antar Periode'}</p>
+                        <p className="text-[10px] text-slate-500 uppercase font-black">{mode === 'single' ? 'Periode Tunggal' : 'Tren Perbandingan'}</p>
                     </Label>
                     <Switch id="mode-switch" checked={mode === 'trend'} onCheckedChange={(c) => setMode(c ? 'trend' : 'single')} />
                 </div>
@@ -412,29 +406,29 @@ export default function AppraisalDashboardPage() {
                     ) : (
                         <>
                             <Select value={trendStartPeriod ?? ""} onValueChange={setTrendStartPeriod}>
-                                <SelectTrigger className="h-9 min-w-[150px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
+                                <SelectTrigger className="h-9 min-w-[120px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
                                     <Calendar className="size-3.5 mr-2 text-primary" />
                                     <SelectValue placeholder="Mulai" />
                                 </SelectTrigger>
                                 <SelectContent className="z-[350]">
-                                    {[...allAvailablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId })}</SelectItem>)}
+                                    {[...allAvailablePeriods].sort().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId })}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                             <Select value={trendEndPeriod ?? ""} onValueChange={setTrendEndPeriod}>
-                                <SelectTrigger className="h-9 min-w-[150px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
+                                <SelectTrigger className="h-9 min-w-[120px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
                                     <Calendar className="size-3.5 mr-2 text-primary" />
                                     <SelectValue placeholder="Selesai" />
                                 </SelectTrigger>
                                 <SelectContent className="z-[350]">
-                                    {[...allAvailablePeriods].reverse().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId })}</SelectItem>)}
+                                    {[...allAvailablePeriods].sort().map(p => <SelectItem key={p} value={p}>{format(parse(p, 'yyyy-MM', new Date()), 'MMM yy', { locale: localeId })}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </>
                     )}
                     <Select value={selectedLevel} onValueChange={setSelectedLevel}>
                         <SelectTrigger className="h-9 min-w-[150px] bg-background border-none shadow-sm text-[11px] font-black uppercase tracking-tight">
-                            <Filter className="size-3.5 mr-2 text-primary" />
-                            <SelectValue />
+                            <LayoutGrid className="size-3.5 mr-2 text-primary" />
+                            <SelectValue placeholder="Semua Level" />
                         </SelectTrigger>
                         <SelectContent className="z-[350]">
                             <SelectItem value="all">Semua Level</SelectItem>
@@ -472,13 +466,13 @@ export default function AppraisalDashboardPage() {
                             <div className="min-w-0"><p className="font-bold text-slate-900 truncate">{r.subject.name}</p><p className="text-[10px] text-muted-foreground uppercase font-black">{r.subject.position}</p></div>
                         </div>
                     )},
-                    { header: mode === 'trend' ? "Skor Rata-Rata" : "Skor Final", cell: (r: any) => <span className="text-lg font-black text-primary">{(r.averageScore ?? r.finalScore).toFixed(1)}</span> },
+                    { header: mode === 'trend' ? "Skor Rata-Rata" : "Skor Final", cell: (r: any) => <span className="text-lg font-black text-primary tnum">{(r.averageScore ?? r.finalScore).toFixed(1)}</span> },
                     { header: "Status / Tren", cell: (r: any) => (
-                        mode === 'trend' ? <div className="flex items-center gap-2 font-bold text-xs">{getTrendIcon(r.personalTrend)} {r.personalTrend.toFixed(1)}%</div> : <Badge variant={getStatusFromFinalScore(r.finalScore).variant} className="text-[9px] font-black uppercase h-5">{r.status}</Badge>
+                        mode === 'trend' ? <div className="flex items-center gap-2 font-bold text-xs tnum">{getTrendIcon(r.personalTrend)} {r.personalTrend.toFixed(1)}%</div> : <Badge variant={getStatusFromFinalScore(r.finalScore).variant} className="text-[9px] font-black uppercase h-5">{r.status}</Badge>
                     )},
-                    { header: "Detail Skor", hideOnTablet: true, cell: (r: any) => (
+                    { header: "Komponen Skor", hideOnTablet: true, cell: (r: any) => (
                         mode === 'single' ? (
-                            <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase whitespace-nowrap">
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase whitespace-nowrap tnum">
                                 <span>KPI: {r.kpiScore?.toFixed(1) || '-'}</span>
                                 <span className="opacity-30">|</span>
                                 <span>KBO: {r.kboScore?.toFixed(1) || '-'}</span>
@@ -487,7 +481,7 @@ export default function AppraisalDashboardPage() {
                         ) : null
                     )},
                     { header: "", className: "text-right", cell: (r: any) => (
-                        <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal size={4} /></Button></DropdownMenuTrigger>
+                        <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal className="size-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="z-[350]">
                             <DropdownMenuItem onClick={() => handleViewDetail(r)}><ArrowRight className="size-3.5 mr-2" /> Lihat Analisis Detail</DropdownMenuItem>
                         </DropdownMenuContent></DropdownMenu>
@@ -501,7 +495,7 @@ export default function AppraisalDashboardPage() {
                                     <Avatar className="size-10 border-2 border-primary/10 shadow-sm"><AvatarFallback className="font-black text-xs">{r.subject.name.substring(0,2).toUpperCase()}</AvatarFallback></Avatar>
                                     <div className="min-w-0"><h3 className="font-black text-sm truncate uppercase">{r.subject.name}</h3><p className="text-[10px] font-bold text-muted-foreground">{r.subject.position}</p></div>
                                 </div>
-                                <div className="text-right"><p className="text-xl font-black text-primary leading-none">{(r.averageScore ?? r.finalScore).toFixed(1)}</p><p className="text-[8px] font-black uppercase text-muted-foreground mt-1">SKOR</p></div>
+                                <div className="text-right"><p className="text-xl font-black text-primary leading-none tnum">{(r.averageScore ?? r.finalScore).toFixed(1)}</p><p className="text-[8px] font-black uppercase text-muted-foreground mt-1">SKOR</p></div>
                             </div>
                             <div className="flex items-center justify-between pt-3 border-t">
                                 <Badge variant={getStatusFromFinalScore(r.averageScore ?? r.finalScore).variant} className="text-[8px] font-black uppercase h-5">{mode === 'trend' ? `TREN: ${r.personalTrend}%` : r.status}</Badge>
