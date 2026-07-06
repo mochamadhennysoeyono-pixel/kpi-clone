@@ -344,45 +344,57 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
   }, [toast]);
 
   const resetCompanySubscription = useCallback(async (companyId: string) => {
-      if (!db || userRole !== 'superadmin') return;
+      if (!db || userRole !== 'superadmin') {
+          toast({ variant: 'destructive', title: "Akses Ditolak", description: "Hanya Superadmin yang bisa melakukan reset." });
+          return;
+      }
       setIsLoading(true);
       try {
-          const company = data.companies.find((c: any) => c.id === companyId);
-          if (!company) throw new Error("Perusahaan tidak ditemukan.");
+          // Fetch fresh data for the company to avoid stale name or missing fields
+          const companyRef = doc(db, 'companies', companyId);
+          const companySnap = await getDoc(companyRef);
+          
+          if (!companySnap.exists()) throw new Error("Perusahaan tidak ditemukan di database.");
+          const companyData = companySnap.data();
 
           const now = new Date();
           const expiry = addDays(now, 14);
+          const batch = writeBatch(db);
 
-          // Update Company with explicit NULL for fields we want to remove
-          // This ensures Firestore actually removes them if merge is true or using updateDoc
-          const companyRef = doc(db, 'companies', companyId);
-          await updateDoc(companyRef, {
+          // 1. Reset Company Profile to baseline Trial
+          // Using deleteField() to explicitly remove modular fields
+          batch.update(companyRef, {
               subscriptionPlanId: 'default-trial',
               subscriptionActivationDate: now.toISOString(),
               subscriptionExpiryDate: expiry.toISOString(),
               moduleSubscriptions: deleteField(),
               usedTrials: [],
               customPrice: deleteField(),
-              customUserLimit: deleteField(),
-              customManagementUserLimit: deleteField(),
+              customUserLimit: 5, // Back to trial baseline
+              customManagementUserLimit: 2,
               customCompanyLimit: deleteField(),
               status: 'Aktif'
           });
           
-          await addDoc(collection(db, 'subscriptionLogs'), {
+          // 2. Log this reset as a Manual TRIAL event
+          const logRef = doc(collection(db, 'subscriptionLogs'));
+          batch.set(logRef, {
               companyId: companyId,
-              companyName: company.name,
-              company: company.name, // Ensure context exists for MasterDataProvider filters
+              companyName: companyData.name,
+              company: companyData.name, // Important for scoping filters
               planName: 'RESET TO TRIAL (MANUAL)',
               action: 'TRIAL',
               amount: 0,
               startDate: now.toISOString(),
               endDate: expiry.toISOString(),
-              performedBy: `Superadmin (${currentUser?.name})`,
+              performedBy: `Superadmin (${currentUser?.name || 'Unknown'})`,
               timestamp: serverTimestamp()
           });
 
-          toast({ title: "Reset Berhasil", description: `Paket ${company.name} telah diatur ulang ke Trial 14 hari.` });
+          await batch.commit();
+          toast({ title: "Reset Berhasil", description: `Paket ${companyData.name} telah diatur ulang ke Trial 14 hari.` });
+          
+          // Force refetch to update all UI components
           await fetchData(true);
       } catch (e: any) {
           console.error("[RESET_ERROR]", e);
@@ -390,7 +402,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
       } finally {
           setIsLoading(false);
       }
-  }, [data.companies, currentUser, fetchData, toast, userRole]);
+  }, [currentUser, fetchData, toast, userRole]);
 
   const value = {
     ...data,
@@ -462,14 +474,14 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     addSubscriptionPlan: (d) => addDocAndUpdateState<SubscriptionPlan>('subscriptionPlans', d, 'subscriptionPlans'),
     updateSubscriptionPlan: (id, d) => updateDocAndUpdateState<SubscriptionPlan>('subscriptionPlans', id, d, 'subscriptionPlans'),
     deleteSubscriptionPlan: (id) => deleteDocsAndUpdateState('subscriptionPlans', [id], 'subscriptionPlans'),
-    addCourse: (d) => addDocAndUpdateState<Course>('lmsCourses', d, 'courses'),
-    updateCourse: (id, d) => updateDocAndUpdateState<Course>('lmsCourses', id, d, 'courses'),
-    deleteCourse: (id) => deleteDocsAndUpdateState('lmsCourses', [id], 'courses'),
-    addQuiz: (d) => addDocAndUpdateState<LmsQuiz>('lmsQuizzes', d, 'quizzes'),
-    updateQuiz: (id, d) => updateDocAndUpdateState<LmsQuiz>('lmsQuizzes', id, d, 'quizzes'),
-    deleteQuiz: (id) => deleteDocsAndUpdateState('lmsQuizzes', [id], 'quizzes'),
+    addCourse: (d) => addDocAndUpdateState<Course>('lmsCourses', d, 'lmsCourses'),
+    updateCourse: (id, d) => updateDocAndUpdateState<Course>('lmsCourses', id, d, 'lmsCourses'),
+    deleteCourse: (id) => deleteDocsAndUpdateState('lmsCourses', [id], 'lmsCourses'),
+    addQuiz: (d) => addDocAndUpdateState<LmsQuiz>('lmsQuizzes', d, 'lmsQuizzes'),
+    updateQuiz: (id, d) => updateDocAndUpdateState<LmsQuiz>('lmsQuizzes', id, d, 'lmsQuizzes'),
+    deleteQuiz: (id) => deleteDocsAndUpdateState('lmsQuizzes', [id], 'lmsQuizzes'),
     addLearningProgram: (d) => addDocAndUpdateState<LearningProgram>('learningPrograms', d, 'learningPrograms'),
-    updateLearningProgram: (id, d) => updateDocAndUpdateState<LearningProgram>('id', id, d, 'learningPrograms'),
+    updateLearningProgram: (id, d) => updateDocAndUpdateState<LearningProgram>('learningPrograms', id, d, 'learningPrograms'),
     enrollToCourse: async (courseId, employeeId) => {
         const id = `${employeeId}_${courseId}`;
         const ref = doc(db, 'lmsEnrollments', id);
@@ -483,6 +495,12 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     },
     updateEnrollment: async (id, d) => { await updateDoc(doc(db, 'lmsEnrollments', id), { ...d, updatedAt: serverTimestamp() }); },
     resetEnrollment: async (id) => { await deleteDoc(doc(db, 'lmsEnrollments', id)); fetchData(true); },
+    addCollabSpace: (d) => addDocAndUpdateState<CollabSpace>('collabSpaces', d, 'collabSpaces'),
+    updateCollabSpace: (id, d) => updateDocAndUpdateState<CollabSpace>('collabSpaces', id, d, 'collabSpaces'),
+    deleteCollabSpace: (id) => deleteDocsAndUpdateState('collabSpaces', [id], 'collabSpaces'),
+    addCollabTask: (d) => addDocAndUpdateState<CollabTask>('collabTasks', d, 'collabTasks'),
+    updateCollabTask: (id, d) => updateDocAndUpdateState<CollabTask>('collabTasks', id, d, 'collabTasks'),
+    deleteCollabTask: (id) => deleteDocsAndUpdateState('collabTasks', [id], 'collabTasks'),
     addEmailTemplate: (d) => addDocAndUpdateState<EmailTemplate>('emailTemplates', d, 'emailTemplates'),
     updateEmailTemplate: (id, d) => updateDocAndUpdateState<EmailTemplate>('emailTemplates', id, d, 'emailTemplates'),
     deleteEmailTemplate: (id) => deleteDocsAndUpdateState('emailTemplates', [id], 'emailTemplates'),
