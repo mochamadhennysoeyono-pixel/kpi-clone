@@ -59,7 +59,7 @@ import { format, addDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import type { ModuleId, ModuleSubscription, Company, SubscriptionLog } from '@/types';
+import type { ModuleId, ModuleSubscription, Company, SubscriptionLog, Employee } from '@/types';
 import { ModuleSubscriptionDialog } from '@/components/portal/module-subscription-dialog';
 import { GroupManagementDialog } from '@/components/holding/group-management-dialog';
 import { 
@@ -71,14 +71,13 @@ import {
   DialogFooter,
   DialogClose
 } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { serverTimestamp } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
 import { ResponsivePage } from '@/components/ui/adaptive-layout';
 import { PageHeader } from '@/components/ui/page-header';
-import { IconTokens } from '@/lib/icon-tokens';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { CompanyAdminManagementPage } from '@/app/(main)/company-admin-management/page';
 
 // --- Static Meta for Modules ---
 const MODULE_CATALOG = [
@@ -251,7 +250,7 @@ function HistoryItem({ log }: { log: SubscriptionLog }) {
 
 // --- Main Workspace Page ---
 
-export default function WorkspacePage() {
+export function WorkspaceContent() {
     const { currentUser, userRole, logout, setIsLoading } = useAuth();
     const { companies, updateCompany, addSubscriptionLog, fetchData, companyAdmins, addonPricing, subscriptionLogs } = useMasterData();
     const { toast } = useToast();
@@ -269,6 +268,16 @@ export default function WorkspacePage() {
 
     const company = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
     const isManagement = userRole === 'manajemen';
+
+    const childCompanies = useMemo(() => {
+        if (!company) return [];
+        const getAllDescendants = (parentId: string): Company[] => {
+            const children = companies.filter(c => c.parentId === parentId);
+            if (children.length === 0) return [];
+            return [...children, ...children.flatMap(child => getAllDescendants(child.id))];
+        };
+        return getAllDescendants(company.id);
+    }, [company, companies]);
 
     const myLogs = useMemo(() => {
         if (!company) return [];
@@ -376,299 +385,310 @@ export default function WorkspacePage() {
     };
 
     return (
-        <ResponsivePage className="bg-[#f8f9ff] min-h-screen">
-            {/* Header / Hero Section */}
-            <section className="mb-10">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div>
-                        <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-900 mb-2">Halo, {currentUser.name.split(' ')[0]}!</h1>
-                        <p className="text-slate-500 font-medium text-sm sm:text-base max-w-lg">
-                            Selamat datang kembali. Pintu masuk ke ekosistem produktivitas tim Anda yang terintegrasi.
-                        </p>
+        <>
+            <ResponsivePage className="bg-[#f8f9ff] min-h-screen">
+                {/* Header / Hero Section */}
+                <section className="mb-10">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                        <div>
+                            <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-900 mb-2">Halo, {currentUser.name.split(' ')[0]}!</h1>
+                            <p className="text-slate-500 font-medium text-sm sm:text-base max-w-lg">
+                                Selamat datang kembali. Pintu masuk ke ekosistem produktivitas tim Anda yang terintegrasi.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3 bg-blue-500/5 px-4 py-2 rounded-full border border-blue-500/10 self-start md:self-auto">
+                            <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                            <span className="text-[10px] font-black text-primary uppercase tracking-widest">SISTEM OPTIMAL</span>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-3 bg-blue-500/5 px-4 py-2 rounded-full border border-blue-500/10 self-start md:self-auto">
-                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-                        <span className="text-[10px] font-black text-primary uppercase tracking-widest">SISTEM OPTIMAL</span>
-                    </div>
-                </div>
-            </section>
+                </section>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                
-                {/* PRIMARY CONTENT (8 cols) */}
-                <div className="lg:col-span-8 space-y-10">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     
-                    {/* Organization Banner */}
-                    <div className="bg-[#131b2e] text-white p-6 sm:p-8 rounded-[2rem] relative overflow-hidden shadow-2xl">
-                        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                            <div className="flex items-center gap-5">
-                                <div className="size-16 rounded-[1.25rem] bg-white/10 flex items-center justify-center border border-white/5 shadow-inner">
-                                    <Building size={32} strokeWidth={1.5} />
-                                </div>
-                                <div className="space-y-0.5">
-                                    <h2 className="text-xl sm:text-2xl font-black tracking-tight truncate max-w-[200px] sm:max-w-md uppercase">{company?.name || 'N/A'}</h2>
-                                    <p className="text-[10px] opacity-40 font-black tracking-[0.3em] uppercase">{company?.businessField}</p>
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-2.5">
-                                <div className="flex items-center gap-2.5 opacity-60">
-                                    <LucideUser size={14} strokeWidth={3} />
-                                    <span className="text-xs font-bold">{currentUser.name}</span>
-                                </div>
-                                <div className="flex items-center gap-2.5 opacity-60">
-                                    <Mail size={14} strokeWidth={3} />
-                                    <span className="text-xs font-medium">{currentUser.email}</span>
-                                </div>
-                            </div>
-                            <Button onClick={logout} variant="ghost" className="px-6 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-widest rounded-xl border border-white/10">
-                                KELUAR AKUN
-                            </Button>
-                        </div>
-                        <div className="absolute -right-10 -bottom-10 size-40 bg-primary/20 rounded-full blur-3xl opacity-50"></div>
-                    </div>
-
-                    {/* Foundation Data Section */}
-                    {isManagement && (
-                        <div className="space-y-4">
-                            <SectionLabel icon={Database} label="PONDASI DATA" />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Link href="/master-data/employees">
-                                    <GlassCard className="p-5 flex items-center gap-5 group">
-                                        <div className="size-12 rounded-2xl bg-[#131b2e] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                                            <Settings size={22} strokeWidth={2} />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Konfigurasi Master</h4>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">STAFF, STRUKTUR, & DEPARTEMEN</p>
-                                        </div>
-                                    </GlassCard>
-                                </Link>
-                                <Link href="/master-data/hierarchy">
-                                    <GlassCard className="p-5 flex items-center gap-5 group">
-                                        <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-lg shadow-primary/20">
-                                            <GitMerge size={22} strokeWidth={2} />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Manajemen Grup</h4>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">KELOLA HOLDING & ANAK CABANG</p>
-                                        </div>
-                                    </GlassCard>
-                                </Link>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Active Modules Section */}
-                    <div className="space-y-4">
-                        <SectionLabel icon={ShieldCheck} label="MODUL AKTIF" color="text-primary" />
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            {activeModules.map(m => (
-                                <WorkspaceModuleCard 
-                                    key={m.id} config={m} 
-                                    subscription={company?.moduleSubscriptions?.[m.id]} 
-                                    isManagement={isManagement} 
-                                    onActivateRequest={(mod) => { setDialogMode('activate'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
-                                    onAddQuotaRequest={(mod) => { setDialogMode('add-quota'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
-                                />
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Additional Services Section */}
-                    {isManagement && (
-                        <div className="space-y-4">
-                            <SectionLabel icon={Layers} label="LAYANAN TAMBAHAN" />
-                            <GlassCard className="p-6 flex flex-col md:flex-row items-center gap-6 border-l-[6px] border-l-primary shadow-lg">
-                                <div className="size-16 rounded-[1.25rem] bg-blue-50 flex items-center justify-center shrink-0 text-primary border border-primary/10">
-                                    <Shield size={28} strokeWidth={2} />
-                                </div>
-                                <div className="flex-1 text-center md:text-left space-y-1">
-                                    <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">Tim Manajemen</h4>
-                                    <p className="text-xs font-medium text-slate-500 leading-relaxed max-w-md">Tambahkan kapasitas personil Admin untuk membantu pengelolaan dashboard unit bisnis.</p>
-                                    <div className="pt-2">
-                                        <Badge variant="secondary" className="bg-primary/5 text-primary border-none font-bold text-[9px] px-3 h-5 rounded-full">{mgmtLimit} Akun (Aktif: {currentMgmtCount})</Badge>
+                    {/* PRIMARY CONTENT (8 cols) */}
+                    <div className="lg:col-span-8 space-y-10">
+                        
+                        {/* Organization Banner */}
+                        <div className="bg-[#131b2e] text-white p-6 sm:p-8 rounded-[2rem] relative overflow-hidden shadow-2xl">
+                            <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                                <div className="flex items-center gap-5">
+                                    <div className="size-16 rounded-[1.25rem] bg-white/10 flex items-center justify-center border border-white/5 shadow-inner">
+                                        <Building size={32} strokeWidth={1.5} />
+                                    </div>
+                                    <div className="space-y-0.5">
+                                        <h2 className="text-xl sm:text-2xl font-black tracking-tight truncate max-w-[200px] sm:max-w-md uppercase">{company?.name || 'N/A'}</h2>
+                                        <p className="text-[10px] opacity-40 font-black tracking-[0.3em] uppercase">{company?.businessField}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
-                                    <Button onClick={() => setIsMgmtDialogOpen(true)} className="flex-1 md:flex-none h-11 px-8 bg-primary hover:bg-primary/90 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20">
-                                        KELOLA TIM
-                                    </Button>
-                                    <Button onClick={() => setIsMgmtConfigOpen(true)} variant="outline" size="icon" className="size-11 rounded-2xl border-2 border-slate-100 hover:bg-slate-50 transition-colors shrink-0">
-                                        <UserPlus size={20} className="text-slate-400" strokeWidth={2} />
-                                    </Button>
+                                <div className="flex flex-col gap-2.5">
+                                    <div className="flex items-center gap-2.5 opacity-60">
+                                        <LucideUser size={14} strokeWidth={3} />
+                                        <span className="text-xs font-bold">{currentUser.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2.5 opacity-60">
+                                        <Mail size={14} strokeWidth={3} />
+                                        <span className="text-xs font-medium">{currentUser.email}</span>
+                                    </div>
                                 </div>
-                            </GlassCard>
+                                <Button onClick={logout} variant="ghost" className="px-6 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-widest rounded-xl border border-white/10">
+                                    KELUAR AKUN
+                                </Button>
+                            </div>
+                            <div className="absolute -right-10 -bottom-10 size-40 bg-primary/20 rounded-full blur-3xl opacity-50"></div>
                         </div>
-                    )}
 
-                    {/* Available Modules Section */}
-                    {isManagement && availableModules.length > 0 && (
+                        {/* Foundation Data Section */}
+                        {isManagement && (
+                            <div className="space-y-4">
+                                <SectionLabel icon={Database} label="PONDASI DATA" />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Link href="/master-data/employees">
+                                        <GlassCard className="p-5 flex items-center gap-5 group">
+                                            <div className="size-12 rounded-2xl bg-[#131b2e] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                <Settings size={22} strokeWidth={2} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Konfigurasi Master</h4>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">STAFF, STRUKTUR, & DEPARTEMEN</p>
+                                            </div>
+                                        </GlassCard>
+                                    </Link>
+                                    <Link href="/master-data/hierarchy">
+                                        <GlassCard className="p-5 flex items-center gap-5 group">
+                                            <div className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-lg shadow-primary/20">
+                                                <GitMerge size={22} strokeWidth={2} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Manajemen Grup</h4>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">KELOLA HOLDING & ANAK PERUSAHAAN</p>
+                                            </div>
+                                        </GlassCard>
+                                    </Link>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Active Modules Section */}
                         <div className="space-y-4">
-                            <SectionLabel icon={Sparkles} label="MODUL TERSEDIA" />
-                            {availableModules.map(m => (
-                                <GlassCard key={m.id} className="p-6 flex flex-col md:flex-row items-center gap-6 border border-dashed border-primary/30 bg-primary/[0.02]">
-                                    <div className="size-16 rounded-[1.25rem] bg-white flex items-center justify-center shrink-0 border shadow-sm">
-                                        <React.createElement(m.icon, { size: 28, className: "text-slate-400", strokeWidth: 1.5 })}
+                            <SectionLabel icon={ShieldCheck} label="MODUL AKTIF" color="text-primary" />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                {activeModules.map(m => (
+                                    <WorkspaceModuleCard 
+                                        key={m.id} config={m} 
+                                        subscription={company?.moduleSubscriptions?.[m.id]} 
+                                        isManagement={isManagement} 
+                                        onActivateRequest={(mod) => { setDialogMode('activate'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
+                                        onAddQuotaRequest={(mod) => { setDialogMode('add-quota'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Additional Services Section */}
+                        {isManagement && (
+                            <div className="space-y-4">
+                                <SectionLabel icon={Layers} label="LAYANAN TAMBAHAN" />
+                                <GlassCard className="p-6 flex flex-col md:flex-row items-center gap-6 border-l-[6px] border-l-primary shadow-lg">
+                                    <div className="size-16 rounded-[1.25rem] bg-blue-50 flex items-center justify-center shrink-0 text-primary border border-primary/10">
+                                        <Shield size={28} strokeWidth={2} />
                                     </div>
-                                    <div className="flex-1 text-center md:text-left">
-                                        <h4 className="text-base font-black text-slate-900 uppercase tracking-tight mb-1">{m.name}</h4>
-                                        <p className="text-xs font-medium text-slate-500">{m.description}</p>
+                                    <div className="flex-1 text-center md:text-left space-y-1">
+                                        <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">Tim Manajemen</h4>
+                                        <p className="text-xs font-medium text-slate-500 leading-relaxed max-w-md">Tambahkan kapasitas personil Admin untuk membantu pengelolaan dashboard unit bisnis.</p>
+                                        <div className="pt-2">
+                                            <Badge variant="secondary" className="bg-primary/5 text-primary border-none font-bold text-[9px] px-3 h-5 rounded-full">{mgmtLimit} Akun (Aktif: {currentMgmtCount})</Badge>
+                                        </div>
                                     </div>
-                                    <Button 
-                                        onClick={() => { setSelectedModule(m); setDialogMode('activate'); setIsSubDialogOpen(true); }}
-                                        variant="outline" 
-                                        className="w-full md:w-auto h-11 px-6 border-2 border-primary text-primary hover:bg-primary hover:text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all flex items-center gap-2"
-                                    >
-                                        <Zap size={14} className="fill-current" /> AKTIFKAN SEKARANG
-                                    </Button>
+                                    <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
+                                        <Button onClick={() => setIsMgmtDialogOpen(true)} className="flex-1 md:flex-none h-11 px-8 bg-primary hover:bg-primary/90 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20">
+                                            KELOLA TIM
+                                        </Button>
+                                        <Button onClick={() => setIsMgmtConfigOpen(true)} variant="outline" size="icon" className="size-11 rounded-2xl border-2 border-slate-100 hover:bg-slate-50 transition-colors shrink-0">
+                                            <UserPlus size={20} className="text-slate-400" strokeWidth={2} />
+                                        </Button>
+                                    </div>
                                 </GlassCard>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* SIDEBAR CONTENT (4 cols) */}
-                <div className="lg:col-span-4 space-y-8">
-                    
-                    {/* Account Summary Bento Card */}
-                    <div className="bg-[#131b2e] text-white p-7 rounded-[2.5rem] relative overflow-hidden shadow-2xl">
-                        <div className="relative z-10 space-y-8">
-                            <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">RINGKASAN AKUN</h3>
-                            
-                            <div className="space-y-6">
-                                {/* Storage Usage Simulation */}
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-end">
-                                        <p className="text-[10px] font-bold text-white/50 uppercase">Penyimpanan</p>
-                                        <p className="text-xs font-black tnum">1.2 GB / 5 GB</p>
-                                    </div>
-                                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                        <div className="h-full bg-primary shadow-[0_0_10px_rgba(37,99,235,0.5)]" style={{ width: '24%' }}></div>
-                                    </div>
-                                </div>
-
-                                {/* Activity Chart Simulation */}
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-end">
-                                        <p className="text-[10px] font-bold text-white/50 uppercase">Aktivitas Tim (7 Hari)</p>
-                                        <p className="text-xs font-black text-emerald-400">+12%</p>
-                                    </div>
-                                    <div className="h-14 flex items-end gap-1.5 px-1">
-                                        {[30, 45, 25, 60, 80, 100, 70].map((h, i) => (
-                                            <div 
-                                                key={i} 
-                                                style={{ height: `${h}%` }} 
-                                                className={cn(
-                                                    "flex-1 rounded-t-md transition-all duration-500",
-                                                    i > 4 ? "bg-primary shadow-[0_0_15px_rgba(37,99,235,0.3)]" : "bg-white/10"
-                                                )}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
                             </div>
-                        </div>
-                        <div className="absolute -right-24 -top-24 size-48 bg-primary/10 rounded-full blur-[80px]"></div>
+                        )}
+
+                        {/* Available Modules Section */}
+                        {isManagement && availableModules.length > 0 && (
+                            <div className="space-y-4">
+                                <SectionLabel icon={Sparkles} label="MODUL TERSEDIA" />
+                                {availableModules.map(m => (
+                                    <GlassCard key={m.id} className="p-6 flex flex-col md:flex-row items-center gap-6 border border-dashed border-primary/30 bg-primary/[0.02]">
+                                        <div className="size-16 rounded-[1.25rem] bg-white flex items-center justify-center shrink-0 border shadow-sm">
+                                            <React.createElement(m.icon, { size: 28, className: "text-slate-400", strokeWidth: 1.5 })}
+                                        </div>
+                                        <div className="flex-1 text-center md:text-left">
+                                            <h4 className="text-base font-black text-slate-900 uppercase tracking-tight mb-1">{m.name}</h4>
+                                            <p className="text-xs font-medium text-slate-500">{m.description}</p>
+                                        </div>
+                                        <Button 
+                                            onClick={() => { setSelectedModule(m); setDialogMode('activate'); setIsSubDialogOpen(true); }}
+                                            variant="outline" 
+                                            className="w-full md:w-auto h-11 px-6 border-2 border-primary text-primary hover:bg-primary hover:text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all flex items-center gap-2"
+                                        >
+                                            <Zap size={14} className="fill-current" /> AKTIFKAN SEKARANG
+                                        </Button>
+                                    </GlassCard>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Purchase History Card */}
-                    <GlassCard className="p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-2">
-                                <History size={16} className="text-primary" strokeWidth={3} />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-800">HISTORI</span>
+                    {/* SIDEBAR CONTENT (4 cols) */}
+                    <div className="lg:col-span-4 space-y-8">
+                        
+                        {/* Account Summary Bento Card */}
+                        <div className="bg-[#131b2e] text-white p-7 rounded-[2.5rem] relative overflow-hidden shadow-2xl">
+                            <div className="relative z-10 space-y-8">
+                                <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">RINGKASAN AKUN</h3>
+                                
+                                <div className="space-y-6">
+                                    {/* Storage Usage Simulation */}
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-end">
+                                            <p className="text-[10px] font-bold text-white/50 uppercase">Penyimpanan</p>
+                                            <p className="text-xs font-black tnum">1.2 GB / 5 GB</p>
+                                        </div>
+                                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                            <div className="h-full bg-primary shadow-[0_0_10px_rgba(37,99,235,0.5)]" style={{ width: '24%' }}></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Activity Chart Simulation */}
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-end">
+                                            <p className="text-[10px] font-bold text-white/50 uppercase">Aktivitas Tim (7 Hari)</p>
+                                            <p className="text-xs font-black text-emerald-400">+12%</p>
+                                        </div>
+                                        <div className="h-14 flex items-end gap-1.5 px-1">
+                                            {[30, 45, 25, 60, 80, 100, 70].map((h, i) => (
+                                                <div 
+                                                    key={i} 
+                                                    style={{ height: `${h}%` }} 
+                                                    className={cn(
+                                                        "flex-1 rounded-t-md transition-all duration-500",
+                                                        i > 4 ? "bg-primary shadow-[0_0_15px_rgba(37,99,235,0.3)]" : "bg-white/10"
+                                                    )}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <Button variant="ghost" size="icon" className="size-8 rounded-full opacity-30 hover:opacity-100">
-                                <MoreHorizontal size={16} />
+                            <div className="absolute -right-24 -top-24 size-48 bg-primary/10 rounded-full blur-[80px]"></div>
+                        </div>
+
+                        {/* Purchase History Card */}
+                        <GlassCard className="p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-2">
+                                    <History size={16} className="text-primary" strokeWidth={3} />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-800">HISTORI</span>
+                                </div>
+                                <Button variant="ghost" size="icon" className="size-8 rounded-full opacity-30 hover:opacity-100">
+                                    <MoreHorizontal size={16} />
+                                </Button>
+                            </div>
+
+                            <div className="space-y-2">
+                                {myLogs.length > 0 ? (
+                                    myLogs.map(log => <HistoryItem key={log.id} log={log} />)
+                                ) : (
+                                    <div className="py-12 text-center opacity-30 flex flex-col items-center gap-2">
+                                        <Activity size={24} />
+                                        <p className="text-[10px] font-black uppercase">Belum ada aktivitas</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <Link 
+                                href="/subscription-status" 
+                                className="mt-6 flex items-center justify-center gap-2 text-[10px] font-black uppercase text-primary hover:gap-3 transition-all tracking-widest pt-4 border-t border-slate-50"
+                            >
+                                LIHAT STATUS LENGKAP
+                                <ArrowRight size={14} strokeWidth={3} />
+                            </Link>
+                        </GlassCard>
+
+                        {/* Promotion / Support Snippet */}
+                        <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/10 space-y-4 group overflow-hidden relative">
+                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform"><Bot size={80} /></div>
+                            <div className="space-y-1 relative z-10">
+                                <h4 className="text-xs font-black text-amber-900 uppercase tracking-tight">Butuh bantuan KIPI?</h4>
+                                <p className="text-[10px] text-amber-700 font-medium leading-relaxed">Gunakan asisten AI di pojok kanan bawah untuk panduan integrasi sistem.</p>
+                            </div>
+                            <Button variant="ghost" className="p-0 h-auto text-[9px] font-black text-amber-600 hover:text-amber-800 hover:bg-transparent tracking-[0.2em] uppercase relative z-10">
+                                HUBUNGI SUPPORT <ChevronRight size={10} strokeWidth={4} />
                             </Button>
                         </div>
-
-                        <div className="space-y-2">
-                            {myLogs.length > 0 ? (
-                                myLogs.map(log => <HistoryItem key={log.id} log={log} />)
-                            ) : (
-                                <div className="py-12 text-center opacity-30 flex flex-col items-center gap-2">
-                                    <Activity size={24} />
-                                    <p className="text-[10px] font-black uppercase">Belum ada aktivitas</p>
-                                </div>
-                            )}
-                        </div>
-
-                        <Link 
-                            href="/subscription-status" 
-                            className="mt-6 flex items-center justify-center gap-2 text-[10px] font-black uppercase text-primary hover:gap-3 transition-all tracking-widest pt-4 border-t border-slate-50"
-                        >
-                            LIHAT STATUS LENGKAP
-                            <ArrowRight size={14} strokeWidth={3} />
-                        </Link>
-                    </GlassCard>
-
-                    {/* Promotion / Support Snippet */}
-                    <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/10 space-y-4 group overflow-hidden relative">
-                         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform"><Bot size={80} /></div>
-                         <div className="space-y-1 relative z-10">
-                            <h4 className="text-xs font-black text-amber-900 uppercase tracking-tight">Butuh bantuan KIPI?</h4>
-                            <p className="text-[10px] text-amber-700 font-medium leading-relaxed">Gunakan asisten AI di pojok kanan bawah untuk panduan integrasi sistem.</p>
-                         </div>
-                         <Button variant="ghost" className="p-0 h-auto text-[9px] font-black text-amber-600 hover:text-amber-800 hover:bg-transparent tracking-[0.2em] uppercase relative z-10">
-                            HUBUNGI SUPPORT <ChevronRight size={10} strokeWidth={4} />
-                         </Button>
                     </div>
                 </div>
-            </div>
 
-            {/* --- Modals & Dialogs --- */}
-            <ModuleSubscriptionDialog 
-                isOpen={isSubDialogOpen} onOpenChange={setIsSubDialogOpen} 
-                module={selectedModule} company={company || null} 
-                mode={dialogMode} onConfirm={handleActivateModule} 
-            />
-            {company && <GroupManagementDialog isOpen={isGroupDialogOpen} onOpenChange={setIsGroupDialogOpen} holdingCompany={company} childCompanies={childCompanies} />}
-            <Dialog open={isMgmtDialogOpen} onOpenChange={setIsMgmtDialogOpen}>
-                <DialogContent className="max-w-5xl h-[90vh] md:h-[85vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl bg-white z-[200]">
-                    <DialogHeader className="p-4 pb-2 shrink-0 bg-muted/20 border-b flex flex-col space-y-0.5">
-                        <DialogTitle className="font-black text-lg tracking-tighter uppercase text-slate-900">Manajemen Tim Admin</DialogTitle>
-                        <DialogDescription className="text-[9px] font-bold text-primary uppercase tracking-widest">Kapasitas Maksimal: {mgmtLimit} Akun Admin</DialogDescription>
-                    </DialogHeader>
-                    <div className="flex-1 overflow-y-auto no-scrollbar min-w-0 bg-[#fafafa] p-4">
-                         <CompanyAdminManagementPage onQuotaFull={() => { setIsMgmtConfigOpen(true); }} />
-                    </div>
-                </DialogContent>
-            </Dialog>
-            <Dialog open={isMgmtConfigOpen} onOpenChange={setIsMgmtConfigOpen}>
-                <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden z-[300] flex flex-col h-full max-h-[85vh] p-0">
-                    <DialogHeader className="p-4 pb-2 bg-muted/20 border-b shrink-0 flex flex-col space-y-0.5 text-left">
-                        <DialogTitle className="font-black text-slate-900 text-lg tracking-tighter uppercase flex items-center gap-3">
-                            <Shield size={20} className="text-primary" strokeWidth={2.5} /> Tambah Kuota Admin
-                        </DialogTitle>
-                        <DialogDescription className="text-slate-500 text-[8px] font-black uppercase tracking-[0.2em]">Investasi Add-on Lifetime</DialogDescription>
-                    </DialogHeader>
-                    <ScrollArea className="flex-1 min-h-0 bg-background">
-                        <div className="p-6 space-y-6">
-                            <div className="flex items-center justify-between gap-4">
-                                <div className="space-y-0.5 min-w-0">
-                                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">Jumlah Akun</h4>
-                                    <p className="text-[9px] text-slate-400 font-medium uppercase">Admin tambahan untuk dashboard</p>
-                                </div>
-                                <div className="flex items-center bg-slate-100 rounded-xl border border-slate-200 overflow-hidden h-9 shadow-sm shrink-0">
-                                    <button type="button" onClick={() => setMgmtAddQuota(Math.max(1, mgmtAddQuota - 1))} className="px-3 hover:bg-white text-slate-900 transition-colors"><Minus size={14} strokeWidth={3} /></button>
-                                    <input type="number" value={mgmtAddQuota} onChange={(e) => setMgmtAddQuota(Math.max(1, parseInt(e.target.value) || 1))} className="w-10 text-center border-none focus-visible:ring-0 text-xs font-black bg-transparent" />
-                                    <button type="button" onClick={() => setMgmtAddQuota(mgmtAddQuota + 1)} className="px-3 hover:bg-white text-slate-900 transition-colors"><Plus size={14} strokeWidth={3} /></button>
-                                </div>
-                            </div>
-                            <div className="p-5 rounded-2xl bg-[#090e1a] text-white shadow-xl space-y-1.5">
-                                <div className="flex justify-between items-center opacity-40"><span className="text-[9px] font-black uppercase tracking-[0.2em]">Total Investasi</span><ShoppingCart size={12} /></div>
-                                <p className="text-2xl font-black tracking-tighter">Rp {(mgmtAddQuota * mgmtPricePerUser).toLocaleString('id-ID')}</p>
-                            </div>
-                            <div className="flex gap-2 pt-4">
-                                <DialogClose asChild><Button variant="ghost" className="flex-1 font-black text-[9px] uppercase h-11">Batal</Button></DialogClose>
-                                <Button className="flex-1 font-black uppercase tracking-widest text-[9px] h-11 shadow-lg" onClick={handleBuyMgmtAddon}>Beli Sekarang</Button>
-                            </div>
+                {/* --- Modals & Dialogs --- */}
+                <ModuleSubscriptionDialog 
+                    isOpen={isSubDialogOpen} onOpenChange={setIsSubDialogOpen} 
+                    module={selectedModule} company={company || null} 
+                    mode={dialogMode} onConfirm={handleActivateModule} 
+                />
+                {company && <GroupManagementDialog isOpen={isGroupDialogOpen} onOpenChange={setIsGroupDialogOpen} holdingCompany={company} childCompanies={childCompanies} />}
+                
+                <Dialog open={isMgmtDialogOpen} onOpenChange={setIsMgmtDialogOpen}>
+                    <DialogContent className="max-w-5xl h-[90vh] md:h-[85vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl bg-white z-[200]">
+                        <DialogHeader className="p-4 pb-2 shrink-0 bg-muted/20 border-b flex flex-col space-y-0.5">
+                            <DialogTitle className="font-black text-lg tracking-tighter uppercase text-slate-900">Manajemen Tim Admin</DialogTitle>
+                            <DialogDescription className="text-[9px] font-bold text-primary uppercase tracking-widest">Kapasitas Maksimal: {mgmtLimit} Akun Admin</DialogDescription>
+                        </DialogHeader>
+                        <div className="flex-1 overflow-y-auto no-scrollbar min-w-0 bg-[#fafafa] p-4">
+                            <CompanyAdminManagementPage onQuotaFull={() => { setIsMgmtConfigOpen(true); }} />
                         </div>
-                    </ScrollArea>
-                </DialogContent>
-            </Dialog>
-        </ResponsivePage>
+                    </DialogContent>
+                </Dialog>
+                
+                <Dialog open={isMgmtConfigOpen} onOpenChange={setIsMgmtConfigOpen}>
+                    <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden z-[300] flex flex-col h-full max-h-[85vh] p-0">
+                        <DialogHeader className="p-4 pb-2 bg-muted/20 border-b shrink-0 flex flex-col space-y-0.5 text-left">
+                            <DialogTitle className="font-black text-slate-900 text-lg tracking-tighter uppercase flex items-center gap-3">
+                                <Shield size={20} className="text-primary" strokeWidth={2.5} /> Tambah Kuota Admin
+                            </DialogTitle>
+                            <DialogDescription className="text-slate-500 text-[8px] font-black uppercase tracking-[0.2em]">Investasi Add-on Lifetime</DialogDescription>
+                        </DialogHeader>
+                        <ScrollArea className="flex-1 min-h-0 bg-background">
+                            <div className="p-6 space-y-6">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="space-y-0.5 min-w-0">
+                                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">Jumlah Akun</h4>
+                                        <p className="text-[9px] text-slate-400 font-medium uppercase">Admin tambahan untuk dashboard</p>
+                                    </div>
+                                    <div className="flex items-center bg-slate-100 rounded-xl border border-slate-200 overflow-hidden h-9 shadow-sm shrink-0">
+                                        <button type="button" onClick={() => setMgmtAddQuota(Math.max(1, mgmtAddQuota - 1))} className="px-3 hover:bg-white text-slate-900 transition-colors"><Minus size={14} strokeWidth={3} /></button>
+                                        <input type="number" value={mgmtAddQuota} onChange={(e) => setMgmtAddQuota(Math.max(1, parseInt(e.target.value) || 1))} className="w-10 text-center border-none focus-visible:ring-0 text-xs font-black bg-transparent" />
+                                        <button type="button" onClick={() => setMgmtAddQuota(mgmtAddQuota + 1)} className="px-3 hover:bg-white text-slate-900 transition-colors"><Plus size={14} strokeWidth={3} /></button>
+                                    </div>
+                                </div>
+                                <div className="p-5 rounded-2xl bg-[#090e1a] text-white shadow-xl space-y-1.5">
+                                    <div className="flex justify-between items-center opacity-40"><span className="text-[9px] font-black uppercase tracking-[0.2em]">Total Investasi</span><ShoppingCart size={12} /></div>
+                                    <p className="text-2xl font-black tracking-tighter">Rp {(mgmtAddQuota * mgmtPricePerUser).toLocaleString('id-ID')}</p>
+                                </div>
+                                <div className="flex gap-2 pt-4">
+                                    <DialogClose asChild><Button variant="ghost" className="flex-1 font-black text-[9px] uppercase h-11">Batal</Button></DialogClose>
+                                    <Button className="flex-1 font-black uppercase tracking-widest text-[9px] h-11 shadow-lg" onClick={handleBuyMgmtAddon}>Beli Sekarang</Button>
+                                </div>
+                            </div>
+                        </ScrollArea>
+                    </DialogContent>
+                </Dialog>
+            </ResponsivePage>
+        </>
     );
 }
 
+export default function WorkspacePage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-primary size-10" /></div>}>
+            <WorkspaceContent />
+        </Suspense>
+    );
+}
