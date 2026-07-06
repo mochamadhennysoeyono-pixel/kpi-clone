@@ -135,7 +135,10 @@ export function getActiveModuleFromPath(pathname: string): ModuleId | 'foundatio
     pathname.startsWith('/kbo-appraisal') || 
     pathname.startsWith('/input-achievement') || 
     pathname.startsWith('/setup-kpi') ||
-    pathname.startsWith('/okr')
+    pathname.startsWith('/okr') ||
+    pathname.startsWith('/master-data/kpi-') ||
+    pathname.startsWith('/master-data/kbo-') ||
+    pathname.startsWith('/appraisal-settings')
   ) {
     return 'appraisal';
   }
@@ -262,7 +265,7 @@ export function getNavItems(
         ];
     }
 
-    // --- MANAJEMEN & USER STRUCTURE (EXISTING) ---
+    // --- MANAJEMEN & USER STRUCTURE ---
     const capabilities = {
       isSuperAdmin: userRole === 'superadmin',
       isCompanyAdmin: userRole === 'manajemen',
@@ -329,29 +332,19 @@ export function getNavItems(
         },
 
         {
+            href: '/setup-kpi',
             label: 'Manajemen KPI',
             iconName: 'manajemen-kpi',
             show: capabilities.canAccessKpi,
             moduleId: 'appraisal',
-            subItems: [
-                { href: '/my-performance', label: 'Performa Saya', show: !capabilities.isCompanyAdmin, iconName: '/my-performance', moduleId: 'appraisal' },
-                { href: '/input-achievement', label: 'Input Realisasi', show: true, iconName: '/input-achievement', moduleId: 'appraisal' },
-                { href: '/master-data/kpi-categories', label: 'Kategori KPI', show: capabilities.isCompanyAdmin, iconName: '/master-data/kpi-categories', moduleId: 'appraisal' },
-                { href: '/setup-kpi', label: 'Konfigurasi Setup', show: capabilities.isCompanyAdmin, iconName: '/setup-kpi', moduleId: 'appraisal' },
-                { href: '/master-data/kpi-data', label: 'Arsip Pencapaian', show: capabilities.isCompanyAdmin, iconName: '/master-data/kpi-data', moduleId: 'appraisal' },
-            ]
         },
 
         {
+            href: '/master-data/kbo-competencies',
             label: 'Manajemen KBO',
             iconName: 'manajemen-kbo',
             show: capabilities.canAccessKbo && capabilities.isCompanyAdmin,
             moduleId: 'appraisal',
-            subItems: [
-                { href: '/master-data/kbo-categories', label: 'Kategori KBO', show: true, iconName: '/master-data/kbo-categories', moduleId: 'appraisal' },
-                { href: '/master-data/kbo-competencies', label: 'Pustaka Kompetensi', show: true, iconName: '/master-data/kbo-competencies', moduleId: 'appraisal' },
-                { href: '/appraisal-settings', label: 'Setup Matriks Rater', show: true, iconName: '/appraisal-settings', moduleId: 'appraisal' },
-            ]
         },
 
         {
@@ -426,9 +419,5 @@ export function getNavItems(
         });
     }
 
-    if (isMobile) {
-        return visibleItems;
-    }
-    
     return visibleItems;
 }
