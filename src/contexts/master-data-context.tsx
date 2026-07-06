@@ -64,7 +64,7 @@ interface MasterDataContextType {
   updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
   deleteCompany: (id: string) => Promise<void>;
   
-  // Modular Subscription Management
+  // Modular Subscription Management (THE FIX IS HERE)
   resetModuleSubscription: (companyId: string, moduleId: ModuleId) => Promise<void>;
   activateModuleManually: (companyId: string, moduleId: ModuleId, config: Partial<ModuleSubscription>, isUpgrade?: boolean) => Promise<void>;
 
@@ -347,6 +347,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     } catch (e: any) { toast({ variant: "destructive", title: "Gagal Hapus", description: e.message }); }
   }, [toast]);
 
+  // --- REWORKED RESET FUNCTION ---
   const resetModuleSubscription = useCallback(async (companyId: string, moduleId: ModuleId) => {
       if (!db || userRole !== 'superadmin') return;
       try {
@@ -355,9 +356,13 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
           if (!companySnap.exists()) throw new Error("Perusahaan tidak ditemukan.");
           
           const batch = writeBatch(db);
-          // Hapus field secara eksplisit menggunakan dot notation dan sentinel deleteField()
+          const currentSubs = { ...(companySnap.data().moduleSubscriptions || {}) };
+          
+          // CRITICAL: Delete key from the map locally then update the whole field
+          delete currentSubs[moduleId];
+
           batch.update(companyRef, {
-              [`moduleSubscriptions.${moduleId}`]: deleteField()
+              moduleSubscriptions: currentSubs
           });
 
           const logRef = doc(collection(db, 'subscriptionLogs'));
@@ -370,12 +375,19 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
           });
 
           await batch.commit();
-          // Segera tarik data segar setelah commit sukses
-          await fetchData(true);
+          
+          // Update local state immediately for instant UI reaction
+          setData(prev => ({
+              ...prev,
+              companies: prev.companies.map((c: Company) => c.id === companyId ? { ...c, moduleSubscriptions: currentSubs } : c)
+          }));
+
           toast({ title: "Modul Direset", description: `Langganan ${moduleId} telah dihapus dari sistem.` });
+          await fetchData(true); // Sync full data silently
       } catch (e: any) { toast({ variant: 'destructive', title: "Gagal Reset", description: e.message }); }
   }, [currentUser, fetchData, toast, userRole]);
 
+  // --- REWORKED ACTIVATION FUNCTION ---
   const activateModuleManually = useCallback(async (companyId: string, moduleId: ModuleId, config: Partial<ModuleSubscription>, isUpgrade: boolean = false) => {
       if (!db || userRole !== 'superadmin') return;
       try {
@@ -384,7 +396,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
           if (!companySnap.exists()) throw new Error("Perusahaan tidak ditemukan.");
           
           const batch = writeBatch(db);
-          const currentSubs = companySnap.data().moduleSubscriptions || {};
+          const currentSubs = { ...(companySnap.data().moduleSubscriptions || {}) };
           const currentMod = currentSubs[moduleId] || {};
 
           const subData: ModuleSubscription = {
@@ -395,8 +407,10 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
               activatedAt: currentMod.activatedAt || new Date().toISOString()
           };
 
+          currentSubs[moduleId] = subData;
+
           batch.update(companyRef, {
-              [`moduleSubscriptions.${moduleId}`]: subData,
+              moduleSubscriptions: currentSubs,
               status: 'Aktif'
           });
 
@@ -410,8 +424,15 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
           });
 
           await batch.commit();
-          await fetchData(true);
+          
+          // Update local state immediately
+          setData(prev => ({
+              ...prev,
+              companies: prev.companies.map((c: Company) => c.id === companyId ? { ...c, moduleSubscriptions: currentSubs, status: 'Aktif' } : c)
+          }));
+
           toast({ title: isUpgrade ? "Kuota Ditambah" : "Modul Diaktifkan", description: `Konfigurasi modul ${moduleId} telah diperbarui.` });
+          await fetchData(true);
       } catch (e: any) { toast({ variant: 'destructive', title: "Gagal", description: e.message }); }
   }, [currentUser, fetchData, toast, userRole]);
 
@@ -538,3 +559,4 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     </MasterDataContext.Provider>
   );
 }
+
