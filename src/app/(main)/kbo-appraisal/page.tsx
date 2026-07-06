@@ -23,6 +23,7 @@ import {
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +38,16 @@ import {
     Building, 
     Calendar, 
     LayoutGrid,
-    Loader2
+    Loader2,
+    X,
+    Maximize2,
+    Minimize2,
+    Eye,
+    RefreshCw,
+    Copy,
+    Brain,
+    ClipboardList,
+    User
 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
@@ -67,7 +77,6 @@ import { AdaptiveCardGrid, AdaptiveMetricCard } from '@/components/ui/adaptive-c
 import { AdaptiveTable } from '@/components/ui/adaptive-table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DashboardNavigator } from '@/components/layout/dashboard-navigator';
-import { DotsThree, ClipboardText, WarningCircle, CornersOut, CornersIn, X, Copy, Eye, ArrowsClockwise, Brain, MagnifyingGlass } from '@phosphor-icons/react';
 
 
 interface KboResult {
@@ -184,7 +193,7 @@ function KboDetailDialog({ isOpen, onOpenChange, result, setup, kboSetup }: { is
                     </div>
                      <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="hidden sm:flex" onClick={() => setIsExpanded(!isExpanded)} >
-                            {isExpanded ? <CornersIn size={18} /> : <CornersOut size={18} />}
+                            {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
                         </Button>
                         <SheetClose asChild><Button variant="ghost" size="icon"><X size={20} /></Button></SheetClose>
                      </div>
@@ -219,7 +228,7 @@ function KboDetailDialog({ isOpen, onOpenChange, result, setup, kboSetup }: { is
                                                         <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" asChild>
                                                             <Link href={`/kbo-assessment-form?setupId=${setup!.id}&subjectId=${result.subject.id}&raterId=${rater.raterId}&kboSetupIds=${kboSetup!.id}`} target="_blank"><Eye size={14}/></Link>
                                                         </Button>
-                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => rater.raterId && openConfirmation(rater.raterId, rater.raterName)}><ArrowsClockwise size={14}/></Button>
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => rater.raterId && openConfirmation(rater.raterId, rater.raterName)}><RefreshCw size={14}/></Button>
                                                     </>
                                                 ) : (
                                                     rater.raterId && <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" onClick={() => handleCopyLink(rater.raterId!)}><Copy size={14}/></Button>
@@ -450,7 +459,7 @@ function KboAppraisalContent() {
       <PageHeader 
         title="Dashboard KBO"
         description="Monitor progres dan hasil evaluasi kompetensi perilaku (KBO) di seluruh unit bisnis Anda."
-        icon={ClipboardText}
+        icon={ClipboardList}
       />
 
       <DashboardNavigator />
@@ -459,12 +468,12 @@ function KboAppraisalContent() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex items-center gap-3 flex-1 min-w-0">
              {showCompanyFilter && (
                  <Select value={selectedCompanyId ?? ''} onValueChange={setSelectedCompanyId}>
-                    <SelectTrigger className="h-10 min-w-[180px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><Buildings className="size-4 mr-2 text-primary" weight="fill" /><SelectValue placeholder="Unit Bisnis" /></SelectTrigger>
+                    <SelectTrigger className="h-10 min-w-[180px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><Building className="size-4 mr-2 text-primary" /><SelectValue placeholder="Unit Bisnis" /></SelectTrigger>
                     <SelectContent className="z-[350]">{manageableCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                  </Select>
              )}
              <Select value={selectedPeriod ?? ''} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="h-10 min-w-[160px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><Calendar className="size-4 mr-2 text-primary" weight="fill" /><SelectValue placeholder="Periode" /></SelectTrigger>
+              <SelectTrigger className="h-10 min-w-[160px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><Calendar className="size-4 mr-2 text-primary" /><SelectValue placeholder="Periode" /></SelectTrigger>
               <SelectContent className="z-[350]">
                 {availablePeriods.map(p => {
                     const parsedDate = parse(p, 'yyyy-MM', new Date());
@@ -474,11 +483,11 @@ function KboAppraisalContent() {
               </SelectContent>
             </Select>
             <Select value={selectedAppraisalId ?? ''} onValueChange={setSelectedAppraisalId} disabled={!selectedPeriod}>
-              <SelectTrigger className="h-10 min-w-[200px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><ClipboardText className="size-4 mr-2 text-primary" weight="fill" /><SelectValue placeholder="Setup Appraisal" /></SelectTrigger>
+              <SelectTrigger className="h-10 min-w-[200px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><ClipboardList className="size-4 mr-2 text-primary" /><SelectValue placeholder="Setup Appraisal" /></SelectTrigger>
               <SelectContent className="z-[350]">{availableSetupsForPeriod.map(s => <SelectItem key={s.id} value={s.id}>{s.company} / {s.period || `${s.periodStart} - ${s.periodEnd}`}</SelectItem>)}</SelectContent>
             </Select>
             <Select value={selectedKboSetupId ?? ''} onValueChange={setSelectedKboSetupId} disabled={!selectedAppraisalId || availableKboSetupsForAppraisal.length === 0}>
-                <SelectTrigger className="h-10 min-w-[180px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><Brain className="size-4 mr-2 text-primary" weight="fill" /><SelectValue placeholder="Kompetensi" /></SelectTrigger>
+                <SelectTrigger className="h-10 min-w-[180px] border-none bg-background shadow-sm text-[11px] font-black uppercase"><Brain className="size-4 mr-2 text-primary" /><SelectValue placeholder="Kompetensi" /></SelectTrigger>
                 <SelectContent className="z-[350]">{availableKboSetupsForAppraisal.map(ks => <SelectItem key={ks.id} value={ks.id}>{ks.categoryName}</SelectItem>)}</SelectContent>
             </Select>
         </div>
@@ -514,7 +523,7 @@ function KboAppraisalContent() {
                     { header: "Skor KBO", cell: (r) => <span className="text-lg font-black text-primary">{r.score !== null ? r.score.toFixed(1) : '-'}</span> },
                     { header: "Status", cell: (r) => <Badge variant={selectedAppraisal ? getStatusFromPeriod(selectedAppraisal).variant : 'outline'} className="text-[9px] font-black h-5 border-none">{r.status}</Badge> },
                     { header: "", className: "text-right", cell: (r) => (
-                        <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><DotsThree size={24} weight="bold" /></Button></DropdownMenuTrigger>
+                        <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-full"><MoreHorizontal size={18} /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="z-[350]">
                             <DropdownMenuItem onClick={() => setSelectedResultForDetail(r)}><Eye className="size-3.5 mr-2" /> Lihat Rincian Skor</DropdownMenuItem>
                         </DropdownMenuContent></DropdownMenu>
