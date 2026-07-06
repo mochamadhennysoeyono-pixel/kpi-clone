@@ -1,4 +1,3 @@
-
 // src/app/(main)/company-subscription-status/[companyId]/page.tsx
 "use client";
 
@@ -6,7 +5,6 @@ import { useMemo, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useMasterData } from '@/contexts/master-data-context';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { 
     Crown, 
     Users, 
@@ -28,7 +26,8 @@ import {
     GitMerge,
     Info,
     Clock,
-    Zap
+    Zap,
+    Loader2
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -46,6 +45,7 @@ import {
 import { cn } from '@/lib/utils';
 import type { SubscriptionPlan, Company, ModuleId, ModuleSubscription } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 // --- Sub Components ---
 
@@ -125,6 +125,31 @@ function ModuleStatusCard({
             </CardContent>
         </Card>
     );
+}
+
+// Internal Local Components
+function Card({ children, className }: { children: React.ReactNode, className?: string }) {
+  return (
+    <div className={cn("rounded-xl border border-border bg-card text-card-foreground shadow-sm", className)}>
+      {children}
+    </div>
+  );
+}
+
+function CardHeader({ children, className }: { children: React.ReactNode, className?: string }) {
+  return <div className={cn("flex flex-col space-y-1.5 p-6", className)}>{children}</div>;
+}
+
+function CardTitle({ children, className }: { children: React.ReactNode, className?: string }) {
+  return <h3 className={cn("text-lg font-bold tracking-tight text-foreground", className)}>{children}</h3>;
+}
+
+function CardDescription({ children, className }: { children: React.ReactNode, className?: string }) {
+  return <p className={cn("text-sm text-muted-foreground", className)}>{children}</p>;
+}
+
+function CardContent({ children, className }: { children: React.ReactNode, className?: string }) {
+  return <div className={cn("p-6 pt-0", className)}>{children}</div>;
 }
 
 export default function CompanySubscriptionStatusPage() {
