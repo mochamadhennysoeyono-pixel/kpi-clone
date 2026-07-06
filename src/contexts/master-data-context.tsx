@@ -347,31 +347,32 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
       if (!db || userRole !== 'superadmin') return;
       setIsLoading(true);
       try {
-          const company = data.companies.find((c: Company) => c.id === companyId);
+          const company = data.companies.find((c: any) => c.id === companyId);
           if (!company) throw new Error("Perusahaan tidak ditemukan.");
 
           const now = new Date();
           const expiry = addDays(now, 14);
 
-          const updateData: Partial<Company> = {
+          // Update Company with explicit NULL for fields we want to remove
+          // This ensures Firestore actually removes them if merge is true or using updateDoc
+          const companyRef = doc(db, 'companies', companyId);
+          await updateDoc(companyRef, {
               subscriptionPlanId: 'default-trial',
               subscriptionActivationDate: now.toISOString(),
               subscriptionExpiryDate: expiry.toISOString(),
-              moduleSubscriptions: deleteField() as any,
+              moduleSubscriptions: deleteField(),
               usedTrials: [],
-              customPrice: deleteField() as any,
-              customUserLimit: deleteField() as any,
-              customManagementUserLimit: deleteField() as any,
-              customCompanyLimit: deleteField() as any,
+              customPrice: deleteField(),
+              customUserLimit: deleteField(),
+              customManagementUserLimit: deleteField(),
+              customCompanyLimit: deleteField(),
               status: 'Aktif'
-          };
-
-          await updateDoc(doc(db, 'companies', companyId), updateData);
+          });
           
           await addDoc(collection(db, 'subscriptionLogs'), {
               companyId: companyId,
               companyName: company.name,
-              company: company.name,
+              company: company.name, // Ensure context exists for MasterDataProvider filters
               planName: 'RESET TO TRIAL (MANUAL)',
               action: 'TRIAL',
               amount: 0,
@@ -384,6 +385,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
           toast({ title: "Reset Berhasil", description: `Paket ${company.name} telah diatur ulang ke Trial 14 hari.` });
           await fetchData(true);
       } catch (e: any) {
+          console.error("[RESET_ERROR]", e);
           toast({ variant: 'destructive', title: "Gagal Reset", description: e.message });
       } finally {
           setIsLoading(false);
