@@ -80,6 +80,7 @@ import { serverTimestamp } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
 import { ResponsivePage } from '@/components/ui/adaptive-layout';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { createSubscriptionTransaction, processModulePaymentSuccess } from '@/actions/payment.action';
 
 // --- Static Meta for Modules ---
 const MODULE_CATALOG = [
@@ -351,53 +352,94 @@ export function WorkspaceContent() {
     }, [company, userRole, isManagement, currentUser?.moduleAccess]);
 
     const handleActivateModule = async (data: { type: 'trial' | 'paid', quota: number, mgmtQuota: number, duration: number, totalPrice: number }) => {
-        if (!company || !selectedModule) return;
-        try {
-            const now = new Date();
-            let expiryStr = dialogMode === 'add-quota' && company.moduleSubscriptions?.[selectedModule.id]
-                ? company.moduleSubscriptions[selectedModule.id].expiryDate
-                : addDays(now, data.duration).toISOString();
+        if (!company || !selectedModule || !currentUser) return;
 
-            const currentSub = company.moduleSubscriptions?.[selectedModule.id];
-            const finalQuota = dialogMode === 'add-quota' ? (currentSub?.quota || 0) + data.quota : data.quota;
-            
-            const newSubscription: any = { status: 'active', type: data.type, quota: finalQuota, expiryDate: expiryStr, activatedAt: now.toISOString() };
-            const updatedModuleSubscriptions = { ...(company.moduleSubscriptions || {}), [selectedModule.id]: newSubscription };
-            const updatedUsedTrials = [...(company.usedTrials || [])];
-            if (data.type === 'trial' && !updatedUsedTrials.includes(selectedModule.id)) updatedUsedTrials.push(selectedModule.id);
+        if (data.type === 'trial') {
+            // JALUR TRIAL: Aktivasi Instan via Firestore
+            try {
+                const now = new Date();
+                const expiryStr = addDays(now, 14).toISOString();
+                const newSubscription: any = { status: 'active', type: 'trial', quota: 10, expiryDate: expiryStr, activatedAt: now.toISOString() };
+                const updatedModuleSubscriptions = { ...(company.moduleSubscriptions || {}), [selectedModule.id]: newSubscription };
+                const updatedUsedTrials = [...(company.usedTrials || [])];
+                if (!updatedUsedTrials.includes(selectedModule.id)) updatedUsedTrials.push(selectedModule.id);
 
-            const updatePayload: Partial<Company> = { moduleSubscriptions: updatedModuleSubscriptions, usedTrials: updatedUsedTrials };
-            if (data.type === 'paid') updatePayload.customUserLimit = finalQuota;
+                await updateCompany(company.id, { moduleSubscriptions: updatedModuleSubscriptions, usedTrials: updatedUsedTrials });
+                await addSubscriptionLog({
+                    companyId: company.id, companyName: company.name, company: company.name, moduleId: selectedModule.id,
+                    planName: `TRIAL 14 Hari - ${selectedModule.name}`, action: 'TRIAL', amount: 0,
+                    startDate: now.toISOString(), endDate: expiryStr, performedBy: currentUser.name, timestamp: serverTimestamp()
+                });
+                toast({ title: "Trial Diaktifkan", description: `Masa percobaan 14 hari untuk ${selectedModule.name} telah dimulai.` });
+                await fetchData(true);
+            } catch (error: any) { toast({ variant: 'destructive', title: "Gagal", description: error.message }); }
+        } else {
+            // JALUR PAID: Melalui Midtrans Snap
+            try {
+                const planData = { id: `mod_${selectedModule.id}`, price: data.totalPrice, name: `${isSubDialogOpen ? 'Update' : 'Aktivasi'} Modul ${selectedModule.name}` };
+                const userData = { name: currentUser.name, email: currentUser.email, phone: currentUser.phone || "" };
+                const companyData = { id: company.id, name: company.name };
 
-            await updateCompany(company.id, updatePayload);
-            await addSubscriptionLog({
-                companyId: company.id, companyName: company.name, company: company.name, moduleId: selectedModule.id,
-                planName: dialogMode === 'add-quota' ? `+${data.quota} User - ${selectedModule.name}` : `Modul ${selectedModule.name}`,
-                action: data.type === 'trial' ? 'TRIAL' : 'UPGRADE',
-                amount: data.totalPrice, startDate: now.toISOString(), endDate: expiryStr, performedBy: currentUser?.name || 'System', timestamp: serverTimestamp()
-            });
-            toast({ title: "Berhasil!", description: "Status modul telah diperbarui." });
-            await fetchData(true);
-        } catch (error: any) { toast({ variant: 'destructive', title: "Gagal", description: error.message }); }
+                // Kirim juga moduleId ke custom_field3 agar webhook tahu modul mana yang diupdate
+                const res = await createSubscriptionTransaction(planData, companyData, userData, selectedModule.id);
+                
+                if (res.success && res.token && window.snap) {
+                    window.snap.pay(res.token, {
+                        onSuccess: async (result: any) => {
+                            toast({ title: "Pembayaran Berhasil!", description: "Sedang mengaktifkan fitur..." });
+                            
+                            // Client-side Fallback Activation
+                            const now = new Date();
+                            const expiry = addDays(now, data.duration);
+                            await processModulePaymentSuccess(company.id, selectedModule.id, {
+                                quota: data.quota,
+                                expiryDate: expiry.toISOString(),
+                                amount: data.totalPrice,
+                                planName: planData.name,
+                                orderId: result.order_id,
+                                performedBy: currentUser.name
+                            });
+
+                            await fetchData(true);
+                        },
+                        onPending: () => toast({ title: "Menunggu Pembayaran" }),
+                        onError: () => toast({ variant: 'destructive', title: "Pembayaran Gagal" }),
+                        onClose: () => toast({ description: "Aktivasi dibatalkan." })
+                    });
+                }
+            } catch (error: any) { toast({ variant: 'destructive', title: "Kesalahan Sistem", description: error.message }); }
+        }
     };
 
     const handleBuyMgmtAddon = async () => {
-        if (!company || mgmtAddQuota <= 0) return;
-        setIsLoading(true);
+        if (!company || mgmtAddQuota <= 0 || !currentUser) return;
+        
+        // JALUR ADDON: Selalu lewat Midtrans untuk pembayaran nyata
         try {
-            const currentLimit = company.customManagementUserLimit || 1;
-            const newLimit = currentLimit + mgmtAddQuota;
             const totalPrice = mgmtAddQuota * mgmtPricePerUser;
-            await updateCompany(company.id, { customManagementUserLimit: newLimit });
-            await addSubscriptionLog({
-                companyId: company.id, companyName: company.name, company: company.name, planName: `Add-on: +${mgmtAddQuota} Admin (Lifetime)`,
-                action: 'UPGRADE', amount: totalPrice, startDate: new Date().toISOString(), endDate: addDays(new Date(), 36500).toISOString(),
-                performedBy: currentUser!.name, timestamp: serverTimestamp()
-            });
-            toast({ title: "Berhasil!", description: `Kuota manajemen Anda telah ditambah.` });
-            setIsMgmtConfigOpen(false);
-            await fetchData(true);
-        } catch (error: any) { toast({ variant: 'destructive', title: "Gagal", description: error.message }); } finally { setIsLoading(false); }
+            const planData = { id: 'mgmt_addon', price: totalPrice, name: `Tambah ${mgmtAddQuota} Kuota Admin (Lifetime)` };
+            const userData = { name: currentUser.name, email: currentUser.email, phone: currentUser.phone || "" };
+            const companyData = { id: company.id, name: company.name };
+
+            const res = await createSubscriptionTransaction(planData, companyData, userData);
+            
+            if (res.success && res.token && window.snap) {
+                window.snap.pay(res.token, {
+                    onSuccess: async (result: any) => {
+                        const currentLimit = company.customManagementUserLimit || 1;
+                        await updateCompany(company.id, { customManagementUserLimit: currentLimit + mgmtAddQuota });
+                        await addSubscriptionLog({
+                            companyId: company.id, companyName: company.name, company: company.name, planName: planData.name,
+                            action: 'UPGRADE', amount: totalPrice, startDate: new Date().toISOString(), endDate: addDays(new Date(), 36500).toISOString(),
+                            performedBy: currentUser.name, timestamp: serverTimestamp()
+                        });
+                        toast({ title: "Kuota Berhasil Ditambah!" });
+                        setIsMgmtConfigOpen(false);
+                        await fetchData(true);
+                    }
+                });
+            }
+        } catch (error: any) { toast({ variant: 'destructive', title: "Gagal", description: error.message }); }
     };
 
     return (
