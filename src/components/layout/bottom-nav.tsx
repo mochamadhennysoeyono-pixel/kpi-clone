@@ -8,14 +8,20 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
 import {
-  Home,
   LayoutGrid,
   Activity,
   Folder,
-  BarChart2,
   Settings,
   MonitorPlay,
-  Building
+  Building,
+  PieChart,
+  Target,
+  ClipboardCheck,
+  GraduationCap,
+  BookOpen,
+  Users,
+  Search,
+  Home
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSubMenu } from './submenu-context';
@@ -63,42 +69,99 @@ export function BottomNav() {
     setActiveGroup(menuGroup);
   };
 
-  // --- CONFIGURATION PER ROLE ---
+  // --- DYNAMIC CONTEXTUAL ITEMS ---
   const items = React.useMemo(() => {
     if (!userRole) return [];
 
+    // SUPERADMIN: Global constant view
     if (userRole === 'superadmin') {
       return [
         { href: '/dashboard', label: 'Workbench', icon: LayoutGrid },
-        { href: '/appraisal-dashboard', label: 'Analitik', icon: BarChart2 },
+        { href: '/appraisal-dashboard', label: 'Analitik', icon: PieChart },
         { type: 'action' as const },
         { href: '/master-data/company', label: 'Klien', icon: Building },
         { href: '/settings', label: 'Sistem', icon: Settings },
       ];
     }
 
-    if (userRole === 'manajemen') {
-       return [
-        { href: '/workspace', label: 'Workspace', icon: LayoutGrid },
-        { href: '/appraisal-dashboard', label: 'Dashboard', icon: BarChart2 },
-        { type: 'action' as const },
-        { href: '/collab-space', label: 'Collab', icon: MonitorPlay },
-        { href: '/settings', label: 'Profil', icon: Settings },
-      ];
+    // MANAJEMEN & USER: Contextual based on Module
+    
+    // 1. MODUL APPRAISAL / KPI / OKR
+    if (activeModule === 'appraisal') {
+        if (userRole === 'manajemen') {
+            return [
+                { href: '/appraisal-dashboard', label: 'Dashboard', icon: PieChart },
+                { href: '/setup-kpi', label: 'KPI', icon: ClipboardCheck },
+                { type: 'action' as const },
+                { href: '/master-data/kbo-competencies', label: 'KBO', icon: Activity },
+                { href: '/okr', label: 'OKR', icon: Target },
+            ];
+        }
+        return [
+            { href: '/action-center', label: 'Beranda', icon: Home },
+            { href: '/my-performance', label: 'Performa', icon: Activity },
+            { type: 'action' as const },
+            { href: '/okr/progress', label: 'OKR', icon: Target },
+            { href: '/settings', label: 'Profil', icon: Settings },
+        ];
     }
 
-    // Default Role: User / Staff
+    // 2. MODUL LMS
+    if (activeModule === 'lms') {
+        if (userRole === 'manajemen') {
+            return [
+                { href: '/lms/admin/dashboard', label: 'Insight', icon: LayoutGrid },
+                { href: '/lms/admin/courses', label: 'Kursus', icon: BookOpen },
+                { type: 'action' as const },
+                { href: '/lms/admin/programs', label: 'Program', icon: GraduationCap },
+                { href: '/lms/admin/reports', label: 'Laporan', icon: PieChart },
+            ];
+        }
+        return [
+            { href: '/lms/user/my-learnings', label: 'Belajar', icon: BookOpen },
+            { href: '/lms/user/my-learnings', label: 'Katalog', icon: GraduationCap }, // Simplified
+            { type: 'action' as const },
+            { href: '/action-center', label: 'Beranda', icon: Home },
+            { href: '/settings', label: 'Profil', icon: Settings },
+        ];
+    }
+
+    // 3. MODUL COLLABSPACE
+    if (activeModule === 'collabspace') {
+        return [
+            { href: '/collab-space', label: 'Ruangan', icon: MonitorPlay },
+            { href: '/collab-space/management', label: 'Kelola', icon: Settings, show: userRole === 'manajemen' },
+            { type: 'action' as const },
+            { href: '/collab-space/reports', label: 'Analitik', icon: PieChart, show: userRole === 'manajemen' || hasSubordinates },
+            { href: '/workspace', label: 'Keluar', icon: ChevronLeft },
+        ].filter(i => i.show !== false);
+    }
+
+    // 4. FOUNDATION / MASTER DATA
+    if (activeModule === 'foundation') {
+        return [
+            { href: '/master-data/employees', label: 'Karyawan', icon: Users },
+            { href: '/master-data/hierarchy', label: 'Struktur', icon: Building },
+            { type: 'action' as const },
+            { href: '/media-library', label: 'Media', icon: Folder },
+            { href: '/workspace', label: 'Workspace', icon: LayoutGrid },
+        ];
+    }
+
+    // 5. DEFAULT (WORKSPACE / HOME)
     return [
-      { href: '/action-center', label: 'Beranda', icon: Home },
-      { href: '/my-performance', label: 'Performa', icon: Activity },
+      { href: '/workspace', label: 'Workspace', icon: LayoutGrid },
+      { href: '/action-center', label: 'Action', icon: Activity, show: userRole !== 'manajemen' },
+      { href: '/appraisal-dashboard', label: 'Analitik', icon: PieChart, show: userRole === 'manajemen' },
       { type: 'action' as const },
       { href: '/collab-space', label: 'Collab', icon: MonitorPlay },
       { href: '/settings', label: 'Profil', icon: Settings },
-    ];
-  }, [userRole]);
+    ].filter(i => i.show !== false);
+
+  }, [userRole, activeModule, hasSubordinates]);
 
   // Hide bottom nav if explicitely requested, if not mobile, or on the main workspace entry page
-  if (!isMobile || hideBottomNav || pathname === '/workspace') {
+  if (!isMobile || hideBottomNav) {
     return null;
   }
 
