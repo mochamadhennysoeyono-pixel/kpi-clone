@@ -1,4 +1,3 @@
-
 // src/app/(main)/kbo-appraisal/page.tsx
 "use client";
 
@@ -27,7 +26,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { DotsThree, ClipboardText, WarningCircle, CornersOut, CornersIn, X, Copy, Eye, ArrowsClockwise, Calendar, Buildings, Brain, MagnifyingGlass, ArrowRight } from '@phosphor-icons/react';
+import { 
+    Activity, 
+    MoreHorizontal, 
+    BarChartBig, 
+    Users, 
+    TrendingUp, 
+    TrendingDown, 
+    ArrowRight, 
+    Building, 
+    Calendar, 
+    LayoutGrid,
+    Loader2
+} from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
 import type { Employee, AppraisalSetup, KboSetup, Company } from '@/types';
@@ -56,6 +67,7 @@ import { AdaptiveCardGrid, AdaptiveMetricCard } from '@/components/ui/adaptive-c
 import { AdaptiveTable } from '@/components/ui/adaptive-table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DashboardNavigator } from '@/components/layout/dashboard-navigator';
+import { DotsThree, ClipboardText, WarningCircle, CornersOut, CornersIn, X, Copy, Eye, ArrowsClockwise, Brain, MagnifyingGlass } from '@phosphor-icons/react';
 
 
 interface KboResult {
