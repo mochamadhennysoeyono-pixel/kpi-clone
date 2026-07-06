@@ -269,6 +269,15 @@ export function WorkspaceContent() {
     const company = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
     const isManagement = userRole === 'manajemen';
 
+    // Role Label Mapping
+    const accountTypeLabel = useMemo(() => {
+        switch (userRole) {
+            case 'superadmin': return 'SUPER ADMIN SYSTEM';
+            case 'manajemen': return 'ADMIN PERUSAHAAN';
+            default: return 'AKUN KARYAWAN';
+        }
+    }, [userRole]);
+
     // --- Account Summary Calculations ---
     const staffLimit = useMemo(() => company?.customUserLimit || 0, [company]);
     const currentStaffCount = useMemo(() => employees.filter(e => e.company === company?.name && e.role === 'user' && e.status === 'Aktif').length, [employees, company]);
@@ -347,20 +356,6 @@ export function WorkspaceContent() {
         }
     }, [company, userRole, isManagement, currentUser?.moduleAccess]);
 
-    const handleUpgradeToHolding = async () => {
-        if (!company) return;
-        setIsUpgrading(true);
-        try {
-            await updateCompany(company.id, { isHolding: true });
-            toast({ title: "Upgrade Berhasil!", description: "Mode Holding Company kini aktif." });
-            await fetchData(true);
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: "Gagal Upgrade", description: error.message });
-        } finally {
-            setIsUpgrading(false);
-        }
-    };
-
     const handleActivateModule = async (data: { type: 'trial' | 'paid', quota: number, mgmtQuota: number, duration: number, totalPrice: number }) => {
         if (!company || !selectedModule) return;
         try {
@@ -423,9 +418,9 @@ export function WorkspaceContent() {
                                 Selamat datang kembali. Pintu masuk ke ekosistem produktivitas tim Anda yang terintegrasi.
                             </p>
                         </div>
-                        <div className="flex items-center gap-3 bg-blue-500/5 px-4 py-2 rounded-full border border-blue-500/10 self-start md:self-auto">
+                        <div className="flex items-center gap-3 bg-primary/5 px-4 py-2 rounded-full border border-primary/10 self-start md:self-auto">
                             <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-                            <span className="text-[10px] font-black text-primary uppercase tracking-widest">SISTEM OPTIMAL</span>
+                            <span className="text-[10px] font-black text-primary uppercase tracking-widest">{accountTypeLabel}</span>
                         </div>
                     </div>
                 </section>
