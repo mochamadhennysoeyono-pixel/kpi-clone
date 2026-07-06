@@ -294,7 +294,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
       } finally {
         setIsLoading(false);
       }
-    }, [isAuthLoading, currentUser, userRole, companies, subscriptionPlans]);
+    }, [isAuthLoading, currentUser, userRole]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
