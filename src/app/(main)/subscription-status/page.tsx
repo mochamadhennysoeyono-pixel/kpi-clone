@@ -1,4 +1,3 @@
-
 // src/app/(main)/subscription-status/page.tsx
 "use client";
 
@@ -47,6 +46,7 @@ import { ResponsivePage } from '@/components/ui/adaptive-layout';
 import { PageHeader } from '@/components/ui/page-header';
 import { AdaptiveCardGrid, AdaptiveMetricCard } from '@/components/ui/adaptive-card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 // --- Internal Components ---
 
@@ -85,8 +85,7 @@ function ModuleStatusCard({
                 <div className="flex justify-between items-start">
                     <div className={cn(
                         "p-2 rounded-xl",
-                        isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                    )}>
+                        isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
                         <Icon size={20} />
                     </div>
                     {isActive && (
@@ -94,7 +93,7 @@ function ModuleStatusCard({
                             "text-[8px] font-black uppercase h-5 px-2 border-none",
                             isTrial ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
                         )}>
-                            {isTrial ? 'Trial' : 'Pro'}
+                            {isTrial ? 'Trial' : 'Aktif'}
                         </Badge>
                     )}
                 </div>
@@ -148,12 +147,9 @@ export default function SubscriptionStatusPage() {
         if (!company) return [];
         return subscriptionLogs
             .filter(log => log.companyId === company.id)
-            .sort((a, b) => {
-                const dateA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(0);
-                const dateB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(0);
-                return dateB.getTime() - dateA.getTime();
-            });
-    }, [company, subscriptionLogs]);
+            .sort((a, b) => (b.timestamp?.toDate?.().getTime() || 0) - (a.timestamp?.toDate?.().getTime() || 0))
+            .slice(0, 20);
+    }, [subscriptionLogs, company]);
 
     const moduleCatalog = [
         { id: 'appraisal' as ModuleId, name: 'Appraisal & KPI', icon: ClipboardCheck },
@@ -210,7 +206,7 @@ export default function SubscriptionStatusPage() {
                         <CheckCircle2 size={14} className="text-primary" /> INVENTORI MODUL OPERASIONAL
                     </h3>
                     <Button asChild variant="ghost" size="sm" className="text-[10px] font-black uppercase text-primary hover:bg-primary/5">
-                        <Link href="/subscription-plans?companyId=${company.id}">
+                        <Link href={`/subscription-plans?companyId=${company.id}`}>
                             BELI MODUL LAIN <ArrowRight size={12} className="ml-1.5" strokeWidth={3} />
                         </Link>
                     </Button>
@@ -235,7 +231,7 @@ export default function SubscriptionStatusPage() {
                 <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1 flex items-center gap-2">
                     <History size={14} className="text-primary" /> AUDIT LOG TRANSAKSI & AKTIVASI
                 </h3>
-                <Card className="border-border/40 shadow-sm overflow-hidden bg-background">
+                <Card className="border-border/60 shadow-sm overflow-hidden bg-background">
                     <CardHeader className="bg-muted/30 border-b p-5">
                         <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                             Riwayat Pembayaran & Perubahan Paket
