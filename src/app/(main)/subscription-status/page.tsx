@@ -1,3 +1,4 @@
+
 // src/app/(main)/subscription-status/page.tsx
 "use client";
 
@@ -114,7 +115,7 @@ function ModuleStatusCard({
                         </div>
                         {isExpired && (
                             <Button asChild size="sm" variant="destructive" className="w-full h-8 text-[9px] font-black uppercase tracking-widest mt-2">
-                                <Link href={`/subscription-plans?companyId=${id}`}>REAKTIVASI SEKARANG</Link>
+                                <Link href="/workspace">REAKTIVASI DI WORKSPACE</Link>
                             </Button>
                         )}
                     </div>
@@ -208,8 +209,8 @@ export default function SubscriptionStatusPage() {
                         <CheckCircle2 size={14} className="text-primary" /> INVENTORI MODUL OPERASIONAL
                     </h3>
                     <Button asChild variant="ghost" size="sm" className="text-[10px] font-black uppercase text-primary hover:bg-primary/5">
-                        <Link href={`/subscription-plans?companyId=${company.id}`}>
-                            BELI MODUL LAIN <ArrowRight size={12} className="ml-1.5" strokeWidth={3} />
+                        <Link href="/workspace">
+                            AKTIFKAN MODUL LAIN <ArrowRight size={12} className="ml-1.5" strokeWidth={3} />
                         </Link>
                     </Button>
                 </div>
@@ -301,22 +302,4 @@ export default function SubscriptionStatusPage() {
             </div>
         </ResponsivePage>
     );
-}
-
-function formatSafeDate(date: any, formatStr: string) {
-    const d = safeToDate(date);
-    if (!d) return '-';
-    try {
-        return format(d, formatStr, { locale: localeId });
-    } catch(e) {
-        return '-';
-    }
-}
-
-function safeToDate(dateVal: any): Date | null {
-    if (!dateVal) return null;
-    if (dateVal instanceof Date) return dateVal;
-    if (typeof dateVal.toDate === 'function') return dateVal.toDate();
-    const d = new Date(dateVal);
-    return isNaN(d.getTime()) ? null : d;
 }

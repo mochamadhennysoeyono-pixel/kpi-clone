@@ -36,6 +36,7 @@ import {
     Tooltip
 } from "recharts";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { 
     ResponsivePage, 
@@ -56,19 +57,30 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
+import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 
 // Industrial Palette - Light Edition (Stripe/Linear Inspired)
-const CHART_COLORS = ["#533afd", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0"];
+const CHART_COLORS = ["#533afd", "#64748b", "#94a3b8", "#col5e1", "#e2e8f0"];
 
 export default function AdminDashboardPage() {
-  const { companies, employees, subscriptionPlans, subscriptionLogs } = useMasterData();
+  const { companies, employees, subscriptionPlans, subscriptionLogs, isLoading: isMasterLoading } = useMasterData();
+  const { userRole, isLoading: isAuthLoading } = useAuth();
   const { isMobile } = useBreakpoint();
+  const router = useRouter();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // --- ACCESS GUARD: ONLY SUPERADMIN ALLOWED ---
+  useEffect(() => {
+    if (!isAuthLoading && userRole && userRole !== 'superadmin') {
+        console.warn("[Access Guard] Management user attempted to access Superadmin Dashboard. Redirecting to workspace.");
+        router.replace('/workspace');
+    }
+  }, [userRole, isAuthLoading, router]);
 
   const stats = useMemo(() => {
     const activeCompanies = companies.filter(c => c.status === 'Aktif');
@@ -124,7 +136,7 @@ export default function AdminDashboardPage() {
     return [...subscriptionLogs].sort((a, b) => (b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0) - (a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0)).slice(0, 6);
   }, [subscriptionLogs]);
 
-  if (!isClient) return null;
+  if (!isClient || isAuthLoading || userRole !== 'superadmin') return null;
 
   return (
     <ResponsivePage>
@@ -234,7 +246,7 @@ export default function AdminDashboardPage() {
                     </h2>
                     <Link href="/subscription-logs" className="text-[9px] font-black text-primary hover:underline uppercase tracking-widest flex items-center gap-1">VIEW ALL LOGS <ArrowRight size={10} strokeWidth={3}/></Link>
                 </div>
-                <div className="border border-slate-100 rounded-[2rem] overflow-hidden bg-white shadow-stripe">
+                <div className="border border-slate-100 rounded-xl overflow-hidden bg-white shadow-stripe">
                     <Table>
                         <TableHeader className="bg-slate-50/50">
                             <TableRow className="border-slate-50">
@@ -314,7 +326,7 @@ export default function AdminDashboardPage() {
                 <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2 ml-1">
                     <Clock className="size-3.5 text-rose-500" strokeWidth={3} /> SYSTEM CRITICAL ALERTS
                 </h2>
-                <div className="border border-slate-100 rounded-3xl overflow-hidden bg-white shadow-stripe">
+                <div className="border border-slate-100 rounded-xl overflow-hidden bg-white shadow-stripe">
                     <Table>
                         <TableHeader className="bg-rose-50/30">
                             <TableRow className="border-slate-50">
@@ -345,7 +357,7 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
 
-            <Card className="bg-[#090e1a] text-white border-none rounded-[2rem] shadow-2xl relative overflow-hidden">
+            <Card className="bg-[#090e1a] text-white border-none rounded-2xl shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-10"><Zap size={100} /></div>
                 <CardContent className="p-8 space-y-6">
                     <div className="space-y-2">

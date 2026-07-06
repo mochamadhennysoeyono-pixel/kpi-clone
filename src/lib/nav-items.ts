@@ -125,7 +125,7 @@ export const iconMap: { [key: string]: React.ElementType } = {
 /**
  * Mendeteksi modul aktif berdasarkan path URL saat ini.
  */
-export function getActiveModuleFromPath(pathname: string): ModuleId | 'foundation' | 'holding' | null {
+export function getActiveModuleFromPath(pathname: string): ModuleId | 'foundation' | 'holding' | 'billing' | 'admin' | 'settings' | null {
   if (
     pathname.startsWith('/action-center') || 
     pathname.startsWith('/reports') || 
@@ -158,6 +158,10 @@ export function getActiveModuleFromPath(pathname: string): ModuleId | 'foundatio
     return 'holding';
   }
 
+  if (pathname.startsWith('/subscription-status')) return 'billing';
+  if (pathname.startsWith('/company-admin-management')) return 'admin';
+  if (pathname.startsWith('/settings')) return 'settings';
+
   return null;
 }
 
@@ -169,7 +173,7 @@ export function getNavItems(
     isMobile: boolean, 
     currentUser?: Employee | null, 
     okrs?: OKR[],
-    activeModule?: ModuleId | 'foundation' | 'holding' | null
+    activeModule?: ModuleId | 'foundation' | 'holding' | 'billing' | 'admin' | 'settings' | null
 ) {
     if (!userRole) return [];
 
@@ -187,7 +191,7 @@ export function getNavItems(
     // --- SUPERADMIN SPECIFIC STRUCTURE ---
     if (userRole === 'superadmin') {
         return [
-            { href: '/dashboard', label: 'Workbench', iconName: '/dashboard' },
+            { href: '/dashboard', label: 'Workbench', iconName: '/dashboard', moduleId: 'workbench' },
             {
                 label: 'Sistem',
                 iconName: 'sistem',
@@ -259,7 +263,7 @@ export function getNavItems(
                     { href: '/document-management/contracts', label: 'Arsip', iconName: '/document-management/contracts' },
                 ]
             },
-            { href: '/settings', label: 'Settings', iconName: '/settings' },
+            { href: '/settings', label: 'Settings', iconName: '/settings', moduleId: 'settings' },
         ];
     }
 
@@ -408,10 +412,17 @@ export function getNavItems(
         .filter((item): item is NonNullable<typeof item> => item !== null);
 
     // --- STRICT CONTEXTUAL FILTERING (Non-Superadmin) ---
-    if (activeModule && userRole !== 'superadmin') {
+    // Change: Always apply filtering for non-superadmins. 
+    // If no activeModule is detected, only show "settings" or empty.
+    if (userRole !== 'superadmin') {
         visibleItems = visibleItems.filter(item => {
-            if ((item as any).moduleId === activeModule) return true;
-            if (item.subItems && item.subItems.some(sub => (sub as any).moduleId === activeModule)) return true;
+            const itemModule = (item as any).moduleId;
+            if (activeModule) {
+                if (itemModule === activeModule) return true;
+                if (item.subItems && item.subItems.some(sub => (sub as any).moduleId === activeModule)) return true;
+            }
+            // Fallback: Always allow settings and admin access for Manajemen
+            if (itemModule === 'settings' || (itemModule === 'admin' && userRole === 'manajemen')) return true;
             return false;
         });
     }
