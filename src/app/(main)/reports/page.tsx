@@ -39,7 +39,8 @@ import {
   Network,
   FilePieChart,
   Filter,
-  PieChart
+  PieChart,
+  LayoutGrid
 } from "lucide-react";
 import { useMasterData } from "@/contexts/master-data-context";
 import type { KpiData, Company, Employee } from "@/types";
