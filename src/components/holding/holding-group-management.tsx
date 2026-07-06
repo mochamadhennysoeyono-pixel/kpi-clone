@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import type { Company } from '@/types';
 import { useMasterData } from '@/contexts/master-data-context';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, MoreHorizontal, ChevronDown, Trash2, Building, Pencil, Shield } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, ChevronDown, Trash2, Building, Pencil, Shield, AlertCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,13 +37,34 @@ export default function HoldingGroupManagement({ holdingCompany, childCompanies 
   const [companiesToDelete, setCompaniesToDelete] = useState<Company[] | null>(null);
   const { toast } = useToast();
 
+  // --- MODULAR AWARE LOGIC ---
   const currentPlan = useMemo(() => {
     return subscriptionPlans.find(p => p.id === holdingCompany.subscriptionPlanId);
-  }, [subscriptionPlans, holdingCompany]);
+  }, [subscriptionPlans, holdingCompany.subscriptionPlanId]);
   
   const groupLimit = useMemo(() => {
-      if (holdingCompany.customCompanyLimit != null) return holdingCompany.customCompanyLimit;
-      return currentPlan?.companyLimit ?? 0;
+      // Prioritas 1: Limit Kustom (Override Superadmin)
+      if (holdingCompany.customCompanyLimit != null && holdingCompany.customCompanyLimit > 0) {
+          return holdingCompany.customCompanyLimit;
+      }
+      
+      // Prioritas 2: Limit dari Paket Aktif
+      if (currentPlan && currentPlan.companyLimit !== 0) {
+          return currentPlan.companyLimit;
+      }
+      
+      // Fallback: Jika status Holding tapi data paket belum sinkron, beri kuota baseline
+      return holdingCompany.isHolding ? 5 : 0;
+  }, [holdingCompany, currentPlan]);
+
+  const planLabel = useMemo(() => {
+      if (holdingCompany.customCompanyLimit != null && holdingCompany.customCompanyLimit > 0) {
+          return "LISENSI KUSTOM";
+      }
+      if (currentPlan) {
+          return currentPlan.name.toUpperCase();
+      }
+      return holdingCompany.isHolding ? "AKSES HOLDING" : "STANDALONE";
   }, [holdingCompany, currentPlan]);
 
   const isLimitReached = useMemo(() => {
@@ -59,7 +80,11 @@ export default function HoldingGroupManagement({ holdingCompany, childCompanies 
 
   const handleOpenSheet = (company?: Company) => {
     if (!company && isLimitReached) {
-        toast({ variant: "destructive", title: "Kuota Cabang Penuh", description: `Batas maksimal anak perusahaan Anda adalah ${groupLimit}.` });
+        toast({ 
+            variant: "destructive", 
+            title: "Kuota Cabang Penuh", 
+            description: `Batas maksimal anak perusahaan Anda saat ini adalah ${groupLimit === -1 ? 'Tak Terbatas' : groupLimit}.` 
+        });
         return;
     }
     setSelectedCompanyForEdit(company);
@@ -96,7 +121,7 @@ export default function HoldingGroupManagement({ holdingCompany, childCompanies 
                 value={`${childCompanies.length} / ${groupLimit === -1 ? '∞' : groupLimit}`}
                 icon={Shield}
                 color={isLimitReached ? "bg-rose-500/10 text-rose-600" : "bg-primary/10 text-primary"}
-                badge={currentPlan?.name || 'CUSTOM'}
+                badge={planLabel}
             />
             <div className="col-span-1 sm:col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-5 flex items-end justify-end pb-1">
                 <div className="flex items-center gap-2">
@@ -122,6 +147,13 @@ export default function HoldingGroupManagement({ holdingCompany, childCompanies 
             </div>
         </AdaptiveCardGrid>
 
+        {isLimitReached && (
+            <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 flex items-center gap-3 text-amber-800 text-xs font-medium animate-in fade-in duration-500">
+                <AlertCircle className="size-4 shrink-0" />
+                <span>Anda telah mencapai batas maksimal kuota cabang. Hubungi Superadmin untuk menambah kapasitas grup Anda.</span>
+            </div>
+        )}
+
         <AdaptiveTable 
             data={childCompanies}
             keyExtractor={(c) => c.id}
@@ -143,7 +175,7 @@ export default function HoldingGroupManagement({ holdingCompany, childCompanies 
                 { header: "Alamat / Lokasi", accessorKey: "address", className: "text-muted-foreground text-xs italic max-w-xs truncate" },
                 { 
                     header: "Status", 
-                    cell: (c) => <Badge variant={c.status === 'Aktif' ? 'default' : 'outline'} className="text-[10px] font-black uppercase h-5">{c.status}</Badge>
+                    cell: (c) => <Badge variant={c.status === 'Aktif' ? 'default' : 'outline'} className="text-[10px] font-black uppercase h-5 border-none shadow-sm">{c.status}</Badge>
                 },
                 {
                     header: "",
@@ -163,7 +195,7 @@ export default function HoldingGroupManagement({ holdingCompany, childCompanies 
                 }
             ]}
             renderMobileCard={(c) => (
-                <Card className="border-border/40 shadow-sm overflow-hidden">
+                <Card className="border-border/40 shadow-sm overflow-hidden bg-background">
                     <CardContent className="p-4 space-y-4">
                         <div className="flex items-start justify-between">
                             <div className="flex items-center gap-4">
@@ -171,11 +203,11 @@ export default function HoldingGroupManagement({ holdingCompany, childCompanies 
                                     <Building size={20} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="font-black text-sm uppercase truncate">{c.name}</h3>
-                                    <p className="text-[10px] text-muted-foreground font-bold">{c.businessField}</p>
+                                    <h3 className="font-black text-sm uppercase truncate text-slate-900">{c.name}</h3>
+                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">{c.businessField}</p>
                                 </div>
                             </div>
-                            <Badge variant={c.status === 'Aktif' ? 'default' : 'outline'} className="text-[8px] font-black h-4 uppercase">{c.status}</Badge>
+                            <Badge variant={c.status === 'Aktif' ? 'default' : 'outline'} className="text-[8px] font-black h-4 uppercase border-none">{c.status}</Badge>
                         </div>
                         <div className="flex gap-2 pt-3 border-t">
                             <Button variant="outline" size="sm" className="flex-1 font-bold text-[10px] h-9" onClick={() => handleOpenSheet(c)}>UBAH</Button>
