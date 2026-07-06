@@ -252,7 +252,7 @@ function HistoryItem({ log }: { log: SubscriptionLog }) {
 
 export function WorkspaceContent() {
     const { currentUser, userRole, logout, setIsLoading } = useAuth();
-    const { companies, updateCompany, addSubscriptionLog, fetchData, companyAdmins, addonPricing, subscriptionLogs, employees, collabTasks } = useMasterData();
+    const { companies, updateCompany, addSubscriptionLog, fetchData, companyAdmins, addonPricing, subscriptionLogs, employees, collabTasks, subscriptionPlans } = useMasterData();
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -278,28 +278,37 @@ export function WorkspaceContent() {
     }, [userRole]);
 
     // --- Account Summary Calculations ---
-    const staffLimit = useMemo(() => company?.customUserLimit || 0, [company]);
+    const staffLimit = useMemo(() => {
+        if (!company) return 0;
+        const plan = subscriptionPlans.find(p => p.id === company.subscriptionPlanId);
+        // Fallback hierarchy: Custom Override > Plan Default > 0
+        return company.customUserLimit ?? plan?.userLimit ?? 0;
+    }, [company, subscriptionPlans]);
+
     const currentStaffCount = useMemo(() => employees.filter(e => e.company === company?.name && e.role === 'user' && e.status === 'Aktif').length, [employees, company]);
+    
     const licenseUsagePercent = useMemo(() => {
-        if (staffLimit === -1) return 100; // Just for visual in progress bar
-        if (staffLimit === 0) return 0;
+        if (staffLimit === -1) return 100; 
+        if (staffLimit <= 0) return 0;
         return Math.min(100, (currentStaffCount / staffLimit) * 100);
     }, [currentStaffCount, staffLimit]);
 
+    // MOD: Mengukur produktivitas dari tugas yang benar-benar SELESAI (done)
     const activityTrend = useMemo(() => {
         const last7Days = Array.from({ length: 7 }, (_, i) => subDays(new Date(), 6 - i));
         return last7Days.map(day => {
-            const count = collabTasks.filter(t => {
-                const createdAt = t.createdAt?.toDate ? t.createdAt.toDate() : new Date(t.createdAt);
-                return isSameDay(createdAt, day) && t.company === company?.name;
+            const completedCount = collabTasks.filter(t => {
+                const completedAt = t.completedAt?.toDate ? t.completedAt.toDate() : (t.status === 'done' ? t.updatedAt?.toDate?.() : null);
+                return completedAt && isSameDay(completedAt, day) && t.company === company?.name;
             }).length;
-            return Math.min(100, (count / 10) * 100);
+            // Scale visual for chart (max 5 tasks for full height for better visibility)
+            return Math.min(100, (completedCount / 5) * 100);
         });
     }, [collabTasks, company]);
 
     const productivityChange = useMemo(() => {
-        const todayCount = collabTasks.filter(t => isSameDay(t.createdAt?.toDate?.() || new Date(), new Date()) && t.company === company?.name).length;
-        const yesterdayCount = collabTasks.filter(t => isSameDay(t.createdAt?.toDate?.() || new Date(), subDays(new Date(), 1)) && t.company === company?.name).length;
+        const todayCount = collabTasks.filter(t => t.status === 'done' && isSameDay(t.updatedAt?.toDate?.() || new Date(), new Date()) && t.company === company?.name).length;
+        const yesterdayCount = collabTasks.filter(t => t.status === 'done' && isSameDay(t.updatedAt?.toDate?.() || new Date(), subDays(new Date(), 1)) && t.company === company?.name).length;
         if (yesterdayCount === 0) return todayCount > 0 ? 100 : 0;
         return Math.round(((todayCount - yesterdayCount) / yesterdayCount) * 100);
     }, [collabTasks, company]);
