@@ -1,3 +1,4 @@
+
 // src/app/(main)/master-data/company/page.tsx
 "use client";
 
@@ -17,9 +18,14 @@ import {
   Filter,
   CheckCircle2,
   AlertCircle,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw,
+  Zap,
+  LayoutGrid,
+  ClipboardCheck,
+  GraduationCap
 } from "lucide-react";
-import type { Company } from "@/types";
+import type { Company, ModuleId } from "@/types";
 import { CompanyFormSheet } from "@/components/master-data/company/company-form-sheet";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import { useMasterData } from "@/contexts/master-data-context";
@@ -50,7 +56,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function CompanyPage() {
-  const { companies, addCompany, updateCompany, deleteCompany, subscriptionPlans, employees } = useMasterData();
+  const { companies, addCompany, updateCompany, deleteCompany, subscriptionPlans, employees, resetCompanySubscription } = useMasterData();
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | undefined>(undefined);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -100,15 +106,6 @@ export default function CompanyPage() {
     }
   };
 
-  const handlePlanChange = async (company: Company, planId: string) => {
-    try {
-        await updateCompany(company.id, { subscriptionPlanId: planId });
-        toast({ title: "Paket Diperbarui" });
-    } catch (e: any) {
-        toast({ variant: "destructive", title: "Gagal", description: e.message });
-    }
-  };
-
   const openDeleteDialog = (company: Company) => {
     setCompanyToDelete(company);
     setDeleteDialogOpen(true);
@@ -121,11 +118,26 @@ export default function CompanyPage() {
     }
   };
 
+  const handleReset = async (company: Company) => {
+      if (confirm(`PENTING: Anda akan mereset seluruh data langganan modular ${company.name} kembali ke Trial 14 Hari. Lanjutkan?`)) {
+          await resetCompanySubscription(company.id);
+      }
+  };
+
+  const getModuleIcon = (id: string) => {
+      switch(id) {
+          case 'appraisal': return <ClipboardCheck size={10} />;
+          case 'lms': return <GraduationCap size={10} />;
+          case 'collabspace': return <LayoutGrid size={10} />;
+          default: return <Zap size={10} />;
+      }
+  };
+
   return (
     <ResponsivePage>
       <PageHeader 
         title="Data Perusahaan Klien"
-        description="Kelola seluruh profil klien, jaring struktur holding, dan pemantauan utilisasi kuota sistem secara terpusat."
+        description="Manajemen infrastruktur klien. Gunakan fitur Reset Langganan untuk membersihkan data testing modular."
         icon={Building}
         actions={
           <Button onClick={() => { setSelectedCompany(undefined); setSheetOpen(true); }} className="font-bold shadow-lg h-9 sm:h-10 active:scale-95 transition-all">
@@ -204,19 +216,22 @@ export default function CompanyPage() {
             )
           },
           {
-            header: "Koneksi Paket",
+            header: "Inventori Modul",
             cell: (c) => {
-                return c.parentId ? (
-                    <Badge variant="outline" className="text-[9px] gap-1 border-primary/20 text-primary uppercase font-bold"><GitMerge size={10}/> IKUT INDUK</Badge>
-                ) : (
-                    <Select value={c.subscriptionPlanId || 'none'} onValueChange={(v) => handlePlanChange(c, v)}>
-                        <SelectTrigger className="h-8 text-[9px] font-black uppercase w-[150px] border-none bg-muted/50">
-                            <SelectValue placeholder="Pilih Paket" />
-                        </SelectTrigger>
-                        <SelectContent className="z-[350]">
-                            {subscriptionPlans.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                const subs = Object.entries(c.moduleSubscriptions || {}).filter(([_, s]) => s.status === 'active');
+                return (
+                    <div className="flex flex-wrap gap-1">
+                        {subs.length > 0 ? subs.map(([id, s]) => (
+                            <Badge key={id} variant="outline" className={cn(
+                                "text-[7px] gap-1 h-4 px-1 border-none font-black uppercase",
+                                s.type === 'trial' ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600"
+                            )}>
+                                {getModuleIcon(id)} {id}
+                            </Badge>
+                        )) : (
+                            <Badge variant="outline" className="text-[7px] h-4 px-1 border-none bg-muted/50 text-muted-foreground uppercase font-black">NO ACTIVE MODULE</Badge>
+                        )}
+                    </div>
                 );
             }
           },
@@ -256,7 +271,11 @@ export default function CompanyPage() {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleEditCompany(c)}><Pencil className="size-3.5 mr-2" />Edit Profil</DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(c)}><Trash2 className="size-3.5 mr-2" />Hapus</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleReset(c)} className="text-amber-600 font-bold">
+                    <RefreshCw className="size-3.5 mr-2" /> Reset Langganan (Test)
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(c)}><Trash2 className="size-3.5 mr-2" />Hapus Permanen</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )
@@ -301,6 +320,7 @@ export default function CompanyPage() {
                                     <Button variant="ghost" size="icon" className="h-9 w-9"><MoreHorizontal size={14}/></Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="z-[350]">
+                                    <DropdownMenuItem onClick={() => handleReset(c)} className="text-amber-600 font-bold">Reset Paket</DropdownMenuItem>
                                     <DropdownMenuItem className="text-destructive font-bold" onClick={() => openDeleteDialog(c)}>Hapus Klien</DropdownMenuItem>
                                 </DropdownMenuContent>
                              </DropdownMenu>

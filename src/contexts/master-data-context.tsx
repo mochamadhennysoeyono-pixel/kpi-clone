@@ -16,10 +16,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './auth-context';
 import { 
     collection, getDocs, query, where, addDoc, doc, updateDoc, writeBatch, 
-    serverTimestamp, deleteDoc, getDoc, setDoc 
+    serverTimestamp, deleteDoc, getDoc, setDoc, deleteField 
 } from 'firebase/firestore';
 import { DEFAULT_KPI_CATEGORIES, DEFAULT_KBO_CATEGORIES } from '@/lib/default-data';
 import { enrollmentWithMethods } from '@/types';
+import { addDays } from 'date-fns';
 
 interface MasterDataContextType {
   companies: Company[];
@@ -62,6 +63,7 @@ interface MasterDataContextType {
   addCompany: (company: Omit<Company, 'id'>) => Promise<Company | null>;
   updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
   deleteCompany: (id: string) => Promise<void>;
+  resetCompanySubscription: (companyId: string) => Promise<void>;
   addDepartment: (department: Omit<Department, 'id'>) => Promise<Department | null>;
   updateDepartment: (id: string, data: Partial<Omit<Department, 'id'>>) => Promise<void>;
   deleteDepartments: (ids: string[]) => Promise<void>;
@@ -292,7 +294,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
       } finally {
         setIsLoading(false);
       }
-    }, [isAuthLoading, currentUser, userRole]);
+    }, [isAuthLoading, currentUser, userRole, companies, subscriptionPlans]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -341,6 +343,53 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     } catch (e: any) { toast({ variant: "destructive", title: "Gagal Hapus", description: e.message }); }
   }, [toast]);
 
+  const resetCompanySubscription = useCallback(async (companyId: string) => {
+      if (!db || userRole !== 'superadmin') return;
+      setIsLoading(true);
+      try {
+          const company = data.companies.find((c: Company) => c.id === companyId);
+          if (!company) throw new Error("Perusahaan tidak ditemukan.");
+
+          const now = new Date();
+          const expiry = addDays(now, 14);
+
+          const updateData: Partial<Company> = {
+              subscriptionPlanId: 'default-trial',
+              subscriptionActivationDate: now.toISOString(),
+              subscriptionExpiryDate: expiry.toISOString(),
+              moduleSubscriptions: deleteField() as any,
+              usedTrials: [],
+              customPrice: deleteField() as any,
+              customUserLimit: deleteField() as any,
+              customManagementUserLimit: deleteField() as any,
+              customCompanyLimit: deleteField() as any,
+              status: 'Aktif'
+          };
+
+          await updateDoc(doc(db, 'companies', companyId), updateData);
+          
+          await addDoc(collection(db, 'subscriptionLogs'), {
+              companyId: companyId,
+              companyName: company.name,
+              company: company.name,
+              planName: 'RESET TO TRIAL (MANUAL)',
+              action: 'TRIAL',
+              amount: 0,
+              startDate: now.toISOString(),
+              endDate: expiry.toISOString(),
+              performedBy: `Superadmin (${currentUser?.name})`,
+              timestamp: serverTimestamp()
+          });
+
+          toast({ title: "Reset Berhasil", description: `Paket ${company.name} telah diatur ulang ke Trial 14 hari.` });
+          await fetchData(true);
+      } catch (e: any) {
+          toast({ variant: 'destructive', title: "Gagal Reset", description: e.message });
+      } finally {
+          setIsLoading(false);
+      }
+  }, [data.companies, currentUser, fetchData, toast, userRole]);
+
   const value = {
     ...data,
     fetchData,
@@ -348,6 +397,7 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
     addCompany: (d) => addDocAndUpdateState<Company>('companies', d, 'companies'),
     updateCompany: (id, d) => updateDocAndUpdateState<Company>('companies', id, d, 'companies'),
     deleteCompany: (id) => deleteDocsAndUpdateState('companies', [id], 'companies'),
+    resetCompanySubscription,
     addDepartment: (d) => addDocAndUpdateState<Department>('departments', d, 'departments'),
     updateDepartment: (id, d) => updateDocAndUpdateState<Department>('departments', id, d, 'departments'),
     deleteDepartments: (ids) => deleteDocsAndUpdateState('departments', ids, 'departments'),
