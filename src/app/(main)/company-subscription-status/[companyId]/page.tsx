@@ -23,7 +23,8 @@ import {
     PlusCircle,
     X,
     Calendar,
-    UserPlus
+    UserPlus,
+    AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNowStrict, format, parseISO, isValid, addDays } from 'date-fns';
@@ -58,6 +59,16 @@ import {
   DialogFooter,
   DialogClose
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -287,12 +298,14 @@ export default function CompanySubscriptionStatusPage() {
     const { companyId } = useParams();
     const router = useRouter();
     const { toast } = useToast();
-    const { companies, employees, resetModuleSubscription, activateModuleManually, subscriptionLogs, companyAdmins } = useMasterData();
+    const { companies, resetModuleSubscription, activateModuleManually, subscriptionLogs, companyAdmins } = useMasterData();
     
     const [isActivating, setIsActivating] = useState(false);
     const [selectedModuleId, setSelectedModuleId] = useState<ModuleId | null>(null);
     const [isManualDialogOpen, setIsManualDialogOpen] = useState(false);
     const [dialogMode, setDialogMode] = useState<'activate' | 'upgrade'>('activate');
+    const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+    const [moduleToReset, setModuleToReset] = useState<ModuleId | null>(null);
 
     const company = useMemo(() => companies.find(c => c.id === companyId), [companyId, companies]);
 
@@ -318,11 +331,16 @@ export default function CompanySubscriptionStatusPage() {
         { id: 'collabspace' as ModuleId, name: 'CollabSpace', icon: LayoutGrid },
     ];
 
-    const handleResetRequest = async (moduleId: ModuleId) => {
-        if (!company) return;
-        if (confirm(`PENTING: Reset langganan modul ${moduleId} untuk ${company.name}? Data kuota akan dihapus dan modul menjadi inaktif.`)) {
-            await resetModuleSubscription(company.id, moduleId);
-        }
+    const handleResetRequest = (moduleId: ModuleId) => {
+        setModuleToReset(moduleId);
+        setIsResetDialogOpen(true);
+    };
+
+    const confirmReset = async () => {
+        if (!company || !moduleToReset) return;
+        await resetModuleSubscription(company.id, moduleToReset);
+        setIsResetDialogOpen(false);
+        setModuleToReset(null);
     };
 
     const handleOpenManualActivation = (moduleId: ModuleId) => {
@@ -510,6 +528,30 @@ export default function CompanySubscriptionStatusPage() {
                 isUpgrade={dialogMode === 'upgrade'}
                 onConfirm={handleConfirmConfig}
             />
+
+            <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
+                    <AlertDialogHeader className="items-center text-center">
+                        <div className="size-16 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 mb-2">
+                            <AlertTriangle size={32} />
+                        </div>
+                        <AlertDialogTitle className="text-xl font-black tracking-tight text-slate-900">Konfirmasi Reset Modul</AlertDialogTitle>
+                        <AlertDialogDescription className="text-sm font-medium leading-relaxed">
+                            PENTING: Anda akan mereset langganan modul <span className="font-bold text-slate-900 uppercase">"{moduleToReset}"</span> untuk <span className="font-bold text-slate-900 uppercase">{company.name}</span>. 
+                            Data kuota akan dihapus dan modul menjadi inaktif seketika.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="sm:justify-center gap-3 mt-4">
+                        <AlertDialogCancel className="rounded-xl font-bold h-11 px-8 border-slate-200">Batal</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={confirmReset}
+                            className="bg-destructive hover:bg-destructive/90 rounded-xl font-black uppercase text-[11px] tracking-widest px-8 h-11 shadow-lg shadow-rose-200"
+                        >
+                            Ya, Reset Sekarang
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
