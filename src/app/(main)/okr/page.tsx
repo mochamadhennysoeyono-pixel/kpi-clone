@@ -25,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Input } from '@/components/ui/input';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { cn } from '@/lib/utils';
+import { DashboardNavigator } from '@/components/layout/dashboard-navigator';
 
 const OkrCard = ({ okr, onEdit, onDelete }: { okr: OKR, onEdit: (okr: OKR) => void, onDelete: (okr: OKR) => void }) => {
     const { isMobile } = useBreakpoint();
@@ -125,7 +126,7 @@ export default function OkrListPage() {
   const [selectedCompany, setSelectedCompany] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState("");
   const [okrToDelete, setOkrToDelete] = useState<OKR | null>(null);
-  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   const userCompany = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
   const isHoldingAdmin = useMemo(() => userRole === 'manajemen' && !!userCompany?.isHolding, [userRole, userCompany]);
@@ -180,6 +181,8 @@ export default function OkrListPage() {
             } 
         />
         
+        <DashboardNavigator />
+
         <ResponsiveToolbar>
             <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />

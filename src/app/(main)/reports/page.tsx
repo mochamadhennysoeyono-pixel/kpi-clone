@@ -1,4 +1,3 @@
-
 // src/app/(main)/reports/page.tsx
 "use client";
 
@@ -40,7 +39,7 @@ import {
   Network,
   FilePieChart,
   Filter,
-  PieChart // Added missing import
+  PieChart
 } from "lucide-react";
 import { useMasterData } from "@/contexts/master-data-context";
 import type { KpiData, Company, Employee } from "@/types";
