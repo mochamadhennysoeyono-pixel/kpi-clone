@@ -1,3 +1,4 @@
+
 // src/lib/nav-items.ts
 import type { UserRole, Company, SubscriptionPlan, Employee, OKR, ModuleId } from "@/types";
 import { 
@@ -201,17 +202,17 @@ export function getNavItems(
     
     const allNavItems = [
         { href: '/action-center', label: 'Beranda', show: !capabilities.isSuperAdmin && !capabilities.isCompanyAdmin, iconName: '/action-center', moduleId: 'appraisal' },
-        { href: '/dashboard', label: 'Dashboard Admin', show: capabilities.isSuperAdmin, iconName: '/dashboard' },
+        { href: '/dashboard', label: 'Workbench Bisnis', show: capabilities.isSuperAdmin, iconName: '/dashboard' },
         {
             label: 'Manajemen Sistem',
             iconName: 'manajemen-sistem',
             show: capabilities.isSuperAdmin,
             subItems: [
-                { href: '/admin-management', label: 'Manajemen Admin Super', show: true, iconName: '/admin-management' },
-                { href: '/company-admin-management', label: 'Manajemen Admin Klien', show: true, iconName: '/company-admin-management' },
-                { href: '/subscription-management', label: 'Manajemen Langganan', show: true, iconName: '/subscription-management' },
-                { href: '/subscription-logs', label: 'Pusat Log Langganan', show: true, iconName: '/subscription-logs' },
-                { href: '/group-management', label: 'Manajemen Holding', show: true, iconName: '/group-management' },
+                { href: '/admin-management', label: 'Pusat Admin Super', show: true, iconName: '/admin-management' },
+                { href: '/company-admin-management', label: 'Portfolio Klien', show: true, iconName: '/company-admin-management' },
+                { href: '/subscription-management', label: 'Pricing Global', show: true, iconName: '/subscription-management' },
+                { href: '/subscription-logs', label: 'Live Audit Trail', show: true, iconName: '/subscription-logs' },
+                { href: '/group-management', label: 'Arsitektur Holding', show: true, iconName: '/group-management' },
             ]
         },
 
@@ -222,12 +223,12 @@ export function getNavItems(
             moduleId: 'foundation',
             subItems: [
                 { href: '/master-data/company', label: 'Data Perusahaan', show: capabilities.isSuperAdmin, iconName: '/master-data/company', moduleId: 'foundation' },
-                { href: '/master-data/company-objectives', label: 'Objective Perusahaan', show: true, iconName: '/master-data/company-objectives', moduleId: 'foundation' },
+                { href: '/master-data/company-objectives', label: 'Objective Strategis', show: true, iconName: '/master-data/company-objectives', moduleId: 'foundation' },
                 { href: '/master-data/departments', label: 'Departemen', show: true, iconName: '/master-data/departments', moduleId: 'foundation' },
-                { href: '/master-data/positions', label: 'Jabatan', show: true, iconName: '/master-data/positions', moduleId: 'foundation' },
-                { href: '/master-data/employees', label: 'Data Karyawan', show: true, iconName: '/master-data/employees', moduleId: 'foundation' },
+                { href: '/master-data/positions', label: 'Matriks Jabatan', show: true, iconName: '/master-data/positions', moduleId: 'foundation' },
+                { href: '/master-data/employees', label: 'Direktori Karyawan', show: true, iconName: '/master-data/employees', moduleId: 'foundation' },
                 { href: '/master-data/hierarchy', label: 'Struktur Organisasi', show: true, iconName: '/master-data/hierarchy', moduleId: 'foundation' }, 
-                { href: '/media-library', label: 'Media Library', show: true, iconName: '/media-library', moduleId: 'foundation' },
+                { href: '/media-library', label: 'Aset Digital', show: true, iconName: '/media-library', moduleId: 'foundation' },
             ] 
         },
 
@@ -238,8 +239,8 @@ export function getNavItems(
             moduleId: 'holding',
             subItems: [
                 { href: '/holding-dashboard', label: 'Dasbor Agregat', show: true, iconName: '/holding-dashboard', moduleId: 'holding' },
-                { href: '/holding-kpi-setup', label: 'Pengaturan KPI Induk', show: true, iconName: '/holding-kpi-setup', moduleId: 'holding' },
-                { href: '/holding-group-management', label: 'Manajemen Grup', show: true, iconName: '/holding-group-management', moduleId: 'holding' },
+                { href: '/holding-kpi-setup', label: 'Setup KPI Induk', show: true, iconName: '/holding-kpi-setup', moduleId: 'holding' },
+                { href: '/holding-group-management', label: 'Manajemen Unit', show: true, iconName: '/holding-group-management', moduleId: 'holding' },
             ] 
         },
 
@@ -251,7 +252,7 @@ export function getNavItems(
             subItems: [
                 { href: '/collab-space', label: 'Ruangan Saya', show: true, iconName: '/collab-space', moduleId: 'collabspace' },
                 { href: '/collab-space/management', label: 'Manajemen Ruangan', show: capabilities.isCompanyAdmin || capabilities.isSuperAdmin, iconName: '/collab-space/management', moduleId: 'collabspace' },
-                { href: '/collab-space/reports', label: 'Laporan Tugas', show: capabilities.isManager || capabilities.isSuperAdmin, iconName: '/collab-space/reports', moduleId: 'collabspace' },
+                { href: '/collab-space/reports', label: 'Analitik Tugas', show: capabilities.isManager || capabilities.isSuperAdmin, iconName: '/collab-space/reports', moduleId: 'collabspace' },
             ]
         },
 
@@ -263,8 +264,8 @@ export function getNavItems(
             subItems: [
                  { href: '/reports', label: 'Laporan Kinerja Tim', show: capabilities.canAccessKpi, iconName: '/reports', moduleId: 'appraisal' },
                  { href: '/cycle-reports', label: 'Laporan Siklus', show: capabilities.canAccessKpi, iconName: '/cycle-reports', moduleId: 'appraisal' },
-                 { href: '/appraisal-dashboard', label: 'Dasbor Appraisal', show: true, iconName: '/appraisal-dashboard', moduleId: 'appraisal' },
-                 { href: '/kbo-appraisal', label: 'Laporan Penilaian KBO', show: capabilities.canAccessKbo, iconName: '/kbo-appraisal', moduleId: 'appraisal' },
+                 { href: '/appraisal-dashboard', label: 'Dasbor Terintegrasi', show: true, iconName: '/appraisal-dashboard', moduleId: 'appraisal' },
+                 { href: '/kbo-appraisal', label: 'Hasil Evaluasi KBO', show: capabilities.canAccessKbo, iconName: '/kbo-appraisal', moduleId: 'appraisal' },
             ]
         },
 
@@ -275,10 +276,10 @@ export function getNavItems(
             moduleId: 'appraisal',
             subItems: [
                 { href: '/my-performance', label: 'Performa Saya', show: !capabilities.isSuperAdmin && !capabilities.isCompanyAdmin, iconName: '/my-performance', moduleId: 'appraisal' },
-                { href: '/input-achievement', label: 'Input Pencapaian', show: !capabilities.isSuperAdmin, iconName: '/input-achievement', moduleId: 'appraisal' },
+                { href: '/input-achievement', label: 'Input Realisasi', show: !capabilities.isSuperAdmin, iconName: '/input-achievement', moduleId: 'appraisal' },
                 { href: '/master-data/kpi-categories', label: 'Kategori KPI', show: capabilities.isCompanyAdmin || capabilities.isSuperAdmin, iconName: '/master-data/kpi-categories', moduleId: 'appraisal' },
-                { href: '/setup-kpi', label: 'Pengaturan KPI', show: capabilities.isCompanyAdmin || capabilities.isSuperAdmin, iconName: '/setup-kpi', moduleId: 'appraisal' },
-                { href: '/master-data/kpi-data', label: 'Data Pencapaian', show: capabilities.isCompanyAdmin || capabilities.isSuperAdmin, iconName: '/master-data/kpi-data', moduleId: 'appraisal' },
+                { href: '/setup-kpi', label: 'Konfigurasi Setup', show: capabilities.isCompanyAdmin || capabilities.isSuperAdmin, iconName: '/setup-kpi', moduleId: 'appraisal' },
+                { href: '/master-data/kpi-data', label: 'Arsip Pencapaian', show: capabilities.isCompanyAdmin || capabilities.isSuperAdmin, iconName: '/master-data/kpi-data', moduleId: 'appraisal' },
             ]
         },
 
@@ -290,7 +291,7 @@ export function getNavItems(
             subItems: [
                 { href: '/master-data/kbo-categories', label: 'Kategori KBO', show: true, iconName: '/master-data/kbo-categories', moduleId: 'appraisal' },
                 { href: '/master-data/kbo-competencies', label: 'Pustaka Kompetensi', show: true, iconName: '/master-data/kbo-competencies', moduleId: 'appraisal' },
-                { href: '/appraisal-settings', label: 'Pengaturan Appraisal', show: true, iconName: '/appraisal-settings', moduleId: 'appraisal' },
+                { href: '/appraisal-settings', label: 'Setup Matriks Rater', show: true, iconName: '/appraisal-settings', moduleId: 'appraisal' },
             ]
         },
 
@@ -301,8 +302,8 @@ export function getNavItems(
             moduleId: 'appraisal',
             subItems: [
                  { href: '/okr', label: 'Workspace OKR', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/okr', moduleId: 'appraisal' },
-                 { href: '/okr/reports', label: 'Laporan OKR', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/okr/reports', moduleId: 'appraisal' },
-                 { href: '/okr/progress', label: 'Progres Project', show: !capabilities.isSuperAdmin && !capabilities.isCompanyAdmin && capabilities.isOkrParticipant, iconName: '/okr/progress', moduleId: 'appraisal' },
+                 { href: '/okr/reports', label: 'Analitik Project', show: capabilities.isSuperAdmin || capabilities.isCompanyAdmin, iconName: '/okr/reports', moduleId: 'appraisal' },
+                 { href: '/okr/progress', label: 'Update Progres', show: !capabilities.isSuperAdmin && !capabilities.isCompanyAdmin && capabilities.isOkrParticipant, iconName: '/okr/progress', moduleId: 'appraisal' },
             ]
         },
 
@@ -312,38 +313,38 @@ export function getNavItems(
             show: !capabilities.isCompanyAdmin && !capabilities.isSuperAdmin && capabilities.canAccessLms,
             moduleId: 'lms',
             subItems: [
-                { href: '/lms/user/my-learnings', label: 'Kursus Saya', show: true, iconName: '/lms/user/my-learnings', moduleId: 'lms' },
+                { href: '/lms/user/my-learnings', label: 'Materi Belajar', show: true, iconName: '/lms/user/my-learnings', moduleId: 'lms' },
             ]
         },
         { 
-            label: 'Manajemen Pembelajaran', 
+            label: 'Akademi Manajemen', 
             iconName: 'manajemen-pembelajaran', 
             show: capabilities.canAccessLms && (capabilities.isSuperAdmin || capabilities.isCompanyAdmin),
             moduleId: 'lms',
             subItems: [
-                { href: '/lms/admin/dashboard', label: 'Dasbor Admin', show: true, iconName: '/lms/admin/dashboard', moduleId: 'lms' },
-                { href: '/lms/admin/courses', label: 'Manajemen Kursus', show: true, iconName: '/lms/admin/courses', moduleId: 'lms' },
-                { href: '/lms/admin/programs', label: 'Program Pembelajaran', show: capabilities.isSuperAdmin, iconName: '/lms/admin/programs', moduleId: 'lms' },
-                { href: '/lms/admin/global-catalog', label: 'Katalog Global', show: true, iconName: '/lms/admin/global-catalog', moduleId: 'lms' },
-                { href: '/lms/admin/quizzes', label: 'Bank Soal', show: true, iconName: '/lms/admin/quizzes', moduleId: 'lms' },
-                { href: '/lms/admin/reports', label: 'Laporan Belajar', show: true, iconName: '/lms/admin/reports', moduleId: 'lms' },
+                { href: '/lms/admin/dashboard', label: 'Insight Belajar', show: true, iconName: '/lms/admin/dashboard', moduleId: 'lms' },
+                { href: '/lms/admin/courses', label: 'Kurikulum', show: true, iconName: '/lms/admin/courses', moduleId: 'lms' },
+                { href: '/lms/admin/programs', label: 'Program Jalur Belajar', show: capabilities.isSuperAdmin, iconName: '/lms/admin/programs', moduleId: 'lms' },
+                { href: '/lms/admin/global-catalog', label: 'Katalog Standar', show: true, iconName: '/lms/admin/global-catalog', moduleId: 'lms' },
+                { href: '/lms/admin/quizzes', label: 'Bank Soal Kuis', show: true, iconName: '/lms/admin/quizzes', moduleId: 'lms' },
+                { href: '/lms/admin/reports', label: 'Matriks Kelulusan', show: true, iconName: '/lms/admin/reports', moduleId: 'lms' },
             ]
         },
 
         {
-            label: 'Manajemen Dokumen',
+            label: 'Pusat Dokumen',
             iconName: 'manajemen-dokumen',
             show: capabilities.canAccessDocs,
             moduleId: 'documents',
             subItems: [
-                { href: '/document-management/templates', label: 'Template Dokumen', show: true, iconName: '/document-management/templates', moduleId: 'documents' },
-                { href: '/document-management/contracts', label: 'Kontrak Kerja', show: true, iconName: '/document-management/contracts', moduleId: 'documents' },
+                { href: '/document-management/templates', label: 'Library Template', show: true, iconName: '/document-management/templates', moduleId: 'documents' },
+                { href: '/document-management/contracts', label: 'Repositori Kontrak', show: true, iconName: '/document-management/contracts', moduleId: 'documents' },
             ]
         },
         
-        { href: '/subscription-status', label: 'Status Paket', show: capabilities.isCompanyAdmin, iconName: '/subscription-status', moduleId: 'billing' },
-        { href: '/company-admin-management', label: 'Manajemen Admin', show: capabilities.isCompanyAdmin, iconName: '/company-admin-management', moduleId: 'admin' },
-        { href: '/settings', label: 'Pengaturan', show: true, iconName: '/settings', moduleId: 'settings' },
+        { href: '/subscription-status', label: 'Detail Langganan', show: capabilities.isCompanyAdmin, iconName: '/subscription-status', moduleId: 'billing' },
+        { href: '/company-admin-management', label: 'Rekan Manajemen', show: capabilities.isCompanyAdmin, iconName: '/company-admin-management', moduleId: 'admin' },
+        { href: '/settings', label: 'Profil & Keamanan', show: true, iconName: '/settings', moduleId: 'settings' },
     ];
 
     let visibleItems = allNavItems
@@ -361,13 +362,8 @@ export function getNavItems(
     // --- STRICT CONTEXTUAL FILTERING (Non-Superadmin) ---
     if (activeModule && userRole !== 'superadmin') {
         visibleItems = visibleItems.filter(item => {
-            // Show if main item matches module
             if ((item as any).moduleId === activeModule) return true;
-            // Show if any subitem matches module
             if (item.subItems && item.subItems.some(sub => (sub as any).moduleId === activeModule)) return true;
-            
-            // Allow essential navigation items to always appear if needed, 
-            // but the user requested ONLY Pondasi Data when in that section.
             return false;
         });
     }
@@ -388,8 +384,8 @@ export function getNavItems(
         'Analisis & Laporan', 
         'Manajemen KPI', 
         'Manajemen KBO', 
-        'Manajemen Pembelajaran', 
-        'Manajemen Dokumen',
+        'Akademi Manajemen', 
+        'Pusat Dokumen',
         '/settings'
       ],
       manajemen: [
@@ -400,8 +396,8 @@ export function getNavItems(
         'Manajemen KPI', 
         'Manajemen KBO', 
         'OKR (Objectives)', 
-        'Manajemen Pembelajaran', 
-        'Manajemen Dokumen',
+        'Akademi Manajemen', 
+        'Pusat Dokumen',
         '/subscription-status',
         '/company-admin-management',
         '/settings'
