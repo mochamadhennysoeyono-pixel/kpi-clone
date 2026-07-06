@@ -1,35 +1,25 @@
 // src/app/(main)/subscription-status/page.tsx
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { 
-    Crown, 
     Users, 
     Shield, 
-    ShoppingCart, 
     CheckCircle2, 
-    XCircle,
-    ClipboardCheck,
-    Target,
-    GraduationCap,
-    LayoutGrid,
-    Bot,
-    FileText,
-    GitMerge,
-    Info,
-    History,
-    Clock,
-    ArrowRight,
-    ChevronLeft,
+    ClipboardCheck, 
+    GraduationCap, 
+    LayoutGrid, 
+    History, 
+    ArrowRight, 
+    ChevronLeft, 
     Wallet
 } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNowStrict, format, parseISO, isValid } from 'date-fns';
+import { formatDistanceToNowStrict, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,13 +30,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { ModuleId, Company, SubscriptionLog } from '@/types';
+import type { ModuleId } from '@/types';
 import { cn } from '@/lib/utils';
 import { ResponsivePage } from '@/components/ui/adaptive-layout';
 import { PageHeader } from '@/components/ui/page-header';
 import { AdaptiveCardGrid, AdaptiveMetricCard } from '@/components/ui/adaptive-card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { usePageContext } from '@/contexts/page-context';
 
 // --- Internal Components ---
 
@@ -135,8 +126,15 @@ function ModuleStatusCard({
 
 export default function SubscriptionStatusPage() {
     const { currentUser } = useAuth();
-    const { companies, employees, subscriptionLogs, companyAdmins } = useMasterData();
+    const { companies, subscriptionLogs, companyAdmins } = useMasterData();
+    const { setHideBottomNav } = usePageContext();
     
+    // Hide bottom nav for this standalone page
+    useEffect(() => {
+        setHideBottomNav(true);
+        return () => setHideBottomNav(false);
+    }, [setHideBottomNav]);
+
     const company = useMemo(() => companies.find(c => c.name === currentUser?.company), [companies, currentUser]);
     
     const activeModulesCount = useMemo(() => {
@@ -307,8 +305,12 @@ export default function SubscriptionStatusPage() {
 
 function formatSafeDate(date: any, formatStr: string) {
     const d = safeToDate(date);
-    if (!d || !isValid(d)) return '-';
-    return format(d, formatStr, { locale: localeId });
+    if (!d) return '-';
+    try {
+        return format(d, formatStr, { locale: localeId });
+    } catch(e) {
+        return '-';
+    }
 }
 
 function safeToDate(dateVal: any): Date | null {

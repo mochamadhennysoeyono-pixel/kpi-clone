@@ -1,4 +1,3 @@
-
 // src/app/(main)/main-layout-content.tsx
 "use client";
 
@@ -56,7 +55,10 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
 
   const isWorkspace = pathname === '/workspace';
   const isDocEditor = pathname.startsWith('/document-management/templates/');
-  const hideSidebar = isWorkspace || isDocEditor;
+  const isBilling = pathname === '/subscription-status' || pathname.startsWith('/subscription-plans');
+  
+  // Hide sidebar on Workspace, Billing/Plans, and Doc Editor for focus
+  const hideSidebar = isWorkspace || isDocEditor || isBilling;
 
   if (totalIsLoading) {
     return (
@@ -88,12 +90,12 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
             <ScrollArea className="flex-1 w-full h-full">
                 <main className={cn(
                     "w-full min-w-0 mx-auto",
-                    isWorkspace ? "max-w-[1920px]" : "max-w-7xl"
+                    (isWorkspace || isBilling) ? "max-w-[1920px]" : "max-w-7xl"
                 )}>
                     <div className={cn(
                         "transition-all duration-500",
-                        isMobile ? "pb-24" : "pb-10",
-                        isWorkspace && "lg:p-12"
+                        (isMobile && !hideBottomNav) ? "pb-24" : "pb-10",
+                        (isWorkspace || isBilling) && "lg:p-12"
                     )}>
                         {children}
                     </div>
