@@ -80,10 +80,11 @@ function GenericSwitcher({ title, modes, activeMode, onSwitch }: SwitcherProps) 
                     align="start" 
                     className="w-[calc(100vw-32px)] sm:w-[320px] p-0 overflow-hidden rounded-2xl shadow-2xl border-none z-[500]"
                 >
-                    <ScrollArea className="max-h-[50vh] sm:max-h-[70vh]">
-                        <div className="p-2">
+                    {/* MOD: Aggressive max-height on mobile to ensure scrolling works */}
+                    <ScrollArea className="max-h-[35vh] sm:max-h-[70vh]">
+                        <div className="p-1.5 sm:p-2">
                             <div className="px-3 py-2 mb-1 border-b border-slate-50">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Pilih Mode {title}</p>
+                                <p className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Pilih Mode {title}</p>
                             </div>
                             <div className="space-y-0.5">
                                 {modes.map((mode) => {
@@ -93,25 +94,25 @@ function GenericSwitcher({ title, modes, activeMode, onSwitch }: SwitcherProps) 
                                             key={mode.id} 
                                             onClick={() => onSwitch(mode.href)}
                                             className={cn(
-                                                "flex items-start gap-3 p-2 sm:p-3 rounded-xl cursor-pointer transition-all outline-none",
+                                                "flex items-start gap-2.5 sm:gap-3 p-2 sm:p-3 rounded-xl cursor-pointer transition-all outline-none",
                                                 isActive ? "bg-primary/5 border border-primary/10" : "hover:bg-slate-50 focus:bg-slate-50"
                                             )}
                                         >
                                             <div className={cn(
-                                                "size-8 sm:size-9 rounded-lg flex items-center justify-center shrink-0 border transition-all",
+                                                "size-7 sm:size-9 rounded-lg flex items-center justify-center shrink-0 border transition-all",
                                                 isActive ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" : "bg-white text-slate-400 border-slate-100"
                                             )}>
-                                                <mode.icon className="size-4 sm:size-[18px]" strokeWidth={2.5} />
+                                                <mode.icon className="size-3.5 sm:size-[18px]" strokeWidth={2.5} />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className={cn("text-[11px] sm:text-xs font-black uppercase tracking-tight", isActive ? "text-primary" : "text-slate-900")}>
+                                                <p className={cn("text-[10px] sm:text-xs font-black uppercase tracking-tight", isActive ? "text-primary" : "text-slate-900")}>
                                                     {mode.label}
                                                 </p>
-                                                <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium leading-tight mt-0.5 line-clamp-1 italic">
+                                                <p className="text-[8px] sm:text-[10px] text-slate-400 font-medium leading-tight mt-0.5 line-clamp-1 italic">
                                                     {mode.description}
                                                 </p>
                                             </div>
-                                            {isActive && <ArrowRight size={14} className="text-primary mt-1 shrink-0" strokeWidth={3} />}
+                                            {isActive && <ArrowRight size={12} className="text-primary mt-1 shrink-0" strokeWidth={3} />}
                                         </DropdownMenuItem>
                                     );
                                 })}
