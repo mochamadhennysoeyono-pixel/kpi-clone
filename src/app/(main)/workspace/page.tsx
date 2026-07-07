@@ -18,7 +18,7 @@ import {
     Lock,
     Zap,
     Users,
-    GitMerge,
+    Layers,
     ChevronRight,
     Settings,
     Database,
@@ -31,7 +31,6 @@ import {
     ShoppingCart,
     Briefcase,
     Network,
-    Layers,
     FileText,
     Bot,
     X,
@@ -139,12 +138,14 @@ function SectionLabel({ icon: Icon, label, color = "text-slate-500" }: { icon: a
 function WorkspaceModuleCard({ 
     config, 
     subscription, 
+    usage = 0,
     isManagement,
     onActivateRequest,
     onAddQuotaRequest
 }: { 
     config: typeof MODULE_CATALOG[0], 
     subscription?: ModuleSubscription, 
+    usage?: number,
     isManagement: boolean,
     onActivateRequest: (m: any) => void,
     onAddQuotaRequest: (m: any) => void
@@ -181,7 +182,9 @@ function WorkspaceModuleCard({
                 <div className="mt-auto grid grid-cols-2 border-t border-slate-100 pt-4 mb-5">
                     <div className="space-y-0.5">
                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Kapasitas</p>
-                        <p className="text-xs font-black text-slate-800">{subscription.quota === -1 ? 'Unlimited' : `${subscription.quota} Staff`}</p>
+                        <p className="text-xs font-black text-slate-800">
+                            {usage} / {subscription.quota === -1 ? '∞' : `${subscription.quota}`} Staff
+                        </p>
                     </div>
                     <div className="space-y-0.5 text-right">
                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Sisa Masa</p>
@@ -252,7 +255,7 @@ function HistoryItem({ log }: { log: SubscriptionLog }) {
     );
 }
 
-// --- Main Workspace Component ---
+// --- Main Workspace Content ---
 
 export function WorkspaceContent() {
     const { currentUser, userRole, logout, setIsLoading } = useAuth();
@@ -317,6 +320,17 @@ export function WorkspaceContent() {
             .sort((a, b) => (b.timestamp?.toDate?.().getTime() || 0) - (a.timestamp?.toDate?.().getTime() || 0))
             .slice(0, 5);
     }, [subscriptionLogs, company]);
+
+    // --- Module Quota Usage Calculation ---
+    const moduleUsage = useMemo(() => {
+        if (!company) return {} as Record<ModuleId, number>;
+        const companyEmployees = employees.filter(e => e.company === company.name);
+        const usage: Record<string, number> = {};
+        MODULE_CATALOG.forEach(m => {
+            usage[m.id] = companyEmployees.filter(e => e.moduleAccess?.[m.id]).length;
+        });
+        return usage as Record<ModuleId, number>;
+    }, [company, employees]);
 
     useEffect(() => {
         const blockedModuleId = searchParams.get('blocked_module');
@@ -527,6 +541,7 @@ export function WorkspaceContent() {
                                     <WorkspaceModuleCard 
                                         key={m.id} config={m} 
                                         subscription={company?.moduleSubscriptions?.[m.id]} 
+                                        usage={moduleUsage[m.id]}
                                         isManagement={isManagement} 
                                         onActivateRequest={(mod) => { setDialogMode('activate'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
                                         onAddQuotaRequest={(mod) => { setDialogMode('add-quota'); setSelectedModule(mod); setIsSubDialogOpen(true); }}
