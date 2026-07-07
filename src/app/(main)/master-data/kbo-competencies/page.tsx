@@ -1,4 +1,3 @@
-
 // src/app/(main)/master-data/kbo-competencies/page.tsx
 "use client";
 
@@ -24,6 +23,7 @@ import type { KboSetup, Company } from "@/types";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import { useMasterData } from "@/contexts/master-data-context";
 import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { KboSetupFormSheet } from "@/components/master-data/kbo/kbo-setup-form-sheet";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
