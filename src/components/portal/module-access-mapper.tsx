@@ -42,7 +42,7 @@ interface ModuleAccessMapperProps {
     isSuperadmin: boolean;
 }
 
-const MODULES = [
+const MODULE_DEFS = [
     { id: 'appraisal' as ModuleId, label: 'Appraisal', icon: ClipboardCheck, color: 'text-blue-600' },
     { id: 'lms' as ModuleId, label: 'LMS', icon: GraduationCap, color: 'text-amber-600' },
     { id: 'collabspace' as ModuleId, label: 'Collab', icon: LayoutGrid, color: 'text-emerald-600' },
@@ -66,20 +66,32 @@ export function ModuleAccessMapper({ manageableCompanies, isSuperadmin }: Module
     [companies, selectedCompanyId]);
 
     const moduleStats = useMemo(() => {
-        // Stats for current selected company view
-        const stats: Record<string, { used: number, total: number, active: boolean }> = {};
+        const stats: Record<string, { used: number, total: number, active: boolean, remaining: number }> = {};
         
-        MODULES.forEach(m => {
+        MODULE_DEFS.forEach(m => {
             const sub = selectedCompanyData?.moduleSubscriptions?.[m.id];
             const isActive = sub?.status === 'active';
             const limit = sub?.quota ?? 0;
             const used = employees.filter(e => e.company === selectedCompanyData?.name && e.moduleAccess?.[m.id]).length;
+            const remaining = limit === -1 ? Infinity : Math.max(0, limit - used);
             
-            stats[m.id] = { used, total: limit, active: isActive };
+            stats[m.id] = { used, total: limit, active: isActive, remaining };
         });
         
         return stats;
     }, [selectedCompanyData, employees]);
+
+    // --- UI Filter: Only show active modules in table ---
+    const activeModules = useMemo(() => {
+        // Jika "Semua", tampilkan semua modul yang aktif di setidaknya satu perusahaan yang dikelola
+        if (selectedCompanyId === 'all') {
+            return MODULE_DEFS.filter(m => {
+                return manageableCompanies.some(c => c.moduleSubscriptions?.[m.id]?.status === 'active');
+            });
+        }
+        // Jika spesifik, hanya yang aktif di perusahaan itu
+        return MODULE_DEFS.filter(m => moduleStats[m.id].active);
+    }, [selectedCompanyId, moduleStats, manageableCompanies]);
 
     const deptOptions = useMemo(() => {
         if (selectedCompanyId === 'all') return [];
@@ -113,7 +125,7 @@ export function ModuleAccessMapper({ manageableCompanies, isSuperadmin }: Module
 
     // --- Validation Logic ---
     const validateQuota = (employee: Employee, moduleId: ModuleId, activating: boolean) => {
-        if (!activating) return { allowed: true }; // Removing access always allowed
+        if (!activating) return { allowed: true };
 
         const empCompany = companies.find(c => c.name === employee.company);
         const sub = empCompany?.moduleSubscriptions?.[moduleId];
@@ -158,8 +170,6 @@ export function ModuleAccessMapper({ manageableCompanies, isSuperadmin }: Module
         
         const ids = Array.from(selectedTaskIds);
         const targets = filteredEmployees.filter(e => ids.includes(e.id));
-        
-        // Group by company for aggregate validation
         const companiesAffected = new Set(targets.map(t => t.company));
         
         for (const companyName of Array.from(companiesAffected)) {
@@ -183,7 +193,6 @@ export function ModuleAccessMapper({ manageableCompanies, isSuperadmin }: Module
             }
         }
 
-        // Proceed if all validations pass
         await Promise.all(targets.map(e => {
             const newAccess = { ...(e.moduleAccess || {}), [moduleId]: status };
             return bulkUpdateEmployeeAccess([e.id], newAccess);
@@ -253,34 +262,6 @@ export function ModuleAccessMapper({ manageableCompanies, isSuperadmin }: Module
                 </div>
             </div>
 
-            {/* Quota Insight (Desktop Only) */}
-            {selectedCompanyId !== 'all' && (
-                <div className="grid grid-cols-3 gap-4">
-                    {MODULES.map(m => {
-                        const stats = moduleStats[m.id];
-                        const isOver = stats.used >= stats.total && stats.total !== -1;
-                        return (
-                            <div key={m.id} className={cn(
-                                "p-3 rounded-xl border flex items-center justify-between transition-all",
-                                stats.active ? "bg-white border-slate-100" : "bg-slate-100 border-transparent opacity-50"
-                            )}>
-                                <div className="flex items-center gap-2">
-                                    <div className={cn("p-1.5 rounded-lg bg-primary/5", m.color)}><m.icon size={14} /></div>
-                                    <span className="text-[10px] font-black uppercase text-slate-500">{m.label}</span>
-                                </div>
-                                <div className="text-right">
-                                    {stats.active ? (
-                                        <p className={cn("text-xs font-black", isOver ? "text-rose-600" : "text-slate-900")}>
-                                            {stats.used} / {stats.total === -1 ? '∞' : stats.total}
-                                        </p>
-                                    ) : <Badge variant="outline" className="text-[7px] font-black h-4 px-1 border-none">INACTIVE</Badge>}
-                                </div>
-                            </div>
-                        )
-                    })}
-                </div>
-            )}
-
             {/* Staff Table */}
             <AdaptiveTable 
                 data={filteredEmployees}
@@ -312,8 +293,20 @@ export function ModuleAccessMapper({ manageableCompanies, isSuperadmin }: Module
                             </div>
                         )
                     },
-                    ...MODULES.map(m => ({
-                        header: m.label,
+                    ...activeModules.map(m => ({
+                        header: (
+                            <div className="flex flex-col items-center">
+                                <span className="text-[10px] font-black uppercase">{m.label}</span>
+                                {selectedCompanyId !== 'all' && (
+                                    <div className="flex flex-col items-center -mt-0.5">
+                                        <span className="text-[8px] opacity-60 font-bold">({moduleStats[m.id].used}/{moduleStats[m.id].total === -1 ? '∞' : moduleStats[m.id].total})</span>
+                                        <span className={cn("text-[7px] font-black uppercase", moduleStats[m.id].remaining <= 2 ? "text-rose-500" : "text-emerald-600")}>
+                                            Sisa: {moduleStats[m.id].remaining === Infinity ? '∞' : moduleStats[m.id].remaining}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        ),
                         className: "text-center",
                         cell: (e: Employee) => {
                             const empCompany = companies.find(c => c.name === e.company);
@@ -336,15 +329,20 @@ export function ModuleAccessMapper({ manageableCompanies, isSuperadmin }: Module
                 renderMobileCard={(e) => (
                     <Card className="border-border/40 shadow-sm bg-background">
                         <CardContent className="p-4 space-y-4">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-4">
                                 <Checkbox checked={selectedTaskIds.has(e.id)} onCheckedChange={() => handleToggleSelect(e.id)} />
-                                <div className="min-w-0">
-                                    <h4 className="font-bold text-xs">{e.name}</h4>
+                                <Avatar className="size-9 border shadow-sm">
+                                    <AvatarFallback className="text-[10px] font-black bg-primary/10 text-primary uppercase">
+                                        {e.name.substring(0, 2)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0 flex-1">
+                                    <h4 className="font-bold text-sm text-slate-900 truncate">{e.name}</h4>
                                     <p className="text-[9px] text-slate-400 uppercase font-black">{e.position}</p>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-3 gap-2 pt-3 border-t">
-                                {MODULES.map(m => {
+                            <div className={cn("grid gap-2 pt-3 border-t", `grid-cols-${activeModules.length || 1}`)}>
+                                {activeModules.map(m => {
                                     const empCompany = companies.find(c => c.name === e.company);
                                     const isActive = empCompany?.moduleSubscriptions?.[m.id]?.status === 'active';
                                     return (
@@ -362,6 +360,7 @@ export function ModuleAccessMapper({ manageableCompanies, isSuperadmin }: Module
                                         </div>
                                     );
                                 })}
+                                {activeModules.length === 0 && <p className="col-span-full text-center text-[10px] text-muted-foreground italic py-2">Tidak ada modul aktif untuk unit ini.</p>}
                             </div>
                         </CardContent>
                     </Card>
@@ -379,7 +378,7 @@ export function ModuleAccessMapper({ manageableCompanies, isSuperadmin }: Module
                         
                         <div className="flex items-center gap-6">
                             <div className="hidden lg:block text-[9px] font-bold uppercase tracking-widest text-white/50">MANDAT AKSES:</div>
-                            {MODULES.map(m => (
+                            {activeModules.map(m => (
                                 <button 
                                     key={m.id}
                                     onClick={() => handleBulkUpdate(m.id, true)}
