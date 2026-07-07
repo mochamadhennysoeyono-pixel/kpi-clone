@@ -28,7 +28,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 const DASHBOARD_MODES = [
     { id: 'integrated', label: 'Dashboard Appraisal', href: '/appraisal-dashboard', icon: LayoutGrid, description: 'Ringkasan Skor Terintegrasi' },
@@ -61,17 +60,17 @@ interface SwitcherProps {
 function GenericSwitcher({ title, modes, activeMode, onSwitch }: SwitcherProps) {
     return (
         <div className="flex items-center gap-3">
-            <DropdownMenu modal={false}>
+            <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-10 sm:h-12 rounded-xl sm:rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-primary/40 hover:shadow-md transition-all active:scale-95 group">
-                        <div className="size-7 sm:size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                            <activeMode.icon className="size-4 sm:size-[18px]" strokeWidth={2.5} />
+                        <div className="size-6 sm:size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shrink-0">
+                            <activeMode.icon className="size-3.5 sm:size-[18px]" strokeWidth={2.5} />
                         </div>
                         <div className="flex flex-col items-start text-left min-w-0 pr-1 sm:pr-2">
-                            <span className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-0.5 sm:mb-1">{title}</span>
-                            <div className="flex items-center gap-1.5 sm:gap-2">
-                                <span className="font-black text-xs sm:text-sm text-slate-900 truncate uppercase tracking-tighter">{activeMode.label}</span>
-                                <ChevronDown size={12} className="text-slate-400 group-hover:text-primary transition-colors shrink-0" />
+                            <span className="text-[7px] sm:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-0.5 sm:mb-1">{title}</span>
+                            <div className="flex items-center gap-1 sm:gap-2">
+                                <span className="font-black text-[11px] sm:text-sm text-slate-900 truncate uppercase tracking-tighter">{activeMode.label}</span>
+                                <ChevronDown size={10} className="text-slate-400 group-hover:text-primary transition-colors shrink-0" />
                             </div>
                         </div>
                     </button>
@@ -80,45 +79,43 @@ function GenericSwitcher({ title, modes, activeMode, onSwitch }: SwitcherProps) 
                     align="start" 
                     className="w-[calc(100vw-32px)] sm:w-[320px] p-0 overflow-hidden rounded-2xl shadow-2xl border-none z-[500]"
                 >
-                    {/* MOD: Aggressive max-height on mobile to ensure scrolling works */}
-                    <ScrollArea className="max-h-[35vh] sm:max-h-[70vh]">
-                        <div className="p-1.5 sm:p-2">
-                            <div className="px-3 py-2 mb-1 border-b border-slate-50">
-                                <p className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Pilih Mode {title}</p>
-                            </div>
-                            <div className="space-y-0.5">
-                                {modes.map((mode) => {
-                                    const isActive = activeMode.id === mode.id;
-                                    return (
-                                        <DropdownMenuItem 
-                                            key={mode.id} 
-                                            onClick={() => onSwitch(mode.href)}
-                                            className={cn(
-                                                "flex items-start gap-2.5 sm:gap-3 p-2 sm:p-3 rounded-xl cursor-pointer transition-all outline-none",
-                                                isActive ? "bg-primary/5 border border-primary/10" : "hover:bg-slate-50 focus:bg-slate-50"
-                                            )}
-                                        >
-                                            <div className={cn(
-                                                "size-7 sm:size-9 rounded-lg flex items-center justify-center shrink-0 border transition-all",
-                                                isActive ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" : "bg-white text-slate-400 border-slate-100"
-                                            )}>
-                                                <mode.icon className="size-3.5 sm:size-[18px]" strokeWidth={2.5} />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className={cn("text-[10px] sm:text-xs font-black uppercase tracking-tight", isActive ? "text-primary" : "text-slate-900")}>
-                                                    {mode.label}
-                                                </p>
-                                                <p className="text-[8px] sm:text-[10px] text-slate-400 font-medium leading-tight mt-0.5 line-clamp-1 italic">
-                                                    {mode.description}
-                                                </p>
-                                            </div>
-                                            {isActive && <ArrowRight size={12} className="text-primary mt-1 shrink-0" strokeWidth={3} />}
-                                        </DropdownMenuItem>
-                                    );
-                                })}
-                            </div>
+                    {/* Menggunakan div standar dengan overflow-y-auto untuk memastikan scroll bekerja di mobile */}
+                    <div className="max-h-[300px] sm:max-h-[500px] overflow-y-auto p-1 sm:p-2">
+                        <div className="px-3 py-2 mb-1 border-b border-slate-50">
+                            <p className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Navigasi {title}</p>
                         </div>
-                    </ScrollArea>
+                        <div className="space-y-0.5 pb-2">
+                            {modes.map((mode) => {
+                                const isActive = activeMode.id === mode.id;
+                                return (
+                                    <DropdownMenuItem 
+                                        key={mode.id} 
+                                        onClick={() => onSwitch(mode.href)}
+                                        className={cn(
+                                            "flex items-start gap-2.5 sm:gap-3 p-2 sm:p-2.5 rounded-xl cursor-pointer transition-all outline-none",
+                                            isActive ? "bg-primary/5 border border-primary/10" : "hover:bg-slate-50 focus:bg-slate-50"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "size-7 sm:size-9 rounded-lg flex items-center justify-center shrink-0 border transition-all",
+                                            isActive ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" : "bg-white text-slate-400 border-slate-100"
+                                        )}>
+                                            <mode.icon className="size-3.5 sm:size-[18px]" strokeWidth={2.5} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className={cn("text-[10px] sm:text-xs font-black uppercase tracking-tight", isActive ? "text-primary" : "text-slate-900")}>
+                                                {mode.label}
+                                            </p>
+                                            <p className="text-[8px] sm:text-[9px] text-slate-400 font-medium leading-tight mt-0.5 line-clamp-1 italic">
+                                                {mode.description}
+                                            </p>
+                                        </div>
+                                        {isActive && <ArrowRight size={10} className="text-primary mt-1 shrink-0" strokeWidth={3} />}
+                                    </DropdownMenuItem>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </DropdownMenuContent>
             </DropdownMenu>
 
