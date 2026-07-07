@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { Ripple } from '@/components/ui/ripple';
 import { getActiveModuleFromPath } from '@/lib/nav-items';
 import type { ModuleId } from '@/types';
+import { isAfter, parseISO } from 'date-fns';
 
 export default function MainLayoutContent({ children }: { children: React.ReactNode }) {
   const { currentUser, userRole, isLoading: isAuthLoading } = useAuth();
@@ -32,23 +33,40 @@ export default function MainLayoutContent({ children }: { children: React.ReactN
   
   const totalIsLoading = isAuthLoading || isMasterDataLoading;
 
-  // --- ACCESS PROTECTION GUARD ---
+  // --- HARD-GATE ACCESS PROTECTION GUARD ---
   React.useEffect(() => {
     if (totalIsLoading || !currentUser || userRole === 'superadmin') return;
 
     const activeModule = getActiveModuleFromPath(pathname);
     
-    // Check for core operational modules only
+    // Core operational modules to protect
     const protectedModules: ModuleId[] = ['appraisal', 'lms', 'collabspace'];
     
     if (activeModule && protectedModules.includes(activeModule as ModuleId)) {
       const company = companies.find(c => c.name === currentUser.company);
       const subscription = company?.moduleSubscriptions?.[activeModule as ModuleId];
+      
+      const now = new Date();
+      let isExpired = false;
+      
+      if (subscription?.expiryDate) {
+        try {
+          const expiry = parseISO(subscription.expiryDate);
+          isExpired = isAfter(now, expiry);
+        } catch (e) {
+          isExpired = true;
+        }
+      }
 
-      if (!subscription || subscription.status !== 'active') {
-        console.warn(`[Access Guard] Unsubscribed access attempt to ${activeModule} from ${pathname}. Redirecting to portal.`);
-        // Redirect to workspace with trigger for payment popup
-        router.replace(`/workspace?blocked_module=${activeModule}`);
+      // BLOCK ACCESS if: No subscription OR Inactive status OR Already Expired
+      if (!subscription || subscription.status !== 'active' || isExpired) {
+        console.warn(`[Hard-Gate] Access denied for ${activeModule}. Status: ${subscription?.status}, Expired: ${isExpired}`);
+        
+        // Use a slight delay to ensure the toast can be seen or session is ready
+        const timer = setTimeout(() => {
+          router.replace(`/workspace?blocked_module=${activeModule}&reason=${isExpired ? 'expired' : 'inactive'}`);
+        }, 100);
+        return () => clearTimeout(timer);
       }
     }
   }, [pathname, totalIsLoading, currentUser, userRole, companies, router]);

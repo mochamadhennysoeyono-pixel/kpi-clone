@@ -1,4 +1,3 @@
-
 // src/app/(main)/workspace/page.tsx
 "use client";
 
@@ -43,7 +42,8 @@ import {
     Timer,
     MoreHorizontal,
     ShieldAlert,
-    CheckCircle
+    CheckCircle,
+    AlertCircle
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -57,7 +57,7 @@ import {
     CardContent, 
     CardFooter 
 } from '@/components/ui/card';
-import { format, addDays, isSameDay, subDays, parseISO } from 'date-fns';
+import { format, addDays, isSameDay, subDays, parseISO, isAfter } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -150,23 +150,38 @@ function WorkspaceModuleCard({
     onActivateRequest: (m: any) => void,
     onAddQuotaRequest: (m: any) => void
 }) {
-    const isActive = subscription?.status === 'active';
-    const isExpired = subscription?.status === 'expired';
+    const isSubscribed = subscription?.status === 'active';
     const isTrial = subscription?.type === 'trial';
     const Icon = config.icon;
+    
+    const { isExpired, expiryLabel } = useMemo(() => {
+        if (!subscription?.expiryDate) return { isExpired: false, expiryLabel: 'N/A' };
+        try {
+            const expiry = parseISO(subscription.expiryDate);
+            const expired = isAfter(new Date(), expiry);
+            return { isExpired: expired, expiryLabel: format(expiry, 'd MMM yy') };
+        } catch (e) {
+            return { isExpired: true, expiryLabel: 'INVALID' };
+        }
+    }, [subscription]);
+
+    const isActive = isSubscribed && !isExpired;
     
     return (
         <GlassCard className="p-5 flex flex-col h-full">
             <div className="flex justify-between items-start mb-5">
-                <div className="size-11 rounded-xl bg-primary/5 flex items-center justify-center text-primary border border-primary/10">
+                <div className={cn(
+                    "size-11 rounded-xl flex items-center justify-center border",
+                    isActive ? "bg-primary/5 text-primary border-primary/10" : "bg-muted text-muted-foreground border-border/40"
+                )}>
                     <Icon size={22} strokeWidth={2} />
                 </div>
-                {isActive && (
+                {isSubscribed && (
                     <Badge className={cn(
                         "font-black text-[8px] uppercase border-none h-5 px-2",
-                        isTrial ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+                        isExpired ? "bg-rose-500 text-white" : (isTrial ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700")
                     )}>
-                        {isTrial ? 'Trial' : 'Aktif'}
+                        {isExpired ? 'Expired' : (isTrial ? 'Trial' : 'Aktif')}
                     </Badge>
                 )}
             </div>
@@ -178,18 +193,18 @@ function WorkspaceModuleCard({
                 </p>
             </div>
 
-            {isManagement && isActive && (
+            {isManagement && isSubscribed && (
                 <div className="mt-auto grid grid-cols-2 border-t border-slate-100 pt-4 mb-5">
                     <div className="space-y-0.5">
                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Kapasitas</p>
-                        <p className="text-xs font-black text-slate-800">
+                        <p className={cn("text-xs font-black", usage >= (subscription.quota || 0) && subscription.quota !== -1 ? "text-rose-600" : "text-slate-800")}>
                             {usage} / {subscription.quota === -1 ? '∞' : `${subscription.quota}`} Staff
                         </p>
                     </div>
                     <div className="space-y-0.5 text-right">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Sisa Masa</p>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Masa Aktif</p>
                         <p className={cn("text-xs font-black", isExpired ? "text-rose-600" : "text-slate-800")}>
-                            {subscription.expiryDate ? format(new Date(subscription.expiryDate), 'd MMM yy') : 'N/A'}
+                            {expiryLabel}
                         </p>
                     </div>
                 </div>
@@ -218,9 +233,9 @@ function WorkspaceModuleCard({
                     isManagement && (
                         <Button 
                             onClick={() => onActivateRequest(config)}
-                            className="w-full h-11 font-black text-[10px] uppercase tracking-widest bg-slate-900 text-white hover:bg-slate-800 rounded-xl"
+                            className="w-full h-11 font-black text-[10px] uppercase tracking-widest bg-slate-900 text-white hover:bg-slate-800 rounded-xl shadow-xl shadow-black/10"
                         >
-                            <Zap size={14} className="mr-1.5 text-amber-400 fill-amber-400" /> AKTIFKAN SEKARANG
+                            <Zap size={14} className="mr-1.5 text-amber-400 fill-amber-400" /> {isExpired ? 'RE-AKTIVASI SEKARANG' : 'AKTIFKAN MODUL'}
                         </Button>
                     )
                 )}
@@ -334,17 +349,26 @@ export function WorkspaceContent() {
 
     useEffect(() => {
         const blockedModuleId = searchParams.get('blocked_module');
+        const reason = searchParams.get('reason');
+        
         if (blockedModuleId && isManagement) {
             const moduleConfig = MODULE_CATALOG.find(m => m.id === blockedModuleId);
             if (moduleConfig) {
                 setSelectedModule(moduleConfig);
                 setDialogMode('activate');
                 setIsSubDialogOpen(true);
+                
+                toast({
+                  variant: 'destructive',
+                  title: reason === 'expired' ? "Masa Aktif Habis" : "Akses Terkunci",
+                  description: `Mohon lakukan re-aktivasi atau upgrade untuk melanjutkan penggunaan modul ${moduleConfig.name}.`
+                });
+
                 const newUrl = window.location.pathname;
                 window.history.replaceState({}, '', newUrl);
             }
         }
-    }, [searchParams, isManagement]);
+    }, [searchParams, isManagement, toast]);
 
     const mgmtAddonPricing = useMemo(() => addonPricing.find(p => p.id === 'mgmt_account'), [addonPricing]);
     const mgmtPricePerUser = mgmtAddonPricing?.pricePerUnit || 75000;
@@ -353,14 +377,23 @@ export function WorkspaceContent() {
     const currentMgmtCount = useMemo(() => company ? companyAdmins.filter(a => a.company === company.name).length : 0, [companyAdmins, company]);
 
     const { activeModules, availableModules } = useMemo(() => {
+        const checkActive = (id: ModuleId) => {
+            const sub = company?.moduleSubscriptions?.[id];
+            if (!sub || sub.status !== 'active') return false;
+            try {
+                if (sub.expiryDate) return !isAfter(new Date(), parseISO(sub.expiryDate));
+            } catch (e) { return false; }
+            return true;
+        };
+
         if (userRole === 'superadmin' || isManagement) {
             return {
-                activeModules: MODULE_CATALOG.filter(m => company?.moduleSubscriptions?.[m.id]?.status === 'active'),
-                availableModules: MODULE_CATALOG.filter(m => company?.moduleSubscriptions?.[m.id]?.status !== 'active')
+                activeModules: MODULE_CATALOG.filter(m => checkActive(m.id)),
+                availableModules: MODULE_CATALOG.filter(m => !checkActive(m.id))
             };
         } else {
             const userAccess = currentUser?.moduleAccess || {};
-            const accessible = MODULE_CATALOG.filter(m => userAccess[m.id] === true && company?.moduleSubscriptions?.[m.id]?.status === 'active');
+            const accessible = MODULE_CATALOG.filter(m => userAccess[m.id] === true && checkActive(m.id));
             return { activeModules: accessible, availableModules: [] };
         }
     }, [company, userRole, isManagement, currentUser?.moduleAccess]);
@@ -578,24 +611,36 @@ export function WorkspaceContent() {
 
                         {isManagement && availableModules.length > 0 && (
                             <div className="space-y-4">
-                                <SectionLabel icon={Sparkles} label="MODUL TERSEDIA" />
+                                <SectionLabel icon={Sparkles} label="MODUL TERSEDIA / EXPIRED" />
                                 {availableModules.map(m => {
                                     const Icon = m.icon;
+                                    const sub = company?.moduleSubscriptions?.[m.id];
+                                    const isExpired = sub?.status === 'active' && isAfter(new Date(), parseISO(sub.expiryDate));
+
                                     return (
-                                        <GlassCard key={m.id} className="p-6 flex flex-col md:flex-row items-center gap-6 border border-dashed border-primary/30 bg-primary/[0.02]">
+                                        <GlassCard key={m.id} className={cn(
+                                            "p-6 flex flex-col md:flex-row items-center gap-6 border border-dashed",
+                                            isExpired ? "border-rose-500/30 bg-rose-500/[0.02]" : "border-primary/30 bg-primary/[0.02]"
+                                        )}>
                                             <div className="size-16 rounded-xl bg-white flex items-center justify-center shrink-0 border shadow-sm">
-                                                <Icon size={28} className="text-slate-400" strokeWidth={1.5} />
+                                                <Icon size={28} className={isExpired ? "text-rose-400" : "text-slate-400"} strokeWidth={1.5} />
                                             </div>
                                             <div className="flex-1 text-center md:text-left">
-                                                <h4 className="text-base font-black text-slate-900 uppercase tracking-tight mb-1">{m.name}</h4>
+                                                <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
+                                                    <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">{m.name}</h4>
+                                                    {isExpired && <Badge variant="destructive" className="text-[8px] font-black uppercase h-4 px-1.5 border-none">EXPIRED</Badge>}
+                                                </div>
                                                 <p className="text-xs font-medium text-slate-500">{m.description}</p>
                                             </div>
                                             <Button 
                                                 onClick={() => { setSelectedModule(m); setDialogMode('activate'); setIsSubDialogOpen(true); }}
                                                 variant="outline" 
-                                                className="w-full md:w-auto h-11 px-6 border-2 border-primary text-primary hover:bg-primary hover:text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-2"
+                                                className={cn(
+                                                    "w-full md:w-auto h-11 px-6 border-2 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-2",
+                                                    isExpired ? "border-rose-500 text-rose-500 hover:bg-rose-500 hover:text-white" : "border-primary text-primary hover:bg-primary hover:text-white"
+                                                )}
                                             >
-                                                <Zap size={14} className="fill-current" /> AKTIFKAN SEKARANG
+                                                <Zap size={14} className="fill-current" /> {isExpired ? 'RE-AKTIVASI' : 'AKTIFKAN'}
                                             </Button>
                                         </GlassCard>
                                     );

@@ -1,4 +1,3 @@
-
 // src/lib/nav-items.ts
 import type { UserRole, Company, SubscriptionPlan, Employee, OKR, ModuleId } from "@/types";
 import { 
@@ -50,6 +49,7 @@ import {
     Layers,
     CalendarDays
 } from "lucide-react";
+import { isAfter, parseISO } from "date-fns";
 
 /**
  * Map ikon menggunakan Lucide React (Outline style).
@@ -189,6 +189,23 @@ export function getNavItems(
         )
     ) : false;
 
+    // Helper to check if a module is truly active (status active AND not expired)
+    const isModuleActive = (id: ModuleId) => {
+      if (userRole === 'superadmin') return true;
+      const sub = userCompany?.moduleSubscriptions?.[id];
+      if (!sub || sub.status !== 'active') return false;
+      
+      if (sub.expiryDate) {
+        try {
+          const expiry = parseISO(sub.expiryDate);
+          if (isAfter(new Date(), expiry)) return false;
+        } catch (e) {
+          return false;
+        }
+      }
+      return true;
+    };
+
     // --- SUPERADMIN SPECIFIC STRUCTURE ---
     if (userRole === 'superadmin') {
         return [
@@ -275,12 +292,12 @@ export function getNavItems(
       isDeptHead: hasSubordinates,
       isManager: userRole === 'manajemen' || hasSubordinates,
       isHolding: userCompany?.isHolding === true,
-      canAccessKpi: true,
-      canAccessKbo: true,
-      canAccessOkr: true,
-      canAccessLms: true,
-      canAccessCollabSpace: true,
-      canAccessDocs: true,
+      canAccessKpi: isModuleActive('appraisal'),
+      canAccessKbo: isModuleActive('appraisal'),
+      canAccessOkr: isModuleActive('appraisal'),
+      canAccessLms: isModuleActive('lms'),
+      canAccessCollabSpace: isModuleActive('collabspace'),
+      canAccessDocs: true, // Foundation features
       canAccessReports: true,
       isOkrParticipant: isOkrParticipant,
     };
@@ -394,8 +411,6 @@ export function getNavItems(
         .filter((item): item is NonNullable<typeof item> => item !== null);
 
     // --- STRICT CONTEXTUAL FILTERING (Non-Superadmin) ---
-    // Change: Always apply filtering for non-superadmins. 
-    // If no activeModule is detected, only show "settings" or empty.
     if (userRole !== 'superadmin') {
         visibleItems = visibleItems.filter(item => {
             const itemModule = (item as any).moduleId;
