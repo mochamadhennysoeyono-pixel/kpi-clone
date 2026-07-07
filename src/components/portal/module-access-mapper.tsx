@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AdaptiveTable } from '@/components/ui/adaptive-table';
 import { cn } from '@/lib/utils';
@@ -98,14 +99,8 @@ export function ModuleAccessMapper({ manageableCompanies, isSuperadmin }: Module
     const handleBulkUpdate = async (moduleId: string, status: boolean) => {
         if (selectedIds.size === 0) return;
         
-        const updateMap: Record<string, boolean> = {};
-        // Note: For existing logic we might need to preserve other module access,
-        // but typically users want to toggle one specifically.
-        
-        // This is a simplified bulk update. In context we will merge.
         const ids = Array.from(selectedIds);
         
-        // To be safe, we'll get current access and merge
         for (const id of ids) {
             const emp = employees.find(e => e.id === id);
             const currentAccess = emp?.moduleAccess || {};
