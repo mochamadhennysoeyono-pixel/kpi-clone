@@ -417,16 +417,22 @@ export function getNavItems(
             const itemModule = (item as any).moduleId;
 
             if (activeModule) {
-                // If inside a module, strictly only show that module's items, foundation data, or holding data
+                // If inside an operational module (appraisal, lms, collab), ONLY show that module's items.
+                // We exclude foundation, holding, admin, and settings for maximum focus.
+                const isOperationalModule = ['appraisal', 'lms', 'collabspace'].includes(activeModule);
+
+                if (isOperationalModule) {
+                    if (itemModule === activeModule) return true;
+                    if (item.subItems && item.subItems.some(sub => (sub as any).moduleId === activeModule)) return true;
+                    
+                    // Hide everything else (including foundation and holding) when inside these modules
+                    return false;
+                }
+
+                // If in foundation or holding modules, show those items
                 if (itemModule === activeModule) return true;
                 if (item.subItems && item.subItems.some(sub => (sub as any).moduleId === activeModule)) return true;
-                
-                // Keep Data and Holding for Admin convenience even inside modules
-                if (itemModule === 'foundation' || itemModule === 'holding') return true;
 
-                // SPECIAL CASE: Hide 'admin' and 'settings' when INSIDE an operational module (like appraisal, lms, collab)
-                if (itemModule === 'admin' || itemModule === 'settings') return false;
-                
                 return false;
             }
 
@@ -437,3 +443,4 @@ export function getNavItems(
 
     return visibleItems;
 }
+
