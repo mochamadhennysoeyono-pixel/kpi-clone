@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { KboNavigator } from "@/components/layout/dashboard-navigator";
+import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import { format, parse } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 
@@ -105,7 +106,16 @@ export default function AppraisalSettingsPage() {
                 )}
             </div>
 
-            <DeleteConfirmationDialog isOpen={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen} onConfirm={async () => { if(setupToDelete) await deleteAppraisalSetup(setupToDelete.id); setSetupToDelete(null); }} itemName={`setup rater ${setupToDelete?.company}`} itemType="setup rater" />
+            <DeleteConfirmationDialog 
+                isOpen={isDeleteDialogOpen} 
+                onOpenChange={setDeleteDialogOpen} 
+                onConfirm={async () => { 
+                    if(setupToDelete) await deleteAppraisalSetup(setupToDelete.id); 
+                    setSetupToDelete(null); 
+                }} 
+                itemName={`setup rater ${setupToDelete?.company}`} 
+                itemType="setup rater" 
+            />
         </ResponsivePage>
     );
 }
