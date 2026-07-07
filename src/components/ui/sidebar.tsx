@@ -1,4 +1,3 @@
-
 // src/components/ui/sidebar.tsx
 "use client";
 
@@ -146,8 +145,8 @@ function MotionNav() {
                                         "group flex items-center rounded-[12px] h-[48px] text-[14px] transition-all duration-[180ms] ease-out",
                                         (isOpen || isMobile) ? "px-[16px] gap-[14px]" : "px-0 justify-center",
                                         isActive
-                                            ? "bg-[#F3F4F6] text-[#111827] font-bold" 
-                                            : "text-[#475569] font-medium hover:bg-[#F9FAFB] hover:text-[#334155]"
+                                            ? "bg-[#F3F4F6] text-[#0f172a] font-bold" 
+                                            : "text-[#0f172a] font-medium hover:bg-[#F9FAFB] hover:text-[#334155]"
                                     )}
                                 >
                                     <div className="flex size-[20px] items-center justify-center shrink-0">
@@ -179,7 +178,7 @@ function MotionNav() {
                                     {(isOpen || isMobile) && (
                                         <span className={cn(
                                             "text-[10px] font-black uppercase tracking-[0.2em] truncate",
-                                            isGroupActive ? "text-primary" : "text-slate-400"
+                                            isGroupActive ? "text-primary" : "text-[#0f172a]/60"
                                         )}>
                                             {group.label}
                                         </span>
@@ -198,7 +197,7 @@ function MotionNav() {
                                                     "block pl-[24px] pr-3 py-[8px] text-[13px] tracking-tight transition-all duration-[180ms] ease-out",
                                                     isSubActive 
                                                         ? "text-[#2563eb] font-bold border-l-2 border-[#2563eb] -ml-[1px] bg-blue-50/50" 
-                                                        : "text-[#64748B] font-medium hover:text-[#334155] hover:translate-x-1"
+                                                        : "text-[#0f172a] font-medium hover:text-[#334155] hover:translate-x-1"
                                                 )}>
                                                     {subItem.label}
                                                 </Link>
@@ -222,13 +221,13 @@ function MotionNav() {
                 )}
             >
                 <Avatar className="size-10 border border-[#E5E7EB] shrink-0 shadow-sm transition-transform group-hover:scale-105">
-                  <AvatarFallback className="bg-slate-100 text-[#64748B] font-black text-xs">{userInitial}</AvatarFallback>
+                  <AvatarFallback className="bg-slate-100 text-[#0f172a] font-black text-xs">{userInitial}</AvatarFallback>
                 </Avatar>
                 
                 {(isOpen || isMobile) && (
                   <div className="flex-1 text-left min-w-0">
-                    <p className="text-[13px] font-bold text-[#111827] truncate tracking-tight">{currentUser?.name}</p>
-                    <div className="flex items-center gap-1.5 text-[10px] font-medium text-[#475569] transition-colors group-hover:text-destructive tracking-widest">
+                    <p className="text-[13px] font-bold text-[#0f172a] truncate tracking-tight">{currentUser?.name}</p>
+                    <div className="flex items-center gap-1.5 text-[10px] font-medium text-[#0f172a]/60 transition-colors group-hover:text-destructive tracking-widest">
                         <LogOut size={12} strokeWidth={2.5} />
                         <span>LOG OUT</span>
                     </div>

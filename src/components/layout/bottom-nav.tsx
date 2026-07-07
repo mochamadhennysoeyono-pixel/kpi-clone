@@ -1,4 +1,3 @@
-
 // src/components/layout/bottom-nav.tsx
 'use client';
 
@@ -180,7 +179,7 @@ export function BottomNav() {
                         <button 
                             key="more-btn"
                             onClick={item.onClick}
-                            className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95 group text-slate-400"
+                            className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95 group text-[#0f172a]"
                         >
                             <div className="p-1.5 rounded-lg transition-all duration-300">
                                 <item.icon 
@@ -205,7 +204,7 @@ export function BottomNav() {
                         href={item.href || '#'}
                         className={cn(
                             "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95 group",
-                            idx === 4 && userRole !== 'superadmin' && "text-primary"
+                            idx === 4 && userRole !== 'superadmin' ? "text-primary" : "text-[#0f172a]"
                         )}
                     >
                         <div className={cn(
@@ -220,7 +219,7 @@ export function BottomNav() {
                         </div>
                         <span className={cn(
                             "text-[9px] font-black tracking-tight uppercase",
-                            isActive ? "text-[#2563eb]" : "text-slate-400"
+                            isActive ? "text-[#2563eb]" : "text-[#0f172a]"
                         )}>
                             {item.label}
                         </span>

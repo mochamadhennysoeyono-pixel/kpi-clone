@@ -16,8 +16,8 @@ export const IconTokens = {
   strokeWidth: 1.75,
 
   color: {
-    // Normal / Inactive (#64748B)
-    default: "#64748B",
+    // Normal / Inactive (#0f172a) - Merged with user request for navy text
+    default: "#0f172a",
     // Hover state (#475569)
     hover: "#475569",
     // Active state (Primary Brand Blue)

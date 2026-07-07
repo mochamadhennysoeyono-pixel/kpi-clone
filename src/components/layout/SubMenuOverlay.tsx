@@ -155,7 +155,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                             </div>
                                             <span className={cn(
                                                 "text-[10px] sm:text-[11px] text-center font-bold tracking-tight leading-tight px-0.5 transition-colors",
-                                                isActive ? "text-[#2563eb]" : "text-slate-500 group-hover/item:text-slate-900"
+                                                isActive ? "text-[#2563eb]" : "text-[#0f172a] group-hover/item:text-slate-900"
                                             )}>
                                                 {subItem.label}
                                             </span>
