@@ -69,27 +69,44 @@ export function ModuleAccessMapper({ manageableCompanies, isSuperadmin }: Module
         const stats: Record<string, { used: number, total: number, active: boolean, remaining: number }> = {};
         
         MODULE_DEFS.forEach(m => {
-            const sub = selectedCompanyData?.moduleSubscriptions?.[m.id];
-            const isActive = sub?.status === 'active';
-            const limit = sub?.quota ?? 0;
-            const used = employees.filter(e => e.company === selectedCompanyData?.name && e.moduleAccess?.[m.id]).length;
-            const remaining = limit === -1 ? Infinity : Math.max(0, limit - used);
-            
-            stats[m.id] = { used, total: limit, active: isActive, remaining };
+            let used = 0;
+            let total = 0;
+            let isActive = false;
+
+            if (selectedCompanyId === 'all') {
+                // AGGREGATE MODE: Total across all manageable companies
+                manageableCompanies.forEach(c => {
+                    const sub = c.moduleSubscriptions?.[m.id];
+                    if (sub?.status === 'active') {
+                        isActive = true;
+                        if (sub.quota === -1) total = -1; // If any is unlimited, total is unlimited
+                        else if (total !== -1) total += sub.quota;
+                        
+                        used += employees.filter(e => e.company === c.name && e.moduleAccess?.[m.id]).length;
+                    }
+                });
+            } else {
+                // SINGLE COMPANY MODE
+                const sub = selectedCompanyData?.moduleSubscriptions?.[m.id];
+                isActive = sub?.status === 'active';
+                total = sub?.quota ?? 0;
+                used = employees.filter(e => e.company === selectedCompanyData?.name && e.moduleAccess?.[m.id]).length;
+            }
+
+            const remaining = total === -1 ? Infinity : Math.max(0, total - used);
+            stats[m.id] = { used, total, active: isActive, remaining };
         });
         
         return stats;
-    }, [selectedCompanyData, employees]);
+    }, [selectedCompanyId, selectedCompanyData, employees, manageableCompanies]);
 
     // --- UI Filter: Only show active modules in table ---
     const activeModules = useMemo(() => {
-        // Jika "Semua", tampilkan semua modul yang aktif di setidaknya satu perusahaan yang dikelola
         if (selectedCompanyId === 'all') {
             return MODULE_DEFS.filter(m => {
                 return manageableCompanies.some(c => c.moduleSubscriptions?.[m.id]?.status === 'active');
             });
         }
-        // Jika spesifik, hanya yang aktif di perusahaan itu
         return MODULE_DEFS.filter(m => moduleStats[m.id].active);
     }, [selectedCompanyId, moduleStats, manageableCompanies]);
 
@@ -295,19 +312,22 @@ export function ModuleAccessMapper({ manageableCompanies, isSuperadmin }: Module
                     },
                     ...activeModules.map(m => ({
                         header: (
-                            <div className="flex flex-col items-center">
-                                <span className="text-[10px] font-black uppercase">{m.label}</span>
-                                {selectedCompanyId !== 'all' && (
-                                    <div className="flex flex-col items-center -mt-0.5">
-                                        <span className="text-[8px] opacity-60 font-bold">({moduleStats[m.id].used}/{moduleStats[m.id].total === -1 ? '∞' : moduleStats[m.id].total})</span>
-                                        <span className={cn("text-[7px] font-black uppercase", moduleStats[m.id].remaining <= 2 ? "text-rose-500" : "text-emerald-600")}>
-                                            Sisa: {moduleStats[m.id].remaining === Infinity ? '∞' : moduleStats[m.id].remaining}
-                                        </span>
-                                    </div>
-                                )}
+                            <div className="flex flex-col items-center min-w-[80px]">
+                                <span className="text-[10px] font-black uppercase text-slate-900">{m.label}</span>
+                                <div className="flex flex-col items-center -mt-0.5">
+                                    <span className="text-[8px] font-bold text-muted-foreground">
+                                        ({moduleStats[m.id].used}/{moduleStats[m.id].total === -1 ? '∞' : moduleStats[m.id].total})
+                                    </span>
+                                    <span className={cn(
+                                        "text-[7px] font-black uppercase leading-none mt-0.5",
+                                        moduleStats[m.id].remaining <= 2 ? "text-rose-500" : "text-emerald-600"
+                                    )}>
+                                        Sisa: {moduleStats[m.id].remaining === Infinity ? '∞' : moduleStats[m.id].remaining}
+                                    </span>
+                                </div>
                             </div>
                         ),
-                        className: "text-center",
+                        className: "text-center py-2 px-4",
                         cell: (e: Employee) => {
                             const empCompany = companies.find(c => c.name === e.company);
                             const sub = empCompany?.moduleSubscriptions?.[m.id];
@@ -404,3 +424,4 @@ export function ModuleAccessMapper({ manageableCompanies, isSuperadmin }: Module
         </div>
     );
 }
+
