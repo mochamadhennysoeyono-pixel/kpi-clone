@@ -1,3 +1,4 @@
+
 // src/lib/nav-items.ts
 import type { UserRole, Company, SubscriptionPlan, Employee, OKR, ModuleId } from "@/types";
 import { 
@@ -395,7 +396,7 @@ export function getNavItems(
         
         { href: '/subscription-status', label: 'Billing', show: capabilities.isCompanyAdmin, iconName: '/subscription-status', moduleId: 'billing' },
         { href: '/company-admin-management', label: 'Admin', show: capabilities.isCompanyAdmin, iconName: '/company-admin-management', moduleId: 'admin' },
-        { href: '/settings', label: 'Settings', iconName: '/settings', moduleId: 'settings' },
+        { href: '/settings', label: 'Settings', show: true, iconName: '/settings', moduleId: 'settings' },
     ];
 
     let visibleItems = allNavItems
@@ -414,13 +415,23 @@ export function getNavItems(
     if (userRole !== 'superadmin') {
         visibleItems = visibleItems.filter(item => {
             const itemModule = (item as any).moduleId;
+
             if (activeModule) {
+                // If inside a module, strictly only show that module's items, foundation data, or holding data
                 if (itemModule === activeModule) return true;
                 if (item.subItems && item.subItems.some(sub => (sub as any).moduleId === activeModule)) return true;
+                
+                // Keep Data and Holding for Admin convenience even inside modules
+                if (itemModule === 'foundation' || itemModule === 'holding') return true;
+
+                // SPECIAL CASE: Hide 'admin' and 'settings' when INSIDE an operational module (like appraisal, lms, collab)
+                if (itemModule === 'admin' || itemModule === 'settings') return false;
+                
+                return false;
             }
-            // Fallback: Always allow settings and admin access for Manajemen
-            if (itemModule === 'settings' || (itemModule === 'admin' && userRole === 'manajemen')) return true;
-            return false;
+
+            // Fallback: Default to showing everything (Workspace context)
+            return true;
         });
     }
 
