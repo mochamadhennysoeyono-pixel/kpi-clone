@@ -77,7 +77,7 @@ export default function KboCompetenciesPage() {
   return (
     <ResponsivePage>
       <PageHeader title="Pustaka Kompetensi (KBO)" description="Kelola seluruh dimensi perilaku dan indikator penilaian kompetensi global & spesifik." icon={BrainCircuit}
-        actions={<Button onClick={() => { setSelectedSetup(undefined); setIsCloning(false); setFormSheetOpen(true); }} className="font-bold shadow-lg h-9 sm:h-10"><PlusCircle className="size-4 mr-2" /> Buat Setup Baru</Button>}
+        actions={<Button onClick={() => { setSelectedSetup(undefined); setFormSheetOpen(true); setIsCloning(false); }} className="font-bold shadow-lg h-9 sm:h-10"><PlusCircle className="size-4 mr-2" /> Buat Setup Baru</Button>}
       />
 
       <KboNavigator />

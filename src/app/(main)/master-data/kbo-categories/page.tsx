@@ -1,4 +1,3 @@
-
 // src/app/(main)/master-data/kbo-categories/page.tsx
 "use client";
 
@@ -20,6 +19,7 @@ import type { KboCategory, Company } from "@/types";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import { useMasterData } from "@/contexts/master-data-context";
 import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { KboCategoryFormDialog } from "@/components/master-data/kbo-categories/kbo-category-form-dialog";
 import { ResponsivePage, ResponsiveToolbar } from "@/components/ui/adaptive-layout";
@@ -113,7 +113,7 @@ export default function KboCategoriesPage() {
         )}
       />
       
-      <KboCategoryFormDialog isOpen={isDialogOpen} onOpenChange={setDialogOpen} onSave={handleSaveItem} itemType="Kategori Kompetensi" item={selectedCategory} companies={companies} />
+      <KboCategoryFormDialog isOpen={isDialogOpen} onOpenChange={setDialogOpen} onSave={handleSaveItem} item={selectedCategory} companies={companies} />
       <DeleteConfirmationDialog isOpen={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen} onConfirm={async () => { if(categoryToDelete) await deleteKboCategories([categoryToDelete.id]); setCategoryToDelete(null); }} itemName={categoryToDelete?.name || ''} itemType="kategori KBO" />
     </ResponsivePage>
   );
