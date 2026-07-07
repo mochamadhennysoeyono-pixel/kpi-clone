@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { PlusCircle, MoreHorizontal, Lock, FolderKanban, Building, Filter, Search, Pencil, Trash2 } from "lucide-react";
+import { FolderKanban, Building, Filter, Search, Pencil, Trash2, MoreHorizontal } from "lucide-react";
 import type { KboCategory, Company } from "@/types";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
 import { useMasterData } from "@/contexts/master-data-context";
@@ -61,8 +61,10 @@ export default function KboCategoriesPage() {
 
   return (
     <ResponsivePage>
-      <PageHeader title="Kategori Kompetensi (KBO)" description="Kelola klasifikasi standar kompetensi global dan kustom perusahaan." icon={FolderKanban}
-        actions={<Button onClick={() => { setSelectedCategory(undefined); setDialogOpen(true); }} className="font-bold shadow-lg"><PlusCircle className="size-4 mr-2" /> Tambah Kategori</Button>}
+      <PageHeader 
+        title="Kategori Kompetensi (KBO)" 
+        description="Kelola klasifikasi standar kompetensi global dan kustom perusahaan." 
+        icon={FolderKanban}
       />
 
       <KboNavigator />
@@ -74,7 +76,7 @@ export default function KboCategoriesPage() {
         </div>
         {userRole === 'superadmin' && (
             <Select value={selectedCompanyFilter} onValueChange={setSelectedCompanyFilter}>
-                <SelectTrigger className="w-full sm:w-[240px] h-10 bg-background border-none"><Building size={14} className="mr-2 text-primary" /><SelectValue placeholder="Pilih Perusahaan" /></SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[240px] h-10 bg-background border-none shadow-sm text-[11px] font-black uppercase"><Building size={14} className="mr-2 text-primary" /><SelectValue placeholder="Pilih Perusahaan" /></SelectTrigger>
                 <SelectContent className="z-[350]">
                     <SelectItem value="all">Semua Klien & Global</SelectItem>
                     {companies.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
