@@ -28,15 +28,17 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { KboNavigator } from "@/components/layout/dashboard-navigator";
 import { DeleteConfirmationDialog } from "@/components/master-data/delete-confirmation-dialog";
+import { AppraisalSetupSheet } from "@/components/appraisal/appraisal-setup-sheet";
 import { format, parse } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 
 export default function AppraisalSettingsPage() {
     const { currentUser, userRole } = useAuth();
-    const { companies, kboSetups, appraisalSetups, deleteAppraisalSetup } = useMasterData();
+    const { companies, appraisalSetups, addAppraisalSetup, updateAppraisalSetup, deleteAppraisalSetup } = useMasterData();
     const { toast } = useToast();
     const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('all');
     const [isSheetOpen, setSheetOpen] = useState(false);
+    const [selectedSetup, setSelectedSetup] = useState<any>(undefined);
     const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [setupToDelete, setSetupToDelete] = useState<any>(null);
 
@@ -49,12 +51,32 @@ export default function AppraisalSettingsPage() {
         return setups.sort((a,b) => (b.period || b.periodStart || '').localeCompare(a.period || a.periodStart || ''));
     }, [appraisalSetups, selectedCompanyFilter]);
 
-    const formatPeriod = (s: any) => s.period || `${s.periodStart} - ${s.periodEnd}`;
+    const handleSaveSetup = async (data: any) => {
+        try {
+            if (data.id) {
+                await updateAppraisalSetup(data.id, data);
+                toast({ title: "Setup Diperbarui", description: "Konfigurasi rater berhasil disimpan." });
+            } else {
+                await addAppraisalSetup(data);
+                toast({ title: "Setup Berhasil Dibuat", description: "Silakan lanjutkan dengan pemetaan penilai." });
+            }
+            setSheetOpen(false);
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: "Gagal Menyimpan", description: e.message });
+        }
+    };
+
+    const handleEditSetup = (setup: any) => {
+        setSelectedSetup(setup);
+        setSheetOpen(true);
+    };
+
+    const formatPeriod = (s: any) => s.period || `${format(parse(s.periodStart, 'yyyy-MM', new Date()), 'MMM yy')} - ${format(parse(s.periodEnd, 'yyyy-MM', new Date()), 'MMM yy')}`;
 
     return (
         <ResponsivePage>
             <PageHeader title="Setup Matriks Rater" description="Konfigurasi rater (penilai) dan bobot proporsional untuk evaluasi kinerja akhir." icon={Settings}
-                actions={<Button onClick={() => setSheetOpen(true)} className="font-bold shadow-lg"><PlusCircle className="size-4 mr-2" /> Buat Setup Rater</Button>}
+                actions={<Button onClick={() => { setSelectedSetup(undefined); setSheetOpen(true); }} className="font-bold shadow-lg h-9 sm:h-10 active:scale-95 transition-all"><PlusCircle className="size-4 mr-2" /> Buat Setup Rater</Button>}
             />
 
             <KboNavigator />
@@ -92,10 +114,18 @@ export default function AppraisalSettingsPage() {
                                         <Badge variant={setup.status === "Aktif" ? "default" : "outline"} className="text-[8px] font-black px-1.5 h-4 border-none">{setup.status}</Badge>
                                     </div>
                                 </AccordionTrigger>
-                                <AccordionContent className="p-6 pt-2">
-                                     <div className="flex justify-end gap-2">
-                                        <Button variant="ghost" size="sm" className="h-8 font-black text-[9px] uppercase" onClick={() => {}}><Users size={14} className="mr-2"/>Mapping Penilai</Button>
-                                        <Button variant="ghost" size="sm" className="h-8 font-black text-[9px] uppercase text-destructive" onClick={() => { setSetupToDelete(setup); setDeleteDialogOpen(true); }}><Trash2 size={14} className="mr-2"/>Hapus</Button>
+                                <AccordionContent className="p-6 pt-2 border-t">
+                                     <div className="flex justify-between items-center">
+                                        <div className="flex flex-wrap gap-2">
+                                            {setup.activeLevels.map((lvl: string) => (
+                                                <Badge key={lvl} variant="outline" className="text-[8px] font-bold h-4 bg-muted/30 border-none uppercase">{lvl}</Badge>
+                                            ))}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button variant="ghost" size="sm" className="h-8 font-black text-[9px] uppercase" onClick={() => handleEditSetup(setup)}><Pencil size={14} className="mr-2"/>Ubah Setup</Button>
+                                            <Button variant="ghost" size="sm" className="h-8 font-black text-[9px] uppercase" onClick={() => {}}><Users size={14} className="mr-2"/>Mapping Penilai</Button>
+                                            <Button variant="ghost" size="sm" className="h-8 font-black text-[9px] uppercase text-destructive hover:bg-destructive/5" onClick={() => { setSetupToDelete(setup); setDeleteDialogOpen(true); }}><Trash2 size={14} className="mr-2"/>Hapus</Button>
+                                        </div>
                                      </div>
                                 </AccordionContent>
                             </AccordionItem>
@@ -105,6 +135,13 @@ export default function AppraisalSettingsPage() {
                     <div className="py-32 text-center border-2 border-dashed rounded-3xl bg-muted/10 opacity-30"><Settings size={48} className="mx-auto mb-4" /><p className="font-black uppercase text-[10px]">Belum Ada Konfigurasi</p></div>
                 )}
             </div>
+
+            <AppraisalSetupSheet 
+                isOpen={isSheetOpen}
+                onOpenChange={setSheetOpen}
+                setup={selectedSetup}
+                onSave={handleSaveSetup}
+            />
 
             <DeleteConfirmationDialog 
                 isOpen={isDeleteDialogOpen} 
