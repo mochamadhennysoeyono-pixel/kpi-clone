@@ -32,6 +32,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/auth-context';
 import { useMasterData } from '@/contexts/master-data-context';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 const componentsSchema = z.object({
   kpiWeight: z.coerce.number().min(0).max(100),
@@ -316,7 +317,7 @@ export function AppraisalSetupSheet({ isOpen, onOpenChange, setup, onSave }: App
             <SheetFooter className="p-6 border-t bg-muted/20">
               <div className="flex w-full justify-between items-center gap-4">
                 <SheetClose asChild><Button variant="ghost" className="font-black text-[10px] uppercase tracking-widest">Batal</Button></SheetClose>
-                <Button type="submit" disabled={isLoading} className="font-black text-[10px] uppercase tracking-widest px-8 shadow-lg active:scale-95 transition-all">
+                <Button type="submit" disabled={isLoading} className="font-black text-[10px] uppercase tracking-widest px-8 shadow-lg active:scale-[0.98] transition-all">
                   {isLoading ? <Loader2 className="animate-spin size-4" /> : <Save size={14} className="mr-2" />}
                   {setup ? 'Simpan Perubahan' : 'Publikasi Setup'}
                 </Button>
