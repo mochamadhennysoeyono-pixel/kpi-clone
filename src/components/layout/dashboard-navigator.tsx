@@ -63,15 +63,15 @@ function GenericSwitcher({ title, modes, activeMode, onSwitch }: SwitcherProps) 
         <div className="flex items-center gap-3">
             <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-3 px-4 h-12 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-primary/40 hover:shadow-md transition-all active:scale-95 group">
-                        <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                            <activeMode.icon size={18} strokeWidth={2.5} />
+                    <button className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 h-10 sm:h-12 rounded-xl sm:rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-primary/40 hover:shadow-md transition-all active:scale-95 group">
+                        <div className="size-7 sm:size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shrink-0">
+                            <activeMode.icon className="size-4 sm:size-[18px]" strokeWidth={2.5} />
                         </div>
-                        <div className="flex flex-col items-start text-left min-w-0 pr-2">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">{title}</span>
-                            <div className="flex items-center gap-2">
-                                <span className="font-black text-sm text-slate-900 truncate uppercase tracking-tighter">{activeMode.label}</span>
-                                <ChevronDown size={14} className="text-slate-400 group-hover:text-primary transition-colors" />
+                        <div className="flex flex-col items-start text-left min-w-0 pr-1 sm:pr-2">
+                            <span className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-0.5 sm:mb-1">{title}</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                <span className="font-black text-xs sm:text-sm text-slate-900 truncate uppercase tracking-tighter">{activeMode.label}</span>
+                                <ChevronDown size={12} className="text-slate-400 group-hover:text-primary transition-colors shrink-0" />
                             </div>
                         </div>
                     </button>
@@ -80,12 +80,12 @@ function GenericSwitcher({ title, modes, activeMode, onSwitch }: SwitcherProps) 
                     align="start" 
                     className="w-[calc(100vw-32px)] sm:w-[320px] p-0 overflow-hidden rounded-2xl shadow-2xl border-none z-[500]"
                 >
-                    <ScrollArea className="max-h-[60vh] sm:max-h-[70vh]">
+                    <ScrollArea className="max-h-[50vh] sm:max-h-[70vh]">
                         <div className="p-2">
-                            <div className="px-3 py-3 mb-1 border-b border-slate-50">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Pilih Mode {title}</p>
+                            <div className="px-3 py-2 mb-1 border-b border-slate-50">
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Pilih Mode {title}</p>
                             </div>
-                            <div className="space-y-1">
+                            <div className="space-y-0.5">
                                 {modes.map((mode) => {
                                     const isActive = activeMode.id === mode.id;
                                     return (
@@ -93,21 +93,21 @@ function GenericSwitcher({ title, modes, activeMode, onSwitch }: SwitcherProps) 
                                             key={mode.id} 
                                             onClick={() => onSwitch(mode.href)}
                                             className={cn(
-                                                "flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all outline-none",
+                                                "flex items-start gap-3 p-2 sm:p-3 rounded-xl cursor-pointer transition-all outline-none",
                                                 isActive ? "bg-primary/5 border border-primary/10" : "hover:bg-slate-50 focus:bg-slate-50"
                                             )}
                                         >
                                             <div className={cn(
-                                                "size-9 rounded-lg flex items-center justify-center shrink-0 border transition-all",
+                                                "size-8 sm:size-9 rounded-lg flex items-center justify-center shrink-0 border transition-all",
                                                 isActive ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" : "bg-white text-slate-400 border-slate-100"
                                             )}>
-                                                <mode.icon size={18} strokeWidth={2.5} />
+                                                <mode.icon className="size-4 sm:size-[18px]" strokeWidth={2.5} />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className={cn("text-xs font-black uppercase tracking-tight", isActive ? "text-primary" : "text-slate-900")}>
+                                                <p className={cn("text-[11px] sm:text-xs font-black uppercase tracking-tight", isActive ? "text-primary" : "text-slate-900")}>
                                                     {mode.label}
                                                 </p>
-                                                <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5 line-clamp-1 italic">
+                                                <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium leading-tight mt-0.5 line-clamp-1 italic">
                                                     {mode.description}
                                                 </p>
                                             </div>
@@ -133,19 +133,19 @@ export function DashboardNavigator() {
     const pathname = usePathname();
     const router = useRouter();
     const activeMode = DASHBOARD_MODES.find(m => pathname.startsWith(m.href)) || DASHBOARD_MODES[0];
-    return <div className="w-full mb-8 no-print"><GenericSwitcher title="Analytics" modes={DASHBOARD_MODES} activeMode={activeMode} onSwitch={(h) => router.push(h)} /></div>;
+    return <div className="w-full mb-6 sm:mb-8 no-print"><GenericSwitcher title="Analytics" modes={DASHBOARD_MODES} activeMode={activeMode} onSwitch={(h) => router.push(h)} /></div>;
 }
 
 export function KpiNavigator() {
     const pathname = usePathname();
     const router = useRouter();
     const activeMode = KPI_MANAGEMENT_MODES.find(m => pathname === m.href) || KPI_MANAGEMENT_MODES[0];
-    return <div className="w-full mb-8 no-print"><GenericSwitcher title="Manajemen KPI" modes={KPI_MANAGEMENT_MODES} activeMode={activeMode} onSwitch={(h) => router.push(h)} /></div>;
+    return <div className="w-full mb-6 sm:mb-8 no-print"><GenericSwitcher title="Manajemen KPI" modes={KPI_MANAGEMENT_MODES} activeMode={activeMode} onSwitch={(h) => router.push(h)} /></div>;
 }
 
 export function KboNavigator() {
     const pathname = usePathname();
     const router = useRouter();
     const activeMode = KBO_MANAGEMENT_MODES.find(m => pathname === m.href) || KBO_MANAGEMENT_MODES[0];
-    return <div className="w-full mb-8 no-print"><GenericSwitcher title="Manajemen KBO" modes={KBO_MANAGEMENT_MODES} activeMode={activeMode} onSwitch={(h) => router.push(h)} /></div>;
+    return <div className="w-full mb-6 sm:mb-8 no-print"><GenericSwitcher title="Manajemen KBO" modes={KBO_MANAGEMENT_MODES} activeMode={activeMode} onSwitch={(h) => router.push(h)} /></div>;
 }

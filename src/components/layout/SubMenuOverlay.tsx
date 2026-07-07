@@ -119,7 +119,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
             {/* Content Area */}
             <div className="flex-1 min-h-0 bg-[#fafafa]">
                 <ScrollArea className="h-full">
-                    <div className="p-5 pb-16">
+                    <div className="p-4 sm:p-5 pb-16">
                         <AnimatePresence initial={false} custom={direction} mode="wait">
                             <motion.div
                                 key={currentView.label}
@@ -129,7 +129,7 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                 animate="center"
                                 exit="exit"
                                 transition={{ duration: 0.2 }}
-                                className="grid grid-cols-3 gap-3"
+                                className="grid grid-cols-3 gap-2 sm:gap-3"
                             >
                                 {itemsToShow.map((subItem: any) => {
                                     const IconComponent = (iconMap[subItem.iconName || subItem.href || 'default']) || Folder;
@@ -139,22 +139,22 @@ export function SubMenuOverlay({ activeGroup, onClose }: SubMenuOverlayProps) {
                                     
                                     const content = (
                                         <div className={cn(
-                                            "flex flex-col items-center justify-center gap-3 p-4 rounded-xl transition-all duration-300 border group/item active:scale-95",
+                                            "flex flex-col items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl transition-all duration-300 border group/item active:scale-95 min-h-[90px] sm:min-h-[110px]",
                                             isActive 
                                                 ? "bg-[#F3F4F6] border-slate-200 shadow-sm" 
                                                 : "bg-white border-slate-100 hover:border-slate-300 hover:shadow-stripe"
                                         )}>
-                                            <div className="size-10 flex items-center justify-center transition-colors">
+                                            <div className="size-8 sm:size-10 flex items-center justify-center transition-colors">
                                                 {IconComponent && (
                                                     <IconComponent 
-                                                        size={IconTokens.size.desktop} 
+                                                        size={IconTokens.size.mobile} 
                                                         strokeWidth={IconTokens.strokeWidth}
                                                         color={isActive ? IconTokens.color.active : IconTokens.color.default}
                                                     />
                                                 )}
                                             </div>
                                             <span className={cn(
-                                                "text-[11px] text-center font-bold tracking-tight leading-tight px-0.5 transition-colors",
+                                                "text-[10px] sm:text-[11px] text-center font-bold tracking-tight leading-tight px-0.5 transition-colors",
                                                 isActive ? "text-[#2563eb]" : "text-slate-500 group-hover/item:text-slate-900"
                                             )}>
                                                 {subItem.label}
