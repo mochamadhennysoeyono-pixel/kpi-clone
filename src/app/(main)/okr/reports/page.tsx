@@ -44,6 +44,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { DashboardNavigator } from '@/components/layout/dashboard-navigator';
+import { Input } from '@/components/ui/input';
 
 // Helper to safely convert dates
 const safeToDate = (dateVal: any): Date | null => {
