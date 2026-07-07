@@ -26,10 +26,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AdaptiveTable } from '@/components/ui/adaptive-table';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
 interface ModuleAccessMapperProps {
     manageableCompanies: any[];
@@ -100,13 +102,7 @@ export function ModuleAccessMapper({ manageableCompanies, isSuperadmin }: Module
         if (selectedIds.size === 0) return;
         
         const ids = Array.from(selectedIds);
-        
-        for (const id of ids) {
-            const emp = employees.find(e => e.id === id);
-            const currentAccess = emp?.moduleAccess || {};
-            await bulkUpdateEmployeeAccess([id], { ...currentAccess, [moduleId]: status });
-        }
-        
+        await bulkUpdateEmployeeAccess(ids, { [moduleId]: status });
         setSelectedTaskIds(new Set());
     };
 
@@ -278,7 +274,7 @@ export function ModuleAccessMapper({ manageableCompanies, isSuperadmin }: Module
                                     className="flex flex-col items-center gap-1 hover:text-primary transition-colors group"
                                 >
                                     <div className="size-8 rounded-lg bg-white/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
-                                        <m.icon size={16} />
+                                        {React.createElement(m.icon, { size: 16 })}
                                     </div>
                                     <span className="text-[8px] font-black">{m.label}</span>
                                 </button>
